@@ -22,7 +22,7 @@ setup(
 	version=version,
 	author="Andrea Petri",
 	author_email="apetri@phys.columbia.edu",
-	packages="limber",
+	packages=["limber"],
 	url="https://github.com/apetri/Limber",
 	license="None",
 	description="3D matter power spectrum integrator in Limber approximation",
