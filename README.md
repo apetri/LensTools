@@ -1,4 +1,4 @@
-Limber
+Weak Lensing analysis tools
 ======
 
-Power spectrum integration code in Limber approximation (work in progress...)
+work in progress...
