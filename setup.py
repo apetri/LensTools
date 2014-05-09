@@ -1,3 +1,5 @@
+import os,sys,re
+
 try:
 	from setuptools import setup
 	setup
@@ -14,7 +16,10 @@ def rd(filename):
 	return r
 
 
-version = "0.1"
+vre = re.compile("__version__ = \"(.*?)\"")
+m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                    "lenstools", "__init__.py"))
+version = vre.findall(m)[0]
 
 
 setup(
@@ -22,7 +27,7 @@ setup(
 	version=version,
 	author="Andrea Petri",
 	author_email="apetri@phys.columbia.edu",
-	packages=["limber"],
+	packages=["lenstools"],
 	url="https://github.com/apetri/LensTools",
 	license="None",
 	description="Toolkit for Weak Gravitational Lensing analysis",
@@ -32,6 +37,7 @@ setup(
 		"Development Status :: 1 - Planning",
 		"Intended Audience :: Science/Research",
 		"Operating System :: OS Independent",
-		"Programming Language :: Python"
+		"Programming Language :: Python",
+		"Programming Language :: C"
 	],
 )
