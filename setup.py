@@ -18,14 +18,14 @@ version = "0.1"
 
 
 setup(
-	name="limber",
+	name="lenstools",
 	version=version,
 	author="Andrea Petri",
 	author_email="apetri@phys.columbia.edu",
 	packages=["limber"],
-	url="https://github.com/apetri/Limber",
+	url="https://github.com/apetri/LensTools",
 	license="None",
-	description="3D matter power spectrum integrator in Limber approximation",
+	description="Toolkit for Weak Gravitational Lensing analysis",
 	long_description=rd("README.md"),
 	install_requires=["numpy","scipy","astropy"],
 	classifiers=[
