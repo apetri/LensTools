@@ -29,15 +29,16 @@ setup(
 	author_email="apetri@phys.columbia.edu",
 	packages=["lenstools"],
 	url="https://github.com/apetri/LensTools",
-	license="None",
+	license="?",
 	description="Toolkit for Weak Gravitational Lensing analysis",
 	long_description=rd("README.md"),
 	install_requires=["numpy","scipy","astropy"],
 	classifiers=[
-		"Development Status :: 1 - Planning",
+		"Development Status :: 2 - Pre-Alpha",
 		"Intended Audience :: Science/Research",
 		"Operating System :: OS Independent",
 		"Programming Language :: Python",
-		"Programming Language :: C"
+		"Programming Language :: C",
+		"License :: Public Domain"
 	],
 )

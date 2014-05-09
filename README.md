@@ -1,4 +1,4 @@
 Weak Lensing analysis tools
 ======
 
-work in progress...
+Limber integrator: NOT TESTED yet!

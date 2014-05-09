@@ -1,78 +1,99 @@
 import numpy as np
 from scipy import interpolate,integrate
-from astropy.cosmology import wCDM 
+
+from astropy.constants import c
 
 ##################################################
-#############Options##############################
+#############Limber Integrator class##############
 ##################################################
 
-#Cosmological parameters
-h = 0.7
-Omega_m = 0.26
-w = -1.0
-c = 3.0e5
+class LimberIntegrator:
+	
+	"""
+	A 3D power spectrum integrator that will compute the convergence power spectrum 
+	using the Limber approximation.
 
-#Binning options
-min_redshift = 0.0
-max_redshift = 2.0
-num_redshifts = 20
-l_min = 1
-l_max = 100000
+	:param cosmoModel:
+		One of astropy.cosmology objects
 
-#Power spectra filename prefix
-power_prefix = 'camb_output/highsi8_matterpower_'
+	:param lValues:
+		Desired multipole values for the convergence power spectrum (numpy array)
 
-#Convergence power spectrum file
-conv_file_name = 'linear_spectra/highsi8_conv_power.txt'
+	"""
 
-##################################################
-#############End of options, begin code###########
-##################################################
+	def __init__(self,cosmoModel,lValues):
 
-#Power spectrum normalization
-normalization = (9.0/4)*(Omega_m)**2*(100*h/c)**4
+		self.cosmoModel = cosmoModel
+		self.lValues = lValues
 
-#Import cosmological model from astropy
-cosmo = wCDM(H0=100*h, Om0=Omega_m, Ode0=1.0-Omega_m, w0=w)
+	def computeConvergence(self,z,matterPower=None,powFileRoot=None):
+		"""
+		Computes the convergence power spectrum with the Limber integral of the 3D matter power spectrum.
 
-#l bins
-l = np.ogrid[l_min:l_max:1]
-C = np.zeros(len(l))
+		:param z:
+			redshift bins at which the matter power spectrum is calculated
 
-#Compute comoving distances
-redshift = np.ogrid[min_redshift:max_redshift:num_redshifts*1j]
-chi = cosmo.comoving_distance(redshift)
-chi0 = chi[num_redshifts-1]
-kernel = (1.0 - chi/chi0)**2
+		:param matterPower:
+			values of the matter power spectrum at corresponding z (first column must be k, the rest P(k,z), one for each z)
 
-#Load matter power spectra from camb output files#
-#See how many k's are stored
-kappa,try_power = (np.loadtxt(power_prefix + '0.dat')).transpose()
-num_kappa = len(kappa)
+		:param powFileRoot:
+			common root name of files in which the 3d power spectrum is stored; if None it is assumed that all the
+			information is already loaded in the matterPower array. Throws and exception if both are None
+		"""
 
-#Load power spectrum
-power_spectrum = np.zeros([num_kappa,num_redshifts])
-for i in range(num_redshifts):
-	try_power = np.loadtxt(power_prefix + ('%d.dat'%(int(redshift[i]*100))))
-	power_spectrum[:,i] = try_power[:,1] / (h**3)
+		#Check validity of imput arguments
+		if(matterPower==None and powFileRoot==None):
+			raise ValueError("matterPower and powFileRoot cannot be both None!!")
 
-#Compute the integral for lensing power spectrum#
-power_interpolation = interpolate.interp1d(kappa,power_spectrum,axis=0)
+		#Power spectrum normalization
+		normalization = (9.0/4)*(self.cosmoModel.Om0)**2*(self.cosmoModel.H0.value/c.to("km/s").value)**4
 
-conv_file = open(conv_file_name,'w')
+		#l bins and convergence power spectrum
+		l = self.lValues
 
-for j in range(len(l)):
-	if(l[j]%1000==0):
-		print l[j]/1000
-	power_integrand = np.zeros(num_redshifts)
-	power_integrand[1:] = power_interpolation(l[j]/chi[1:]).diagonal()
-	full_integrand = kernel * (1.0 + redshift)**2 * power_integrand
-	#Finally compute the integral
-	C[j] = integrate.simps(full_integrand,chi) * normalization
-	#Write on the file
-	conv_file.write('%d %e\n'%(l[j],C[j]))
+		#Compute comoving distances and integral kernel
+		chi = cosmoModel.comoving_distance(z)
+		chi0 = chi[len(chi)-1]
+		kernel = (1.0 - chi/chi0)**2
 
-conv_file.close()
+		#Load information about kappa (wavenumber) and P(kappa) (matter power spectrum)
+		if(powFileRoot!=None):
+
+			#Load matter power spectra from camb output files#
+			#See how many k's are stored
+			kappa,try_power = (np.loadtxt(powFileRoot + '0.dat')).transpose()
+			num_kappa = len(kappa)
+
+			#Load power spectrum
+			power_spectrum = np.zeros([num_kappa,num_redshifts])
+
+			for i in range(len(z)):
+				try_power = np.loadtxt(powFileRoot + ('%d.dat'%(int(z[i]*100))))
+
+				#Normalize power spectrum correctly
+				power_spectrum[:,i] = try_power[:,1] / (cosmoModel.h**3)
+
+		else:
+
+			#Fill in values from the matterPower array
+			kappa = matterPower[:,0]
+			power_spectrum = matterPower[:,1:]
+
+		#############################################################
+		#Compute the integral for lensing convergence power spectrum#
+		#############################################################
+		
+		power_interpolation = interpolate.interp1d(kappa,power_spectrum,axis=0)
+
+		power_integrand = np.zeros((len(l),len(z)))
+		power_integrand[:,1:] = power_interpolation(l/chi[np.newaxis,1:]).diagonal(axis1=1,axis2=2)
+		full_integrand = kernel[np.newaxis,:] * (1.0 + z[np.newaxis,:])**2 * power_integrand
+	
+		#Finally compute the integral
+		C = integrate.simps(full_integrand,chi,axis=1) * normalization
+
+		#Return the final result
+		return C
 
 
 
