@@ -86,7 +86,9 @@ class LimberIntegrator:
 		power_interpolation = interpolate.interp1d(kappa,power_spectrum,axis=0)
 
 		power_integrand = np.zeros((len(l),len(z)))
-		power_integrand[:,1:] = power_interpolation(l/chi[np.newaxis,1:]).diagonal(axis1=1,axis2=2)
+		lchi = (l/chi[np.newaxis,:]).reshape(len(l)*len(z))
+
+		power_integrand = power_interpolation(lchi).reshape(len(l),len(z),len(z)).diagonal(axis1=1,axis2=2)
 		full_integrand = kernel[np.newaxis,:] * (1.0 + z[np.newaxis,:])**2 * power_integrand
 	
 		#Finally compute the integral
@@ -94,16 +96,5 @@ class LimberIntegrator:
 
 		#Return the final result
 		return C
-
-
-
-
-
-
-
-
-
-
-
 
 
