@@ -26,7 +26,7 @@ class LimberIntegrator:
 		self.cosmoModel = cosmoModel
 		self.lValues = lValues
 
-	def computeConvergence(self,z,matterPower=None,powFileRoot=None):
+	def computeConvergence(self,z,matterPower=None,powFileRoot=None,extension=".dat"):
 		"""
 		Computes the convergence power spectrum with the Limber integral of the 3D matter power spectrum.
 
@@ -39,6 +39,9 @@ class LimberIntegrator:
 		:param powFileRoot:
 			common root name of files in which the 3d power spectrum is stored; if None it is assumed that all the
 			information is already loaded in the matterPower array. Throws and exception if both are None
+
+		:param extension:
+			extension of text files with 3d power spectrum, default is .dat
 		"""
 
 		#Check validity of imput arguments
@@ -52,7 +55,7 @@ class LimberIntegrator:
 		l = self.lValues
 
 		#Compute comoving distances and integral kernel
-		chi = cosmoModel.comoving_distance(z)
+		chi = self.cosmoModel.comoving_distance(z)
 		chi0 = chi[len(chi)-1]
 		kernel = (1.0 - chi/chi0)**2
 
@@ -61,17 +64,16 @@ class LimberIntegrator:
 
 			#Load matter power spectra from camb output files#
 			#See how many k's are stored
-			kappa,try_power = (np.loadtxt(powFileRoot + '0.dat')).transpose()
-			num_kappa = len(kappa)
+			kappa,try_power = (np.loadtxt(powFileRoot + int(z[0]*100) + extension)).transpose()
 
 			#Load power spectrum
-			power_spectrum = np.zeros([num_kappa,num_redshifts])
+			power_spectrum = np.zeros([len(kappa),len(z)])
 
 			for i in range(len(z)):
-				try_power = np.loadtxt(powFileRoot + ('%d.dat'%(int(z[i]*100))))
+				try_power = np.loadtxt(powFileRoot + ('%d%s'%(int(z[i]*100,extension))))
 
 				#Normalize power spectrum correctly
-				power_spectrum[:,i] = try_power[:,1] / (cosmoModel.h**3)
+				power_spectrum[:,i] = try_power[:,1] / (self.cosmoModel.h**3)
 
 		else:
 
@@ -83,10 +85,10 @@ class LimberIntegrator:
 		#Compute the integral for lensing convergence power spectrum#
 		#############################################################
 		
-		power_interpolation = interpolate.interp1d(kappa,power_spectrum,axis=0)
+		power_interpolation = interpolate.interp1d(kappa,power_spectrum,axis=0,bounds_error=False,fill_value=0.0)
 
 		power_integrand = np.zeros((len(l),len(z)))
-		lchi = (l/chi[np.newaxis,:]).reshape(len(l)*len(z))
+		lchi = np.outer(l,1.0/chi).reshape(len(l)*len(z))
 
 		power_integrand = power_interpolation(lchi).reshape(len(l),len(z),len(z)).diagonal(axis1=1,axis2=2)
 		full_integrand = kernel[np.newaxis,:] * (1.0 + z[np.newaxis,:])**2 * power_integrand
