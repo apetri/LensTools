@@ -36,7 +36,8 @@ class LimberIntegrator:
 		this still assumes a single source redshift at z0 = max(z) 
 
 		:param z:
-			redshift bins at which the matter power spectrum is calculated
+			redshift bins at which the matter power spectrum is calculated; the z array must be sorted in ascending order
+			and z[0] must be >0 even if small, otherwise this throws an exception
 
 		:param matterPower:
 			values of the matter power spectrum at corresponding z (first column must be k, the rest P(k,z), one for each z)
@@ -48,6 +49,10 @@ class LimberIntegrator:
 		:param extension:
 			extension of text files with 3d power spectrum, default is .dat
 		"""
+
+		#Check validity of redshift values
+		if(z[0]<=0.0):
+			raise ValueError("first redshift must be >0!!")
 
 		#Check validity of imput arguments
 		if(matterPower==None and powFileRoot==None):
