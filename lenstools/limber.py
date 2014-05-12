@@ -3,6 +3,7 @@ import StringIO
 import numpy as np
 from scipy import interpolate,integrate
 
+from astropy import cosmology
 from astropy.constants import c
 
 ##################################################
@@ -16,18 +17,18 @@ class LimberIntegrator:
 	using the Limber approximation. The units for quantities with dimensions of length 
 	are assumed to be Mpc
 
-	:param cosmoModel:
-		One of astropy.cosmology objects
-
 	:param lValues:
 		Desired multipole values for the convergence power spectrum (numpy array)
 
+	:param cosmoModel:
+		One of astropy.cosmology objects (WMAP9 cosmology is set by default)
+
 	"""
 
-	def __init__(self,cosmoModel,lValues):
+	def __init__(self,lValues,cosmoModel=cosmology.WMAP9):
 
-		self.cosmoModel = cosmoModel
 		self.lValues = lValues
+		self.cosmoModel = cosmoModel
 
 	def computeConvergence(self,z,matterPower=None,powFileRoot=None,extension=".dat"):
 		"""
@@ -103,67 +104,67 @@ class LimberIntegrator:
 		#Return the final result
 		return C
 
-		def writeCAMBSettings(self,z,powFileRoot="matterpower",transfer_high_precision=False,transfer_k_per_logint=0,transfer_interp_matterpower=True):
-			"""
-			Outputs a StringIO object that will contain the redshift settings of the CAMB parameter file that will needed
-			in order for CAMB to produce the linear or non linear matter power spectra that will then be integrated by 
-			the computeConvergence() method
+	def writeCAMBSettings(self,z,powFileRoot="matterpower",transfer_high_precision=False,transfer_k_per_logint=0,transfer_interp_matterpower=True):
+		"""
+		Outputs a StringIO object that will contain the redshift settings of the CAMB parameter file that will needed
+		in order for CAMB to produce the linear or non linear matter power spectra that will then be integrated by 
+		the computeConvergence() method
 
-			:param z:
-				redshift bins at which the matter power spectrum is calculated (assumed to be a monotonic array with more than 1 element)
+		:param z:
+			redshift bins at which the matter power spectrum is calculated (assumed to be a monotonic array with more than 1 element)
 
-			:param powFileRoot:
-				root of the filename that you want to give to the CAMB power spectrum outputs
+		:param powFileRoot:
+			root of the filename that you want to give to the CAMB power spectrum outputs
 
-			:param transfer_high_precision:
-				read CAMB documentation (this sets the precision of the calculated transfer function)
+		:param transfer_high_precision:
+			read CAMB documentation (this sets the precision of the calculated transfer function)
 
-			:transfer_k_per_logint:
-				read CAMB documentation (this sets the k wavenumber binning)
+		:transfer_k_per_logint:
+			read CAMB documentation (this sets the k wavenumber binning)
 
-			:transfer_interp_matterpower:
-				read CAMB documentation (this sets how the matter power is interpolated between different k's)
-			"""
+		:transfer_interp_matterpower:
+			read CAMB documentation (this sets how the matter power is interpolated between different k's)
+		"""
 
-			S = StringIO.StringIO
+		S = StringIO.StringIO()
 
-			if(transfer_high_precision):
-				S.write("""transfer_high_precision = T\n""")
-			else:
-				S.write("""transfer_high_precision = F\n""")
+		if(transfer_high_precision):
+			S.write("""transfer_high_precision = T\n""")
+		else:
+			S.write("""transfer_high_precision = F\n""")
 
-			#Compute maximum k that needs to be calculated (tune manually in the parameter file if this is too high)
-			if(z[0]==0.0):
-				kmax = self.lValues.max()/self.cosmoModel.comoving_distance(z[1])
-			else:
-				kmax = self.lValues.max()/self.cosmoModel.comoving_distance(z[0])
+		#Compute maximum k that needs to be calculated (tune manually in the parameter file if this is too high)
+		if(z[0]==0.0):
+			kmax = self.lValues.max()/self.cosmoModel.comoving_distance(z[1]).value
+		else:
+			kmax = self.lValues.max()/self.cosmoModel.comoving_distance(z[0]).value
 
-			S.write("""transfer_kmax = %.3f
+		S.write("""transfer_kmax = %.3f
 transfer_k_per_logint = %d
 transfer_num_redshifts  = %d
 
 """%(kmax,transfer_k_per_logint,len(z)))
 
-			#Other settings
-			if(transfer_interp_matterpower):
-				S.write("""transfer_interp_matterpower = T\n\n""")
-			else:
-				S.write("""transfer_interp_matterpower = F\n\n""")
+		#Other settings
+		if(transfer_interp_matterpower):
+			S.write("""transfer_interp_matterpower = T\n\n""")
+		else:
+			S.write("""transfer_interp_matterpower = F\n\n""")
 
-			#Write desired output redshifts
-			for i in range(len(z)):
-				S.write("""transfer_redshift(%d) = %.3f\n"""%(i+1,z[i]))
-				S.write("""transfer_filename(%d) = transfer_out_%d.dat\n"""%(i+1,int(z[i]*100)))
+		#Write desired output redshifts
+		for i in range(len(z)):
+			S.write("""transfer_redshift(%d) = %.3f\n"""%(i+1,z[i]))
+			S.write("""transfer_filename(%d) = transfer_out_%d.dat\n"""%(i+1,int(z[i]*100)))
 
-			#Write desired output filenames
-			S.write("""\n#Matter power spectrum output against k/h in units of h^{-3} Mpc^3\n\n""")
+		#Write desired output filenames
+		S.write("""\n#Matter power spectrum output against k/h in units of h^{-3} Mpc^3\n\n""")
 
-			for i in range(len(z)):
-				S.write("""transfer_matterpower(%d) = %s%d.dat\n"""%(i+1,powFileRoot,int(z[i]*100)))
+		for i in range(len(z)):
+			S.write("""transfer_matterpower(%d) = %s%d.dat\n"""%(i+1,powFileRoot,int(z[i]*100)))
 
-			#Return the StringIO object
-			S.seek(0)
-			return S.read()
+		#Return the StringIO object
+		S.seek(0)
+		return S.read()
 
 
 
