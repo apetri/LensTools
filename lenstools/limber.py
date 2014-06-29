@@ -10,7 +10,7 @@ from astropy.constants import c
 #############Limber Integrator class##############
 ##################################################
 
-class LimberIntegrator:
+class LimberIntegrator(object):
 	
 	"""
 	A 3D power spectrum integrator that will compute the convergence power spectrum 
@@ -124,10 +124,10 @@ class LimberIntegrator:
 		:param transfer_high_precision:
 			read CAMB documentation (this sets the precision of the calculated transfer function)
 
-		:transfer_k_per_logint:
+		:param transfer_k_per_logint:
 			read CAMB documentation (this sets the k wavenumber binning)
 
-		:transfer_interp_matterpower:
+		:param transfer_interp_matterpower:
 			read CAMB documentation (this sets how the matter power is interpolated between different k's)
 		"""
 
