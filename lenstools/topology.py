@@ -39,6 +39,29 @@ class ConvergenceMap(object):
 		self.data = fits_file[0].data.astype(np.float)
 		fits_file.close()
 
+	def gradient(self):
+		
+		r"""
+		Computes the gradient of the map and sets the gradient_x,gradient_y attributes accordingly
+
+		:returns: tuple -- (gradient_x,gradient_y)
+
+		"""
+		self.gradient_x, self.gradient_y = _topology.gradient(self.data)
+		return self.gradient_x,self.gradient_y
+
+	def hessian(self):
+		
+		r"""
+		Computes the hessian of the map and sets the hessian_xx,hessian_yy,hessian_xy attributes accordingly
+
+		:returns: tuple -- (hessian_xx,hessian_yy,hessian_xy)
+
+		"""
+		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.data)
+		return self.hessian_xx,self.hessian_yy,self.hessian_xy
+
+
 	def peakCount(self,thresholds,sigma=None):
 		
 		"""
