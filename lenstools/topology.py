@@ -10,7 +10,7 @@
 
 """
 
-from external import _peaks
+from external import _topology
 
 import numpy as np
 from astropy.io import fits
@@ -58,4 +58,4 @@ class ConvergenceMap(object):
 		if sigma is None:
 			sigma = 1.0
 
-		return _peaks.count(self.data,thresholds,sigma)
+		return _topology.peakCount(self.data,thresholds,sigma)

@@ -13,23 +13,23 @@ count()
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for counting peaks in a 2D map";
-static char count_docstring[] = "Calculate the peak counts in a 2D map";
+static char peakCount_docstring[] = "Calculate the peak counts in a 2D map";
 
-//count() method declaration
-static PyObject *_peaks_count(PyObject *self,PyObject *args);
+//peakCount() method declaration
+static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
 
-//_peaks method definitions
+//_topology method definitions
 static PyMethodDef module_methods[] = {
 
-	{"count",_peaks_count,METH_VARARGS,count_docstring},
+	{"peakCount",_topology_peakCount,METH_VARARGS,peakCount_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
 
 //_peaks constructor
-PyMODINIT_FUNC init_peaks(void){
+PyMODINIT_FUNC init_topology(void){
 
-	PyObject *m = Py_InitModule3("_peaks",module_methods,module_docstring);
+	PyObject *m = Py_InitModule3("_topology",module_methods,module_docstring);
 	if(m==NULL) return;
 
 	/*Load numpy functionality*/
@@ -37,8 +37,8 @@ PyMODINIT_FUNC init_peaks(void){
 
 }
 
-//count() implementation
-static PyObject *_peaks_count(PyObject *self,PyObject *args){
+//peakCount() implementation
+static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 
 	PyObject *map_obj,*thresholds_obj; 
 	double sigma;
