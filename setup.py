@@ -1,11 +1,13 @@
 import os,sys,re
 
 try:
-	from setuptools import setup
-	setup
+	import numpy.distutils.misc_util 
 except ImportError:
-	from distutils.core import setup
-	setup
+	print("Please install numpy!")
+	sys.exit(1)
+
+
+from distutils.core import setup,Extension
 
 def rd(filename):
 	
@@ -21,7 +23,6 @@ m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     "lenstools", "__init__.py"))
 version = vre.findall(m)[0]
 
-
 setup(
 	name="lenstools",
 	version=version,
@@ -32,7 +33,6 @@ setup(
 	license="?",
 	description="Toolkit for Weak Gravitational Lensing analysis",
 	long_description=rd("README.md"),
-	install_requires=["numpy","scipy","astropy"],
 	classifiers=[
 		"Development Status :: 2 - Pre-Alpha",
 		"Intended Audience :: Science/Research",
@@ -41,4 +41,7 @@ setup(
 		"Programming Language :: C",
 		"License :: Public Domain"
 	],
+	ext_package="lenstools/external",
+	ext_modules=[Extension("_topology",["lenstools/external/_topology.c","lenstools/external/differentials.c","lenstools/external/peaks.c","lenstools/external/minkmom.c","lenstools/external/coordinates.c"])],
+	include_dirs=numpy.distutils.misc_util.get_numpy_include_dirs(),
 )
