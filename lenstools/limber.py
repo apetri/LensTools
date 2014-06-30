@@ -25,9 +25,7 @@ from astropy.constants import c
 class LimberIntegrator(object):
 	
 	"""
-	A 3D power spectrum integrator that will compute the convergence power spectrum 
-	using the Limber approximation. The units for quantities with dimensions of length 
-	are assumed to be Mpc
+	A 3D power spectrum integrator that will compute the convergence power spectrum  using the Limber approximation. The units for quantities with dimensions of length are assumed to be Mpc
 
 	
 	:param lValues: Desired multipole values for the convergence power spectrum
