@@ -10,23 +10,27 @@ count()
 #include <numpy/arrayobject.h>
 
 #include "peaks.h"
+#include "differentials.h"
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for counting peaks in a 2D map";
 static char peakCount_docstring[] = "Calculate the peak counts in a 2D map";
+static char gradient_docstring[] = "Compute the gradient of a 2D image"; 
 
-//peakCount() method declaration
+//method declarations
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
+static PyObject *_topology_gradient(PyObject *self,PyObject *args);
 
 //_topology method definitions
 static PyMethodDef module_methods[] = {
 
 	{"peakCount",_topology_peakCount,METH_VARARGS,peakCount_docstring},
+	{"gradient",_topology_gradient,METH_VARARGS,gradient_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
 
-//_peaks constructor
+//_topology constructor
 PyMODINIT_FUNC init_topology(void){
 
 	PyObject *m = Py_InitModule3("_topology",module_methods,module_docstring);
@@ -78,5 +82,64 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 	Py_DECREF(thresholds_array);
 
 	return peaks_array;
+
+}
+
+//gradient() implementation
+static PyObject *_topology_gradient(PyObject *self,PyObject *args){
+
+	PyObject *map_obj;
+
+	/*Parse the input*/
+	if(!PyArg_ParseTuple(args,"O",&map_obj)){ 
+		return NULL;
+	}
+
+	/*Interpret the input as a numpy array*/
+	PyObject *map_array = PyArray_FROM_OTF(map_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+
+	/*Get the size of the map (in pixels)*/
+	int Nside = (int)PyArray_DIM(map_array,0);
+
+	/*Prepare the new array objects that will hold the gradients along x and y*/
+	npy_intp dims[] = {(npy_intp) Nside, (npy_intp) Nside};
+	PyObject *gradient_x_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	PyObject *gradient_y_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+
+	/*Throw exception if this failed*/
+	if(gradient_x_array==NULL || gradient_y_array==NULL){
+		
+		Py_DECREF(map_array);
+		return NULL;
+	}
+
+	/*Call the underlying C function that computes the gradient*/
+	gradient_xy((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(gradient_x_array),(double *)PyArray_DATA(gradient_y_array),Nside);
+
+	/*Prepare a tuple container for the output*/
+	PyObject *gradient_output = PyTuple_New(2);
+	
+	if(PyTuple_SetItem(gradient_output,0,gradient_x_array)){
+
+		Py_DECREF(map_array);
+		Py_DECREF(gradient_x_array);
+		Py_DECREF(gradient_y_array);
+		Py_DECREF(gradient_output);
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(gradient_output,1,gradient_y_array)){
+
+		Py_DECREF(map_array);
+		Py_DECREF(gradient_x_array);
+		Py_DECREF(gradient_y_array);
+		Py_DECREF(gradient_output);
+		return NULL;
+
+	}
+
+	/*Done, now return*/
+	return gradient_output;
 
 }
