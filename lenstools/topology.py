@@ -46,6 +46,9 @@ class ConvergenceMap(object):
 
 		:returns: tuple -- (gradient_x,gradient_y)
 
+		>>> map = ConvergenceMap("map.fit")
+		>>> gx,gy = map.gradient()
+
 		"""
 		self.gradient_x, self.gradient_y = _topology.gradient(self.data)
 		return self.gradient_x,self.gradient_y
@@ -56,6 +59,9 @@ class ConvergenceMap(object):
 		Computes the hessian of the map and sets the hessian_xx,hessian_yy,hessian_xy attributes accordingly
 
 		:returns: tuple -- (hessian_xx,hessian_yy,hessian_xy)
+
+		>>> map = ConvergenceMap("map.fit")
+		>>> hxx,hyy,hxy = map.hessian()
 
 		"""
 		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.data)
@@ -74,6 +80,10 @@ class ConvergenceMap(object):
 		:type sigma: float.
 
 		:returns: array -- peak counts at the midpoints of the specified thresholds
+
+		>>> map = ConvergenceMap("map.fits")
+		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
+		>>> peaks = map.peakCount(thresholds)
 
 		"""
 
