@@ -15,17 +15,20 @@ count()
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for counting peaks in a 2D map";
 static char peakCount_docstring[] = "Calculate the peak counts in a 2D map";
-static char gradient_docstring[] = "Compute the gradient of a 2D image"; 
+static char gradient_docstring[] = "Compute the gradient of a 2D image";
+static char hessian_docstring[] = "Compute the hessian of a 2D image"; 
 
 //method declarations
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
 static PyObject *_topology_gradient(PyObject *self,PyObject *args);
+static PyObject *_topology_hessian(PyObject *self,PyObject *args);
 
 //_topology method definitions
 static PyMethodDef module_methods[] = {
 
 	{"peakCount",_topology_peakCount,METH_VARARGS,peakCount_docstring},
 	{"gradient",_topology_gradient,METH_VARARGS,gradient_docstring},
+	{"hessian",_topology_hessian,METH_VARARGS,hessian_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -55,6 +58,15 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 	/*Interpret the inputs as a numpy arrays*/
 	PyObject *map_array = PyArray_FROM_OTF(map_obj,NPY_DOUBLE,NPY_IN_ARRAY);
 	PyObject *thresholds_array = PyArray_FROM_OTF(thresholds_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+
+	if(map_array==NULL || thresholds_array==NULL){
+		
+		Py_XDECREF(map_array);
+		Py_XDECREF(thresholds_array);
+
+		return NULL;
+
+	}
 
 	/*Get the size of the map (in pixels)*/
 	int Nside = (int)PyArray_DIM(map_array,0);
@@ -97,6 +109,9 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 
 	/*Interpret the input as a numpy array*/
 	PyObject *map_array = PyArray_FROM_OTF(map_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	if(map_array==NULL){
+		return NULL;
+	}
 
 	/*Get the size of the map (in pixels)*/
 	int Nside = (int)PyArray_DIM(map_array,0);
@@ -110,6 +125,8 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 	if(gradient_x_array==NULL || gradient_y_array==NULL){
 		
 		Py_DECREF(map_array);
+		Py_XDECREF(gradient_x_array);
+		Py_XDECREF(gradient_y_array);
 		return NULL;
 	}
 
@@ -141,5 +158,84 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 
 	/*Done, now return*/
 	return gradient_output;
+
+}
+
+//hessian() implementation
+static PyObject *_topology_hessian(PyObject *self,PyObject *args){
+
+	PyObject *map_obj;
+
+	/*Parse the input*/
+	if(!PyArg_ParseTuple(args,"O",&map_obj)){ 
+		return NULL;
+	}
+
+	/*Interpret the input as a numpy array*/
+	PyObject *map_array = PyArray_FROM_OTF(map_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	if(map_array==NULL){
+		return NULL;
+	}
+
+	/*Get the size of the map (in pixels)*/
+	int Nside = (int)PyArray_DIM(map_array,0);
+
+	/*Prepare the new array objects that will hold the gradients along x and y*/
+	npy_intp dims[] = {(npy_intp) Nside, (npy_intp) Nside};
+	PyObject *hessian_xx_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	PyObject *hessian_yy_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	PyObject *hessian_xy_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+
+	/*Throw exception if this failed*/
+	if(hessian_xx_array==NULL || hessian_yy_array==NULL || hessian_xy_array==NULL){
+		
+		Py_DECREF(map_array);
+		Py_XDECREF(hessian_xx_array);
+		Py_XDECREF(hessian_yy_array);
+		Py_XDECREF(hessian_xy_array);
+		return NULL;
+	}
+
+	/*Call the underlying C function that computes the hessian*/
+	hessian((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(hessian_xx_array),(double *)PyArray_DATA(hessian_yy_array),(double *)PyArray_DATA(hessian_xy_array),Nside);
+
+	/*Prepare a tuple container for the output*/
+	PyObject *hessian_output = PyTuple_New(3);
+	
+	if(PyTuple_SetItem(hessian_output,0,hessian_xx_array)){
+
+		Py_DECREF(map_array);
+		Py_DECREF(hessian_xx_array);
+		Py_DECREF(hessian_yy_array);
+		Py_DECREF(hessian_xy_array);
+		Py_DECREF(hessian_output);
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(hessian_output,1,hessian_yy_array)){
+
+		Py_DECREF(map_array);
+		Py_DECREF(hessian_xx_array);
+		Py_DECREF(hessian_yy_array);
+		Py_DECREF(hessian_xy_array);
+		Py_DECREF(hessian_output);
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(hessian_output,2,hessian_xy_array)){
+
+		Py_DECREF(map_array);
+		Py_DECREF(hessian_xx_array);
+		Py_DECREF(hessian_yy_array);
+		Py_DECREF(hessian_xy_array);
+		Py_DECREF(hessian_output);
+		return NULL;
+
+	}
+
+	/*Done, now return*/
+	return hessian_output;
 
 }
