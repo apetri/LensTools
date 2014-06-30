@@ -1,8 +1,8 @@
 """
 
 .. module:: limber 
-:platform: Unix
-:synopsis: This module implements the tools to compute the convergence power spectrum from the 3D matter power spectrum using the Limber approximation
+	:platform: Unix
+	:synopsis: This module implements the tools to compute the convergence power spectrum from the 3D matter power spectrum using the Limber approximation
 
 
 .. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>

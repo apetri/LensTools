@@ -1,8 +1,8 @@
 """
 
 .. module:: topology 
-:platform: Unix
-:synopsis: This module implements the tools to compute topological statistics on 2D maps: measure the power spectrum, counting peaks, measure the minkowski functionals
+	:platform: Unix
+	:synopsis: This module implements the tools to compute topological statistics on 2D maps: measure the power spectrum, counting peaks, measure the minkowski functionals
 
 
 .. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>

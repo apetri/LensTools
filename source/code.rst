@@ -9,5 +9,13 @@ Limber integration
 .. automodule:: lenstools.limber
 	:members: LimberIntegrator
 
-.. autoclass:: LimberIntegrator
-	:members: conputeConvergence, writeCAMBSettings
+.. autoclass:: lenstools.limber.LimberIntegrator
+	:members: computeConvergence, writeCAMBSettings
+
+Convergence maps
+================
+
+.. automodule:: lenstools.topology
+
+.. autoclass:: lenstools.topology.ConvergenceMap
+	:members: peakCount
