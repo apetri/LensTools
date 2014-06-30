@@ -1,3 +1,15 @@
+"""
+
+.. module:: limber 
+:platform: Unix
+:synopsis: This module implements the tools to compute the convergence power spectrum from the 3D matter power spectrum using the Limber approximation
+
+
+.. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>
+
+
+"""
+
 import StringIO
 
 import numpy as np
@@ -17,11 +29,14 @@ class LimberIntegrator(object):
 	using the Limber approximation. The units for quantities with dimensions of length 
 	are assumed to be Mpc
 
-	:param lValues:
-		Desired multipole values for the convergence power spectrum (numpy array)
+	
+	:param lValues: Desired multipole values for the convergence power spectrum
 
-	:param cosmoModel:
-		One of astropy.cosmology objects (WMAP9 cosmology is set by default)
+	:type lValues: array
+
+	:param cosmoModel: One of astropy.cosmology objects (WMAP9 cosmology is set by default)
+
+	:type cosmoModel: astropy.cosmology 
 
 	"""
 
@@ -35,19 +50,37 @@ class LimberIntegrator(object):
 		Computes the convergence power spectrum with the Limber integral of the 3D matter power spectrum;
 		this still assumes a single source redshift at z0 = max(z) 
 
+		
 		:param z:
 			redshift bins at which the matter power spectrum is calculated; the z array must be sorted in ascending order
 			and z[0] must be >0 even if small, otherwise this throws an exception
 
+		:type z: array
+
+		
 		:param matterPower:
 			values of the matter power spectrum at corresponding z (first column must be k, the rest P(k,z), one for each z)
 
+		:type matterPower: ndarray
+
+		
 		:param powFileRoot:
 			common root name of files in which the 3d power spectrum is stored; if None it is assumed that all the
 			information is already loaded in the matterPower array. Throws and exception if both are None
 
+		:type powFileRoot: str.
+
+		
 		:param extension:
 			extension of text files with 3d power spectrum, default is .dat
+
+		:type extension: str.
+
+		:returns: array -- the convergence power spectrum at the l Values specified in the constructor
+
+		:raises: ValueError
+		
+
 		"""
 
 		#Check validity of redshift values
@@ -111,24 +144,42 @@ class LimberIntegrator(object):
 
 	def writeCAMBSettings(self,z,powFileRoot="matterpower",transfer_high_precision=False,transfer_k_per_logint=0,transfer_interp_matterpower=True):
 		"""
+		
 		Outputs a StringIO object that will contain the redshift settings of the CAMB parameter file that will needed
 		in order for CAMB to produce the linear or non linear matter power spectra that will then be integrated by 
 		the computeConvergence() method
 
+		
 		:param z:
 			redshift bins at which the matter power spectrum is calculated (assumed to be a monotonic array with more than 1 element)
 
+		:type z: array
+
+		
 		:param powFileRoot:
 			root of the filename that you want to give to the CAMB power spectrum outputs
 
+		:type powFileRoot: str.
+
+		
 		:param transfer_high_precision:
 			read CAMB documentation (this sets the precision of the calculated transfer function)
 
+		:type transfer_high_precision: bool.
+
+		
 		:param transfer_k_per_logint:
 			read CAMB documentation (this sets the k wavenumber binning)
 
+		:type transfer_k_per_logint: int.
+		
 		:param transfer_interp_matterpower:
 			read CAMB documentation (this sets how the matter power is interpolated between different k's)
+
+		:type transfer_interp_matterpower: bool.
+
+		:returns: str -- the portion of the CAMB parameter file relevant to the 3D matter power spectrum
+
 		"""
 
 		S = StringIO.StringIO()
