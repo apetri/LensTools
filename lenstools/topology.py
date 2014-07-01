@@ -24,10 +24,13 @@ class ConvergenceMap(object):
 	"""
 	A class that handles 2D convergence maps and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
 
-	:param map_filename: File name of the 2D map to analyze (must be in FITS format)
+	:param map_filename: File name of the 2D map to analyze (must be in FITS format); sets the attibute 'kappa' to a numpy array containing the convergence values
 	:type map_filename: str.
 
 	:raises: IOError if FITS file does not exist
+
+	>>> map = ConvergenceMap("map.fit")
+	>>> imshow(map.kappa)
 
 	"""
 
