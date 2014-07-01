@@ -18,4 +18,4 @@ Convergence maps
 .. automodule:: lenstools.topology
 
 .. autoclass:: lenstools.topology.ConvergenceMap
-	:members: gradient,hessian,peakCount,minkowskiFunctionals
+	:members: gradient,hessian,peakCount,minkowskiFunctionals,moments

@@ -1,5 +1,10 @@
 import os,sys,re
 
+name = "lenstools"
+me = "Andrea Petri"
+email = "apetri@phys.columbia.edu"
+url = "https://github.com/apetri/LensTools"
+
 try:
 	import numpy.distutils.misc_util 
 except ImportError:
@@ -23,25 +28,44 @@ m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     "lenstools", "__init__.py"))
 version = vre.findall(m)[0]
 
-setup(
-	name="lenstools",
-	version=version,
-	author="Andrea Petri",
-	author_email="apetri@phys.columbia.edu",
-	packages=["lenstools","lenstools.external"],
-	url="https://github.com/apetri/LensTools",
-	license="?",
-	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd("README.md"),
-	classifiers=[
+classifiers = [
 		"Development Status :: 2 - Pre-Alpha",
 		"Intended Audience :: Science/Research",
 		"Operating System :: OS Independent",
 		"Programming Language :: Python",
 		"Programming Language :: C",
 		"License :: Public Domain"
-	],
-	ext_package="lenstools/external",
-	ext_modules=[Extension("_topology",["lenstools/external/_topology.c","lenstools/external/differentials.c","lenstools/external/peaks.c","lenstools/external/minkowski.c","lenstools/external/coordinates.c"])],
+	]
+
+external_sources = dict()
+external_dir = "external"
+
+#List external package sources here
+external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c"]
+
+#Extension objects
+ext = list()
+
+for ext_module in external_sources.keys():
+
+	sources = list()
+	for source in external_sources[ext_module]:
+		sources.append("{0}/{1}/{2}".format(name,external_dir,source))
+
+	ext.append(Extension(ext_module,sources))
+
+setup(
+	name=name,
+	version=version,
+	author=me,
+	author_email=email,
+	packages=[name,"{0}.{1}".format(name,external_dir)],
+	url=url,
+	license="?",
+	description="Toolkit for Weak Gravitational Lensing analysis",
+	long_description=rd("README.md"),
+	classifiers=classifiers,
+	ext_package="{0}/{1}".format(name,external_dir),
+	ext_modules=ext,
 	include_dirs=numpy.distutils.misc_util.get_numpy_include_dirs(),
 )
