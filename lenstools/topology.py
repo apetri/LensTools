@@ -121,7 +121,7 @@ class ConvergenceMap(object):
 
 		>>> map = ConvergenceMap("map.fit")
 		>>> thresholds = np.arange(-2.0,2.0,0.2)
-		>>> nu,V0,V1,V2 = map.minkowski(thresholds,norm=True)
+		>>> nu,V0,V1,V2 = map.minkowskiFunctionals(thresholds,norm=True)
 
 		"""
 
