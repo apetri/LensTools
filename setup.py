@@ -42,6 +42,6 @@ setup(
 		"License :: Public Domain"
 	],
 	ext_package="lenstools/external",
-	ext_modules=[Extension("_topology",["lenstools/external/_topology.c","lenstools/external/differentials.c","lenstools/external/peaks.c","lenstools/external/minkmom.c","lenstools/external/coordinates.c"])],
+	ext_modules=[Extension("_topology",["lenstools/external/_topology.c","lenstools/external/differentials.c","lenstools/external/peaks.c","lenstools/external/minkowski.c","lenstools/external/coordinates.c"])],
 	include_dirs=numpy.distutils.misc_util.get_numpy_include_dirs(),
 )
