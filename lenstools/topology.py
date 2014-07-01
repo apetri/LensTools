@@ -41,7 +41,7 @@ class ConvergenceMap(object):
 
 	def gradient(self):
 		
-		r"""
+		"""
 		Computes the gradient of the map and sets the gradient_x,gradient_y attributes accordingly
 
 		:returns: tuple -- (gradient_x,gradient_y)
@@ -55,7 +55,7 @@ class ConvergenceMap(object):
 
 	def hessian(self):
 		
-		r"""
+		"""
 		Computes the hessian of the map and sets the hessian_xx,hessian_yy,hessian_xy attributes accordingly
 
 		:returns: tuple -- (hessian_xx,hessian_yy,hessian_xy)
@@ -68,7 +68,7 @@ class ConvergenceMap(object):
 		return self.hessian_xx,self.hessian_yy,self.hessian_xy
 
 
-	def peakCount(self,thresholds,sigma=None):
+	def peakCount(self,thresholds,norm=False):
 		
 		"""
 		Counts the peaks in the map
@@ -76,10 +76,12 @@ class ConvergenceMap(object):
 		:param thresholds: thresholds extremes that define the binning of the peak histogram
 		:type thresholds: array
 
-		:param sigma: threshold unit; if set to a value, normalizes the thresholds by that value. Useful if one wants to compute the peak counts in units of the map variance
-		:type sigma: float.
+		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
+		:type norm: bool.
 
-		:returns: array -- peak counts at the midpoints of the specified thresholds
+		:returns: array -- differential peak counts at the midpoints of the specified thresholds
+
+		:raises: AssertionError if thresholds array is not provided
 
 		>>> map = ConvergenceMap("map.fits")
 		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
@@ -88,7 +90,47 @@ class ConvergenceMap(object):
 		"""
 
 		assert thresholds is not None
-		if sigma is None:
+		if norm:
+			sigma = self.data.std()
+		else:
 			sigma = 1.0
 
 		return _topology.peakCount(self.data,thresholds,sigma)
+
+	def minkowskiFunctionals(self,thresholds,norm=False):
+
+		"""
+		Measures the three Minkowski functionals (area,perimeter and genus characteristic) of the specified map excursion sets
+
+		:param thresholds: thresholds that define the excursion sets to consider
+		:type thresholds: array
+
+		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
+		:type norm: bool.
+
+		:returns: tuple -- (V0 -- array, V1 -- array, V2 -- array) each array represents one of the Minkowski functionals
+
+		:raises: AssertionError if thresholds array is not provided
+
+		>>> map = map = ConvergenceMap("map.fits")
+		>>> thresholds = np.arange(-2.0,2.0,0.2)
+		>>> V0,V1,V2 = map.minkowski(thresholds,norm=True)
+
+		"""
+
+		assert thresholds is not None
+		if norm:
+			sigma = self.data.std()
+		else:
+			sigma = 1.0
+
+		#Check if gradient and hessian attributes are available; if not, compute them
+		if not (hasattr(self,"gradient_x") and hasattr(self,"gradient_y")):
+			self.gradient()
+
+		if not (hasattr(self,"hessian_xx") and hasattr(self,"hessian_yy") and hasattr(self,"hessian_xy")):
+			self.hessian()
+
+		#Compute the Minkowski functionals and return them as tuple
+		return _topology.minkowski(self.data,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
+
