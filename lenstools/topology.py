@@ -36,7 +36,7 @@ class ConvergenceMap(object):
 		#Open the map file and store the dara in the class instance
 		self._map_filename = map_filename
 		fits_file = fits.open(map_filename)
-		self.data = fits_file[0].data.astype(np.float)
+		self.kappa = fits_file[0].data.astype(np.float)
 		fits_file.close()
 
 	def gradient(self):
@@ -50,7 +50,7 @@ class ConvergenceMap(object):
 		>>> gx,gy = map.gradient()
 
 		"""
-		self.gradient_x, self.gradient_y = _topology.gradient(self.data)
+		self.gradient_x, self.gradient_y = _topology.gradient(self.kappa)
 		return self.gradient_x,self.gradient_y
 
 	def hessian(self):
@@ -64,7 +64,7 @@ class ConvergenceMap(object):
 		>>> hxx,hyy,hxy = map.hessian()
 
 		"""
-		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.data)
+		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.kappa)
 		return self.hessian_xx,self.hessian_yy,self.hessian_xy
 
 
@@ -84,18 +84,18 @@ class ConvergenceMap(object):
 		:raises: AssertionError if thresholds array is not provided
 
 		>>> map = ConvergenceMap("map.fits")
-		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
+		>>> thresholds = np.arange(map.kappa.min(),map.kappa.max(),0.05)
 		>>> peaks = map.peakCount(thresholds)
 
 		"""
 
 		assert thresholds is not None
 		if norm:
-			sigma = self.data.std()
+			sigma = self.kappa.std()
 		else:
 			sigma = 1.0
 
-		return _topology.peakCount(self.data,thresholds,sigma)
+		return _topology.peakCount(self.kappa,thresholds,sigma)
 
 	def minkowskiFunctionals(self,thresholds,norm=False):
 
@@ -112,7 +112,7 @@ class ConvergenceMap(object):
 
 		:raises: AssertionError if thresholds array is not provided
 
-		>>> map = map = ConvergenceMap("map.fits")
+		>>> map = ConvergenceMap("map.fits")
 		>>> thresholds = np.arange(-2.0,2.0,0.2)
 		>>> V0,V1,V2 = map.minkowski(thresholds,norm=True)
 
@@ -120,7 +120,7 @@ class ConvergenceMap(object):
 
 		assert thresholds is not None
 		if norm:
-			sigma = self.data.std()
+			sigma = self.kappa.std()
 		else:
 			sigma = 1.0
 
@@ -132,5 +132,5 @@ class ConvergenceMap(object):
 			self.hessian()
 
 		#Compute the Minkowski functionals and return them as tuple
-		return _topology.minkowski(self.data,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
+		return _topology.minkowski(self.kappa,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
 
