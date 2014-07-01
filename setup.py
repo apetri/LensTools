@@ -28,7 +28,7 @@ setup(
 	version=version,
 	author="Andrea Petri",
 	author_email="apetri@phys.columbia.edu",
-	packages=["lenstools"],
+	packages=["lenstools","lenstools.external"],
 	url="https://github.com/apetri/LensTools",
 	license="?",
 	description="Toolkit for Weak Gravitational Lensing analysis",
