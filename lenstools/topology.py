@@ -84,23 +84,25 @@ class ConvergenceMap(object):
 		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
 		:type norm: bool.
 
-		:returns: array -- differential peak counts at the midpoints of the specified thresholds
+		:returns: tuple -- (threshold midpoints -- array, differential peak counts at the midpoints -- array)
 
 		:raises: AssertionError if thresholds array is not provided
 
 		>>> map = ConvergenceMap("map.fits")
 		>>> thresholds = np.arange(map.kappa.min(),map.kappa.max(),0.05)
-		>>> peaks = map.peakCount(thresholds)
+		>>> nu,peaks = map.peakCount(thresholds)
 
 		"""
 
 		assert thresholds is not None
+		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
+
 		if norm:
 			sigma = self.kappa.std()
 		else:
 			sigma = 1.0
 
-		return _topology.peakCount(self.kappa,thresholds,sigma)
+		return midpoints,_topology.peakCount(self.kappa,thresholds,sigma)
 
 	def minkowskiFunctionals(self,thresholds,norm=False):
 
@@ -113,17 +115,19 @@ class ConvergenceMap(object):
 		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
 		:type norm: bool.
 
-		:returns: tuple -- (V0 -- array, V1 -- array, V2 -- array) each array represents one of the Minkowski functionals
+		:returns: tuple -- (nu -- array, V0 -- array, V1 -- array, V2 -- array) nu are the bins midpoints and V are the Minkowski functionals
 
 		:raises: AssertionError if thresholds array is not provided
 
 		>>> map = ConvergenceMap("map.fit")
 		>>> thresholds = np.arange(-2.0,2.0,0.2)
-		>>> V0,V1,V2 = map.minkowski(thresholds,norm=True)
+		>>> nu,V0,V1,V2 = map.minkowski(thresholds,norm=True)
 
 		"""
 
 		assert thresholds is not None
+		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
+
 		if norm:
 			sigma = self.kappa.std()
 		else:
@@ -137,7 +141,9 @@ class ConvergenceMap(object):
 			self.hessian()
 
 		#Compute the Minkowski functionals and return them as tuple
-		return _topology.minkowski(self.kappa,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
+		v0,v1,v2 = _topology.minkowski(self.kappa,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
+
+		return midpoints,v0,v1,v2
 
 	def moments(self,connected=False,dimensionless=False):
 
