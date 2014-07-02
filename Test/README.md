@@ -5,7 +5,7 @@ To test the package on your machine you will need to install the python module t
 
     pip install pytest
 
-After that you can run the tests, just type in a shell
+After that you will need a test map to run the tests on: you will need to put in this directory a file called _map.fit_ which should be a FITS image which has a keyword _ANGLE_ in the header (one of the convergence maps we have been using for example). After that just run
 
     py.test
 
