@@ -41,7 +41,7 @@ external_sources = dict()
 external_dir = "external"
 
 #List external package sources here
-external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c"]
+external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
 
 #Extra compiler options
 link_flags = ['-lm']

@@ -5,12 +5,15 @@ http://dan.iel.fm/posts/python-c-extensions/
 The module is called _topology and it defines the methods below (see docstrings)
 */
 
+#include <complex.h>
+
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
 #include "peaks.h"
 #include "differentials.h"
 #include "minkowski.h"
+#include "azimuth.h"
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for counting peaks in a 2D map";
@@ -18,12 +21,14 @@ static char peakCount_docstring[] = "Calculate the peak counts in a 2D map";
 static char gradient_docstring[] = "Compute the gradient of a 2D image";
 static char hessian_docstring[] = "Compute the hessian of a 2D image"; 
 static char minkowski_docstring[] = "Measure the three Minkowski functionals of a 2D image";
+static char rfft2_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 2D image";
 
 //method declarations
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
 static PyObject *_topology_gradient(PyObject *self,PyObject *args);
 static PyObject *_topology_hessian(PyObject *self,PyObject *args);
 static PyObject *_topology_minkowski(PyObject *self,PyObject *args);
+static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args);
 
 
 //_topology method definitions
@@ -33,6 +38,7 @@ static PyMethodDef module_methods[] = {
 	{"gradient",_topology_gradient,METH_VARARGS,gradient_docstring},
 	{"hessian",_topology_hessian,METH_VARARGS,hessian_docstring},
 	{"minkowski",_topology_minkowski,METH_VARARGS,minkowski_docstring},
+	{"rfft2_azimuthal",_topology_rfft2_azimuthal,METH_VARARGS,rfft2_azimuthal_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -395,3 +401,68 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 	return mink_output;
 
 }
+
+//rfft2_azimuthal() implementation
+static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
+
+	/*These are the inputs: the Fourier transform of the map, the side angle of the real space map, the bin extremes at which calculate the azimuthal averages*/
+	PyObject *ft_map_obj,*lvalues_obj;
+	double map_angle_degrees;
+
+	/*Parse input tuple*/
+	if(!PyArg_ParseTuple(args,"OdO",&ft_map_obj,&map_angle_degrees,&lvalues_obj)){
+		return NULL;
+	}
+
+	/*Interpret the parsed objects as numpy arrays*/
+	PyObject *ft_map_array = PyArray_FROM_OTF(ft_map_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *lvalues_array = PyArray_FROM_OTF(lvalues_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+
+	/*Check if anything failed*/
+	if(ft_map_array==NULL || lvalues_array==NULL){
+
+		Py_XDECREF(ft_map_array);
+		Py_XDECREF(lvalues_array);
+
+		return NULL;
+	}
+
+	/*Get the size of the map fourier transform*/
+	int Nside_x = (int)PyArray_DIM(ft_map_array,0);
+	int Nside_y = (int)PyArray_DIM(ft_map_array,1);
+
+	/*Get the number of multipole moment bin edges*/
+	int Nvalues = (int)PyArray_DIM(lvalues_array,0);
+
+	/*Build the array that will contain the output*/
+	npy_intp dims[] = {(npy_intp) Nvalues - 1};
+	PyObject *power_array = PyArray_ZEROS(1,dims,NPY_DOUBLE,0);
+
+	/*Check for failure*/
+	if(power_array==NULL){
+
+		Py_DECREF(ft_map_array);
+		Py_DECREF(lvalues_array);
+
+		return NULL;
+	}
+
+	/*Call the C backend azimuthal average function*/
+	if(azimuthal_rfft2((double _Complex *)PyArray_DATA(ft_map_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(power_array))){
+
+		Py_DECREF(ft_map_array);
+		Py_DECREF(lvalues_array);
+		Py_DECREF(power_array);
+
+		return NULL;
+
+	}
+
+	/*If the call succeeded cleanup and return*/
+	Py_DECREF(ft_map_array);
+	Py_DECREF(lvalues_array);
+
+	return power_array;
+
+}
+

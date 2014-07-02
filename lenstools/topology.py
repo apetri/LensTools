@@ -42,6 +42,7 @@ class ConvergenceMap(object):
 		self._map_filename = map_filename
 		fits_file = fits.open(map_filename)
 		self.kappa = fits_file[0].data.astype(np.float)
+		self.side_angle = fits_file[0].header["ANGLE"]
 		fits_file.close()
 
 	def gradient(self):
@@ -211,3 +212,33 @@ class ConvergenceMap(object):
 
 		#Return the array
 		return np.array([sigma0,sigma1,S0,S1,S2,K0,K1,K2,K3])
+
+	def powerSpectrum(self,l_edges):
+
+		"""
+		Measures the power spectrum of the convergence map at the multipole moments specified in the input
+
+		:param l_edges: Multipole bin edges
+		:type l_edges: array
+
+		:returns: tuple -- (l -- array,Pl -- array) = (multipole moments, power spectrum at multipole moments)
+
+		:raises: AssertionError if l_edges are not provided
+
+		>>> map = ConvergenceMap("map.fit")
+		>>> l_edges = np.arange(200.0,5000.0,200.0)
+		>>> l,Pl = map.powerSpectrum(l_edges)
+
+		"""
+
+		assert l_edges is not None
+		l = 0.5*(l_edges[:-1] + l_edges[1:])
+
+		#Calculate the Fourier transform of the map with numpy FFT
+		ft_map = np.fft.rfft2(self.kappa)
+
+		#Compute the power spectrum with the C backend implementation
+		power_spectrum = _topology.rfft2_azimuthal(ft_map,self.side_angle,l_edges)
+
+		#Output the power spectrum
+		return l,power_spectrum
