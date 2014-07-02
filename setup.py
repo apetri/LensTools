@@ -43,6 +43,9 @@ external_dir = "external"
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c"]
 
+#Extra compiler options
+link_flags = ['-lm']
+
 #Extension objects
 ext = list()
 
@@ -52,7 +55,7 @@ for ext_module in external_sources.keys():
 	for source in external_sources[ext_module]:
 		sources.append("{0}/{1}/{2}".format(name,external_dir,source))
 
-	ext.append(Extension(ext_module,sources))
+	ext.append(Extension(ext_module,sources,extra_link_args=link_flags))
 
 setup(
 	name=name,
