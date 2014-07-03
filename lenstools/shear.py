@@ -80,3 +80,59 @@ class ShearMap(object):
 
 		self.side_angle,self.gamma = loader(*args)
 
+	def decompose(self,l_edges,keep_fourier=False):
+
+		"""
+		Decomposes the shear map into its E and B modes components and returns the respective power spectal densities at the specified multipole moments
+
+		:param l_edges: Multipole bin edges
+		:type l_edges: array
+
+		:param keep_fourier: If set to True, holds the Fourier transforms of the E and B mode maps into the E and B attributes of the ShearMap instance
+		:type keep_fourier: bool. 
+
+		:returns: :returns: tuple -- (l -- array,P_EE,P_BB -- arrays) = (multipole moments, EE,BB power spectra)
+
+		"""
+
+		#Perform Fourier transforms
+		ft_gamma1 = np.fft.rfft2(self.gamma[0])
+		ft_gamma2 = np.fft.rfft2(self.gamma[1])
+
+		#Compute frequencies
+		lx = np.fft.fftfreq(ft_gamma1.shape[0])
+		ly = np.fft.rfftfreq(ft_gamma1.shape[0])
+
+		#Safety check
+		assert len(lx)==ft_gamma1.shape[0]
+		assert len(ly)==ft_gamma1.shape[1]
+
+		#Compute sines and cosines of rotation angles
+		l_squared = lx[:,np.newaxis]**2 + ly[np.newaxis,:]**2
+		l_squared[0,0] = 1.0
+
+		sin_2_phi = 2.0 * lx[:,np.newaxis] * ly[np.newaxis,:] / l_squared
+		cos_2_phi = (lx[:,np.newaxis]**2 - ly[np.newaxis,:]**2) / l_squared
+
+		#Compute E and B components
+		ft_E = cos_2_phi * ft_gamma1 + sin_2_phi * ft_gamma2
+		ft_B = -1.0 * sin_2_phi * ft_gamma1 + cos_2_phi * ft_gamma2
+
+		ft_E[0,0] = 0.0
+		ft_B[0,0] = 0.0
+
+		assert ft_E.shape == ft_B.shape
+		assert ft_E.shape == ft_gamma1.shape
+
+		#Compute and return power spectra
+		l = 0.5*(l_edges[:-1] + l_edges[1:])
+		P_EE = _topology.rfft2_azimuthal(ft_E,self.side_angle,l_edges)
+		P_BB = _topology.rfft2_azimuthal(ft_B,self.side_angle,l_edges)
+
+		if keep_fourier:
+			self.fourier_E = ft_E
+			self.fourier_B = ft_B
+
+		return l,P_EE,P_BB
+
+
