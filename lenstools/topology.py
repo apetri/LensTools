@@ -56,13 +56,10 @@ class ConvergenceMap(object):
 	"""
 	A class that handles 2D convergence maps and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
 
-	:param map_filename: File name of the 2D map to analyze (must be in FITS format); sets the attibute 'kappa' to a numpy array containing the convergence values
-	:type map_filename: str.
+	>>>from lenstools.topology import ConvergenceMap, load_fits_default
 
-	:raises: IOError if FITS file does not exist
-
-	>>> map = ConvergenceMap("map.fit")
-	>>> imshow(map.kappa)
+	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default)
+	>>> imshow(test_map.kappa)
 
 	"""
 
@@ -73,6 +70,15 @@ class ConvergenceMap(object):
 
 	@classmethod
 	def fromfilename(cls,*args,**kwargs):
+		
+		"""
+		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,kappa)
+
+		:param args: The positional arguments that are to be passed to the loader (typically the file name)
+
+		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (the default is load_fits_default above)
+
+		"""
 
 		if not("loader" in kwargs.keys()):
 			loader = load_fits_default
@@ -89,8 +95,8 @@ class ConvergenceMap(object):
 
 		:returns: tuple -- (gradient_x,gradient_y)
 
-		>>> map = ConvergenceMap("map.fit")
-		>>> gx,gy = map.gradient()
+		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> gx,gy = test_map.gradient()
 
 		"""
 		self.gradient_x, self.gradient_y = _topology.gradient(self.kappa)
@@ -103,8 +109,8 @@ class ConvergenceMap(object):
 
 		:returns: tuple -- (hessian_xx,hessian_yy,hessian_xy)
 
-		>>> map = ConvergenceMap("map.fit")
-		>>> hxx,hyy,hxy = map.hessian()
+		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> hxx,hyy,hxy = test_map.hessian()
 
 		"""
 		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.kappa)
@@ -126,9 +132,9 @@ class ConvergenceMap(object):
 
 		:raises: AssertionError if thresholds array is not provided
 
-		>>> map = ConvergenceMap("map.fits")
+		>>> test_map = ConvergenceMap.fromfilename("map.fit")
 		>>> thresholds = np.arange(map.kappa.min(),map.kappa.max(),0.05)
-		>>> nu,peaks = map.peakCount(thresholds)
+		>>> nu,peaks = test_map.peakCount(thresholds)
 
 		"""
 
@@ -157,9 +163,9 @@ class ConvergenceMap(object):
 
 		:raises: AssertionError if thresholds array is not provided
 
-		>>> map = ConvergenceMap("map.fit")
+		>>> test_map = ConvergenceMap.fromfilename("map.fit")
 		>>> thresholds = np.arange(-2.0,2.0,0.2)
-		>>> nu,V0,V1,V2 = map.minkowskiFunctionals(thresholds,norm=True)
+		>>> nu,V0,V1,V2 = test_map.minkowskiFunctionals(thresholds,norm=True)
 
 		"""
 
@@ -196,10 +202,10 @@ class ConvergenceMap(object):
 
 		:returns: array -- (sigma0,sigma1,S0,S1,S2,K0,K1,K2,K3)
 
-		>>> map = ConvergenceMap("map.fit")
-		>>> var0,var1,sk0,sk1,sk2,kur0,kur1,kur2,kur3 = map.moments()
-		>>> sk0,sk1,sk2 = map.moments(dimensionless=True)[2:5]
-		>>> kur0,kur1,kur2,kur3 = map.moments(connected=True,dimensionless=True)[5:]
+		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> var0,var1,sk0,sk1,sk2,kur0,kur1,kur2,kur3 = test_map.moments()
+		>>> sk0,sk1,sk2 = test_map.moments(dimensionless=True)[2:5]
+		>>> kur0,kur1,kur2,kur3 = test_map.moments(connected=True,dimensionless=True)[5:]
 
 		"""
 
@@ -262,9 +268,9 @@ class ConvergenceMap(object):
 
 		:raises: AssertionError if l_edges are not provided
 
-		>>> map = ConvergenceMap("map.fit")
+		>>> test_map = ConvergenceMap.fromfilename("map.fit")
 		>>> l_edges = np.arange(200.0,5000.0,200.0)
-		>>> l,Pl = map.powerSpectrum(l_edges)
+		>>> l,Pl = test_map.powerSpectrum(l_edges)
 
 		"""
 

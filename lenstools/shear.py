@@ -57,13 +57,9 @@ class ShearMap(object):
 	"""
 	A class that handles 2D shear maps and allows to perform a set of operations on them
 
-	:param loader: FITS file loading utility, must match the signature and return type of load_fits_default
-	:type loader: keyword argument, function
-
-	:param args: positional arguments must be the exact same as the ones that loader takes
-
-	>>> from shear import ShearMap
-	>>> test = ShearMap("shear.fit",loader=load_fits_default)
+	>>> from lenstools.shear import ShearMap
+	
+	>>> test = ShearMap.fromfilename("shear.fit",loader=load_fits_default)
 	>>>test.side_angle
 	1.95
 	>>>test.gamma
@@ -78,6 +74,15 @@ class ShearMap(object):
 
 	@classmethod
 	def fromfilename(cls,*args,**kwargs):
+		
+		"""
+		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,gamma)
+
+		:param args: The positional arguments that are to be passed to the loader (typically the file name)
+
+		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (the default is load_fits_default above)
+		
+		"""
 
 		if not("loader" in kwargs.keys()):
 			loader = load_fits_default
@@ -99,6 +104,10 @@ class ShearMap(object):
 		:type keep_fourier: bool. 
 
 		:returns: :returns: tuple -- (l -- array,P_EE,P_BB,P_EB -- arrays) = (multipole moments, EE,BB power spectra and EB cross power)
+
+		>>> test_map = ShearMap.fromfilename("shear.fit",loader=load_fits_default)
+		>>> l_edges = np.arange(300.0,5000.0,200.0)
+		>>> l,EE,BB,EB = test_map.decompose(l_edges)
 
 		"""
 

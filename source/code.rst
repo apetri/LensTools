@@ -16,9 +16,10 @@ Convergence maps
 ================
 
 .. automodule:: lenstools.topology
+	:members: load_fits_default
 
 .. autoclass:: lenstools.topology.ConvergenceMap
-	:members: gradient,hessian,peakCount,minkowskiFunctionals,moments,powerSpectrum
+	:members: fromfilename,gradient,hessian,peakCount,minkowskiFunctionals,moments,powerSpectrum
 
 Shear maps
 ==========
@@ -27,4 +28,4 @@ Shear maps
 	:members: load_fits_default
 
 .. autoclass:: lenstools.shear.ShearMap
-	:members:
+	:members: fromfilename,decompose
