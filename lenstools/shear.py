@@ -71,14 +71,21 @@ class ShearMap(object):
 
 	"""
 
-	def __init__(self,*args,**kwargs):
+	def __init__(self,gamma,angle):
+
+		self.gamma = gamma
+		self.side_angle = angle
+
+	@classmethod
+	def fromfilename(cls,*args,**kwargs):
 
 		if not("loader" in kwargs.keys()):
 			loader = load_fits_default
 		else:
 			loader = kwargs["loader"]
 
-		self.side_angle,self.gamma = loader(*args)
+		angle,gamma = loader(*args)
+		return cls(gamma,angle)
 
 	def decompose(self,l_edges,keep_fourier=False):
 

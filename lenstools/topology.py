@@ -17,6 +17,36 @@ from external import _topology
 import numpy as np
 from astropy.io import fits
 
+##########################################
+#####Default Fits loader##################
+##########################################
+def load_fits_default(*args):
+	"""
+	This is the default fits file loader, it assumes that the two components of the shear are stored in two different image FITS files, which have an ANGLE keyword in the header
+
+	:param gamma_file: Name of the FITS file that contains the shear map
+	:type gamma1_file: str.
+
+	:returns: tuple -- (angle,ndarray -- kappa; kappa is the convergence map)
+
+	:raises: IOError if the FITS files cannot be opened or do not exist
+
+	"""
+
+	#Open the files
+	kappa_file = fits.open(args[0])
+
+	#Read the ANGLE keyword from the header
+	angle = kappa_file[0].header["ANGLE"]
+
+	#Create the array with the shear map
+	kappa = kappa_file[0].data.astype(np.float)
+
+	#Close files and return
+	kappa_file.close()
+
+	return angle,kappa
+
 ################################################
 ########ConvergenceMap class####################
 ################################################
@@ -36,14 +66,21 @@ class ConvergenceMap(object):
 
 	"""
 
-	def __init__(self,map_filename):
+	def __init__(self,kappa,angle):
 
-		#Open the map file and store the dara in the class instance; maybe change the implementation so it supports fitsio too?
-		self._map_filename = map_filename
-		fits_file = fits.open(map_filename)
-		self.kappa = fits_file[0].data.astype(np.float)
-		self.side_angle = fits_file[0].header["ANGLE"]
-		fits_file.close()
+		self.kappa = kappa
+		self.side_angle = angle
+
+	@classmethod
+	def fromfilename(cls,*args,**kwargs):
+
+		if not("loader" in kwargs.keys()):
+			loader = load_fits_default
+		else:
+			loader = kwargs["loader"]
+
+		angle,kappa = loader(*args)
+		return cls(kappa,angle)
 
 	def gradient(self):
 		

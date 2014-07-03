@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-test_map = ShearMap("shear.fit")
+test_map = ShearMap.fromfilename("shear.fit")
 
 l_edges = np.arange(300.0,5000.0,200.0)
 
