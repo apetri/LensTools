@@ -19,3 +19,12 @@ Convergence maps
 
 .. autoclass:: lenstools.topology.ConvergenceMap
 	:members: gradient,hessian,peakCount,minkowskiFunctionals,moments,powerSpectrum
+
+Shear maps
+==========
+
+.. automodule:: lenstools.shear
+	:members: load_fits_default
+
+.. autoclass:: lenstools.shear.ShearMap
+	:members:
