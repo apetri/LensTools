@@ -5,7 +5,7 @@
 #include "coordinates.h"
 
 /*Compute power spectral azimuthal averages of 2D real Fourier transforms of images*/
-int azimuthal_rfft2(double _Complex *ft_map,long size_x,long size_y,double map_angle_degrees,int Nvalues,double *lvalues,double *power_l){
+int azimuthal_rfft2(double _Complex *ft_map1,double _Complex *ft_map2,long size_x,long size_y,double map_angle_degrees,int Nvalues,double *lvalues,double *power_l){
 
 	//Define the pixel physical size in fourier space
 	double lpix = 360.0/map_angle_degrees;
@@ -49,7 +49,7 @@ int azimuthal_rfft2(double _Complex *ft_map,long size_x,long size_y,double map_a
 				
 				if(l>lvalues[k] && l<=lvalues[k+1]){
 
-					power_l[k] += pow(creal(ft_map[pixid]),2) + pow(cimag(ft_map[pixid]),2);
+					power_l[k] += creal(ft_map1[pixid])*creal(ft_map2[pixid]) + cimag(ft_map1[pixid])*cimag(ft_map2[pixid]);
 					hits[k]++; 
 
 				}

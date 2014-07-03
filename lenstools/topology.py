@@ -238,7 +238,7 @@ class ConvergenceMap(object):
 		ft_map = np.fft.rfft2(self.kappa)
 
 		#Compute the power spectrum with the C backend implementation
-		power_spectrum = _topology.rfft2_azimuthal(ft_map,self.side_angle,l_edges)
+		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle,l_edges)
 
 		#Output the power spectrum
 		return l,power_spectrum

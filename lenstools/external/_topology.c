@@ -405,31 +405,33 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 //rfft2_azimuthal() implementation
 static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 
-	/*These are the inputs: the Fourier transform of the map, the side angle of the real space map, the bin extremes at which calculate the azimuthal averages*/
-	PyObject *ft_map_obj,*lvalues_obj;
+	/*These are the inputs: the Fourier transforms of the two maps, the side angle of the real space map, the bin extremes at which calculate the azimuthal averages*/
+	PyObject *ft_map1_obj,*ft_map2_obj,*lvalues_obj;
 	double map_angle_degrees;
 
 	/*Parse input tuple*/
-	if(!PyArg_ParseTuple(args,"OdO",&ft_map_obj,&map_angle_degrees,&lvalues_obj)){
+	if(!PyArg_ParseTuple(args,"OOdO",&ft_map1_obj,&ft_map2_obj,&map_angle_degrees,&lvalues_obj)){
 		return NULL;
 	}
 
 	/*Interpret the parsed objects as numpy arrays*/
-	PyObject *ft_map_array = PyArray_FROM_OTF(ft_map_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map1_array = PyArray_FROM_OTF(ft_map1_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map2_array = PyArray_FROM_OTF(ft_map2_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
 	PyObject *lvalues_array = PyArray_FROM_OTF(lvalues_obj,NPY_DOUBLE,NPY_IN_ARRAY);
 
 	/*Check if anything failed*/
-	if(ft_map_array==NULL || lvalues_array==NULL){
+	if(ft_map1_array==NULL || lvalues_array==NULL || ft_map2_array==NULL){
 
-		Py_XDECREF(ft_map_array);
+		Py_XDECREF(ft_map1_array);
+		Py_XDECREF(ft_map2_array);
 		Py_XDECREF(lvalues_array);
 
 		return NULL;
 	}
 
 	/*Get the size of the map fourier transform*/
-	int Nside_x = (int)PyArray_DIM(ft_map_array,0);
-	int Nside_y = (int)PyArray_DIM(ft_map_array,1);
+	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
+	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
 
 	/*Get the number of multipole moment bin edges*/
 	int Nvalues = (int)PyArray_DIM(lvalues_array,0);
@@ -441,16 +443,18 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 	/*Check for failure*/
 	if(power_array==NULL){
 
-		Py_DECREF(ft_map_array);
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
 		Py_DECREF(lvalues_array);
 
 		return NULL;
 	}
 
 	/*Call the C backend azimuthal average function*/
-	if(azimuthal_rfft2((double _Complex *)PyArray_DATA(ft_map_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(power_array))){
+	if(azimuthal_rfft2((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(power_array))){
 
-		Py_DECREF(ft_map_array);
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
 		Py_DECREF(lvalues_array);
 		Py_DECREF(power_array);
 
@@ -459,7 +463,8 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 	}
 
 	/*If the call succeeded cleanup and return*/
-	Py_DECREF(ft_map_array);
+	Py_DECREF(ft_map1_array);
+	Py_DECREF(ft_map2_array);
 	Py_DECREF(lvalues_array);
 
 	return power_array;

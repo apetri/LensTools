@@ -91,7 +91,7 @@ class ShearMap(object):
 		:param keep_fourier: If set to True, holds the Fourier transforms of the E and B mode maps into the E and B attributes of the ShearMap instance
 		:type keep_fourier: bool. 
 
-		:returns: :returns: tuple -- (l -- array,P_EE,P_BB -- arrays) = (multipole moments, EE,BB power spectra)
+		:returns: :returns: tuple -- (l -- array,P_EE,P_BB,P_EB -- arrays) = (multipole moments, EE,BB power spectra and EB cross power)
 
 		"""
 
@@ -126,13 +126,14 @@ class ShearMap(object):
 
 		#Compute and return power spectra
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
-		P_EE = _topology.rfft2_azimuthal(ft_E,self.side_angle,l_edges)
-		P_BB = _topology.rfft2_azimuthal(ft_B,self.side_angle,l_edges)
+		P_EE = _topology.rfft2_azimuthal(ft_E,ft_E,self.side_angle,l_edges)
+		P_BB = _topology.rfft2_azimuthal(ft_B,ft_B,self.side_angle,l_edges)
+		P_EB = _topology.rfft2_azimuthal(ft_E,ft_B,self.side_angle,l_edges)
 
 		if keep_fourier:
 			self.fourier_E = ft_E
 			self.fourier_B = ft_B
 
-		return l,P_EE,P_BB
+		return l,P_EE,P_BB,P_EB
 
 
