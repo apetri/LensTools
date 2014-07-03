@@ -11,6 +11,24 @@ except ImportError:
 import numpy as np
 import matplotlib.pyplot as plt
 
+from astropy.io import fits
+
+def two_file_loader(*args):
+
+	shear_file_1 = fits.open(args[0])
+	angle = shear_file_1[0].header["ANGLE"]
+	gamma = shear_file_1[0].data.astype(np.float)
+	shear_file_1.close()
+
+	shear_file_2 = fits.open(args[1])
+	assert shear_file_2[0].header["ANGLE"] == angle
+	gamma = np.array((gamma,shear_file_2[0].data.astype(np.float)))
+	shear_file_2.close()
+
+	return angle,gamma
+
+
+
 
 test_map = ShearMap.fromfilename("shear.fit")
 
