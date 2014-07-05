@@ -15,6 +15,7 @@ from __future__ import division
 from external import _topology
 
 import numpy as np
+import matplotlib.pyplot as plt
 from astropy.io import fits
 
 ##########################################
@@ -91,6 +92,34 @@ class ShearMap(object):
 
 		angle,gamma = loader(*args)
 		return cls(gamma,angle)
+
+	def sticks(self,**kwargs):
+
+		"""
+		Draw the ellipticity map using the shear components
+		
+		"""
+
+		plt.ion()
+
+		x,y = np.meshgrid(np.arange(0,self.gamma.shape[1],10),np.arange(0,self.gamma.shape[2],10))
+
+		#Translate shear components into sines and cosines
+		cos_2_phi = self.gamma[0] / np.sqrt(self.gamma[0]**2 + self.gamma[1]**2)
+		sin_2_phi = self.gamma[1] / np.sqrt(self.gamma[0]**2 + self.gamma[1]**2)
+
+		#Compute stick directions
+		cos_phi = np.sqrt(0.5*(1.0 + cos_2_phi)) * np.sign(sin_2_phi)
+		sin_phi = np.sqrt(0.5*(1.0 - cos_2_phi))
+
+		#Draw map using matplotlib quiver
+		fig,ax = plt.subplots()
+		ax.quiver(x,y,cos_phi[x,y],sin_phi[x,y],headwidth=0,units="xy",scale=0.07)
+
+		return fig,ax
+
+
+
 
 	def decompose(self,l_edges,keep_fourier=False):
 
