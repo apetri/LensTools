@@ -20,6 +20,7 @@ from astropy.io import fits
 
 try:
 	import matplotlib.pyplot as plt
+	from matplotlib.colors import LogNorm
 	matplotlib = True
 except ImportError:
 	matplotlib = False
@@ -109,6 +110,8 @@ class ShearMap(object):
 
 		:param pixel_step: One arrow will be drawn every pixel_step pixels to avoid arrow overplotting
 		:type pixel_step: int.
+
+		:returns: ax -- the matplotlib ax object on which the stick field was drawn
 
 		>>> import matplotlib.pyplot as plt
 		>>> test = ShearMap.fromfilename("shear.fit",loader=load_fits_default)
@@ -223,6 +226,95 @@ class ShearMap(object):
 
 		#Return the ConvergenceMap instance
 		return ConvergenceMap(conv,self.side_angle)
+
+	def visualizeComponents(self,axes,components="EE,BB,EB",region=(200,9000,-9000,9000)):
+
+		"""
+		Plots the full 2D E and B mode power spectrum (useful to test statistical isotropicity)
+
+		:param axes: axes on which to draw the ellipticity field
+		:type axes: matplotlib ax object or array of ax objects, can be None in which case new axes are created
+
+		:param components: string that contains the components to plot; the format is a sequence of {EE,BB,EB} separated by commas 
+		:type components:
+
+		:param region: selects the multipole region to visualize
+		:type region: tuple (lx_min,lx_max,ly_min,ly_max)
+
+		:returns: axes -- array of matplotlib axes objects on which the plots were drawn
+
+		"""
+
+		if not(matplotlib):
+			print("matplotlib is not installed, please install it!!")
+			return None
+
+		#Set value for frequency pixelization
+		lpix = 360.0/self.side_angle
+
+		#First parse the components to plot from the components string
+		component_list = components.split(",")
+		if not len(component_list):
+			return None
+
+		for component in component_list:
+			assert component=="EE" or component=="BB" or component=="EB", "Each of the components should be one of {EE,BB,EB}"
+
+		#Check if the Fourier transforms are computed, if not compute them
+		if not hasattr(self,"fourier_E"):
+			l_edges = np.array([200.0,400.0])
+			self.decompose(l_edges,keep_fourier=True)
+
+		#Create the axes objects
+		if axes is not None:
+			assert len(component_list) == np.size(axes), "You should specify a plotting ax for each component!"
+		else:
+			fig,axes = plt.subplots(1,len(components))
+
+		#Do the plotting
+		for n,component in enumerate(component_list):
+
+			if len(component_list)==1:
+				plot_ax = axes
+			else:
+				plot_ax = axes[n]
+
+			#Select the numpy array of the appropriate component
+			if component=="EE":
+				mode = np.abs(self.fourier_E)**2 
+			elif component=="BB":
+				mode = np.abs(self.fourier_B)**2
+			elif component=="EB":
+				mode = np.abs((self.fourier_E * self.fourier_B.conjugate()).real)
+
+			stacked = np.vstack((mode[self.fourier_E.shape[0]/2:],mode[:self.fourier_E.shape[0]/2])) * (self.side_angle * np.pi/180.0)**2/(self.fourier_E.shape[0]**4)
+			assert stacked.shape == self.fourier_E.shape
+
+			#Plot the components with the right frequencies on the axes
+			plot_cbar = plot_ax.imshow(stacked,origin="lower",interpolation="nearest",norm=LogNorm(),extent=[0,lpix*stacked.shape[1],-lpix*stacked.shape[0]/2,lpix*stacked.shape[0]/2])
+			plot_ax.set_xlim(region[0],region[1])
+			plot_ax.set_ylim(region[2],region[3])
+
+			#Set labels
+			plot_ax.set_xlabel(r"$l_x$")
+			plot_ax.set_ylabel(r"$l_y$")
+			plot_ax.set_title(r"${0}$".format(component))
+
+			#Set colorbar
+			plt.colorbar(plot_cbar,ax=plot_ax)
+
+			#Set tick size
+			plot_ax.tick_params(labelsize='small')
+			plot_ax.xaxis.get_major_formatter().set_powerlimits((0, 1))
+			plot_ax.yaxis.get_major_formatter().set_powerlimits((0, 1))
+			plot_ax.ticklabel_format(style='sci')
+
+
+		#return the axes object
+		return axes 
+
+
+
 
 
 

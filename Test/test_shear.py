@@ -91,6 +91,22 @@ def test_visualize2():
 	plt.savefig("sticks.png")
 	plt.clf()
 
+def test_visualize3():
+
+	fig,ax = plt.subplots(1,2)
+	test_map.visualizeComponents(ax,components="EE,BB",region=(200,9000,-9000,9000))
+	fig.tight_layout()
+
+	plt.savefig("auto.png")
+	plt.clf()
+
+	fig,ax = plt.subplots()
+	test_map.visualizeComponents(ax,components="EB",region=(200,9000,-9000,9000))
+	fig.tight_layout()
+
+	plt.savefig("cross.png")
+	plt.clf()
+
 def test_reconstruct():
 
 	conv_reconstructed = test_map.convergence()
