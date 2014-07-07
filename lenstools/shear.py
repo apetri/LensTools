@@ -98,11 +98,22 @@ class ShearMap(object):
 		angle,gamma = loader(*args)
 		return cls(gamma,angle)
 
-	def sticks(self,ax,pixel_step=10,**kwargs):
+	def sticks(self,ax,pixel_step=10):
 
 		"""
 		Draw the ellipticity map using the shear components
-		
+
+		:param ax: ax on which to draw the ellipticity field
+		:type ax: matplotlib ax object
+
+		:param pixel_step: One arrow will be drawn every pixel_step pixels to avoid arrow overplotting
+		:type pixel_step: int.
+
+		>>> import matplotlib.pyplot as plt
+		>>> test = ShearMap.fromfilename("shear.fit",loader=load_fits_default)
+		>>> fig,ax = plt.subplots()
+		>>> test.sticks(ax,pixel_step=50)
+
 		"""
 
 		if not(matplotlib):
