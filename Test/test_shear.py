@@ -94,14 +94,14 @@ def test_visualize2():
 def test_visualize3():
 
 	fig,ax = plt.subplots(1,2)
-	test_map.visualizeComponents(ax,components="EE,BB",region=(200,9000,-9000,9000))
+	test_map.visualizeComponents(ax,components="EE,BB",region=(200,20000,-20000,20000))
 	fig.tight_layout()
 
 	plt.savefig("auto.png")
 	plt.clf()
 
 	fig,ax = plt.subplots()
-	test_map.visualizeComponents(ax,components="EB",region=(200,9000,-9000,9000))
+	test_map.visualizeComponents(ax,components="EB",region=(200,20000,-20000,20000))
 	fig.tight_layout()
 
 	plt.savefig("cross.png")
@@ -128,6 +128,74 @@ def test_reconstruct():
 	fig.tight_layout()
 
 	plt.savefig("comparison.png")
+	plt.clf()
+
+def test_Emode():
+
+	pure_E = np.zeros((512,257),dtype=np.complex128)
+	pure_B = np.zeros((512,257),dtype=np.complex128)
+
+	pure_E[0,250] = 2.0 + 0.0j
+	pure_E[250,0] = 2.0 + 0.0j
+	pure_E[250,250] = 2.0 + 0.0j
+
+	new_shear_map = ShearMap.fromEBmodes(pure_E,pure_B,angle=1.95)
+
+	fig,ax = plt.subplots(1,3,figsize=(24,8))
+	ax1 = ax[1].imshow(new_shear_map.gamma[0],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle,0,new_shear_map.side_angle])
+	ax2 = ax[2].imshow(new_shear_map.gamma[1],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle,0,new_shear_map.side_angle])
+	plt.colorbar(ax1,ax=ax[1])
+	plt.colorbar(ax2,ax=ax[2])
+	new_shear_map.sticks(ax[0],pixel_step=10,multiplier=1.5)
+
+	ax[0].set_xlabel(r"$x$(deg)")
+	ax[0].set_ylabel(r"$y$(deg)")
+	
+	ax[1].set_xlabel(r"$x$(deg)")
+	ax[1].set_ylabel(r"$y$(deg)")
+	ax[1].set_title(r"$\gamma_1$")
+	
+	ax[2].set_xlabel(r"$x$(deg)")
+	ax[2].set_ylabel(r"$y$(deg)")
+	ax[2].set_title(r"$\gamma_2$")
+
+	fig.tight_layout()
+
+	plt.savefig("pure_E.png")
+	plt.clf()
+
+def test_Bmode():
+
+	pure_E = np.zeros((512,257),dtype=np.complex128)
+	pure_B = np.zeros((512,257),dtype=np.complex128)
+
+	pure_B[0,250] = 2.0 + 0.0j
+	pure_B[250,0] = 2.0 + 0.0j
+	pure_B[250,250] = 2.0 + 0.0j
+
+	new_shear_map = ShearMap.fromEBmodes(pure_E,pure_B,angle=1.95)
+
+	fig,ax = plt.subplots(1,3,figsize=(24,8))
+	ax1 = ax[1].imshow(new_shear_map.gamma[0],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle,0,new_shear_map.side_angle])
+	ax2 = ax[2].imshow(new_shear_map.gamma[1],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle,0,new_shear_map.side_angle])
+	plt.colorbar(ax1,ax=ax[1])
+	plt.colorbar(ax2,ax=ax[2])
+	new_shear_map.sticks(ax[0],pixel_step=10,multiplier=1.5)
+
+	ax[0].set_xlabel(r"$x$(deg)")
+	ax[0].set_ylabel(r"$y$(deg)")
+	
+	ax[1].set_xlabel(r"$x$(deg)")
+	ax[1].set_ylabel(r"$y$(deg)")
+	ax[1].set_title(r"$\gamma_1$")
+	
+	ax[2].set_xlabel(r"$x$(deg)")
+	ax[2].set_ylabel(r"$y$(deg)")
+	ax[2].set_title(r"$\gamma_2$")
+
+	fig.tight_layout()
+
+	plt.savefig("pure_B.png")
 	plt.clf()
 
 

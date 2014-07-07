@@ -100,7 +100,67 @@ class ShearMap(object):
 		angle,gamma = loader(*args)
 		return cls(gamma,angle)
 
-	def sticks(self,ax,pixel_step=10):
+	@classmethod
+	def fromEBmodes(cls,fourier_E,fourier_B,angle=3.14):
+
+		"""
+		This class method allows to build a shear map specifying its E and B mode components
+
+		:param fourier_E: E mode of the shear map in fourier space
+		:type fourier_E: numpy 2D array, must be of type np.complex128 and must have a shape that is appropriate for a real fourier transform, i.e. (N,N/2 + 1); N should be a power of 2
+
+		:param fourier_B: B mode of the shear map in fourier space
+		:type fourier_B: numpy 2D array, must be of type np.complex128 and must have a shape that is appropriate for a real fourier transform, i.e. (N,N/2 + 1); N should be a power of 2
+
+		:param angle: Side angle of the real space map in degrees
+		:type angle: float.
+
+		:returns: the corresponding ShearMap instance
+
+		:raises: AssertionErrors for inappropriate inputs
+
+		"""
+
+		assert fourier_E.dtype == np.complex128 and fourier_B.dtype == np.complex128
+		assert fourier_E.shape[1] == fourier_E.shape[0]/2 + 1
+		assert fourier_B.shape[1] == fourier_B.shape[0]/2 + 1
+		assert fourier_E.shape == fourier_B.shape
+
+		#Compute frequencies
+		lx = np.fft.rfftfreq(fourier_E.shape[0])
+		ly = np.fft.fftfreq(fourier_E.shape[0])
+
+		#Safety check
+		assert len(lx)==fourier_E.shape[1]
+		assert len(ly)==fourier_E.shape[0]
+
+		#Compute sines and cosines of rotation angles
+		l_squared = lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2
+		l_squared[0,0] = 1.0
+
+		sin_2_phi = 2.0 * lx[np.newaxis,:] * ly[:,np.newaxis] / l_squared
+		cos_2_phi = (lx[np.newaxis,:]**2 - ly[:,np.newaxis]**2) / l_squared
+
+		sin_2_phi[0,0] = 0.0
+		cos_2_phi[0,0] = 0.0
+
+		#Invert E/B modes and find the components of the shear
+		ft_gamma1 = cos_2_phi * fourier_E - sin_2_phi * fourier_B
+		ft_gamma2 = sin_2_phi * fourier_E + cos_2_phi * fourier_B
+
+		#Invert Fourier transforms
+		gamma1 = np.fft.irfft2(ft_gamma1)
+		gamma2 = np.fft.irfft2(ft_gamma2)
+
+		#Instantiate new shear map class
+		new = cls(np.array([gamma1,gamma2]),angle)
+		setattr(new,"fourier_E",fourier_E)
+		setattr(new,"fourier_B",fourier_B)
+
+		return new
+
+
+	def sticks(self,ax,pixel_step=10,multiplier=1.0):
 
 		"""
 		Draw the ellipticity map using the shear components
@@ -134,11 +194,14 @@ class ShearMap(object):
 		cos_phi = np.sqrt(0.5*(1.0 + cos_2_phi)) * np.sign(sin_2_phi)
 		sin_phi = np.sqrt(0.5*(1.0 - cos_2_phi))
 
+		#Fix ambiguity when sin_2_phi = 0
+		cos_phi[sin_2_phi==0] = np.sqrt(0.5*(1.0 + cos_2_phi[sin_2_phi==0]))
+
 		#Draw map using matplotlib quiver
 		if ax is None:
 			fig,ax = plt.subplots()
 
-		ax.quiver(x*self.side_angle/self.gamma.shape[2],y*self.side_angle/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0])
+		ax.quiver(x*self.side_angle/self.gamma.shape[2],y*self.side_angle/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
 
 		return ax
 
