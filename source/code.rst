@@ -28,4 +28,4 @@ Shear maps
 	:members: load_fits_default
 
 .. autoclass:: lenstools.shear.ShearMap
-	:members: fromfilename,decompose
+	:members: fromfilename,decompose,sticks
