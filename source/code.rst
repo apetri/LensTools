@@ -29,3 +29,10 @@ Shear maps
 
 .. autoclass:: lenstools.shear.ShearMap
 	:members: fromfilename,fromEBmodes,decompose,sticks,convergence,visualizeComponents
+
+Statistics
+==========
+
+.. automodule:: lenstools.statistics
+
+.. autoclass:: lenstools.statistics.Ensemble
