@@ -1,14 +1,12 @@
 try:
 	
-	from lenstools.shear import ShearMap
-	from lenstools.topology import ConvergenceMap
+	from lenstools import ConvergenceMap,ShearMap
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
-	from lenstools.shear import ShearMap
-	from lenstools.topology import ConvergenceMap
+	from lenstools import ConvergenceMap,ShearMap
 
 import numpy as np
 import matplotlib.pyplot as plt

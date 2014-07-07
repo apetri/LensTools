@@ -1,12 +1,12 @@
 try:
 	
-	from lenstools.topology import ConvergenceMap
+	from lenstools import ConvergenceMap
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
-	from lenstools.topology import ConvergenceMap
+	from lenstools import ConvergenceMap
 
 import numpy as np
 import matplotlib.pyplot as plt

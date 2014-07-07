@@ -18,7 +18,7 @@ Convergence maps
 .. automodule:: lenstools.topology
 	:members: load_fits_default
 
-.. autoclass:: lenstools.topology.ConvergenceMap
+.. autoclass:: lenstools.ConvergenceMap
 	:members: fromfilename,gradient,hessian,peakCount,minkowskiFunctionals,moments,powerSpectrum
 
 Shear maps
@@ -27,7 +27,7 @@ Shear maps
 .. automodule:: lenstools.shear
 	:members: load_fits_default
 
-.. autoclass:: lenstools.shear.ShearMap
+.. autoclass:: lenstools.ShearMap
 	:members: fromfilename,fromEBmodes,decompose,sticks,convergence,visualizeComponents
 
 Statistics
@@ -35,4 +35,4 @@ Statistics
 
 .. automodule:: lenstools.statistics
 
-.. autoclass:: lenstools.statistics.Ensemble
+.. autoclass:: lenstools.Ensemble

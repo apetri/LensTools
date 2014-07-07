@@ -65,9 +65,9 @@ class ShearMap(object):
 	"""
 	A class that handles 2D shear maps and allows to perform a set of operations on them
 
-	>>> from lenstools.shear import ShearMap
+	>>> from lenstools import ShearMap
 	
-	>>> test = ShearMap.fromfilename("shear.fit",loader=load_fits_default)
+	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.shear.load_fits_default)
 	>>>test.side_angle
 	1.95
 	>>>test.gamma
