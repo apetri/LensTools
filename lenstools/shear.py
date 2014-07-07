@@ -15,8 +15,13 @@ from __future__ import division
 from external import _topology
 
 import numpy as np
-import matplotlib.pyplot as plt
 from astropy.io import fits
+
+try:
+	import matplotlib.pyplot as plt
+	matplotlib = True
+except ImportError:
+	matplotlib = False
 
 ##########################################
 #####Default Fits loader##################
@@ -28,7 +33,7 @@ def load_fits_default(*args):
 	:param gamma_file: Name of the FITS file that contains the shear map
 	:type gamma1_file: str.
 
-	:returns: tuple -- (angle,ndarray -- gamma; gamma[0] is the gamma1 map, gamma[1] is the gamma2 map)
+	:returns: tuple -- (angle,ndarray -- gamma; gamma[0] is the gamma1 map, gamma[1] is the gamma2 map); the maps must follow matrix ordering, i.e. the first axis (0) is y and the second axis (1) is x. This matters for the E/B mode decomposition 
 
 	:raises: IOError if the FITS files cannot be opened or do not exist
 
@@ -93,16 +98,18 @@ class ShearMap(object):
 		angle,gamma = loader(*args)
 		return cls(gamma,angle)
 
-	def sticks(self,**kwargs):
+	def sticks(self,ax,pixel_step=10,**kwargs):
 
 		"""
 		Draw the ellipticity map using the shear components
 		
 		"""
 
-		plt.ion()
+		if not(matplotlib):
+			print("matplotlib is not installed, please install it!!")
+			return None
 
-		x,y = np.meshgrid(np.arange(0,self.gamma.shape[1],10),np.arange(0,self.gamma.shape[2],10))
+		x,y = np.meshgrid(np.arange(0,self.gamma.shape[2],pixel_step),np.arange(0,self.gamma.shape[1],pixel_step))
 
 		#Translate shear components into sines and cosines
 		cos_2_phi = self.gamma[0] / np.sqrt(self.gamma[0]**2 + self.gamma[1]**2)
@@ -113,10 +120,12 @@ class ShearMap(object):
 		sin_phi = np.sqrt(0.5*(1.0 - cos_2_phi))
 
 		#Draw map using matplotlib quiver
-		fig,ax = plt.subplots()
-		ax.quiver(x,y,cos_phi[x,y],sin_phi[x,y],headwidth=0,units="xy",scale=0.07)
+		if ax is None:
+			fig,ax = plt.subplots()
 
-		return fig,ax
+		ax.quiver(x*self.side_angle/self.gamma.shape[2],y*self.side_angle/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0])
+
+		return ax
 
 
 

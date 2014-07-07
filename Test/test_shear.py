@@ -1,12 +1,14 @@
 try:
 	
 	from lenstools.shear import ShearMap
+	from lenstools.topology import ConvergenceMap
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools.shear import ShearMap
+	from lenstools.topology import ConvergenceMap
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,10 +33,11 @@ def two_file_loader(*args):
 
 
 test_map = ShearMap.fromfilename("shear1.fit","shear2.fit",loader=two_file_loader)
+test_map_conv = ConvergenceMap.fromfilename("conv.fit")
 
 l_edges = np.arange(200.0,50000.0,200.0)
 
-def test_visualize():
+def test_visualize1():
 
 	assert hasattr(test_map,"gamma")
 	assert hasattr(test_map,"side_angle")
@@ -74,3 +77,17 @@ def test_EB_decompose():
 	ax.legend(loc="Upper left")
 
 	plt.savefig("EB.png")
+	plt.clf()
+
+def test_visualize2():
+
+	fig,ax = plt.subplots()
+	
+	ax.imshow(test_map_conv.kappa,origin="lower",interpolation="nearest",cmap=plt.cm.Reds,extent=[0.0,test_map_conv.side_angle,0.0,test_map_conv.side_angle])
+	test_map.sticks(ax,pixel_step=40)
+
+	ax.set_xlabel(r"$x$(deg)")
+	ax.set_ylabel(r"$y$(deg)")
+	plt.savefig("sticks.png")
+
+

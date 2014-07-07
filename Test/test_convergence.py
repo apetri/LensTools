@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-test_map = ConvergenceMap.fromfilename("map.fit")
+test_map = ConvergenceMap.fromfilename("conv.fit")
 
 #Set bin edges
 l_edges = np.arange(200.0,50000.0,200.0)
