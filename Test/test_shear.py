@@ -60,7 +60,7 @@ def test_visualize1():
 
 def test_EB_decompose():
 
-	l,EE,BB,EB = test_map.decompose(l_edges)
+	l,EE,BB,EB = test_map.decompose(l_edges,keep_fourier=True)
 
 	assert l.shape == EE.shape == BB.shape == EB.shape
 
@@ -89,5 +89,29 @@ def test_visualize2():
 	ax.set_xlabel(r"$x$(deg)")
 	ax.set_ylabel(r"$y$(deg)")
 	plt.savefig("sticks.png")
+	plt.clf()
+
+def test_reconstruct():
+
+	conv_reconstructed = test_map.convergence()
+
+	fig,ax = plt.subplots(1,2,figsize=(16,8))
+	
+	ax0=ax[0].imshow(test_map_conv.kappa,origin="lower",interpolation="nearest",extent=[0.0,test_map_conv.side_angle,0.0,test_map_conv.side_angle])
+	ax[0].set_title("Original")
+	plt.colorbar(ax0,ax=ax[0])
+	ax[0].set_xlabel(r"$x$(deg)")
+	ax[0].set_ylabel(r"$y$(deg)")
+
+	ax1=ax[1].imshow(conv_reconstructed.kappa,origin="lower",interpolation="nearest",extent=[0.0,conv_reconstructed.side_angle,0.0,conv_reconstructed.side_angle])
+	ax[1].set_title("Reconstructed from shear")
+	plt.colorbar(ax1,ax=ax[1])
+	ax[1].set_xlabel(r"$x$(deg)")
+	ax[1].set_ylabel(r"$y$(deg)")
+
+	fig.tight_layout()
+
+	plt.savefig("comparison.png")
+	plt.clf()
 
 

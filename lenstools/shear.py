@@ -13,6 +13,7 @@
 from __future__ import division
 
 from external import _topology
+from topology import ConvergenceMap
 
 import numpy as np
 from astropy.io import fits
@@ -200,5 +201,28 @@ class ShearMap(object):
 			self.fourier_B = ft_B
 
 		return l,P_EE,P_BB,P_EB
+
+
+
+	def convergence(self):
+		
+		"""
+		Reconstructs the convergence from the E component of the shear
+
+		:returns: new ConvergenceMap instance 
+
+		"""
+
+		#Compute Fourier transforms if it wasn't done before
+		if not hasattr(self,"fourier_E"):
+			l_edges = np.array([200.0,400.0])
+			l,EE,BB,EB = self.decompose(l_edges,keep_fourier=True)
+
+		#Invert the Fourier transform to go back to real space
+		conv = np.fft.irfft2(self.fourier_E)
+
+		#Return the ConvergenceMap instance
+		return ConvergenceMap(conv,self.side_angle)
+
 
 
