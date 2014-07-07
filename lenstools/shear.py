@@ -68,9 +68,9 @@ class ShearMap(object):
 	>>> from lenstools import ShearMap
 	
 	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.shear.load_fits_default)
-	>>>test.side_angle
+	>>> test.side_angle
 	1.95
-	>>>test.gamma
+	>>> test.gamma
 	#The actual map values
 
 	"""

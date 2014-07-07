@@ -56,7 +56,7 @@ class ConvergenceMap(object):
 	"""
 	A class that handles 2D convergence maps and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
 
-	>>>from lenstools import ConvergenceMap, load_fits_default
+	>>> from lenstools import ConvergenceMap, load_fits_default
 
 	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default)
 	>>> imshow(test_map.kappa)
