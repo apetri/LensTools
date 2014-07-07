@@ -145,19 +145,19 @@ class ShearMap(object):
 		ft_gamma2 = np.fft.rfft2(self.gamma[1])
 
 		#Compute frequencies
-		lx = np.fft.fftfreq(ft_gamma1.shape[0])
-		ly = np.fft.rfftfreq(ft_gamma1.shape[0])
+		lx = np.fft.rfftfreq(ft_gamma1.shape[0])
+		ly = np.fft.fftfreq(ft_gamma1.shape[0])
 
 		#Safety check
-		assert len(lx)==ft_gamma1.shape[0]
-		assert len(ly)==ft_gamma1.shape[1]
+		assert len(lx)==ft_gamma1.shape[1]
+		assert len(ly)==ft_gamma1.shape[0]
 
 		#Compute sines and cosines of rotation angles
-		l_squared = lx[:,np.newaxis]**2 + ly[np.newaxis,:]**2
+		l_squared = lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2
 		l_squared[0,0] = 1.0
 
-		sin_2_phi = 2.0 * lx[:,np.newaxis] * ly[np.newaxis,:] / l_squared
-		cos_2_phi = (lx[:,np.newaxis]**2 - ly[np.newaxis,:]**2) / l_squared
+		sin_2_phi = 2.0 * lx[np.newaxis,:] * ly[:,np.newaxis] / l_squared
+		cos_2_phi = (lx[np.newaxis,:]**2 - ly[:,np.newaxis]**2) / l_squared
 
 		#Compute E and B components
 		ft_E = cos_2_phi * ft_gamma1 + sin_2_phi * ft_gamma2

@@ -30,9 +30,9 @@ def two_file_loader(*args):
 
 
 
-test_map = ShearMap.fromfilename("shear.fit")
+test_map = ShearMap.fromfilename("shear1.fit","shear2.fit",loader=two_file_loader)
 
-l_edges = np.arange(300.0,5000.0,200.0)
+l_edges = np.arange(200.0,50000.0,200.0)
 
 def test_visualize():
 
