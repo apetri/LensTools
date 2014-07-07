@@ -30,7 +30,7 @@ except ImportError:
 ##########################################
 def load_fits_default(*args):
 	"""
-	This is the default fits file loader, it assumes that the two components of the shear are stored in two different image FITS files, which have an ANGLE keyword in the header
+	This is the default fits file loader, it assumes that the two components of the shear are stored in a single image FITS file, which have an ANGLE keyword in the header
 
 	:param gamma_file: Name of the FITS file that contains the shear map
 	:type gamma1_file: str.
