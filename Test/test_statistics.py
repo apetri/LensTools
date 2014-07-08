@@ -13,7 +13,7 @@ except ImportError:
 import numpy as np
 import matplotlib.pyplot as plt
 
-map_list = ["conv1.fit","conv2.fit","conv3.fit"]
+map_list = ["conv1.fit","conv2.fit","conv3.fit","conv4.fit"]
 l_edges = np.arange(200.0,50000.0,200.0)
 l = 0.5*(l_edges[:-1] + l_edges[1:])
 
