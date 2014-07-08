@@ -66,6 +66,14 @@ class Ensemble(object):
 		:param kwargs: Any additional keyword arguments to be passed to callback_loader
 		:type kwargs: Keyword arguments
 
+		>>> from lenstools import Ensemble
+		>>> from lenstools.statistics import default_callback_loader
+		
+		>>> map_list = ["conv1.fit","conv2.fit","conv3.fit"]
+		>>> l_edges = np.arange(200.0,50000.0,200.0)
+
+		>>> conv_ensemble = Ensemble.fromfilelist(map_list,callback_loader=default_callback_loader,l_edges=l_edges)
+
 		"""
 
 		#See how many realizations are there in the ensemble

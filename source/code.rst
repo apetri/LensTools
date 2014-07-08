@@ -34,5 +34,7 @@ Statistics
 ==========
 
 .. automodule:: lenstools.statistics
+	:members: default_callback_loader
 
 .. autoclass:: lenstools.Ensemble
+	:members: fromfilelist
