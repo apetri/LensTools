@@ -95,6 +95,13 @@ class Ensemble(object):
 	
 	def mean(self):
 
+		"""
+		Computes the ensemble average over realizations 
+
+		:returns: ndarray with the averages, has the same shape as self.data[0]
+
+		"""
+
 		return self.data.mean(axis=0) 
 
 
