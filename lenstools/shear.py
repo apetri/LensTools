@@ -171,6 +171,9 @@ class ShearMap(object):
 		:param pixel_step: One arrow will be drawn every pixel_step pixels to avoid arrow overplotting
 		:type pixel_step: int.
 
+		:param multiplier: Multiplies the stick length by a factor
+		:type multiplier: float.
+
 		:returns: ax -- the matplotlib ax object on which the stick field was drawn
 
 		>>> import matplotlib.pyplot as plt
@@ -211,7 +214,7 @@ class ShearMap(object):
 	def decompose(self,l_edges,keep_fourier=False):
 
 		"""
-		Decomposes the shear map into its E and B modes components and returns the respective power spectal densities at the specified multipole moments
+		Decomposes the shear map into its E and B modes components and returns the respective power spectral densities at the specified multipole moments
 
 		:param l_edges: Multipole bin edges
 		:type l_edges: array

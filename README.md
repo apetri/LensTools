@@ -12,9 +12,13 @@ Limber integrals
 Work in progress...
 
 
-Image utilities
+Convergence and shear maps
 --------------
 
+Work in progress...
+
+Statistics
+------------------------
 Work in progress...
 
 
