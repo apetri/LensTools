@@ -1,12 +1,14 @@
 try:
 	
 	from lenstools import ConvergenceMap,ShearMap
+	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap,ShearMap
+	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,7 +33,7 @@ def two_file_loader(*args):
 
 
 test_map = ShearMap.fromfilename("shear1.fit","shear2.fit",loader=two_file_loader)
-test_map_conv = ConvergenceMap.fromfilename("conv.fit")
+test_map_conv = ConvergenceMap.fromfilename("conv.fit",loader=load_fits_default_convergence)
 
 l_edges = np.arange(200.0,50000.0,200.0)
 

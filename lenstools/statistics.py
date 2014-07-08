@@ -12,23 +12,10 @@
 
 from __future__ import division
 
-from topology import ConvergenceMap,load_fits_default
+from topology import ConvergenceMap
 from shear import ShearMap
 
 import numpy as np
-from astropy.io import fits
-
-################################################################################
-##########Default callback loader, loads in the measured power spectrum#########
-################################################################################
-
-def default_callback_loader(file_name,**kwargs):
-
-	print("Processing {0}".format(file_name))
-
-	conv_map = ConvergenceMap.fromfilename(file_name,loader=load_fits_default)
-	l,Pl = conv_map.powerSpectrum(kwargs["l_edges"])
-	return Pl
 
 ##########################################
 ########Ensemble class####################

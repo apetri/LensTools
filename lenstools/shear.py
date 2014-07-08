@@ -16,7 +16,6 @@ from external import _topology
 from topology import ConvergenceMap
 
 import numpy as np
-from astropy.io import fits
 
 try:
 	import matplotlib.pyplot as plt
@@ -24,37 +23,6 @@ try:
 	matplotlib = True
 except ImportError:
 	matplotlib = False
-
-##########################################
-#####Default Fits loader##################
-##########################################
-def load_fits_default(*args):
-	"""
-	This is the default fits file loader, it assumes that the two components of the shear are stored in a single image FITS file, which have an ANGLE keyword in the header
-
-	:param gamma_file: Name of the FITS file that contains the shear map
-	:type gamma1_file: str.
-
-	:returns: tuple -- (angle,ndarray -- gamma; gamma[0] is the gamma1 map, gamma[1] is the gamma2 map); the maps must follow matrix ordering, i.e. the first axis (0) is y and the second axis (1) is x. This matters for the E/B mode decomposition 
-
-	:raises: IOError if the FITS files cannot be opened or do not exist
-
-	"""
-
-	#Open the files
-	gamma_file = fits.open(args[0])
-
-	#Read the ANGLE keyword from the header
-	angle = gamma_file[0].header["ANGLE"]
-
-	#Create the array with the shear map
-	gamma = gamma_file[0].data.astype(np.float)
-
-	#Close files and return
-	gamma_file.close()
-
-	return angle,gamma
-
 
 ##########################################
 ########ShearMap class####################
@@ -67,7 +35,7 @@ class ShearMap(object):
 
 	>>> from lenstools import ShearMap
 	
-	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.shear.load_fits_default)
+	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.defaults.load_fits_default_shear)
 	>>> test.side_angle
 	1.95
 	>>> test.gamma
@@ -88,14 +56,12 @@ class ShearMap(object):
 
 		:param args: The positional arguments that are to be passed to the loader (typically the file name)
 
-		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (the default is load_fits_default above)
+		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (a template is defaults.load_fits_default_shear above)
 		
 		"""
 
-		if not("loader" in kwargs.keys()):
-			loader = load_fits_default
-		else:
-			loader = kwargs["loader"]
+		assert "loader" in kwargs.keys(),"You must specify a loader function!"
+		loader = kwargs["loader"]
 
 		angle,gamma = loader(*args)
 		return cls(gamma,angle)
@@ -177,7 +143,7 @@ class ShearMap(object):
 		:returns: ax -- the matplotlib ax object on which the stick field was drawn
 
 		>>> import matplotlib.pyplot as plt
-		>>> test = ShearMap.fromfilename("shear.fit",loader=load_fits_default)
+		>>> test = ShearMap.fromfilename("shear.fit",loader=load_fits_default_shear)
 		>>> fig,ax = plt.subplots()
 		>>> test.sticks(ax,pixel_step=50)
 
@@ -224,7 +190,7 @@ class ShearMap(object):
 
 		:returns: :returns: tuple -- (l -- array,P_EE,P_BB,P_EB -- arrays) = (multipole moments, EE,BB power spectra and EB cross power)
 
-		>>> test_map = ShearMap.fromfilename("shear.fit",loader=load_fits_default)
+		>>> test_map = ShearMap.fromfilename("shear.fit",loader=load_fits_default_shear)
 		>>> l_edges = np.arange(300.0,5000.0,200.0)
 		>>> l,EE,BB,EB = test_map.decompose(l_edges)
 

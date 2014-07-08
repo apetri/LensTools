@@ -15,37 +15,6 @@ from __future__ import division
 from external import _topology
 
 import numpy as np
-from astropy.io import fits
-
-##########################################
-#####Default Fits loader##################
-##########################################
-def load_fits_default(*args):
-	"""
-	This is the default fits file loader, it assumes that the two components of the shear are stored in two different image FITS files, which have an ANGLE keyword in the header
-
-	:param gamma_file: Name of the FITS file that contains the shear map
-	:type gamma1_file: str.
-
-	:returns: tuple -- (angle,ndarray -- kappa; kappa is the convergence map)
-
-	:raises: IOError if the FITS files cannot be opened or do not exist
-
-	"""
-
-	#Open the files
-	kappa_file = fits.open(args[0])
-
-	#Read the ANGLE keyword from the header
-	angle = kappa_file[0].header["ANGLE"]
-
-	#Create the array with the shear map
-	kappa = kappa_file[0].data.astype(np.float)
-
-	#Close files and return
-	kappa_file.close()
-
-	return angle,kappa
 
 ################################################
 ########ConvergenceMap class####################
@@ -56,9 +25,10 @@ class ConvergenceMap(object):
 	"""
 	A class that handles 2D convergence maps and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
 
-	>>> from lenstools import ConvergenceMap, load_fits_default
+	>>> from lenstools import ConvergenceMap 
+	>>> from lenstools.defaults import load_fits_default_convergence
 
-	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default)
+	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default_convergence)
 	>>> imshow(test_map.kappa)
 
 	"""
@@ -76,14 +46,12 @@ class ConvergenceMap(object):
 
 		:param args: The positional arguments that are to be passed to the loader (typically the file name)
 
-		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (the default is load_fits_default above)
+		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (a template is defaults.load_fits_default_convergence)
 
 		"""
 
-		if not("loader" in kwargs.keys()):
-			loader = load_fits_default
-		else:
-			loader = kwargs["loader"]
+		assert "loader" in kwargs.keys(),"You must specify a loader function!"
+		loader = kwargs["loader"]
 
 		angle,kappa = loader(*args)
 		return cls(kappa,angle)

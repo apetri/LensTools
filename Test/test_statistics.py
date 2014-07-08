@@ -1,14 +1,14 @@
 try:
 	
 	from lenstools import Ensemble
-	from lenstools.statistics import default_callback_loader
+	from lenstools.defaults import default_callback_loader
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import Ensemble
-	from lenstools.statistics import default_callback_loader
+	from lenstools.defaults import default_callback_loader
 
 import numpy as np
 import matplotlib.pyplot as plt

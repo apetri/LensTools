@@ -1,18 +1,20 @@
 try:
 	
 	from lenstools import ConvergenceMap
+	from lenstools.defaults import load_fits_default_convergence
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap
+	from lenstools.defaults import load_fits_default_convergence
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-test_map = ConvergenceMap.fromfilename("conv.fit")
+test_map = ConvergenceMap.fromfilename("conv.fit",loader=load_fits_default_convergence)
 
 #Set bin edges
 l_edges = np.arange(200.0,50000.0,200.0)
