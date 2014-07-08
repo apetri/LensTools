@@ -68,7 +68,7 @@ class Ensemble(object):
 
 		>>> from lenstools import Ensemble
 		>>> from lenstools.statistics import default_callback_loader
-		
+
 		>>> map_list = ["conv1.fit","conv2.fit","conv3.fit"]
 		>>> l_edges = np.arange(200.0,50000.0,200.0)
 
@@ -103,7 +103,13 @@ class Ensemble(object):
 			full_data[n + 1] = data
 
 		#Build the ensemble instance and return it
-		return cls(full_data,num_realizations)  
+		return cls(full_data,num_realizations)
+
+	
+	def mean(self):
+
+		return self.data.mean(axis=0) 
+
 
 
 
