@@ -70,6 +70,18 @@ def load_fits_default_shear(*args):
 ################################################################################
 
 def default_callback_loader(args):
+	"""
+	
+	Default ensemble loader: reads a FITS data file containing a convergence map and measures its power spectrum
+
+	:param args: A dictionary that contains all the relevant parameters as keys. Must have a "file_name" key
+	:type args: Dictionary
+
+	:returns: ndarray of the measured statistics
+
+	:raises: AssertionError if the input dictionary doesn't have the required keywords
+
+	"""
 
 	assert "file_name" in args.keys()
 	assert "l_edges" in args.keys()

@@ -34,7 +34,7 @@ Statistics
 .. automodule:: lenstools.statistics
 
 .. autoclass:: lenstools.Ensemble
-	:members: fromfilelist
+	:members: fromfilelist,load,mean
 
 Defaults
 ========

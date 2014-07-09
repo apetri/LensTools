@@ -58,9 +58,9 @@ class Ensemble(object):
 
 	def load(self,callback_loader,pool=None,**kwargs):
 		"""
-		Loads the ensemble into memory
+		Loads the ensemble into memory, can spread the calculations on multiple processors using a MPI pool
 
-		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble
+		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble; must take in a dictionary as its only parameter and must return a numpy array
 		:type callback_loader: function, must take in a file name (str.) and return a numpy array with the loaded data
 
 		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
@@ -76,7 +76,7 @@ class Ensemble(object):
 		>>> l_edges = np.arange(200.0,50000.0,200.0)
 
 		>>> conv_ensemble = Ensemble.fromfilelist(map_list)
-		>>> conv_ensemble.load(callback_loader=default_callback_loader,l_edges=l_edges)
+		>>> conv_ensemble.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
 
 		"""
 
