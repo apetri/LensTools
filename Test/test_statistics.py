@@ -1,14 +1,24 @@
+import sys
+
 try:
 	
 	from lenstools import Ensemble
 	from lenstools.defaults import default_callback_loader
 
 except ImportError:
-	
-	import sys
+
 	sys.path.append("..")
 	from lenstools import Ensemble
 	from lenstools.defaults import default_callback_loader
+
+try:
+
+	from emcee.utils import MPIPool
+	MPIPool = MPIPool
+
+except ImportError:
+
+	MPIPool = None
 
 import logging
 
@@ -17,11 +27,32 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.DEBUG)
 
+if MPIPool is None:
+	logging.warning("You need to install emcee in order to test the parallel statistics features!!")
+
+try:
+	logging.debug("Attempting to create MPIPool")
+	pool = MPIPool()
+	logging.debug("Succesfully created MPIPool!")
+except ValueError:
+	logging.debug("No reason to create one, one process only!!")
+	pool = None
+except TypeError:
+	pool = None
+
+#The only parallelized part is the loading of the ensemble (that's the computationally expensive part)
+
+if (pool is not None) and not(pool.is_master()):
+
+	pool.wait()
+	sys.exit(0)
+
 map_list = ["conv1.fit","conv2.fit","conv3.fit","conv4.fit"]
 l_edges = np.arange(200.0,50000.0,200.0)
 l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-conv_ensemble = Ensemble.fromfilelist(map_list,callback_loader=default_callback_loader,l_edges=l_edges)
+conv_ensemble = Ensemble.fromfilelist(map_list)
+conv_ensemble.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
 
 def test_shape():
 
@@ -42,3 +73,6 @@ def test_power_plot():
 
 	plt.savefig("power_ensemble.png")
 	plt.clf()
+
+	if pool is not None:
+		pool.close()
