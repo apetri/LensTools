@@ -146,7 +146,7 @@ class Ensemble(object):
 		"""
 
 		assert isinstance(rhs,Ensemble)
-		assert self.metric == rhs.metric,"The two ensemble must have the same metric!!"
+		assert self.metric == rhs.metric,"The two ensemble instances must have the same metric!!"
 
 		if self.metric=="chi2":
 

@@ -253,3 +253,37 @@ class ConvergenceMap(object):
 
 		#Output the power spectrum
 		return l,power_spectrum
+
+	def __add__(self,rhs):
+
+		"""
+		Defines addition operator between ConvergenceMap instances; the convergence values are summed
+
+		:returns: ConvergenceMap instance with the result of the sum
+
+		:raises: AssertionError if the operation cannot be performed
+
+		"""
+
+		if isinstance(rhs,"ConvergenceMap"):
+
+			assert self.side_angle == rhs.side_angle
+			assert self.kappa.shape == rhs.kappa.shape
+
+			new_kappa = self.kappa + rhs.kappa
+
+		elif type(rhs) == np.float:
+
+			new_kappa = self.kappa + rhs
+
+		elif type(rhs) == np.ndarray:
+
+			assert rhs.shape == self.kappa.shape
+			new_kappa = self.kappa + rhs
+
+		else:
+
+			raise TypeError("The right hand side cannot be added!!")
+
+		return ConvergenceMap(new_kappa,self.side_angle)
+
