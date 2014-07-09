@@ -1,4 +1,4 @@
-import sys
+import sys,os
 
 try:
 	
@@ -54,6 +54,9 @@ l = 0.5*(l_edges[:-1] + l_edges[1:])
 conv_ensemble = Ensemble.fromfilelist(map_list)
 conv_ensemble.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
 
+if pool is not None:
+	pool.close()
+
 def test_shape():
 
 	assert conv_ensemble.num_realizations==len(map_list)
@@ -73,6 +76,3 @@ def test_power_plot():
 
 	plt.savefig("power_ensemble.png")
 	plt.clf()
-
-	if pool is not None:
-		pool.close()

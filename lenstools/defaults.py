@@ -69,10 +69,13 @@ def load_fits_default_shear(*args):
 ##########Default callback loader, loads in the measured power spectrum#########
 ################################################################################
 
-def default_callback_loader(file_name,**kwargs):
+def default_callback_loader(args):
 
-	logging.debug("Processing {0}".format(file_name))
+	assert "file_name" in args.keys()
+	assert "l_edges" in args.keys()
 
-	conv_map = ConvergenceMap.fromfilename(file_name,loader=load_fits_default_convergence)
-	l,Pl = conv_map.powerSpectrum(kwargs["l_edges"])
+	logging.debug("Processing {0}".format(args["file_name"]))
+
+	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
+	l,Pl = conv_map.powerSpectrum(args["l_edges"])
 	return Pl

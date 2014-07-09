@@ -83,26 +83,21 @@ class Ensemble(object):
 		assert callback_loader is not None
 
 		self.pool = pool
-		
-		#################################################
-		#########Callback wrapper, to remain private#####
-		#################################################
-		def _callback_wrapper(obj):
-			file_name,kwargs = obj
-			return callback_loader(file_name,**kwargs)
-		#################################################
-		#################################################
 
-		self._callback_wrapper = _callback_wrapper
-
-		#Build list with tasks to execute
-		tasks = [ (file_name,kwargs) for file_name in self.file_list ]
+		#Build list with tasks to execute (dirty, maybe optimize in the future?)
+		tasks = list()
+		for file_name in self.file_list:
+			task = kwargs.copy()
+			task.update({"file_name":file_name})
+			tasks.append(task)
 
 		#Execute the callback on each file in the list (spread calculations with MPI pool if it is not none)
 		if pool is not None:
-			full_data = np.array(pool.map(self._callback_wrapper,tasks))
+			M = pool.map
 		else:
-			full_data = np.array(map(self._callback_wrapper,tasks))
+			M = map
+
+		full_data = np.array(M(callback_loader,tasks))
 		
 		assert type(full_data) == np.ndarray
 		assert full_data.shape[0] == self.num_realizations
