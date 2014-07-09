@@ -30,10 +30,11 @@ class Ensemble(object):
 
 	"""
 
-	def __init__(self,data,num_realizations):
+	def __init__(self,data=None,num_realizations=0,metric="chi2"):
 		
 		self.data = data
 		self.num_realizations = num_realizations
+		self.metric = metric
 
 	@classmethod
 	def fromfilelist(cls,file_list):
@@ -51,7 +52,7 @@ class Ensemble(object):
 		assert num_realizations>0,"There are no realizations in your ensemble!!"
 
 		#Build the ensemble instance and return it
-		new_ensemble = cls(None,num_realizations)
+		new_ensemble = cls(num_realizations=num_realizations)
 		setattr(new_ensemble,"file_list",file_list)
 
 		return new_ensemble
@@ -114,7 +115,9 @@ class Ensemble(object):
 
 		"""
 		
-		self._mean = self.data.mean(axis=0)
+		if not hasattr(self,"_mean"):
+			self._mean = self.data.mean(axis=0)
+		
 		return self._mean
 
 	def covariance(self):
@@ -135,9 +138,25 @@ class Ensemble(object):
 		subtracted = self.data - self._mean[np.newaxis,:]
 		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
 
+	def __sub__(self,rhs):
 
+		"""
+		Defines the subtraction operator between ensembles: computes a chi2-style difference between two different ensembles to assert how different they are
 
+		"""
 
+		assert isinstance(rhs,Ensemble)
+		assert self.metric == rhs.metric,"The two ensemble must have the same metric!!"
 
+		if self.metric=="chi2":
 
+			mean1 = self.mean()
+			covariance = self.covariance()
+			mean2 = rhs.mean()
+
+			return np.dot(mean1 - mean2,np.dot(np.linalg.inv(covariance),mean1 - mean2))
+
+		else:
+
+			raise ValueError("Only chi2 metric implemented so far!!")
 

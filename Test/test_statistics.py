@@ -81,3 +81,10 @@ def test_power_plot():
 
 	plt.savefig("power_ensemble.png")
 	plt.clf()
+
+def test_chi2():
+
+	conv_ensemble1 = Ensemble.fromfilelist(map_list[0:2])
+	conv_ensemble1.load(callback_loader=default_callback_loader,pool=None,l_edges=l_edges)
+
+	print("chi2 difference = {0}".format(conv_ensemble - conv_ensemble1))
