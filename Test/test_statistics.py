@@ -66,7 +66,12 @@ def test_power_plot():
 
 	fig,ax = plt.subplots()
 	for n in range(conv_ensemble.num_realizations):
-		ax.plot(l,l*(l+1)*conv_ensemble.data[n]/(2.0*np.pi),label="Map {0}".format(n+1))
+		ax.plot(l,l*(l+1)*conv_ensemble.data[n]/(2.0*np.pi),label="Map {0}".format(n+1),linestyle="--")
+
+	mean = conv_ensemble.mean()
+	errors = np.sqrt(conv_ensemble.covariance().diagonal())
+
+	ax.errorbar(l,l*(l+1)*mean/(2.0*np.pi),yerr=l*(l+1)*errors/(2.0*np.pi),label="Mean")
 
 	ax.set_xscale("log")
 	ax.set_yscale("log")

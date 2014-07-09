@@ -113,8 +113,28 @@ class Ensemble(object):
 		:returns: ndarray with the averages, has the same shape as self.data[0]
 
 		"""
+		
+		self._mean = self.data.mean(axis=0)
+		return self._mean
 
-		return self.data.mean(axis=0) 
+	def covariance(self):
+
+		"""
+		Computes the ensemble covariance matrix
+
+		:returns: ndarray with the covariance matrix, has shape (self.data[0],self.data[0]) 
+
+		""" 
+
+		assert self.num_realizations>1, "I can't compute a covariance matrix with one realization only!!"
+		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
+
+		if not hasattr(self,"_mean"):
+			self.mean()
+
+		subtracted = self.data - self._mean[np.newaxis,:]
+		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
+
 
 
 
