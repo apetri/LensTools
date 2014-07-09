@@ -10,8 +10,12 @@ except ImportError:
 	from lenstools import Ensemble
 	from lenstools.defaults import default_callback_loader
 
+import logging
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+logging.basicConfig(level=logging.DEBUG)
 
 map_list = ["conv1.fit","conv2.fit","conv3.fit","conv4.fit"]
 l_edges = np.arange(200.0,50000.0,200.0)

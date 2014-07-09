@@ -1,3 +1,4 @@
+import logging
 
 import numpy as np
 from astropy.io import fits
@@ -70,7 +71,7 @@ def load_fits_default_shear(*args):
 
 def default_callback_loader(file_name,**kwargs):
 
-	print("Processing {0}".format(file_name))
+	logging.debug("Processing {0}".format(file_name))
 
 	conv_map = ConvergenceMap.fromfilename(file_name,loader=load_fits_default_convergence)
 	l,Pl = conv_map.powerSpectrum(kwargs["l_edges"])

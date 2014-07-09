@@ -63,31 +63,30 @@ class Ensemble(object):
 
 		"""
 
+		#############################################
+		###Wrapper for MPI pool, to remain private###
+		#############################################
+
+		def _callback_wrapper(obj):
+			file_name,kwargs = obj
+			return callback_loader(file_name,**kwargs)
+
+		##############################################
+		##############################################
+
+		assert callback_loader is not None
+
 		#See how many realizations are there in the ensemble
 		num_realizations = len(file_list)
 		assert num_realizations>0,"There are no realizations in your ensemble!!"
 
-		#Call the loader on the first file to assert the data shape
-		data_first = callback_loader(file_list[0],**kwargs)
-		assert type(data_first) == np.ndarray,"There is something wrong with your callback, it doesn't return numpy arrays!"
+		#Build list with tasks to execute
+		tasks = [ (file_name,kwargs) for file_name in file_list ]
 
-		#Allocate memory for the ensemble data and fill with the first element
-		full_data_shape = (num_realizations,) + data_first.shape
-		full_data = np.zeros(full_data_shape)
-		full_data[0] = data_first
-
-		#Cycle to the remaining files to fill in the ensemble data
-		for n,file_name in enumerate(file_list[1:]):
-
-			#Load
-			data = callback_loader(file_name,**kwargs)
-
-			#Safety check
-			assert type(data) == np.ndarray,"There is something wrong with your callback, it doesn't return numpy arrays!"
-			assert data.shape == data_first.shape,"All the loaded data arrays must have the same shape!!"
-
-			#Add the loaded data to the ensemble
-			full_data[n + 1] = data
+		#Execute the callback on each file in the list
+		full_data = np.array(map(_callback_wrapper,tasks))
+		assert type(full_data) == np.ndarray
+		assert full_data.shape[0] == num_realizations
 
 		#Build the ensemble instance and return it
 		return cls(full_data,num_realizations)
