@@ -91,3 +91,11 @@ def default_callback_loader(args):
 	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
 	l,Pl = conv_map.powerSpectrum(args["l_edges"])
 	return Pl
+
+####################################################################################
+#############Default power spectrum template for testing############################
+####################################################################################
+
+def sample_power_shape(l,**kwargs):
+
+	return np.exp(-0.5*(l/kwargs["scale"])**2)

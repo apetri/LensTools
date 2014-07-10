@@ -1,23 +1,26 @@
 try:
 	
 	from lenstools import ConvergenceMap,ShearMap,GaussianNoiseGenerator
-	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
+	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear,sample_power_shape
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap,ShearMap,GaussianNoiseGenerator
-	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
+	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear,sample_power_shape
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 test_map_conv = ConvergenceMap.fromfilename("conv.fit",loader=load_fits_default_convergence)
 
-noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
+shape_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
+corr_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
 
-test_map_noisy = test_map_conv + noise_gen.getShapeNoise(z=1.0,ngal=15.0,seed=1)
+test_map_noisy = test_map_conv + shape_noise_gen.getShapeNoise(z=1.0,ngal=15.0,seed=1)
+
+l = np.arange(200.0,50000.0,200.0)
 
 
 def test_smooth():
@@ -65,4 +68,30 @@ def test_shape_noise():
 	plt.savefig("shape_noise.png")
 
 	plt.clf()
+
+def test_correlated_convergence():
+
+	fig,ax = plt.subplots()
+	
+	#Plot power spectral density
+	ax.plot(l,l*(l+1)*sample_power_shape(l,scale=20000.0)/(2.0*np.pi),label="Original")
+
+	#Generate three realizations of this power spectral density and plot power spectrum for cross check
+	for i in range(3):
+		noise_map = corr_noise_gen.fromConvPower(sample_power_shape,seed=i,scale=20000.0)
+		ell,Pl = noise_map.powerSpectrum(l)
+
+		ax.plot(ell,ell*(ell+1)*Pl/(2.0*np.pi),label="Realization {0}".format(i+1),linestyle="--")
+
+
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+
+	ax.legend(loc="lower right")
+
+	ax.set_yscale("log")
+
+	plt.savefig("correlated_power.png")
+	plt.clf()
+
 
