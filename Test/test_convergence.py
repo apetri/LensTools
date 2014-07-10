@@ -51,6 +51,27 @@ def test_power():
 	plt.savefig("power_spectrum.png")
 	plt.clf()
 
+def test_cross():
+
+	#Load
+	conv1 = ConvergenceMap.fromfilename("conv1.fit",loader=load_fits_default_convergence)
+	conv2 = ConvergenceMap.fromfilename("conv2.fit",loader=load_fits_default_convergence)
+
+	#Cross
+	l,Pl = conv1.cross(conv2,l_edges)
+
+	#Visualize
+	fig,ax = plt.subplots()
+	ax.plot(l,np.abs(l*(l+1)*Pl/(2.0*np.pi)))
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+
+	plt.savefig("cross_spectrum.png")
+	plt.clf()
+
+
 def test_minkowski():
 
 	#Compute

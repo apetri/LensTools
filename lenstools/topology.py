@@ -256,6 +256,47 @@ class ConvergenceMap(object):
 		#Output the power spectrum
 		return l,power_spectrum
 
+	def cross(self,other,l_edges):
+
+		"""
+		Measures the cross power spectrum between two convergence maps at the multipole moments specified in the input
+
+		:param other: The other convergence map
+		:type other: ConvergenceMap instance
+
+		:param l_edges: Multipole bin edges
+		:type l_edges: array
+
+		:returns: tuple -- (l -- array,Pl -- array) = (multipole moments, cross power spectrum at multipole moments)
+
+		:raises: AssertionError if l_edges are not provided or the other map has not the same shape as the input one
+
+		>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default_convergence)
+		>>> other_map = ConvergenceMap.fromfilename("map2.fit",loader=load_fits_default_convergence)
+		
+		>>> l_edges = np.arange(200.0,5000.0,200.0)
+		>>> l,Pl = test_map.cross(other_map,l_edges)
+
+		"""
+
+		assert l_edges is not None
+		l = 0.5*(l_edges[:-1] + l_edges[1:])
+
+		assert isinstance(other,ConvergenceMap)
+		assert self.side_angle == other.side_angle
+		assert self.kappa.shape == other.kappa.shape
+
+		#Calculate the Fourier transform of the maps with numpy FFTs
+		ft_map1 = np.fft.rfft2(self.kappa)
+		ft_map2 = np.fft.rfft2(other.kappa)
+
+		#Compute the cross power spectrum with the C backend implementation
+		cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle,l_edges)
+
+		#Output the cross power spectrum
+		return l,cross_power_spectrum
+
+
 	def smooth(self,angle_in_arcmin,kind="gaussian",inplace=False):
 
 		"""
