@@ -21,6 +21,7 @@ corr_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
 test_map_noisy = test_map_conv + shape_noise_gen.getShapeNoise(z=1.0,ngal=15.0,seed=1)
 
 l = np.arange(200.0,50000.0,200.0)
+scale = 5000.0
 
 
 def test_smooth():
@@ -69,16 +70,16 @@ def test_shape_noise():
 
 	plt.clf()
 
-def test_correlated_convergence():
+def test_correlated_convergence_power():
 
 	fig,ax = plt.subplots()
 	
 	#Plot power spectral density
-	ax.plot(l,l*(l+1)*sample_power_shape(l,scale=20000.0)/(2.0*np.pi),label="Original")
+	ax.plot(l,l*(l+1)*sample_power_shape(l,scale=scale)/(2.0*np.pi),label="Original")
 
 	#Generate three realizations of this power spectral density and plot power spectrum for cross check
 	for i in range(3):
-		noise_map = corr_noise_gen.fromConvPower(sample_power_shape,seed=i,scale=20000.0)
+		noise_map = corr_noise_gen.fromConvPower(sample_power_shape,seed=i,scale=scale)
 		ell,Pl = noise_map.powerSpectrum(l)
 
 		ax.plot(ell,ell*(ell+1)*Pl/(2.0*np.pi),label="Realization {0}".format(i+1),linestyle="--")
@@ -93,5 +94,27 @@ def test_correlated_convergence():
 
 	plt.savefig("correlated_power.png")
 	plt.clf()
+
+def test_correlated_convergence_maps():
+
+	fig,ax = plt.subplots(1,3,figsize=(24,8))
+
+	#Generate three realizations of this power spectral density and plot them for cross check
+	for i in range(3):
+		
+		noise_map = corr_noise_gen.fromConvPower(sample_power_shape,seed=i,scale=scale)
+		ax[i].imshow(noise_map.kappa,origin="lower",interpolation="nearest",extent=[0,noise_map.side_angle,0,noise_map.side_angle])
+		ax[i].set_xlabel(r"$x$(deg)")
+		ax[i].set_ylabel(r"$y$(deg)")
+
+	fig.tight_layout()
+	plt.savefig("correlated_maps.png")
+
+	plt.clf()
+
+
+
+
+
 
 
