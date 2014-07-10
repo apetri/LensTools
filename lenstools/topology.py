@@ -342,7 +342,7 @@ class ConvergenceMap(object):
 
 		"""
 
-		if isinstance(rhs,"ConvergenceMap"):
+		if isinstance(rhs,ConvergenceMap):
 
 			assert self.side_angle == rhs.side_angle
 			assert self.kappa.shape == rhs.kappa.shape

@@ -10,3 +10,4 @@ __version__ = "0.1"
 from .topology import ConvergenceMap
 from .shear import ShearMap
 from .statistics import Ensemble
+from .noise import GaussianNoiseGenerator
