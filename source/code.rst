@@ -36,6 +36,14 @@ Statistics
 .. autoclass:: lenstools.Ensemble
 	:members: fromfilelist,load,mean,__sub__
 
+Noise
+=====
+
+.. automodule:: lenstools.noise
+
+.. autoclass:: lenstools.GaussianNoiseGenerator
+	:members: forMap,getShapeNoise,fromConvPower
+
 Defaults
 ========
 
