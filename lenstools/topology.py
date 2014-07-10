@@ -15,6 +15,8 @@ from __future__ import division
 from external import _topology
 
 import numpy as np
+from scipy.ndimage import filters
+
 
 ################################################
 ########ConvergenceMap class####################
@@ -253,6 +255,40 @@ class ConvergenceMap(object):
 
 		#Output the power spectrum
 		return l,power_spectrum
+
+	def smooth(self,angle_in_arcmin,kind="gaussian",inplace=False):
+
+		"""
+		Performs a smoothing operation on the convergence map
+
+		:param angle_in_arcmin: size of the smoothing kernel in arcminutes
+		:type angle_in_arcmin: float.
+
+		:param kind: type of smoothing to be performed (only implemented gaussian so far)
+		:type kind: str.
+
+		:param inplace: if set to True performs the smoothing in place overwriting the old convergence map
+		:type inplace: bool.
+
+		:returns: ConvergenceMap instance (or None if inplace is True)
+
+		"""
+
+		assert kind is "gaussian","Only gaussian smoothing implemented!!"
+
+		#Compute the smoothing scale in pixel units
+		smoothing_scale_pixel = angle_in_arcmin * self.kappa.shape[0] / (self.side_angle*60.0)
+
+		#Perform the smoothing
+		smoothed_kappa = filters.gaussian_filter(self.kappa,smoothing_scale_pixel)
+
+		#Return the result
+		if inplace:
+			self.kappa = smoothed_kappa
+			return None
+		else:
+			return ConvergenceMap(smoothed_kappa,self.side_angle)
+
 
 	def __add__(self,rhs):
 
