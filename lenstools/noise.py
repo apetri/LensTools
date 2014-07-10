@@ -85,6 +85,32 @@ class GaussianNoiseGenerator(object):
 
 			raise ValueError("Only convergence implemented so far!!!")
 
+	def _fourierMap(self,power_func,**kwargs):
+
+		#Assert the shape of the blueprint, to tune the right size for the fourier transform
+		lpix = 360.0/self.side_angle
+		lx = np.fft.rfftfreq(self.shape[0]) * self.shape[0] * lpix
+		ly = np.fft.fftfreq(self.shape[0]) * self.shape[0] * lpix
+
+		#Compute the multipole moment of each FFT pixel
+		l = np.sqrt(lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2)
+
+		#Compute the power spectrum at each l and check that it is positive
+		Pl = power_func(l,**kwargs)
+		assert Pl[Pl>=0.0].size == Pl.size
+
+		#Generate amplitudes and phases
+		amplitudes = np.random.normal(loc=0.0,scale=np.sqrt(Pl)) * lpix/(2.0*np.pi)
+		phases = np.random.uniform(low=0.0,high=2.0*np.pi,size=l.shape)
+
+		#Get map in real space and return
+		ft_map = amplitudes * np.exp(-1.0j*phases) * l.shape[0]**2
+		ft_map[0,0] = 0.0
+
+		return ft_map
+
+
+
 	def fromConvPower(self,power_func,seed=0,**kwargs):
 
 		"""
@@ -104,27 +130,12 @@ class GaussianNoiseGenerator(object):
 
 		assert self.label is "convergence"
 
-		#Assert the shape of the blueprint, to tune the right size for the fourier transform
-		lpix = 360.0/self.side_angle
-		lx = np.fft.rfftfreq(self.shape[0]) * self.shape[0] * lpix
-		ly = np.fft.fftfreq(self.shape[0]) * self.shape[0] * lpix
-
-		#Compute the multipole moment of each FFT pixel
-		l = np.sqrt(lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2)
-
-		#Compute the power spectrum at each l and check that it is positive
-		Pl = power_func(l,**kwargs)
-		assert Pl[Pl>=0.0].size == Pl.size
-
-		#Generate amplitudes and phases
+		#Initialize random number generator
 		np.random.seed(seed)
-		amplitudes = np.random.normal(loc=0.0,scale=np.sqrt(Pl)) * lpix/(2.0*np.pi)
-		phases = np.random.uniform(low=0.0,high=2.0*np.pi,size=l.shape)
 
-		#Get map in real space and return
-		ft_map = amplitudes * np.exp(-1.0j*phases)
-		ft_map[0,0] = 0.0
-		noise_map = np.fft.irfft2(ft_map) * l.shape[0]**2
+		#Generate a random Fourier realization and invert it
+		ft_map = self._fourierMap(power_func,**kwargs)
+		noise_map = np.fft.irfft2(ft_map)
 
 		return ConvergenceMap(noise_map,self.side_angle)
 
