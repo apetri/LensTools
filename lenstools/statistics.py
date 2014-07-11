@@ -30,8 +30,9 @@ class Ensemble(object):
 
 	"""
 
-	def __init__(self,data=None,num_realizations=0,metric="chi2"):
+	def __init__(self,file_list=None,data=None,num_realizations=0,metric="chi2"):
 		
+		self.file_list = file_list
 		self.data = data
 		self.num_realizations = num_realizations
 		self.metric = metric
@@ -52,10 +53,7 @@ class Ensemble(object):
 		assert num_realizations>0,"There are no realizations in your ensemble!!"
 
 		#Build the ensemble instance and return it
-		new_ensemble = cls(num_realizations=num_realizations)
-		setattr(new_ensemble,"file_list",file_list)
-
-		return new_ensemble
+		return cls(file_list=file_list,num_realizations=num_realizations)
 
 	def load(self,callback_loader,pool=None,**kwargs):
 		"""
@@ -138,10 +136,10 @@ class Ensemble(object):
 		subtracted = self.data - self._mean[np.newaxis,:]
 		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
 
-	def __sub__(self,rhs):
+	def compare(self,rhs):
 
 		"""
-		Defines the subtraction operator between ensembles: computes a chi2-style difference between two different ensembles to assert how different they are
+		A comparison operation between ensembles: computes a chi2-style difference between two different ensembles to assert how different they are
 
 		"""
 
@@ -159,4 +157,28 @@ class Ensemble(object):
 		else:
 
 			raise ValueError("Only chi2 metric implemented so far!!")
+
+	def __add__(self,rhs):
+
+		"""
+		Overload of the sum operator: a sum between ensembles is another ensemble whose data are vstacked. This operation is useful if you have two ensembles with different, independent realizations and you want to create an ensemble which is the union of the two. The data must be vstackable
+
+		"""
+
+		#Safety checks
+		assert isinstance(rhs,Ensemble)
+		assert self.metric == rhs.metric,"The two ensemble instances must have the same metric!!"
+
+		try:
+			
+			new_data = np.vstack((self.data,rhs.data))
+		except ValueError:
+			
+			print("The data of these two ensembles cannot be vstacked!")
+			return None
+
+		return Ensemble(file_list=self.file_list+rhs.file_list,data=new_data,num_realizations=self.num_realizations+rhs.num_realizations,metric=self.metric)
+
+
+
 

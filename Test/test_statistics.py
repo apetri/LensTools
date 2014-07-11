@@ -87,4 +87,25 @@ def test_chi2():
 	conv_ensemble1 = Ensemble.fromfilelist(map_list[0:2])
 	conv_ensemble1.load(callback_loader=default_callback_loader,pool=None,l_edges=l_edges)
 
-	print("chi2 difference = {0}".format(conv_ensemble - conv_ensemble1))
+	print("chi2 difference = {0}".format(conv_ensemble.compare(conv_ensemble1)))
+
+def test_add():
+
+	conv_ensemble1 = Ensemble.fromfilelist(map_list[0:2])
+	conv_ensemble2 = Ensemble.fromfilelist(map_list[2:])
+
+	conv_ensemble1.load(callback_loader=default_callback_loader,pool=None,l_edges=l_edges)
+	conv_ensemble2.load(callback_loader=default_callback_loader,pool=None,l_edges=l_edges)
+
+	conv_ensemble_union = conv_ensemble1 + conv_ensemble2
+
+	assert conv_ensemble_union.num_realizations == 4
+	assert len(conv_ensemble_union.file_list) == 4
+	assert conv_ensemble_union.data.shape[0] == 4
+	assert conv_ensemble_union.data.shape[1] == conv_ensemble1.data.shape[1]
+
+
+
+
+
+

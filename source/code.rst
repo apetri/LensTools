@@ -34,7 +34,7 @@ Statistics
 .. automodule:: lenstools.statistics
 
 .. autoclass:: lenstools.Ensemble
-	:members: fromfilelist,load,mean,__sub__
+	:members: fromfilelist,load,mean,compare,__add__
 
 Noise
 =====
