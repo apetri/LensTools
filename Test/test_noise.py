@@ -112,6 +112,52 @@ def test_correlated_convergence_maps():
 
 	plt.clf()
 
+def test_interpolated_convergence_power():
+
+	fig,ax = plt.subplots()
+
+	power_func = np.loadtxt("ee4e-7.txt",unpack=True)
+	l_in,Pl_in = power_func
+	
+	#Plot power spectral density
+	ax.plot(l_in,l_in*(l_in+1)*Pl_in/(2.0*np.pi),label="Original")
+
+	#Generate three realizations of this power spectral density and plot power spectrum for cross check
+	for i in range(3):
+		noise_map = corr_noise_gen.fromConvPower(power_func,seed=i,bounds_error=False,fill_value=0.0)
+		ell,Pl = noise_map.powerSpectrum(l_in)
+
+		ax.plot(ell,ell*(ell+1)*Pl/(2.0*np.pi),label="Realization {0}".format(i+1),linestyle="--")
+
+
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+
+	ax.legend(loc="upper right")
+
+	ax.set_yscale("log")
+
+	plt.savefig("interpolated_power.png")
+	plt.clf()
+
+def test_interpolated_convergence_maps():
+
+	fig,ax = plt.subplots(1,3,figsize=(24,8))
+	power_func = np.loadtxt("ee4e-7.txt",unpack=True)
+
+	#Generate three realizations of this power spectral density and plot them for cross check
+	for i in range(3):
+		
+		noise_map = corr_noise_gen.fromConvPower(power_func,seed=i,bounds_error=False,fill_value=0.0)
+		ax[i].imshow(noise_map.kappa,origin="lower",interpolation="nearest",extent=[0,noise_map.side_angle,0,noise_map.side_angle])
+		ax[i].set_xlabel(r"$x$(deg)")
+		ax[i].set_ylabel(r"$y$(deg)")
+
+	fig.tight_layout()
+	plt.savefig("interpolated_maps.png")
+
+	plt.clf()
+
 
 
 

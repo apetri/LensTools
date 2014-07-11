@@ -15,6 +15,7 @@ from __future__ import division
 from topology import ConvergenceMap
 
 import numpy as np
+from scipy import interpolate
 
 ########################################################
 ########GaussianNoiseGenerator class####################
@@ -95,12 +96,26 @@ class GaussianNoiseGenerator(object):
 		#Compute the multipole moment of each FFT pixel
 		l = np.sqrt(lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2)
 
-		#Compute the power spectrum at each l and check that it is positive
-		Pl = power_func(l,**kwargs)
+		#Compute the power spectrum at each l and check that it is positive 
+		if isinstance(power_func,np.ndarray):
+			
+			#Check for correct shape
+			assert power_func.shape[0] == 2,"If you want an interpolated power spectrum you should pass a (l,Pl) array!"
+
+			#Perform the interpolation
+			ell,Pell = power_func
+			power_interp = interpolate.interp1d(ell,Pell,**kwargs)
+			Pl = power_interp(l)
+
+		else:
+			
+			Pl = power_func(l,**kwargs)
+		
+
 		assert Pl[Pl>=0.0].size == Pl.size
 
 		#Generate amplitudes and phases
-		amplitudes = np.random.normal(loc=0.0,scale=np.sqrt(Pl)) * lpix/(2.0*np.pi)
+		amplitudes = np.sqrt(Pl) * np.random.normal(loc=0.0,scale=1.0,size=l.shape) * lpix/(2.0*np.pi)
 		phases = np.random.uniform(low=0.0,high=2.0*np.pi,size=l.shape)
 
 		#Get map in real space and return
@@ -116,13 +131,13 @@ class GaussianNoiseGenerator(object):
 		"""
 		This method uses a supplied power spectrum to generate correlated noise maps in real space via FFTs
 
-		:param power_func: function that given a numpy array of l's returns a numpy array with the according Pl's (this is the input power spectrum)
-		:type power_func: function with the above specifications 
+		:param power_func: function that given a numpy array of l's returns a numpy array with the according Pl's (this is the input power spectrum); alternatively you can pass an array (l,Pl) and the power spectrum will be calculated with scipy's interpolation routines
+		:type power_func: function with the above specifications, or numpy array (l,Pl) of shape (2,n) 
 
 		:param seed: seed of the random generator 
 		:type seed: int.
 
-		:param kwargs: keyword arguments to be passed to power_func
+		:param kwargs: keyword arguments to be passed to power_func, or to the interpolate.interp1d routine
 
 		:returns: ConvergenceMap instance of the same exact shape as the one used as blueprint
 
