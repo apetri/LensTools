@@ -86,11 +86,24 @@ def default_callback_loader(args):
 	assert "file_name" in args.keys()
 	assert "l_edges" in args.keys()
 
-	logging.debug("Processing {0}".format(args["file_name"]))
+	logging.debug("Processing {0} power".format(args["file_name"]))
 
 	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
 	l,Pl = conv_map.powerSpectrum(args["l_edges"])
 	return Pl
+
+def peaks_loader(args):
+
+	assert "file_name" in args.keys()
+	assert "thresholds" in args.keys()
+
+	logging.debug("Processing {0} peaks".format(args["file_name"]))
+	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
+
+	v,pk = conv_map.peakCount(args["thresholds"],norm=True)
+	return v
+
+
 
 ####################################################################################
 #############Default power spectrum template for testing############################

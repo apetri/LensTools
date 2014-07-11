@@ -158,6 +158,7 @@ class Ensemble(object):
 
 			raise ValueError("Only chi2 metric implemented so far!!")
 
+	
 	def __add__(self,rhs):
 
 		"""
@@ -172,12 +173,44 @@ class Ensemble(object):
 		try:
 			
 			new_data = np.vstack((self.data,rhs.data))
+		
 		except ValueError:
 			
 			print("The data of these two ensembles cannot be vstacked!")
 			return None
 
 		return Ensemble(file_list=self.file_list+rhs.file_list,data=new_data,num_realizations=self.num_realizations+rhs.num_realizations,metric=self.metric)
+
+
+	def __mul__(self,rhs):
+
+		"""
+		Overload of the multiplication operator: a multiplication of two ensembles is another ensemble whose data are hstacked. This operation is useful if you have two ensembles with the same realizations but different statistical descriptor, and you want to create an ensemble in which both descriptors are included. The data must be hstackable
+
+		"""
+
+		#Safety checks
+		assert isinstance(rhs,Ensemble)
+		assert self.metric == rhs.metric
+		assert self.num_realizations == rhs.num_realizations
+
+		#Throw an error if the file lists do not coincide
+		if not self.file_list == rhs.file_list:
+			raise ValueError("You are try to multiply ensembles built from different files!!")
+
+		try:
+
+			new_data = np.hstack((self.data,rhs.data))
+
+		except ValueError:
+
+			print("The data of these two ensembles cannot be hstacked!")
+			return None
+
+		return Ensemble(file_list=self.file_list,data=new_data,num_realizations=self.num_realizations,metric=self.metric)
+
+
+
 
 
 

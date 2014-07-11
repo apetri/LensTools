@@ -3,13 +3,13 @@ import sys,os
 try:
 	
 	from lenstools import Ensemble
-	from lenstools.defaults import default_callback_loader
+	from lenstools.defaults import default_callback_loader,peaks_loader
 
 except ImportError:
 
 	sys.path.append("..")
 	from lenstools import Ensemble
-	from lenstools.defaults import default_callback_loader
+	from lenstools.defaults import default_callback_loader,peaks_loader
 
 try:
 
@@ -49,6 +49,8 @@ if (pool is not None) and not(pool.is_master()):
 
 map_list = ["conv1.fit","conv2.fit","conv3.fit","conv4.fit"]
 l_edges = np.arange(200.0,50000.0,200.0)
+thresholds_pk = np.arange(-1.0,5.0,0.2)
+
 l = 0.5*(l_edges[:-1] + l_edges[1:])
 
 conv_ensemble = Ensemble.fromfilelist(map_list)
@@ -103,6 +105,18 @@ def test_add():
 	assert len(conv_ensemble_union.file_list) == 4
 	assert conv_ensemble_union.data.shape[0] == 4
 	assert conv_ensemble_union.data.shape[1] == conv_ensemble1.data.shape[1]
+
+def test_multiply():
+
+	conv_ensemble_peaks = Ensemble.fromfilelist(map_list)
+	conv_ensemble_peaks.load(callback_loader=peaks_loader,pool=None,thresholds=thresholds_pk)
+
+	conv_ensemble_both = conv_ensemble * conv_ensemble_peaks
+
+	assert conv_ensemble_both.num_realizations == 4
+	assert conv_ensemble_both.file_list == conv_ensemble.file_list
+	assert conv_ensemble_both.data.shape[0] == 4
+	assert conv_ensemble_both.data.shape[1] == len(l_edges) + len(thresholds_pk) - 2
 
 
 
