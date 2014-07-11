@@ -15,6 +15,14 @@ from __future__ import division
 from topology import ConvergenceMap
 
 import numpy as np
+
+#Check if rfftfreq is implemented (requires numpy>=1.8)
+try:
+	np.fft.rfftfreq
+except AttributeError:
+	from rfftfreq import rfftfreq
+	np.fft.rfftfreq = rfftfreq
+
 from scipy import interpolate
 
 ########################################################
