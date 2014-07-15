@@ -27,7 +27,7 @@ thresholds_pk = np.arange(-1.0,5.0,0.2)
 def test_index():
 
 	#Decide the statistical descriptors to measure, and build an index
-	idx = Indexer([PowerSpectrum(l_edges),Peaks(thresholds_pk)])
+	idx = Indexer.stack([PowerSpectrum(l_edges),Peaks(thresholds_pk)])
 	l = idx[0].l
 	v = idx[1].midpoints
 

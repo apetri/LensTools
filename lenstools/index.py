@@ -95,6 +95,43 @@ class Peaks(Descriptor):
 		self._last = self._start + len(self.midpoints)
 		return self._last
 
+class MinkowskiSingle(Peaks):
+	"""
+	Single Minkowski functional indexing class, identical to Peaks
+
+	"""
+
+class MinkowskiAll(Peaks):
+	"""
+	Minkowski functionals indexing class, inherits from Peaks; the add-ons are some methods that deal with the fact that there are 3 Minkowski functionals
+
+	"""
+
+	@property
+	def last(self):
+
+		self._last = self._start + 3*len(self.midpoints)
+		return self._last
+
+	def separate(self):
+		"""
+		Separates an MinkowskiAll index into 3 separate MinkowsiSingle indices, one for each Minkowski functional
+
+		:returns: list of three MinkowskiSingle instances
+
+		"""
+
+		mink0 = MinkowskiSingle(self.thresholds)
+		mink0._start = self._start
+
+		mink1 = MinkowskiSingle(self.thresholds)
+		mink1._start = self._start + len(self.midpoints)
+
+		mink2 = MinkowskiSingle(self.thresholds)
+		mink2._start = self._start + 2*len(self.midpoints) 
+
+		return [mink0,mink1,mink2]
+
 ###################################
 #####Global indexer################
 ###################################
@@ -112,19 +149,32 @@ class Indexer(object):
 
 		#Initialize index with descriptor list
 		self.descriptor_list = descriptor_list
-		self._last = 0
 		self.num_descriptors = len(descriptor_list)
 
-		#Create an index of all the descriptor bounds
+	@classmethod
+	def stack(cls,descriptor_list):
+
+		_last = 0
+
+		#Create an index of all the descriptor bounds by stacking the observables vectors
 		for descriptor in descriptor_list:
 
-			increment = descriptor.last
-			descriptor._start = self._last
-			self._last += increment
+			increment = descriptor.last - descriptor._start
+			descriptor._start = _last
+			_last += increment
+
+		new_idx = cls(descriptor_list)
+		setattr(new_idx,"_last",_last)
+
+		return new_idx
 
 	@property
 	def size(self):
-		return self._last
+
+		if hasattr(self,"_last"):
+			return self._last
+		else: 
+			raise AttributeError("This index has not been created by stack() method, cannot determine size!")
 
 	def __getitem__(self,n):
 		"""Allows to access the n-th descriptor by indexing"""

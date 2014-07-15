@@ -1,5 +1,5 @@
-Code documentation
-******************
+API
+***
 
 .. automodule:: lenstools
 
