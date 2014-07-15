@@ -37,14 +37,17 @@ def test_index():
 	#Load measurements into the ensemble
 	ens.load(callback_loader=convergence_measure_all,pool=None,index=idx)
 
+	#Split the ensemble in power_spectrum and peaks
+	ens_pow,ens_pk = ens.split(idx)
+
 	#####################################################################
 
 	#Plot to check
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
 	for i in range(ens.num_realizations):
 		
-		ax[0].plot(l,l*(l+1)*ens.data[i,idx[0].first:idx[0].last]/(2.0*np.pi))
-		ax[1].plot(v,ens.data[i,idx[1].first:idx[1].last])
+		ax[0].plot(l,l*(l+1)*ens_pow.data[i]/(2.0*np.pi))
+		ax[1].plot(v,ens_pk.data[i])
 
 	ax[0].set_xscale("log")
 	ax[0].set_yscale("log")

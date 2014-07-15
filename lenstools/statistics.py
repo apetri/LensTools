@@ -14,6 +14,7 @@ from __future__ import division
 
 from topology import ConvergenceMap
 from shear import ShearMap
+from lenstools.index import Indexer
 
 import numpy as np
 
@@ -208,6 +209,34 @@ class Ensemble(object):
 			return None
 
 		return Ensemble(file_list=self.file_list,data=new_data,num_realizations=self.num_realizations,metric=self.metric)
+
+	def split(self,index):
+
+		"""
+		Inverse of the * operator: this method uses an Indexer instance to break down a multiple descriptor ensemble in many, smaller, single descriptor ensembles
+
+		:param index: index of descriptors with which to perform the split
+		:type index: Indexer instance
+
+		:returns: list of Ensemble instances, one for each element in index
+
+		:raises: AssertionError if shape of the ensemble data is not suitable 
+
+		"""
+
+		assert isinstance(index,Indexer)
+		assert self.data.shape[1] ==  index.size
+
+		splitted = list()
+		
+		for n in range(index.num_descriptors):
+
+			splitted.append(Ensemble(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
+
+		return splitted
+
+
+
 
 
 

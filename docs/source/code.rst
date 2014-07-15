@@ -37,7 +37,7 @@ Statistics
 	:members: Ensemble
 
 .. autoclass:: lenstools.Ensemble
-	:members: fromfilelist,load,mean,compare,__add__,__mul__
+	:members: fromfilelist,load,mean,compare,__add__,__mul__,split
 
 Noise
 =====
