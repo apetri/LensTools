@@ -12,32 +12,26 @@ Limber integration
 Convergence maps
 ================
 
-.. automodule:: lenstools.topology
-	:members: ConvergenceMap
-
 .. autoclass:: lenstools.ConvergenceMap
-	:members: __add__
+	:inherited-members:
 
 Shear maps
 ==========
 
-.. automodule:: lenstools.shear
-	:members: ShearMap
+.. autoclass:: lenstools.ShearMap
+	:inherited-members:
 
 Statistics
 ==========
 
-.. automodule:: lenstools.statistics
-	:members: Ensemble
-
 .. autoclass:: lenstools.Ensemble
-	:members: __add__,__mul__
+	:inherited-members: 
 
 Noise
 =====
 
-.. automodule:: lenstools.noise
-	:members: GaussianNoiseGenerator
+.. autoclass:: lenstools.GaussianNoiseGenerator
+	:inherited-members:
 
 Indexing
 ========
