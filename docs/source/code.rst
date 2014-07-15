@@ -9,9 +9,6 @@ Limber integration
 .. automodule:: lenstools.limber
 	:members: LimberIntegrator
 
-.. autoclass:: lenstools.limber.LimberIntegrator
-	:members: computeConvergence, writeCAMBSettings
-
 Convergence maps
 ================
 
@@ -19,16 +16,13 @@ Convergence maps
 	:members: ConvergenceMap
 
 .. autoclass:: lenstools.ConvergenceMap
-	:members: fromfilename,gradient,hessian,peakCount,minkowskiFunctionals,moments,powerSpectrum,__add__
+	:members: __add__
 
 Shear maps
 ==========
 
 .. automodule:: lenstools.shear
 	:members: ShearMap
-
-.. autoclass:: lenstools.ShearMap
-	:members: fromfilename,fromEBmodes,decompose,sticks,convergence,visualizeComponents
 
 Statistics
 ==========
@@ -37,16 +31,13 @@ Statistics
 	:members: Ensemble
 
 .. autoclass:: lenstools.Ensemble
-	:members: fromfilelist,load,mean,compare,__add__,__mul__,split
+	:members: __add__,__mul__
 
 Noise
 =====
 
 .. automodule:: lenstools.noise
 	:members: GaussianNoiseGenerator
-
-.. autoclass:: lenstools.GaussianNoiseGenerator
-	:members: forMap,getShapeNoise,fromConvPower
 
 Indexing
 ========
