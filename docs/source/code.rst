@@ -16,6 +16,7 @@ Convergence maps
 ================
 
 .. automodule:: lenstools.topology
+	:members: ConvergenceMap
 
 .. autoclass:: lenstools.ConvergenceMap
 	:members: fromfilename,gradient,hessian,peakCount,minkowskiFunctionals,moments,powerSpectrum,__add__
@@ -24,6 +25,7 @@ Shear maps
 ==========
 
 .. automodule:: lenstools.shear
+	:members: ShearMap
 
 .. autoclass:: lenstools.ShearMap
 	:members: fromfilename,fromEBmodes,decompose,sticks,convergence,visualizeComponents
@@ -32,6 +34,7 @@ Statistics
 ==========
 
 .. automodule:: lenstools.statistics
+	:members: Ensemble
 
 .. autoclass:: lenstools.Ensemble
 	:members: fromfilelist,load,mean,compare,__add__,__mul__
@@ -40,9 +43,19 @@ Noise
 =====
 
 .. automodule:: lenstools.noise
+	:members: GaussianNoiseGenerator
 
 .. autoclass:: lenstools.GaussianNoiseGenerator
 	:members: forMap,getShapeNoise,fromConvPower
+
+Indexing
+========
+
+.. automodule:: lenstools.index
+
+.. autoclass:: lenstools.index.Indexer
+
+.. autoclass:: lenstools.index.PowerSpectrum
 
 Defaults
 ========
