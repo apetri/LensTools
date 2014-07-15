@@ -37,6 +37,9 @@ class PowerSpectrum(Descriptor):
 	"""
 	Power spectrum indexing class
 
+	:param l_edges: bin edges of multipole moments
+	:type l_edges: array
+
 	"""
 	
 	def __init__(self,l_edges):
@@ -64,6 +67,9 @@ class PowerSpectrum(Descriptor):
 class Peaks(Descriptor):
 	"""
 	Peaks histogram indexing class
+
+	:param thresholds: peak histogram bin edges
+	:type thresholds: array
 
 	"""
 

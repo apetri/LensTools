@@ -106,6 +106,11 @@ def peaks_loader(args):
 
 def convergence_measure_all(args):
 
+	"""
+	Measures all the statistical descriptors of a convergence map as indicated by the Indexer instance args['index']
+	
+	"""
+
 	assert "file_name" in args.keys()
 	assert "index" in args.keys()
 
