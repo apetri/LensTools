@@ -35,7 +35,8 @@ class Descriptor(object):
 
 class PowerSpectrum(Descriptor):
 	"""
-	Power spectrum type descriptor class
+	Power spectrum indexing class
+
 	"""
 	
 	def __init__(self,l_edges):
@@ -60,13 +61,41 @@ class PowerSpectrum(Descriptor):
 		self._last = self._start + len(self.l)
 		return self._last
 
+class Peaks(Descriptor):
+	"""
+	Peaks histogram indexing class
+
+	"""
+
+	def __init__(self,thresholds):
+
+		super(Peaks,self).__init__()
+		self.thresholds = thresholds
+		self.midpoints = 0.5*(thresholds[:-1] + thresholds[1:])
+
+	def __str__(self):
+
+		return "Peak count descriptor: {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
+
+	@property
+	def first(self):
+
+		self._first = self._start
+		return self._first
+
+	@property
+	def last(self):
+
+		self._last = self._start + len(self.midpoints)
+		return self._last
+
 ###################################
 #####Global indexer################
 ###################################
 
 class Indexer(object):
 	"""
-	This class is useful for indexing array of statistical descriptors that are hstacked together
+	This class is useful for indexing an array of statistical descriptors that are hstacked together; the Indexer instance keeps track of the memory regions where the different descriptors are stored
 
 	:param descriptor_list: list of Descriptor subinstances, such as PowerSpectrum; each of these sub instances must be a subclass of Descriptor with a 'first' and 'last' getter methods implemented
 	:type descriptor_list: list.
@@ -86,6 +115,10 @@ class Indexer(object):
 			increment = descriptor.last
 			descriptor._start = self._last
 			self._last += increment
+
+	@property
+	def size(self):
+		return self._last
 
 	def __getitem__(self,n):
 		"""Allows to access the n-th descriptor by indexing"""

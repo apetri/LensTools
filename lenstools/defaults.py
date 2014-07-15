@@ -4,6 +4,7 @@ import numpy as np
 from astropy.io import fits
 
 from topology import ConvergenceMap
+from index import PowerSpectrum,Peaks
 
 ##########################################
 #####Default Fits loader convergence######
@@ -102,6 +103,36 @@ def peaks_loader(args):
 
 	v,pk = conv_map.peakCount(args["thresholds"],norm=True)
 	return v
+
+def convergence_measure_all(args):
+
+	assert "file_name" in args.keys()
+	assert "index" in args.keys()
+
+	logging.debug("Processing {0}".format(args["file_name"]))
+
+	#Load the map
+	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
+
+	#Allocate memory for observables
+	descriptors = args["index"]
+	observables = np.zeros(descriptors.size)
+
+	#Measure descriptors as directed by input
+	for n in range(descriptors.num_descriptors):
+
+		if isinstance(descriptors[n],PowerSpectrum):
+			l,observables[descriptors[n].first:descriptors[n].last] = conv_map.powerSpectrum(descriptors[n].l_edges)
+		elif isinstance(descriptors[n],Peaks):
+			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.peakCount(descriptors[n].thresholds,norm=True)
+		else:
+			raise ValueError("Measurement of this descriptor not implemented!!!")
+
+	#Return
+	return observables
+
+
+
 
 
 

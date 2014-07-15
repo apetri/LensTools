@@ -57,6 +57,8 @@ Indexing
 
 .. autoclass:: lenstools.index.PowerSpectrum
 
+.. autoclass:: lenstools.index.Peaks
+
 Defaults
 ========
 
