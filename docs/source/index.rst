@@ -8,7 +8,23 @@ Welcome to LensTools's documentation!
 
 This python package collects together a suite of widely used analysis tools in Weak Gravitational Lensing
 
-Contents:
+Summary
+-------
+
+Installation
+------------
+
+Test
+----
+
+Issues
+------
+
+License
+-------
+
+API
+---
 
 .. toctree::
    :maxdepth: 2
