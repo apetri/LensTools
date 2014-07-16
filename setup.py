@@ -66,7 +66,7 @@ setup(
 	url=url,
 	license="?",
 	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd("README.md"),
+	long_description=rd("docs/source/index.rst"),
 	classifiers=classifiers,
 	ext_package="{0}/{1}".format(name,external_dir),
 	ext_modules=ext,
