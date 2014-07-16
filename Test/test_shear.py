@@ -79,6 +79,14 @@ def test_EB_decompose():
 	plt.savefig("EB.png")
 	plt.clf()
 
+	fig,ax = plt.subplots()
+	ax.plot(l,np.abs(EB)/np.sqrt(EE*BB))
+	ax.set_xlabel(r"$x$")
+	ax.set_ylabel(r"$P_{EB}/\sqrt{P_{EE}P_{BB}}$")
+
+	plt.savefig("EB_corr.png")
+	plt.clf()
+
 def test_visualize2():
 
 	fig,ax = plt.subplots()
