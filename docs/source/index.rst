@@ -11,17 +11,33 @@ This python package collects together a suite of widely used analysis tools in W
 Summary
 -------
 
+This python add-on will handle basically every operation you will need to perform on Weak Lensing survey data; the distribution includes a range of tools in image analysis, statistical processing and numerical theory predictions and supports multiprocessing using the mpi4py module. 
+
 Installation
 ------------
+
+The easiest way is to install through pip::
+
+	pip install LensTools
 
 Test
 ----
 
+To check that everything works you can run some pre implemented tests. First you need to install `pytest <http://pytest.org/latest/>`_, then you need to go into the Test directory and run::
+	
+	py.test
+
+The tests will need some data files to run: you can download these from ...
+
 Issues
 ------
 
+The code is maintained and developed on `github <https://github.com/apetri/LensTools>`_, pull requests are welcome!
+
 License
 -------
+
+None so far
 
 API
 ---
