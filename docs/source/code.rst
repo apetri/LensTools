@@ -1,6 +1,10 @@
 API
 ***
 
+.. warning::
+
+	This is still in pre-alpha stage, not tested yet on full scale! Use at your own risk!
+
 .. automodule:: lenstools
 
 Convergence maps
@@ -37,6 +41,10 @@ Indexing
 .. autoclass:: lenstools.index.PowerSpectrum
 
 .. autoclass:: lenstools.index.Peaks
+
+.. autoclass:: lenstools.index.MinkowskiAll
+
+.. autoclass:: lenstools.index.MinkowskiSingle
 
 Defaults
 ========
