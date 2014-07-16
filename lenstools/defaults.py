@@ -4,7 +4,7 @@ import numpy as np
 from astropy.io import fits
 
 from topology import ConvergenceMap
-from index import PowerSpectrum,Peaks
+from index import PowerSpectrum,Peaks,MinkowskiAll,MinkowskiSingle
 
 ##########################################
 #####Default Fits loader convergence######
@@ -126,11 +126,26 @@ def convergence_measure_all(args):
 	#Measure descriptors as directed by input
 	for n in range(descriptors.num_descriptors):
 
-		if isinstance(descriptors[n],PowerSpectrum):
+		
+		if type(descriptors[n]) == PowerSpectrum:
+			
 			l,observables[descriptors[n].first:descriptors[n].last] = conv_map.powerSpectrum(descriptors[n].l_edges)
-		elif isinstance(descriptors[n],Peaks):
+		
+		elif type(descriptors[n]) == Peaks:
+			
 			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.peakCount(descriptors[n].thresholds,norm=True)
+		
+		elif type(descriptors[n]) == MinkowskiAll:
+			
+			v,V0,V1,V2 = conv_map.minkowskiFunctionals(descriptors[n].thresholds,norm=True)
+			observables[descriptors[n].first:descriptors[n].last] = np.hstack((V0,V1,V2))
+		
+		elif type(descriptors[n]) == MinkowskiSingle:
+			
+			raise ValueError("Due to computational performance you have to measure all Minkowski functionals at once!")
+		
 		else:
+			
 			raise ValueError("Measurement of this descriptor not implemented!!!")
 
 	#Return

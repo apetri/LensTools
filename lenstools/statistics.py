@@ -225,7 +225,6 @@ class Ensemble(object):
 		"""
 
 		assert isinstance(index,Indexer)
-		assert self.data.shape[1] ==  index.size
 
 		splitted = list()
 		
