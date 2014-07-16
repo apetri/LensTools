@@ -20,9 +20,11 @@ This python add-on will handle basically every operation you will need to perfor
 Installation
 ------------
 
-The easiest way is to install through pip::
+The easiest way will be to install through pip::
 
 	pip install LensTools
+
+In the meantime you can clone or fork fork the `github repository <https://github.com/apetri/LensTools>`_ to download the source
 
 Test
 ----
@@ -31,7 +33,7 @@ To check that everything works you can run some pre implemented tests. First you
 	
 	py.test
 
-The tests will need some data files to run: you can download these from ...
+The tests will need some data files to run: coming soon...
 
 Issues
 ------
@@ -50,6 +52,14 @@ API
    :maxdepth: 2
 
    code
+
+Gallery
+-------
+
+.. toctree::
+   :maxdepth: 2
+
+   gallery
 
 Indices and tables
 ==================

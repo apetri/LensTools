@@ -3,7 +3,7 @@ import os,sys,re
 name = "lenstools"
 me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
-url = "https://github.com/apetri/LensTools"
+url = "http://apetri.github.io/LensTools"
 
 try:
 	import numpy.distutils.misc_util 
