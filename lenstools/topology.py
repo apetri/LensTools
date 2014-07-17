@@ -203,7 +203,7 @@ class ConvergenceMap(object):
 
 		#Compute connected moments (only quartic affected)
 		if connected:
-			K0 -= sigma0**4
+			K0 -= 3 * sigma0**4
 			K1 += 3 * sigma0**2 * sigma1**2
 			K2 += sigma1**4
 			K3 -= 2 * sigma1**4
