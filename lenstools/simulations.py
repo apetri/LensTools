@@ -43,3 +43,59 @@ class IGS1(FlatwCDM):
 		ns_piece = u" ns={0}".format(self.ns)
 
 		return ",".join(pieces[:3] + [si8_piece,ns_piece] + pieces[3:])
+
+	def _realization_id(self,n):
+
+		d1 = n//1000
+		d2 = (n - 1000*d1)//100
+		d3 = (n - 1000*d1 - 100*d2)//10
+		d4 = n - 1000*d1 - 100*d2 - 10*d3
+
+		return "{0}{1}{2}{3}".format(d1,d2,d3,d4)
+
+	def _redshift_id(self,z):
+
+		return self._realization_id(int(z*100))
+
+	def _plane_id(self,z):
+
+		if z==1.0:
+			return "0029p"
+		elif z==1.5:
+			return "0038p"
+		elif z==2.0:
+			return "0046p"
+		else:
+			raise ValueError("IGS1 doesn't have maps at redshift {0}".format(z))
+
+	def getNames(self,z,realizations,kind="convergence",gaussian=False,big_fiducial_set=False):
+
+		assert type(realizations) == list
+		assert z in [1.0,1.5,2.0],"IGS1 doesn't have maps at redshift {0}".format(z)
+		assert kind in ["convergence","shear1","shear2"],"You must select one of these: convergence,shear1,shear2"
+
+		if kind=="convergence":
+			prefix = "WL-conv"
+			direct = "Maps"
+		elif kind=="shear1":
+			prefix = "Wl-shear1"
+			direct = "shear"
+		elif kind=="shear2":
+			prefix = "Wl-shear2"
+			direct = "shear"
+
+		full_path = self.root_path.rstrip("/") + "/m-512b240_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
+
+		if big_fiducial_set:
+			assert self.Om0==0.26 and self.w0==-1.0 and self.sigma8==0.798 and self.ns==0.96
+			full_path += "_f"
+
+		full_path += "/{0}".format(direct)
+
+		return [full_path + "/{0}_m-512b240_Om{1:.3f}_Ol{2:.3f}_w{3:.3f}_ns{4:.3f}_si{5:.3f}_4096xy_{6}r_{7}_{8}z_og.gre.fit".format(prefix,self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8,self._realization_id(n),self._plane_id(z),self._redshift_id(z)) for n in realizations]
+
+
+
+
+
+
