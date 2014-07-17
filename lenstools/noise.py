@@ -77,7 +77,7 @@ class GaussianNoiseGenerator(object):
 
 		"""
 
-		if self.label is "convergence":
+		if self.label == "convergence":
 		
 			#Compute shape noise amplitude
 			pixel_side_arcmin = 60.0 * self.side_angle / self.shape[0]
@@ -150,8 +150,7 @@ class GaussianNoiseGenerator(object):
 		:returns: ConvergenceMap instance of the same exact shape as the one used as blueprint
 
 		"""
-
-		assert self.label is "convergence"
+		assert self.label == "convergence"
 
 		#Initialize random number generator
 		np.random.seed(seed)
