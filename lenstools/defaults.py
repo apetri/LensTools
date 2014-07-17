@@ -75,7 +75,7 @@ def default_callback_loader(args):
 	
 	Default ensemble loader: reads a FITS data file containing a convergence map and measures its power spectrum
 
-	:param args: A dictionary that contains all the relevant parameters as keys. Must have a "file_name" key
+	:param args: A dictionary that contains all the relevant parameters as keys. Must have a "map_id" key
 	:type args: Dictionary
 
 	:returns: ndarray of the measured statistics
@@ -84,22 +84,22 @@ def default_callback_loader(args):
 
 	"""
 
-	assert "file_name" in args.keys()
+	assert "map_id" in args.keys()
 	assert "l_edges" in args.keys()
 
-	logging.debug("Processing {0} power".format(args["file_name"]))
+	logging.debug("Processing {0} power".format(args["map_id"]))
 
-	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
+	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
 	l,Pl = conv_map.powerSpectrum(args["l_edges"])
 	return Pl
 
 def peaks_loader(args):
 
-	assert "file_name" in args.keys()
+	assert "map_id" in args.keys()
 	assert "thresholds" in args.keys()
 
-	logging.debug("Processing {0} peaks".format(args["file_name"]))
-	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
+	logging.debug("Processing {0} peaks".format(args["map_id"]))
+	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
 
 	v,pk = conv_map.peakCount(args["thresholds"],norm=True)
 	return v
@@ -111,13 +111,13 @@ def convergence_measure_all(args):
 	
 	"""
 
-	assert "file_name" in args.keys()
+	assert "map_id" in args.keys()
 	assert "index" in args.keys()
 
-	logging.debug("Processing {0}".format(args["file_name"]))
+	logging.debug("Processing {0}".format(args["map_id"]))
 
 	#Load the map
-	conv_map = ConvergenceMap.fromfilename(args["file_name"],loader=load_fits_default_convergence)
+	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
 
 	#Allocate memory for observables
 	descriptors = args["index"]

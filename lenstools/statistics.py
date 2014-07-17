@@ -86,9 +86,9 @@ class Ensemble(object):
 
 		#Build list with tasks to execute (dirty, maybe optimize in the future?)
 		tasks = list()
-		for file_name in self.file_list:
+		for map_id in self.file_list:
 			task = kwargs.copy()
-			task.update({"file_name":file_name})
+			task.update({"map_id":map_id})
 			tasks.append(task)
 
 		#Execute the callback on each file in the list (spread calculations with MPI pool if it is not none)
