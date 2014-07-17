@@ -46,6 +46,14 @@ Indexing
 
 .. autoclass:: lenstools.index.MinkowskiSingle
 
+Simulation sets
+===============
+
+.. automodule:: lenstools.simulations
+
+.. autoclass:: lenstools.simulations.IGS1
+	:members:
+
 Defaults
 ========
 
