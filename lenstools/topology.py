@@ -315,7 +315,7 @@ class ConvergenceMap(object):
 
 		"""
 
-		assert kind is "gaussian","Only gaussian smoothing implemented!!"
+		assert kind == "gaussian","Only gaussian smoothing implemented!!"
 
 		#Compute the smoothing scale in pixel units
 		smoothing_scale_pixel = angle_in_arcmin * self.kappa.shape[0] / (self.side_angle*60.0)
