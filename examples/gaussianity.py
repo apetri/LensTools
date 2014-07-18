@@ -4,7 +4,10 @@ Tests the gaussianity of simulated noise maps by measuring their cubic and quart
 """
 import sys
 
-from lenstools import Ensemble,GaussianNoiseGenerator
+from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
+from lenstools.defaults import load_fits_default_convergence
+from simulations import IGS1
+
 import numpy as np
 
 import logging
@@ -19,11 +22,28 @@ def generate_and_measure(args):
 	assert "power_func" in args.keys()
 
 	#Generate the noise map
-	logging.debug("Processing map {0}".format(args["map_id"]))
+	logging.debug("Processing mock map {0}".format(args["map_id"]))
 	conv_map = args["generator"].fromConvPower(power_func=args["power_func"],seed=args["map_id"],bounds_error=False,fill_value=0.0)
 
 	#Measure its moments
 	return conv_map.moments(connected=True,dimensionless=True)
+
+def measure_from_IGS1(args):
+
+	assert "map_id" in args.keys()
+
+	#Read in the map
+	logging.debug("Processing IGS1 map {0}".format(args["map_id"]))
+	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
+
+	#Smooth 1 arcmin
+	conv_map.smooth(1.0,inplace=True)
+
+	#Measure the moments
+	return conv_map.moments(connected=True,dimensionless=True)
+
+
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,16 +57,26 @@ if (pool is not None) and not(pool.is_master()):
 	pool.wait()
 	sys.exit(0)
 
-map_ids = range(int(sys.argv[1]))
+
+
+map_mock_ids = range(int(sys.argv[1]))
+
+igs1_set = IGS1(root_path="/astro/astronfs01/jank/Storage/wl/IG/m-series")
+map_igs1_ids = igs1_set.getNames(z=2.0,realizations=range(1,int(sys.argv[1]+1)))
 
 gen = GaussianNoiseGenerator(shape=(2048,2048),side_angle=3.41,label="convergence") 
 power_func = np.loadtxt("ee4e-7.txt",unpack=True)
 
-ens = Ensemble.fromfilelist(map_ids)
+ens_mock = Ensemble.fromfilelist(map_mock_ids)
+ens_igs1 = Ensemble.fromfilelist(map_igs1_ids)
 
-ens.load(callback_loader=generate_and_measure,pool=pool,generator=gen,power_func=power_func)
+ens_mock.load(callback_loader=generate_and_measure,pool=pool,generator=gen,power_func=power_func)
+ens_igs1.load(callback_loader=measure_from_IGS1,pool=pool)
+
 if pool is not None:
 	pool.close()
 
-np.savetxt("moments.txt",np.array([ens.mean(),np.sqrt(ens.covariance().diagonal())]))
+np.savetxt("moments_mock.txt",np.array([ens_mock.mean(),np.sqrt(ens_mock.covariance().diagonal())]))
+np.savetxt("moments_igs1.txt",np.array([ens_igs1.mean(),np.sqrt(ens_igs1.covariance().diagonal())]))
+
 logging.info("Done!")
