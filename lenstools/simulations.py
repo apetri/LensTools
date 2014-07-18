@@ -68,7 +68,24 @@ class IGS1(FlatwCDM):
 		else:
 			raise ValueError("IGS1 doesn't have maps at redshift {0}".format(z))
 
-	def getNames(self,z,realizations,kind="convergence",gaussian=False,big_fiducial_set=False):
+	def getNames(self,z,realizations,kind="convergence",big_fiducial_set=False):
+
+		"""
+		Get the full name of the IGS1 maps, once a redshift, realization identificator and kind are specified
+
+		:param z: redshift plane of the maps, must be one of [1.0,1.5,2.0]
+		:type z: float.
+
+		:param realizations: list of realizations to get the names of, the elements must be in [1,1000]
+		:type realizations: list.
+
+		:param kind: decide if retrieve convergence or shear maps, must be one of [convergence,shear1,shear2]
+		:type kind: str.
+
+		:param big_fiducial_set: set to True if you want to get the names of the bigger fiducial simulation based on 45 N-body simulations
+		:type big_fiducial_set: bool.
+		
+		"""
 
 		assert type(realizations) == list
 		assert z in [1.0,1.5,2.0],"IGS1 doesn't have maps at redshift {0}".format(z)

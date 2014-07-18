@@ -52,7 +52,7 @@ Simulation sets
 .. automodule:: lenstools.simulations
 
 .. autoclass:: lenstools.simulations.IGS1
-	:members:
+	:members: getNames
 
 Defaults
 ========
