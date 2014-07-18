@@ -21,7 +21,7 @@ from astropy.cosmology import FlatwCDM
 class IGS1(FlatwCDM):
 
 	"""
-	Class handler of the IGS1 simulations set, inherits the cosmological parameters from the astropy.cosmology.FlatwCDM class
+	Class handler of the IGS1 simulations set, inherits the cosmological parameters from the astropy.cosmology.FlatwCDM class; the default parameter values are the fiducial ones
 
 	"""
 
@@ -84,7 +84,7 @@ class IGS1(FlatwCDM):
 
 		:param big_fiducial_set: set to True if you want to get the names of the bigger fiducial simulation based on 45 N-body simulations
 		:type big_fiducial_set: bool.
-		
+
 		"""
 
 		assert type(realizations) == list
