@@ -6,7 +6,7 @@ import sys
 
 from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
 from lenstools.defaults import load_fits_default_convergence
-from simulations import IGS1
+from lenstools.simulations import IGS1
 
 import numpy as np
 
@@ -45,7 +45,7 @@ def measure_from_IGS1(args):
 
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 try: 
 	pool = MPIPool()
@@ -62,7 +62,7 @@ if (pool is not None) and not(pool.is_master()):
 map_mock_ids = range(int(sys.argv[1]))
 
 igs1_set = IGS1(root_path="/astro/astronfs01/jank/Storage/wl/IG/m-series")
-map_igs1_ids = igs1_set.getNames(z=2.0,realizations=range(1,int(sys.argv[1]+1)))
+map_igs1_ids = igs1_set.getNames(z=2.0,realizations=range(1,int(sys.argv[1])+1))
 
 gen = GaussianNoiseGenerator(shape=(2048,2048),side_angle=3.41,label="convergence") 
 power_func = np.loadtxt("ee4e-7.txt",unpack=True)
