@@ -325,8 +325,18 @@ class ConvergenceMap(object):
 
 		#Return the result
 		if inplace:
+			
 			self.kappa = smoothed_kappa
+			
+			#If gradient attributes are present, recompute them
+			if (hasattr(self,"gradient_x") or hasattr(self,"gradient_y")):
+				self.gradient()
+
+			if (hasattr(self,"hessian_xx") or hasattr(self,"hessian_yy") or hasattr(self,"hessian_xy")):
+				self.hessian()
+			
 			return None
+			
 		else:
 			return ConvergenceMap(smoothed_kappa,self.side_angle)
 
