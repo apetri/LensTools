@@ -24,7 +24,7 @@ The easiest way will be to install through pip::
 
 	pip install LensTools
 
-In the meantime you can clone or fork fork the `github repository <https://github.com/apetri/LensTools>`_ to download the source
+In the meantime you can clone or fork fork the `github repository <https://github.com/apetri/LensTools>`_ to download the source. The core features require numpy and scipy to run, but the test suite requires additionally the matplotlib and astropy packages. If you want to run the calculations in parallel on a computer cluster you will need to install mpi4py (a python wrapper for MPI) and emcee (from which lenstools borrows the MPI Pool)
 
 Test
 ----
@@ -33,7 +33,7 @@ To check that everything works you can run some pre implemented tests. First you
 	
 	py.test
 
-The tests will need some data files to run: coming soon...
+The tests will need some data files to run, the tarball is available `here <https://doc-0k-28-docs.googleusercontent.com/docs/securesc/2onj0g7d6rhqc0ucq5nr982bdvss3iqf/ivlpbbeo0m6u8me3s2a0n34d7462dk07/1405893600000/16262236432539457434/16262236432539457434/0Bx6ZTqNbWBx_Mk01WVJzYm5jNVk?e=download&h=16653014193614665626&nonce=33s37c4aqa36c&user=16262236432539457434&hash=t82hd2amumcn6ti16g7tancug56nc3c8>`_. Watch out, the file is approximately 100MB! After downloading the tarball, unpack it in the Test directory and you are good to go! 
 
 Issues
 ------
