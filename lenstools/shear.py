@@ -13,7 +13,7 @@
 from __future__ import division
 
 from external import _topology
-from topology import ConvergenceMap
+from convergence import ConvergenceMap
 
 import numpy as np
 

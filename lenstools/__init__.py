@@ -7,7 +7,7 @@
 
 __version__ = "0.2"
 
-from .topology import ConvergenceMap
+from .convergence import ConvergenceMap
 from .shear import ShearMap
 from .statistics import Ensemble
 from .noise import GaussianNoiseGenerator

@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from astropy.io import fits
 
-from topology import ConvergenceMap
+from convergence import ConvergenceMap
 from index import PowerSpectrum,Peaks,MinkowskiAll,MinkowskiSingle
 
 ##########################################

@@ -12,8 +12,6 @@
 
 from __future__ import division
 
-from topology import ConvergenceMap
-from shear import ShearMap
 from lenstools.index import Indexer
 
 import numpy as np
