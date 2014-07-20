@@ -86,6 +86,41 @@ class ConvergenceMap(object):
 		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.kappa)
 		return self.hessian_xx,self.hessian_yy,self.hessian_xy
 
+	def pdf(self,thresholds,norm=False):
+
+		"""
+		Computes the one point probability distribution function of the convergence map
+
+		:param thresholds: thresholds extremes that define the binning of the pdf
+		:type thresholds: array
+
+		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
+		:type norm: bool.
+
+		:returns: tuple -- (threshold midpoints -- array, pdf normalized at the midpoints -- array)
+
+		:raises: AssertionError if thresholds array is not provided
+
+		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> thresholds = np.arange(map.kappa.min(),map.kappa.max(),0.05)
+		>>> nu,p = test_map.pdf(thresholds)
+
+		"""
+
+		assert thresholds is not None
+		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
+
+		if norm:
+			sigma = self.kappa.std()
+		else:
+			sigma = 1.0
+
+		#Compute the histogram
+		hist,bin_edges = np.histogram(self.kappa,bins=thresholds*sigma,density=True)
+
+		#Return
+		return midpoints,hist*sigma
+
 
 	def peakCount(self,thresholds,norm=False):
 		
@@ -336,7 +371,7 @@ class ConvergenceMap(object):
 				self.hessian()
 			
 			return None
-			
+
 		else:
 			return ConvergenceMap(smoothed_kappa,self.side_angle)
 

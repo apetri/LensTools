@@ -71,6 +71,21 @@ def test_cross():
 	plt.savefig("cross_spectrum.png")
 	plt.clf()
 
+def test_pdf():
+
+	#Compute
+	v,p = test_map.pdf(thresholds_mf,norm=True)
+
+	#Visualize
+	fig,ax = plt.subplots()
+	ax.plot(v,p)
+	ax.set_xlabel(r"$\nu=\kappa/\sigma$")
+	ax.set_ylabel(r"$P(\nu)$")
+
+	plt.savefig("pdf.png")
+	plt.clf()
+
+
 
 def test_minkowski():
 
