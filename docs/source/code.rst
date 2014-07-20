@@ -42,6 +42,8 @@ Indexing
 
 .. autoclass:: lenstools.index.Peaks
 
+.. autoclass:: lenstools.index.PDF
+
 .. autoclass:: lenstools.index.MinkowskiAll
 
 .. autoclass:: lenstools.index.MinkowskiSingle

@@ -4,7 +4,7 @@ import numpy as np
 from astropy.io import fits
 
 from convergence import ConvergenceMap
-from index import PowerSpectrum,Peaks,MinkowskiAll,MinkowskiSingle
+from index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle
 
 ##########################################
 #####Default Fits loader convergence######
@@ -134,6 +134,10 @@ def convergence_measure_all(args):
 		elif type(descriptors[n]) == Peaks:
 			
 			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.peakCount(descriptors[n].thresholds,norm=True)
+
+		elif type(descriptors[n]) == PDF:
+
+			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.pdf(descriptors[n].thresholds,norm=True)
 		
 		elif type(descriptors[n]) == MinkowskiAll:
 			

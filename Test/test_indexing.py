@@ -3,14 +3,14 @@ import sys
 try: 
 
 	from lenstools import Ensemble
-	from lenstools.index import Indexer,PowerSpectrum,Peaks,MinkowskiAll
+	from lenstools.index import Indexer,PowerSpectrum,PDF,Peaks,MinkowskiAll
 	from lenstools.defaults import convergence_measure_all
 
 except ImportError:
 
 	sys.path.append("..")
 	from lenstools import Ensemble
-	from lenstools.index import Indexer,PowerSpectrum,Peaks,MinkowskiAll
+	from lenstools.index import Indexer,PowerSpectrum,PDF,Peaks,MinkowskiAll
 	from lenstools.defaults import convergence_measure_all
 
 import logging
@@ -28,7 +28,7 @@ thresholds_mf = np.arange(-2.0,2.0,0.2)
 def test_index():
 
 	#Decide the statistical descriptors to measure, and build an index
-	idx = Indexer.stack([PowerSpectrum(l_edges),Peaks(thresholds_pk),MinkowskiAll(thresholds_mf)])
+	idx = Indexer.stack([PowerSpectrum(l_edges),Peaks(thresholds_pk),MinkowskiAll(thresholds_mf),PDF(thresholds_mf)])
 	l = idx[0].l
 	v = idx[1].midpoints
 	v_mf = idx[2].midpoints
@@ -41,9 +41,9 @@ def test_index():
 
 	#Split the ensemble in power_spectrum,peaks, and the second and third minkowski functional
 	mink_idx = idx[2].separate()
-	subset_idx = Indexer([idx[0],idx[1],mink_idx[1],mink_idx[2]])
+	subset_idx = Indexer([idx[0],idx[1],idx[3],mink_idx[2]])
 
-	ens_pow,ens_pk,ens_mink1,ens_mink2 = ens.split(subset_idx)
+	ens_pow,ens_pk,ens_pdf,ens_mink2 = ens.split(subset_idx)
 
 	#####################################################################
 
@@ -53,7 +53,7 @@ def test_index():
 		
 		ax[0,0].plot(l,l*(l+1)*ens_pow.data[i]/(2.0*np.pi))
 		ax[0,1].plot(v,ens_pk.data[i])
-		ax[1,0].plot(v_mf,ens_mink1.data[i])
+		ax[1,0].plot(v_mf,ens_pdf.data[i])
 		ax[1,1].plot(v_mf,ens_mink2.data[i])
 
 	ax[0,0].set_xscale("log")
@@ -66,7 +66,7 @@ def test_index():
 	ax[0,1].set_ylabel(r"$dN/d\nu$")
 
 	ax[1,0].set_xlabel(r"$\nu$")
-	ax[1,0].set_ylabel(r"$V_1(\nu)$")
+	ax[1,0].set_ylabel(r"$P(\nu)$")
 
 	ax[1,1].set_xlabel(r"$\nu$")
 	ax[1,1].set_ylabel(r"$V_2(\nu)$")

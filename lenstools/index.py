@@ -101,6 +101,12 @@ class MinkowskiSingle(Peaks):
 
 	"""
 
+class PDF(Peaks):
+	"""
+	Probability density function indexing class, identical to Peaks
+	 
+	"""
+
 class MinkowskiAll(Peaks):
 	"""
 	Minkowski functionals indexing class, inherits from Peaks; the add-ons are some methods that deal with the fact that there are 3 Minkowski functionals
