@@ -12,7 +12,10 @@ except ImportError:
 	sys.exit(1)
 
 
-from distutils.core import setup,Extension
+try:
+	from setuptools import setup,Extension
+except ImportError:
+	from distutils.core import setup,Extension
 
 def rd(filename):
 	
@@ -63,6 +66,7 @@ setup(
 	author=me,
 	author_email=email,
 	packages=[name,"{0}.{1}".format(name,external_dir)],
+	install_requires=["numpy","scipy"],
 	url=url,
 	license="?",
 	description="Toolkit for Weak Gravitational Lensing analysis",
