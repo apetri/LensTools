@@ -18,6 +18,10 @@ from emcee.utils import MPIPool
 
 import logging
 
+#########################################################################################
+#########This function gets called on every map image and computes the histograms########
+#########################################################################################
+
 def compute_histograms(args):
 
 	assert "map_id" in args.keys()
@@ -55,7 +59,9 @@ def compute_histograms(args):
 	#Return the histograms in array format
 	return hist_output
 
-
+############################################################
+########################Main loop###########################
+############################################################
 
 if __name__=="__main__":
 	
@@ -101,6 +107,10 @@ if __name__=="__main__":
 	
 	if pool is not None:
 		pool.close()
+
+	##########################################################################################################################################
+	###############################Ensemble data available at this point for covariance, PCA, etc...##########################################
+	##########################################################################################################################################
 	
 	#Plot results to check
 	fig,ax = plt.subplots(len(smoothing_scales),1)
