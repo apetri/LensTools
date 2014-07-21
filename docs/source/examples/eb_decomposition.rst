@@ -5,6 +5,8 @@ Decompose a shear map into E and B modes
 
 .. figure:: ../../../Test/EB.png
 
+.. figure:: ../../../Test/EB_corr.png
+
 ::
 
 	from lenstools import ShearMap
@@ -57,7 +59,7 @@ Decompose a shear map into E and B modes
 
 	fig,ax = plt.subplots()
 	ax.plot(l,np.abs(EB)/np.sqrt(EE*BB))
-	ax.set_xlabel(r"$x$")
+	ax.set_xlabel(r"$l$")
 	ax.set_ylabel(r"$P_{EB}/\sqrt{P_{EE}P_{BB}}$")
 
 	plt.savefig("EB_corr.png")
