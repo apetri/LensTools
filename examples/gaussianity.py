@@ -65,7 +65,7 @@ igs1_set = IGS1(root_path="/astro/astronfs01/jank/Storage/wl/IG/m-series")
 map_igs1_ids = igs1_set.getNames(z=2.0,realizations=range(1,int(sys.argv[1])+1))
 
 gen = GaussianNoiseGenerator(shape=(2048,2048),side_angle=3.41,label="convergence") 
-power_func = np.loadtxt("ee4e-7.txt",unpack=True)
+power_func = np.loadtxt("Data/ee4e-7.txt",unpack=True)
 
 ens_mock = Ensemble.fromfilelist(map_mock_ids)
 ens_igs1 = Ensemble.fromfilelist(map_igs1_ids)
