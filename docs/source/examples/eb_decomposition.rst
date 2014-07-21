@@ -3,9 +3,9 @@
 Decompose a shear map into E and B modes
 ========================================
 
-.. figure:: ../../../Test/EB.png
+.. figure:: ../../../examples/EB.png
 
-.. figure:: ../../../Test/EB_corr.png
+.. figure:: ../../../examples/EB_corr.png
 
 ::
 

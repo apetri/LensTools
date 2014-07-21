@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from emcee.utils import MPIPool
 
 import logging
+import argparse
 
 #########################################################################################
 #########This function gets called on every map image and computes the histograms########
@@ -70,17 +71,29 @@ if __name__=="__main__":
 		pool = MPIPool()
 	except ValueError:
 		pool = None
-	
+
+	#Parse command line arguments
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-v","--verbose",action="store_true",default=False,dest="verbose",help="Display degug info")
+	parser.add_argument("-p","--path",action="store",dest="path",default="/Users/andreapetri/Documents/Columbia/spurious_shear/convergence_maps",help="Root path of IGS1 simulations")
+	parser.add_argument("-n","--num_realizations",dest="num_realizations",action="store",type=int,default=3,help="How many realizations to process")
+
+	cmd_args = parser.parse_args()
+
 	#Set logging level
-	logging.basicConfig(level=logging.DEBUG)
-	
+	if cmd_args.verbose:
+		logging.basicConfig(level=logging.DEBUG)
+	else:
+		logging.basicConfig(level=logging.INFO)
+
 	if (pool is not None) and not(pool.is_master()):
 	
 		pool.wait()
 		sys.exit(0)
 	
 	#Root path of IGS1 maps
-	root_path = "/Users/andreapetri/Documents/Columbia/spurious_shear/convergence_maps"
+	root_path = cmd_args.path
+	num_realizations = cmd_args.num_realizations
 	
 	#Smoothing scales in arcmin
 	smoothing_scales = [0.1,0.5,1.0,2.0]
@@ -100,7 +113,7 @@ if __name__=="__main__":
 	generator = GaussianNoiseGenerator.forMap(sample_map)
 	
 	#Build Ensemble instance with the maps to analyze
-	map_ensemble = Ensemble.fromfilelist(range(1,4))
+	map_ensemble = Ensemble.fromfilelist(range(1,num_realizations+1))
 	
 	#Measure the histograms and load the data in the ensemble
 	map_ensemble.load(callback_loader=compute_histograms,pool=pool,simulation_set=simulation_set,smoothing_scales=smoothing_scales,index=idx,generator=generator,bin_edges=bin_edges)
@@ -116,8 +129,10 @@ if __name__=="__main__":
 	fig,ax = plt.subplots(len(smoothing_scales),1)
 	for i in range(len(smoothing_scales)):
 		
-		for n in range(map_ensemble.num_realizations):
-			ax[i].plot(bin_midpoints,map_ensemble.data[n][idx[i].first:idx[i].last])
+		mean = map_ensemble.mean()[idx[i].first:idx[i].last]
+		error = np.sqrt(map_ensemble.covariance().diagonal()[idx[i].first:idx[i].last])
+		
+		ax[i].errorbar(bin_midpoints,mean,yerr=error)
 	
 		ax[i].set_xlabel(r"$\kappa$")
 		ax[i].set_ylabel(r"$P(\kappa)$")

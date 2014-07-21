@@ -3,7 +3,7 @@
 Measure the power spectrum of a convergence map
 ===============================================
 
-.. figure:: ../../../Test/power_ensemble.png
+.. figure:: ../../../examples/power_ensemble.png
 
 ::
 
