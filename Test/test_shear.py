@@ -32,8 +32,8 @@ def two_file_loader(*args):
 
 
 
-test_map = ShearMap.fromfilename("shear1.fit","shear2.fit",loader=two_file_loader)
-test_map_conv = ConvergenceMap.fromfilename("conv.fit",loader=load_fits_default_convergence)
+test_map = ShearMap.fromfilename("Data/shear1.fit","Data/shear2.fit",loader=two_file_loader)
+test_map_conv = ConvergenceMap.fromfilename("Data/conv.fit",loader=load_fits_default_convergence)
 
 l_edges = np.arange(200.0,50000.0,200.0)
 

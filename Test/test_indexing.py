@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.DEBUG)
 
-map_list = ["conv1.fit","conv2.fit","conv3.fit","conv4.fit"]
+map_list = ["Data/conv1.fit","Data/conv2.fit","Data/conv3.fit","Data/conv4.fit"]
 l_edges = np.arange(200.0,50000.0,200.0)
 thresholds_pk = np.arange(-1.0,5.0,0.2)
 thresholds_mf = np.arange(-2.0,2.0,0.2)

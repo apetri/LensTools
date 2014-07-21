@@ -13,7 +13,7 @@ except ImportError:
 import numpy as np
 import matplotlib.pyplot as plt
 
-test_map_conv = ConvergenceMap.fromfilename("conv.fit",loader=load_fits_default_convergence)
+test_map_conv = ConvergenceMap.fromfilename("Data/conv.fit",loader=load_fits_default_convergence)
 
 shape_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
 corr_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
@@ -116,7 +116,7 @@ def test_interpolated_convergence_power():
 
 	fig,ax = plt.subplots()
 
-	power_func = np.loadtxt("ee4e-7.txt",unpack=True)
+	power_func = np.loadtxt("Data/ee4e-7.txt",unpack=True)
 	l_in,Pl_in = power_func
 	
 	#Plot power spectral density
@@ -143,7 +143,7 @@ def test_interpolated_convergence_power():
 def test_interpolated_convergence_maps():
 
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
-	power_func = np.loadtxt("ee4e-7.txt",unpack=True)
+	power_func = np.loadtxt("Data/ee4e-7.txt",unpack=True)
 
 	#Generate three realizations of this power spectral density and plot them for cross check
 	for i in range(3):

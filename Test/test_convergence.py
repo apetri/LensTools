@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-test_map = ConvergenceMap.fromfilename("conv.fit",loader=load_fits_default_convergence)
+test_map = ConvergenceMap.fromfilename("Data/conv.fit",loader=load_fits_default_convergence)
 
 #Set bin edges
 l_edges = np.arange(200.0,50000.0,200.0)
@@ -54,8 +54,8 @@ def test_power():
 def test_cross():
 
 	#Load
-	conv1 = ConvergenceMap.fromfilename("conv1.fit",loader=load_fits_default_convergence)
-	conv2 = ConvergenceMap.fromfilename("conv2.fit",loader=load_fits_default_convergence)
+	conv1 = ConvergenceMap.fromfilename("Data/conv1.fit",loader=load_fits_default_convergence)
+	conv2 = ConvergenceMap.fromfilename("Data/conv2.fit",loader=load_fits_default_convergence)
 
 	#Cross
 	l,Pl = conv1.cross(conv2,l_edges)
