@@ -57,61 +57,63 @@ def compute_histograms(args):
 
 
 
-#Initialize MPI pool
-try: 
-	pool = MPIPool()
-except ValueError:
-	pool = None
-
-#Set logging level
-logging.basicConfig(level=logging.DEBUG)
-
-if (pool is not None) and not(pool.is_master()):
-
-	pool.wait()
-	sys.exit(0)
-
-#Root path of IGS1 maps
-root_path = "/Users/andreapetri/Documents/Columbia/spurious_shear/convergence_maps"
-
-#Smoothing scales in arcmin
-smoothing_scales = [0.1,0.5,1.0,2.0]
-bin_edges = np.ogrid[-0.15:0.15:128j]
-bin_midpoints = 0.5*(bin_edges[1:] + bin_edges[:-1])
-
-#Create smoothing scale index for the histogram
-idx = Indexer.stack([PDF(bin_edges) for scale in smoothing_scales])
-
-#Create IGS1 simulation set object to look for the right simulations
-simulation_set = IGS1(root_path=root_path)
-
-#Look at a sample map
-sample_map = ConvergenceMap.fromfilename(simulation_set.getNames(z=1.0,realizations=[1])[0],loader=load_fits_default_convergence)
-
-#Initialize Gaussian shape noise generator
-generator = GaussianNoiseGenerator.forMap(sample_map)
-
-#Build Ensemble instance with the maps to analyze
-map_ensemble = Ensemble.fromfilelist(range(1,4))
-
-#Measure the histograms and load the data in the ensemble
-map_ensemble.load(callback_loader=compute_histograms,pool=pool,simulation_set=simulation_set,smoothing_scales=smoothing_scales,index=idx,generator=generator,bin_edges=bin_edges)
-
-if pool is not None:
-	pool.close()
-
-#Plot results to check
-fig,ax = plt.subplots(len(smoothing_scales),1)
-for i in range(len(smoothing_scales)):
+if __name__=="__main__":
 	
-	for n in range(map_ensemble.num_realizations):
-		ax[i].plot(bin_midpoints,map_ensemble.data[n][idx[i].first:idx[i].last])
-
-	ax[i].set_xlabel(r"$\kappa$")
-	ax[i].set_ylabel(r"$P(\kappa)$")
-	ax[i].set_title(r"${0:.1f}^\prime={1:.1f}$pix".format(smoothing_scales[i],smoothing_scales[i] * sample_map.kappa.shape[0]/(sample_map.side_angle*60.0)))
-
-
-fig.tight_layout()
-fig.savefig("histograms.png")
+	#Initialize MPI pool
+	try: 
+		pool = MPIPool()
+	except ValueError:
+		pool = None
+	
+	#Set logging level
+	logging.basicConfig(level=logging.DEBUG)
+	
+	if (pool is not None) and not(pool.is_master()):
+	
+		pool.wait()
+		sys.exit(0)
+	
+	#Root path of IGS1 maps
+	root_path = "/Users/andreapetri/Documents/Columbia/spurious_shear/convergence_maps"
+	
+	#Smoothing scales in arcmin
+	smoothing_scales = [0.1,0.5,1.0,2.0]
+	bin_edges = np.ogrid[-0.15:0.15:128j]
+	bin_midpoints = 0.5*(bin_edges[1:] + bin_edges[:-1])
+	
+	#Create smoothing scale index for the histogram
+	idx = Indexer.stack([PDF(bin_edges) for scale in smoothing_scales])
+	
+	#Create IGS1 simulation set object to look for the right simulations
+	simulation_set = IGS1(root_path=root_path)
+	
+	#Look at a sample map
+	sample_map = ConvergenceMap.fromfilename(simulation_set.getNames(z=1.0,realizations=[1])[0],loader=load_fits_default_convergence)
+	
+	#Initialize Gaussian shape noise generator
+	generator = GaussianNoiseGenerator.forMap(sample_map)
+	
+	#Build Ensemble instance with the maps to analyze
+	map_ensemble = Ensemble.fromfilelist(range(1,4))
+	
+	#Measure the histograms and load the data in the ensemble
+	map_ensemble.load(callback_loader=compute_histograms,pool=pool,simulation_set=simulation_set,smoothing_scales=smoothing_scales,index=idx,generator=generator,bin_edges=bin_edges)
+	
+	if pool is not None:
+		pool.close()
+	
+	#Plot results to check
+	fig,ax = plt.subplots(len(smoothing_scales),1)
+	for i in range(len(smoothing_scales)):
+		
+		for n in range(map_ensemble.num_realizations):
+			ax[i].plot(bin_midpoints,map_ensemble.data[n][idx[i].first:idx[i].last])
+	
+		ax[i].set_xlabel(r"$\kappa$")
+		ax[i].set_ylabel(r"$P(\kappa)$")
+		ax[i].set_title(r"${0:.1f}^\prime={1:.1f}$pix".format(smoothing_scales[i],smoothing_scales[i] * sample_map.kappa.shape[0]/(sample_map.side_angle*60.0)))
+	
+	
+	fig.tight_layout()
+	fig.savefig("histograms.png")
 
