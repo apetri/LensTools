@@ -7,6 +7,18 @@ Measure the power spectrum of a convergence map
 
 ::
 
+	from lenstools import Ensemble
+	from lenstools.defaults import default_callback_loader,peaks_loader
+	
+	try:
+
+		from emcee.utils import MPIPool
+		MPIPool = MPIPool
+
+	except ImportError:
+
+		MPIPool = None
+
 	import logging
 
 	import numpy as np
