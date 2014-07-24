@@ -102,6 +102,17 @@ class Ensemble(object):
 
 		self.data = full_data
 
+	def save(self,file_name):
+		"""
+		Save ensemble data in an external file (in numpy format)
+
+		:param file_name: file name of the external file
+		:type file_name: str.
+
+		"""
+
+		np.save(file_name,self.data)
+
 	
 	def mean(self):
 
