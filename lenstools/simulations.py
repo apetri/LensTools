@@ -25,9 +25,9 @@ class IGS1(FlatwCDM):
 
 	"""
 
-	def __init__(self,H0=70.0,Om0=0.26,w0=-1.0,sigma8=0.798,ns=0.960,root_path=None):
+	def __init__(self,H0=70.0,Om0=0.26,w0=-1.0,sigma8=0.798,ns=0.960,root_path=None,name=None):
 
-		super(IGS1,self).__init__(H0,Om0,w0=w0)
+		super(IGS1,self).__init__(H0,Om0,w0=w0,name=name)
 		self.sigma8 = sigma8
 		self.ns = ns
 
