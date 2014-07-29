@@ -17,6 +17,13 @@ from lenstools.index import Indexer
 import numpy as np
 
 ##########################################
+#########np.load wrapper##################
+##########################################
+
+def _np_load(args):
+	return np.load(args["map_id"])
+
+##########################################
 ########Ensemble class####################
 ##########################################
 
@@ -54,15 +61,18 @@ class Ensemble(object):
 		#Build the ensemble instance and return it
 		return cls(file_list=file_list,num_realizations=num_realizations)
 
-	def load(self,callback_loader,pool=None,**kwargs):
+	def load(self,callback_loader=None,pool=None,from_old=False,**kwargs):
 		"""
 		Loads the ensemble into memory, can spread the calculations on multiple processors using a MPI pool
 
-		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble; must take in a dictionary as its only parameter and must return a numpy array
+		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble; must take in a dictionary as its only parameter and must return a numpy array. If None, it performs a numpy.load on the specified files
 		:type callback_loader: function, must take in a file name (str.) and return a numpy array with the loaded data
 
 		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
 		:type pool: MPI pool object
+
+		:param from_old: If True, the loaded data are interpreted as an old, already existing ensemble, which means that only one file (in which the old ensemble is saved) is loaded, the first dimension of the data is 1 and hence it is discarded 
+		:type from_old: bool.
 
 		:param kwargs: Any additional keyword arguments to be passed to callback_loader
 		:type kwargs: Keyword arguments
@@ -78,7 +88,8 @@ class Ensemble(object):
 
 		"""
 
-		assert callback_loader is not None
+		if callback_loader is None:
+			callback_loader = _np_load
 
 		self.pool = pool
 
@@ -98,8 +109,12 @@ class Ensemble(object):
 		full_data = np.array(M(callback_loader,tasks))
 		
 		assert type(full_data) == np.ndarray
-		assert full_data.shape[0] == self.num_realizations
+		assert full_data.shape[0] == self.num_realizations 
 
+		if from_old:
+			full_data = full_data[0]
+
+		self.num_realizations = full_data.shape[0]
 		self.data = full_data
 
 	def save(self,file_name):

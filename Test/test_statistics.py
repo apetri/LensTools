@@ -118,6 +118,16 @@ def test_multiply():
 	assert conv_ensemble_both.data.shape[0] == 4
 	assert conv_ensemble_both.data.shape[1] == len(l_edges) + len(thresholds_pk) - 2
 
+def test_save_and_load():
+
+	conv_ensemble.save("ensemble_saved.npy")
+	conv_ensemble_new = Ensemble.fromfilelist(["ensemble_saved.npy"])
+
+	conv_ensemble_new.load(from_old=True)
+
+	assert conv_ensemble_new.num_realizations == conv_ensemble.num_realizations
+	assert conv_ensemble_new.data.shape == conv_ensemble.data.shape
+
 
 
 
