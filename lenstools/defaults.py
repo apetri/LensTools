@@ -1,3 +1,15 @@
+"""
+
+.. module:: defaults 
+	:platform: Unix
+	:synopsis: This module contains a bunch of default functions for data files loading, specifically in FITS format. This package is totally flexible and does not require that your data is in FITS format, so this module should be regarded just as an example
+
+
+.. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>
+
+
+"""
+
 import logging
 
 import numpy as np
