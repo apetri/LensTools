@@ -35,6 +35,12 @@ class IGS1(FlatwCDM):
 
 		self.root_path = root_path
 
+		#Don't touch these!
+		self._series_name = "m"
+		self._num_particles = 512
+		self._box_size_mpc = 240
+		self._lens_plane_size = 4096 
+
 	def __repr__(self):
 
 		astropy_string = super(IGS1,self).__repr__()
@@ -101,7 +107,7 @@ class IGS1(FlatwCDM):
 			prefix = "Wl-shear2"
 			direct = "shear"
 
-		full_path = self.root_path.rstrip("/") + "/m-512b240_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
+		full_path = self.root_path.rstrip("/") + "/"+self._series_name+"-"+str(self._num_particles)+"b"+str(self._box_size_mpc)+"_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
 
 		if big_fiducial_set:
 			assert self.Om0==0.26 and self.w0==-1.0 and self.sigma8==0.798 and self.ns==0.96
@@ -109,7 +115,7 @@ class IGS1(FlatwCDM):
 
 		full_path += "/{0}".format(direct)
 
-		return [full_path + "/{0}_m-512b240_Om{1:.3f}_Ol{2:.3f}_w{3:.3f}_ns{4:.3f}_si{5:.3f}_4096xy_{6}r_{7}_{8}z_og.gre.fit".format(prefix,self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8,self._realization_id(n),self._plane_id(z),self._redshift_id(z)) for n in realizations]
+		return [full_path + "/{0}_".format(prefix)+self._series_name+"-"+str(self._num_particles)+"b"+str(self._box_size_mpc)+"_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}_".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)+str(self._lens_plane_size)+"xy_{0}r_{1}_{2}z_og.gre.fit".format(self._realization_id(n),self._plane_id(z),self._redshift_id(z)) for n in realizations]
 
 
 
