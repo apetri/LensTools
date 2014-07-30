@@ -155,6 +155,10 @@ You run this typing::
 
 	python histograms.py -p <path_to_your_simulations> -n <number_of_realizations> 
 
+Or, if you have a MPI installation and want to run on multiple processors::
+
+	mpiexec -n <number_of_processors> python histograms.py -p <path_to_your_simulations> -n <number_of_realizations>
+
 
 
 

@@ -20,11 +20,24 @@ This python add-on will handle basically every operation you will need to perfor
 Installation
 ------------
 
-The easiest way will be to install through pip (coming really soon)::
+The easiest way WILL be to install through pip (coming really soon, not available yet)::
 
 	pip install LensTools
 
-In the meantime you can clone or fork fork the `github repository <https://github.com/apetri/LensTools>`_ to download the source. The core features require `numpy <http://www.numpy.org>`_ and `scipy <http://www.scipy.org>`_ to run, and the Test suite requires additionally the `matplotlib <http://matplotlib.org>`_ and `astropy <http://www.astropy.org>`_ packages. If you want to run the calculations in parallel on a computer cluster you will need to install `mpi4py <http://mpi4py.scipy.org>`_ (a python wrapper for the MPI library) and `emcee <http://dan.iel.fm/emcee/current/>`_ (from which LensTools borrows the MPI Pool utility)
+In the meantime you can clone or fork the `github repository <https://github.com/apetri/LensTools>`_ to download the source and build it manually. 
+First clone the repository (the original one, or your fork)::
+   
+   git clone https://github.com/apetri/LensTools
+
+Then, inside the LensTools directory build the source::
+
+   python setup.py build
+
+If you want to test the build before installing to your system, look to the instructions in Test. Once you are satisfied install the package (might require root privileges depending on the install location)::
+
+   python setup.py install
+
+The core features require `numpy <http://www.numpy.org>`_ and `scipy <http://www.scipy.org>`_ to run, and the Test suite requires additionally the `matplotlib <http://matplotlib.org>`_ and `astropy <http://www.astropy.org>`_ packages. If you want to run the calculations in parallel on a computer cluster you will need to install `mpi4py <http://mpi4py.scipy.org>`_ (a python wrapper for the MPI library) and `emcee <http://dan.iel.fm/emcee/current/>`_ (from which LensTools borrows the MPI Pool utility)
 
 Test
 ----
