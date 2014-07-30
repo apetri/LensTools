@@ -15,6 +15,7 @@ from __future__ import division
 from lenstools.index import Indexer
 
 import numpy as np
+import scipy.io as sio
 
 ##########################################
 #########np.load wrapper##################
@@ -127,6 +128,22 @@ class Ensemble(object):
 		"""
 
 		np.save(file_name,self.data)
+
+	def savemat(self,file_name,matlab_data_variable="data",**kwargs):
+		"""
+		Save ensemble data in an external file (in matlab readable format)
+
+		:param file_name: file name of the external file
+		:type file_name: str.
+
+		:param matlab_data_variable: name of the matlab variable through which you access the ensemble data
+		:type matlab_data_variable: str.
+
+		:param kwargs: the keyword arguments are passed directly to scipy.io.savemat 
+
+		"""
+
+		sio.savemat(file_name,{matlab_data_variable: self.data},**kwargs)
 
 	
 	def mean(self):
