@@ -40,6 +40,7 @@ class IGS1(FlatwCDM):
 		self._num_particles = 512
 		self._box_size_mpc = 240
 		self._lens_plane_size = 4096 
+		self._full_path = self.root_path.rstrip("/") + "/"+self._series_name+"-"+str(self._num_particles)+"b"+str(self._box_size_mpc)+"_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
 
 	def __repr__(self):
 
@@ -107,7 +108,7 @@ class IGS1(FlatwCDM):
 			prefix = "Wl-shear2"
 			direct = "shear"
 
-		full_path = self.root_path.rstrip("/") + "/"+self._series_name+"-"+str(self._num_particles)+"b"+str(self._box_size_mpc)+"_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
+		full_path = self._full_path
 
 		if big_fiducial_set:
 			assert self.Om0==0.26 and self.w0==-1.0 and self.sigma8==0.798 and self.ns==0.96
