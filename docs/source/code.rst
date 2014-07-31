@@ -56,6 +56,9 @@ Simulation sets
 .. autoclass:: lenstools.simulations.IGS1
 	:members: getNames
 
+.. autoclass:: lenstools.simulations.CFHTemu1
+	:members: getNames
+
 Defaults
 ========
 
