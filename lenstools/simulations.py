@@ -190,13 +190,12 @@ class CFHTemu1(IGS1):
 		#Build the file name
 		root_path = self.root_path
 
-		name = root_path.rstrip("/") + "/" 
-		name += self._series_name + "-" 
+		name = os.path.join(root_path,self._series_name + "-")
 		name += self._box_string + "_" 
 		name += self._cosmo_id_string 
-		name += "/subfield{0}/".format(subfield) 
-		name += "/sigma{0:02d}/".format(int(smoothing*10))
-		name += "SIM_KS_sigma{0:02d}_subfield{1}_{2}-{3}_{4}_".format(int(smoothing*10),subfield,self._series_name,self._box_string,self._cosmo_id_string)
+		name = os.path.join(name,"subfield{0}".format(subfield)) 
+		name = os.path.join(name,"sigma{0:02d}".format(int(smoothing*10)))
+		name = os.path.join(name,"SIM_KS_sigma{0:02d}_subfield{1}_{2}-{3}_{4}_".format(int(smoothing*10),subfield,self._series_name,self._box_string,self._cosmo_id_string))
 
 		#return the results
 		if type(realizations) == int:
