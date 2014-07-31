@@ -40,7 +40,10 @@ class IGS1(FlatwCDM):
 		self._num_particles = 512
 		self._box_size_mpc = 240
 		self._lens_plane_size = 4096 
-		self._full_path = self.root_path.rstrip("/") + "/"+self._series_name+"-"+str(self._num_particles)+"b"+str(self._box_size_mpc)+"_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
+		self._cosmo_id_string =  "Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
+
+		self._box_string = str(self._num_particles)+"b"+str(self._box_size_mpc)
+		self._full_path = self.root_path.rstrip("/") + "/"+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string
 
 	def __repr__(self):
 
@@ -116,7 +119,21 @@ class IGS1(FlatwCDM):
 
 		full_path += "/{0}".format(direct)
 
-		return [full_path + "/{0}_".format(prefix)+self._series_name+"-"+str(self._num_particles)+"b"+str(self._box_size_mpc)+"_Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}_".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)+str(self._lens_plane_size)+"xy_{0}r_{1}_{2}z_og.gre.fit".format(self._realization_id(n),self._plane_id(z),self._redshift_id(z)) for n in realizations]
+		return [full_path + "/{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0}r_{1}_{2}z_og.gre.fit".format(self._realization_id(n),self._plane_id(z),self._redshift_id(z)) for n in realizations]
+
+
+################################
+#######EMU1 class###############
+################################
+
+class CFHTemu1(IGS1):
+
+	"""
+	Class handler of the weak lensing CFHTemu1 simulations set, inherits from IGS1; this simulation suite contains 91 different cosmological models based on 1 N-body simulation each. Each model has 1000 realizations for each of the 13 CFHT subfields 
+
+	"""
+
+
 
 
 
