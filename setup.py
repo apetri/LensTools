@@ -60,12 +60,16 @@ for ext_module in external_sources.keys():
 
 	ext.append(Extension(ext_module,sources,extra_link_args=link_flags))
 
+#Data files on which the package depends on
+package_data = {name:["book/CFHTemu1.txt"]}
+
 setup(
 	name=name,
 	version=version,
 	author=me,
 	author_email=email,
 	packages=[name,"{0}.{1}".format(name,external_dir)],
+	package_data=package_data,
 	install_requires=["numpy","scipy"],
 	url=url,
 	license="?",

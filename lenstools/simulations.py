@@ -10,7 +10,9 @@
 
 """
 
-from __future__ import division
+from __future__ import division,print_function,with_statement
+
+import os,re
 
 from astropy.cosmology import FlatwCDM
 
@@ -129,6 +131,42 @@ class CFHTemu1(IGS1):
 	_series_name = "emu1"
 	_num_particles = 512
 	_box_size_mpc = 240
+
+	@classmethod
+	def getModels(cls,root_path="/default"):
+		"""
+		This class method uses a dictionary file to read in all the cosmological model parameters and instantiate the corresponding CFHTemu1 objects for each one of them
+
+		:param root_path: path of your CFHT emu1 simulations copy
+		:type root_path: str.
+
+		:returns: list of CFHTemu1 instances
+
+		"""
+
+		#Build the complete filename
+		dict_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)),"book")
+		dict_filename = os.path.join(dict_filename,"CFHTemu1.txt")
+
+		#Read in the dictionary file
+		with open(dict_filename,"r") as dictfile:
+			cosmo_id_strings = dictfile.readlines()
+
+		#Read each cosmo identifier, squeeze out the cosmological parameters for each of them and instantiate the corresponding CFHTemu1 object
+		model_list = list()
+		
+		for cosmo_id in cosmo_id_strings:
+
+			#Squeeze out the cosmological parameters with a regular expression match
+			m = re.match(r"Om([0-9.]{5})_Ol([0-9.]{5})_w([0-9\-.]+)_ns([0-9.]{5})_si([0-9.]{5})",cosmo_id)
+			Om0,Ol0,w0,sigma8,ns = m.groups()
+			
+			#Instantiate the model object
+			model_list.append(cls(root_path=root_path,name=cosmo_id.rstrip("\n"),H0=70.0,Om0=float(Om0),w0=float(w0),sigma8=float(sigma8),ns=float(ns)))
+
+		#Return the model list
+		return model_list
+
 
 	def getNames(self,realizations,subfield=1,smoothing=0.5):
 
