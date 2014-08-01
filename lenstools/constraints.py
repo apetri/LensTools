@@ -10,6 +10,8 @@
 
 """
 
+import numpy as np
+
 ##############################################
 ###########Analysis base class################
 ##############################################
@@ -32,10 +34,12 @@ class Analysis(object):
 
 	_analysis_type = None
 
-	def __init__(self,parameter_set,training_set,observed_set):
+	def __init__(self,parameter_set=None,training_set=None,observed_set=None):
 
 		assert self._analysis_type is not None,"Don't instantiate this class directly, use one of its subclasses!"
-		assert parameter_set.shape[0] == training_set.shape[0],"There should be one feature for each of the simulated models!"
+		
+		if parameter_set is not None and training_set is not None:
+			assert parameter_set.shape[0] == training_set.shape[0],"There should be one feature for each of the simulated models!"
 
 		self.parameter_set = parameter_set
 		self.training_set = training_set
@@ -43,7 +47,42 @@ class Analysis(object):
 
 	def __repr__(self):
 
-		return "{0} type analysis, based on {1} models spanning a {2}-dimensional parameter space".format(self._analysis_type,self.parameter_set.shape[0],self.parameter_set.shape[1])
+		try:
+			return "{0} type analysis, based on {1} models spanning a {2}-dimensional parameter space".format(self._analysis_type,self.parameter_set.shape[0],self.parameter_set.shape[1])
+		except AttributeError:
+			return "{0} type analysis, no models in it yet!".format(self._analysis_type)
+
+	def add_model(self,parameters,feature):
+
+		"""
+		Add a model to the training set of the current analysis
+
+		:param parameters: parameter set of the new model
+		:type parameters: array
+
+		:param feature: measured feature of the new model
+		:type feature: array
+
+		"""
+
+		#If the analysis doesn't have any models, add the first, otherwise simply vstack them
+		if self.parameter_set is None:
+			
+			assert self.training_set is None
+
+			self.parameter_set = parameters.copy()[np.newaxis,:]
+			self.training_set = feature.copy()[np.newaxis,:]
+
+		else:
+
+			#Check for input valudity
+			assert parameters.shape[0] == self.parameter_set.shape[1]
+			assert feature.shape == self.training_set.shape[1:]
+
+			self.parameter_set = np.vstack((self.parameter_set,parameters))
+			self.training_set = np.vstack((self.training_set,feature))
+
+
 
 
 ###################################################
