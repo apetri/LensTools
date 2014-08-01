@@ -62,6 +62,19 @@ class Ensemble(object):
 		#Build the ensemble instance and return it
 		return cls(file_list=file_list,num_realizations=num_realizations)
 
+	@classmethod
+	def fromdata(cls,npy_data):
+
+		"""
+		Builds the ensemble from data in numpy array format
+
+		:param npy_data: numpy array with the data, the first dimension must be the number of realizations
+		:type npy_data: array
+		
+		"""
+
+		return cls(num_realizations=npy_data.shape[0],data=npy_data)
+
 	def load(self,callback_loader=None,pool=None,from_old=False,**kwargs):
 		"""
 		Loads the ensemble into memory, can spread the calculations on multiple processors using a MPI pool
