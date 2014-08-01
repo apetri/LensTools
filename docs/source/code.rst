@@ -25,6 +25,15 @@ Statistics
 .. autoclass:: lenstools.Ensemble
 	:inherited-members: 
 
+Constraining cosmology
+======================
+
+.. autoclass:: lenstools.constraints.Analysis
+	:inherited-members:
+
+.. autoclass:: lenstools.constraints.FisherAnalysis
+	:members:
+
 Noise
 =====
 
