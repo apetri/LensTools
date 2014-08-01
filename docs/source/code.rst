@@ -54,10 +54,10 @@ Simulation sets
 .. automodule:: lenstools.simulations
 
 .. autoclass:: lenstools.simulations.IGS1
-	:members: getNames
+	:members: getNames, squeeze
 
 .. autoclass:: lenstools.simulations.CFHTemu1
-	:members: getNames, getModels
+	:members: getNames, squeeze, getModels
 
 Defaults
 ========
