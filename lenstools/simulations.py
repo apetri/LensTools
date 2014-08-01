@@ -14,6 +14,7 @@ from __future__ import division,print_function,with_statement
 
 import os,re
 
+import numpy as np
 from astropy.cosmology import FlatwCDM
 
 ######################################
@@ -69,6 +70,24 @@ class IGS1(FlatwCDM):
 		else:
 			raise ValueError("IGS1 doesn't have maps at redshift {0}".format(z))
 
+	def squeeze(self,with_ns=False):
+		
+		"""
+		Returns the cosmological parameters of the model in numpy array form
+
+		:param with_ns: if True returns also ns as the last parameter
+		:type with_ns: bool.
+
+		:returns: numpy array (Om0,w0,si8,ns--optionally) 
+
+		"""
+
+		if with_ns:
+			return np.array([self.Om0,self.w0,self.sigma8,self.ns])
+		else:
+			return np.array([self.Om0,self.w0,self.sigma8])
+
+
 	def getNames(self,realizations,z=1.0,kind="convergence",big_fiducial_set=False):
 
 		"""
@@ -111,7 +130,7 @@ class IGS1(FlatwCDM):
 		full_path += "/{0}".format(direct)
 
 		if type(realizations) == int:
-			full_path + "/{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(realizations,self._plane_id(z),int(z*100))
+			return full_path + "/{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(realizations,self._plane_id(z),int(z*100))
 		else:
 			return [full_path + "/{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(r,self._plane_id(z),int(z*100)) for r in realizations]
 
