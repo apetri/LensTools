@@ -48,7 +48,7 @@ class PowerSpectrum(Descriptor):
 		self.l_edges = l_edges
 		self.l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-	def __str__(self):
+	def __repr__(self):
 
 		return "Power Spectrum descriptor: {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.l),self.l_edges.__str__(),self.l.__str__())
 
@@ -70,7 +70,7 @@ class Moments(Descriptor):
 
 	"""
 
-	def __str__(self):
+	def __repr__(self):
 
 		return "Moments descriptor: 2 quadratic moments, 3 cubic, 4 quartic"
 
@@ -103,7 +103,7 @@ class Peaks(Descriptor):
 		self.thresholds = thresholds
 		self.midpoints = 0.5*(thresholds[:-1] + thresholds[1:])
 
-	def __str__(self):
+	def __repr__(self):
 
 		return "Peak count descriptor: {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
 
@@ -125,6 +125,11 @@ class MinkowskiSingle(Peaks):
 
 	"""
 
+	def __repr__(self):
+
+		return "Minkowski functionals descriptor (single): {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
+
+
 class PDF(Peaks):
 	"""
 	Probability density function indexing class, identical to Peaks
@@ -136,6 +141,10 @@ class MinkowskiAll(Peaks):
 	Minkowski functionals indexing class, inherits from Peaks; the add-ons are some methods that deal with the fact that there are 3 Minkowski functionals
 
 	"""
+
+	def __repr__(self):
+
+		return "Minkowski functionals descriptor (all): {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
 
 	@property
 	def last(self):
