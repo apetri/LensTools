@@ -70,9 +70,27 @@ class Moments(Descriptor):
 
 	"""
 
+	def __init__(self,connected=True,dimensionless=False):
+
+		super(Moments,self).__init__()
+		self.connected = connected
+		self.dimensionless = dimensionless
+
 	def __repr__(self):
 
-		return "Moments descriptor: 2 quadratic moments, 3 cubic, 4 quartic"
+		repr_str = "Moments descriptor: 2 quadratic moments, 3 cubic, 4 quartic"
+		
+		if self.connected:
+			repr_str += "\nconnected: yes"
+		else:
+			repr_str += "\nconnected: no"
+
+		if self.dimensionless:
+			repr_str += "\ndimensionless: yes"
+		else:
+			repr_str += "\ndimensionless: no"
+
+		return repr_str
 
 	@property
 	def first(self):
@@ -97,15 +115,21 @@ class Peaks(Descriptor):
 
 	"""
 
-	def __init__(self,thresholds):
+	def __init__(self,thresholds,norm=False):
 
 		super(Peaks,self).__init__()
 		self.thresholds = thresholds
 		self.midpoints = 0.5*(thresholds[:-1] + thresholds[1:])
+		self.norm = norm
 
 	def __repr__(self):
 
-		return "Peak count descriptor: {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
+		if self.norm:
+			answer = "yes"
+		else:
+			answer = "no"
+
+		return "Peak count descriptor: {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
 
 	@property
 	def first(self):
@@ -127,7 +151,12 @@ class MinkowskiSingle(Peaks):
 
 	def __repr__(self):
 
-		return "Minkowski functionals descriptor (single): {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
+		if self.norm:
+			answer = "yes"
+		else:
+			answer = "no"
+
+		return "Minkowski functionals descriptor (single): {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
 
 
 class PDF(Peaks):
@@ -144,7 +173,12 @@ class MinkowskiAll(Peaks):
 
 	def __repr__(self):
 
-		return "Minkowski functionals descriptor (all): {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
+		if self.norm:
+			answer = "yes"
+		else:
+			answer = "no"
+
+		return "Minkowski functionals descriptor (all): {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
 
 	@property
 	def last(self):

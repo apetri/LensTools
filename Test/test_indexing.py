@@ -28,7 +28,7 @@ thresholds_mf = np.arange(-2.0,2.0,0.2)
 def test_index():
 
 	#Decide the statistical descriptors to measure, and build an index
-	idx = Indexer.stack([PowerSpectrum(l_edges),Peaks(thresholds_pk),MinkowskiAll(thresholds_mf),PDF(thresholds_mf),Moments()])
+	idx = Indexer.stack([PowerSpectrum(l_edges),Peaks(thresholds_pk,norm=True),MinkowskiAll(thresholds_mf,norm=True),PDF(thresholds_mf,norm=True),Moments(connected=True)])
 	l = idx[0].l
 	v = idx[1].midpoints
 	v_mf = idx[2].midpoints

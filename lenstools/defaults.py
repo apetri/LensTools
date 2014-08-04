@@ -148,19 +148,19 @@ def convergence_measure_all(args):
 
 		elif type(descriptors[n]) == Moments:
 
-			observables[descriptors[n].first:descriptors[n].last] = conv_map.moments(connected=True)
+			observables[descriptors[n].first:descriptors[n].last] = conv_map.moments(connected=descriptors[n].connected)
 		
 		elif type(descriptors[n]) == Peaks:
 			
-			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.peakCount(descriptors[n].thresholds,norm=True)
+			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.peakCount(descriptors[n].thresholds,norm=descriptors[n].norm)
 
 		elif type(descriptors[n]) == PDF:
 
-			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.pdf(descriptors[n].thresholds,norm=True)
+			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.pdf(descriptors[n].thresholds,norm=descriptors[n].norm)
 		
 		elif type(descriptors[n]) == MinkowskiAll:
 			
-			v,V0,V1,V2 = conv_map.minkowskiFunctionals(descriptors[n].thresholds,norm=True)
+			v,V0,V1,V2 = conv_map.minkowskiFunctionals(descriptors[n].thresholds,norm=descriptors[n].norm)
 			observables[descriptors[n].first:descriptors[n].last] = np.hstack((V0,V1,V2))
 		
 		elif type(descriptors[n]) == MinkowskiSingle:
