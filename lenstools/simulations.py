@@ -178,7 +178,7 @@ class CFHTemu1(IGS1):
 
 			#Squeeze out the cosmological parameters with a regular expression match
 			m = re.match(r"Om([0-9.]{5})_Ol([0-9.]{5})_w([0-9\-.]+)_ns([0-9.]{5})_si([0-9.]{5})",cosmo_id)
-			Om0,Ol0,w0,sigma8,ns = m.groups()
+			Om0,Ol0,w0,ns,sigma8 = m.groups()
 			
 			#Instantiate the model object
 			model_list.append(cls(root_path=root_path,name=cosmo_id.rstrip("\n"),H0=70.0,Om0=float(Om0),w0=float(w0),sigma8=float(sigma8),ns=float(ns)))
