@@ -41,6 +41,8 @@ class PowerSpectrum(Descriptor):
 	:type l_edges: array
 
 	"""
+
+	name = "power_spectrum"
 	
 	def __init__(self,l_edges):
 		
@@ -69,6 +71,8 @@ class Moments(Descriptor):
 	Moments indexing class
 
 	"""
+
+	name = "moments"
 
 	def __init__(self,connected=True,dimensionless=False):
 
@@ -115,6 +119,8 @@ class Peaks(Descriptor):
 
 	"""
 
+	name = "peaks"
+
 	def __init__(self,thresholds,norm=False):
 
 		super(Peaks,self).__init__()
@@ -149,6 +155,8 @@ class MinkowskiSingle(Peaks):
 
 	"""
 
+	name = "minkowski_single"
+
 	def __repr__(self):
 
 		if self.norm:
@@ -165,11 +173,15 @@ class PDF(Peaks):
 	 
 	"""
 
+	name = "pdf"
+
 class MinkowskiAll(Peaks):
 	"""
 	Minkowski functionals indexing class, inherits from Peaks; the add-ons are some methods that deal with the fact that there are 3 Minkowski functionals
 
 	"""
+
+	name = "minkowski_all"
 
 	def __repr__(self):
 
