@@ -64,6 +64,30 @@ class PowerSpectrum(Descriptor):
 		self._last = self._start + len(self.l)
 		return self._last
 
+class Moments(Descriptor):
+	"""
+	Moments indexing class
+
+	"""
+
+	def __str__(self):
+
+		return "Moments descriptor: 2 quadratic moments, 3 cubic, 4 quartic"
+
+	@property
+	def first(self):
+
+		self._first = self._start
+		return self._first
+
+	@property
+	def last(self):
+
+		self._last = self._start + 9
+		return self._last
+
+
+
 class Peaks(Descriptor):
 	"""
 	Peaks histogram indexing class

@@ -16,7 +16,7 @@ import numpy as np
 from astropy.io import fits
 
 from convergence import ConvergenceMap
-from index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle
+from index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle,Moments
 
 ##########################################
 #####Default Fits loader convergence######
@@ -129,7 +129,10 @@ def convergence_measure_all(args):
 	logging.debug("Processing {0}".format(args["map_id"]))
 
 	#Load the map
-	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
+	if "fits_loader" in args.keys():
+		conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=args["fits_loader"])
+	else: 
+		conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
 
 	#Allocate memory for observables
 	descriptors = args["index"]
@@ -142,6 +145,10 @@ def convergence_measure_all(args):
 		if type(descriptors[n]) == PowerSpectrum:
 			
 			l,observables[descriptors[n].first:descriptors[n].last] = conv_map.powerSpectrum(descriptors[n].l_edges)
+
+		elif type(descriptors[n]) == Moments:
+
+			observables[descriptors[n].first:descriptors[n].last] = conv_map.moments(connected=True)
 		
 		elif type(descriptors[n]) == Peaks:
 			
