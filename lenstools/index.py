@@ -41,6 +41,8 @@ class PowerSpectrum(Descriptor):
 	:type l_edges: array
 
 	"""
+
+	name = "power_spectrum"
 	
 	def __init__(self,l_edges):
 		
@@ -48,7 +50,7 @@ class PowerSpectrum(Descriptor):
 		self.l_edges = l_edges
 		self.l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-	def __str__(self):
+	def __repr__(self):
 
 		return "Power Spectrum descriptor: {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.l),self.l_edges.__str__(),self.l.__str__())
 
@@ -64,6 +66,50 @@ class PowerSpectrum(Descriptor):
 		self._last = self._start + len(self.l)
 		return self._last
 
+class Moments(Descriptor):
+	"""
+	Moments indexing class
+
+	"""
+
+	name = "moments"
+
+	def __init__(self,connected=True,dimensionless=False):
+
+		super(Moments,self).__init__()
+		self.connected = connected
+		self.dimensionless = dimensionless
+
+	def __repr__(self):
+
+		repr_str = "Moments descriptor: 2 quadratic moments, 3 cubic, 4 quartic"
+		
+		if self.connected:
+			repr_str += "\nconnected: yes"
+		else:
+			repr_str += "\nconnected: no"
+
+		if self.dimensionless:
+			repr_str += "\ndimensionless: yes"
+		else:
+			repr_str += "\ndimensionless: no"
+
+		return repr_str
+
+	@property
+	def first(self):
+
+		self._first = self._start
+		return self._first
+
+	@property
+	def last(self):
+
+		self._last = self._start + 9
+		return self._last
+
+
+
 class Peaks(Descriptor):
 	"""
 	Peaks histogram indexing class
@@ -73,15 +119,23 @@ class Peaks(Descriptor):
 
 	"""
 
-	def __init__(self,thresholds):
+	name = "peaks"
+
+	def __init__(self,thresholds,norm=False):
 
 		super(Peaks,self).__init__()
 		self.thresholds = thresholds
 		self.midpoints = 0.5*(thresholds[:-1] + thresholds[1:])
+		self.norm = norm
 
-	def __str__(self):
+	def __repr__(self):
 
-		return "Peak count descriptor: {0} bins\nEdges: {1}\nMidpoints{2}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__())
+		if self.norm:
+			answer = "yes"
+		else:
+			answer = "no"
+
+		return "Peak count descriptor: {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
 
 	@property
 	def first(self):
@@ -101,17 +155,42 @@ class MinkowskiSingle(Peaks):
 
 	"""
 
+	name = "minkowski_single"
+
+	def __repr__(self):
+
+		if self.norm:
+			answer = "yes"
+		else:
+			answer = "no"
+
+		return "Minkowski functionals descriptor (single): {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
+
+
 class PDF(Peaks):
 	"""
 	Probability density function indexing class, identical to Peaks
 	 
 	"""
 
+	name = "pdf"
+
 class MinkowskiAll(Peaks):
 	"""
 	Minkowski functionals indexing class, inherits from Peaks; the add-ons are some methods that deal with the fact that there are 3 Minkowski functionals
 
 	"""
+
+	name = "minkowski_all"
+
+	def __repr__(self):
+
+		if self.norm:
+			answer = "yes"
+		else:
+			answer = "no"
+
+		return "Minkowski functionals descriptor (all): {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
 
 	@property
 	def last(self):

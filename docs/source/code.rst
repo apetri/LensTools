@@ -49,6 +49,8 @@ Indexing
 
 .. autoclass:: lenstools.index.PowerSpectrum
 
+.. autoclass:: lenstools.index.Moments
+
 .. autoclass:: lenstools.index.Peaks
 
 .. autoclass:: lenstools.index.PDF
