@@ -22,6 +22,7 @@ def test_fisher():
 	
 	#Fiducial
 	l,P,g = np.loadtxt("Data/fiducial",unpack=True)
+	covariance = P**2 / (l + 0.5)
 	f.add_model(parameters=np.array([0.26,-1.0,0.798,0.960]),feature=P)
 
 	#High Om
@@ -60,6 +61,14 @@ def test_fisher():
 
 	plt.savefig("derivatives.png")
 	plt.clf()
+
+	#Sample fit with diagonal covariance matrix
+	fitted_parameters = f.fit(P,features_covariance=covariance)
+	np.savetxt("fitted_parameters.txt",fitted_parameters)
+
+	#Sample fisher matrix
+	fisher = f.fisher_matrix(simulated_features_covariance=covariance)
+	np.savetxt("fisher_constraints.txt",np.sqrt(np.linalg.inv(fisher).diagonal()))
 
 	return f
 

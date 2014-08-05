@@ -240,7 +240,7 @@ class FisherAnalysis(Analysis):
 			self.compute_derivatives()
 
 		#Linear algebra manipulations (parameters = M x features)
-		if simulated_features_covariance.shape == observed_feature.shape * 2:
+		if simulated_features_covariance.shape ==  self.training_set.shape[1:] * 2:
 			Y = solve(simulated_features_covariance,self.derivatives.transpose())
 		else:
 			Y = (1/simulated_features_covariance[:,np.newaxis]) * self.derivatives.transpose()
