@@ -11,6 +11,7 @@
 """
 
 import numpy as np
+from numpy.linalg import solve,inv
 
 #########################################################
 #############Default Gaussian data likelihood############
@@ -173,6 +174,82 @@ class FisherAnalysis(Analysis):
 
 		return self._varied_list
 
+	def fit(self,observed_feature,features_covariance):
+
+		"""
+		Maximizes the gaussian likelihood on which the Fisher matrix formalism is based, and returns the best fit for the parameters given the observed feature
+
+		:param observed_feature: observed feature to fit, must have the same shape as self.training_set[0] (or derivatives[0])
+		:type observed_feature: array
+
+		:param features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
+		:type features_covariance: 2 dimensional array
+
+		:returns: array with the best fitted parameter values
+
+		"""
+
+		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+
+		#Check for correct shape of input
+		assert observed_feature.shape == self.training_set.shape[1:]
+		assert features_covariance.shape == observed_feature.shape * 2
+
+		#If derivatives are not computed, compute them
+		if not hasattr(self,"derivatives"):
+			self.compute_derivatives()
+
+		#Linear algebra manipulations (parameters = M x features)
+		Y = solve(features_covariance,self.derivatives.transpose())
+		XY = np.dot(self.derivatives,Y)
+		M = solve(XY,Y.transpose())
+
+		#Compute difference in parameters (with respect to the fiducial model)
+		dP = np.dot(M,observed_feature - self.training_set[self._fiducial])
+
+		#Return the actual best fit
+		return self.parameter_set[self._fiducial,self._varied_list] + dP
+
+
+
+	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
+
+		"""
+		Computes the Fisher matrix of the associated features, that in the end allows to compute the paramtere confidence contours (around the fiducial value)
+
+		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
+		:type simulated_features_covariance: 2 dimensional array
+
+		:param observed_features_covariance: covariance matrix of the simulated features, if different from the simulated one; if None the simulated feature covariance is used
+		:type observed_features_covariance: 2 dimensional array
+
+		:returns: 2 dimensional array with the Fisher matrix of the analysis
+
+		"""
+
+		#Check for correct shape of input
+		assert simulated_features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+		assert simulated_features_covariance.shape == self.training_set.shape[1:] * 2
+
+		#If derivatives are not computed, compute them
+		if not hasattr(self,"derivatives"):
+			self.compute_derivatives()
+
+		#Linear algebra manipulations (parameters = M x features)
+		Y = solve(simulated_features_covariance,self.derivatives.transpose())
+		XY = np.dot(self.derivatives,Y)
+
+		#If we are using the same covariance matrix for observations and simulations, then XY is the Fisher matrix; otherwise we need to compute M too
+		if observed_features_covariance is None:
+			
+			return XY
+		
+		else:
+
+			assert observed_features_covariance.shape == simulated_features_covariance.shape
+			M = solve(XY,Y.transpose())
+			parameter_covariance = np.dot(M,np.dot(observed_features_covariance,M.transpose()))
+			return inv(parameter_covariance)
 
 
 #######################################################
