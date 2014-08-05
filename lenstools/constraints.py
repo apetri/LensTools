@@ -12,6 +12,14 @@
 
 import numpy as np
 
+#########################################################
+#############Default Gaussian data likelihood############
+#########################################################
+
+def gaussian_likelihood(chi2,norm=1.0):
+
+	return norm*np.exp(-0.5*chi2**2)
+
 ##############################################
 ###########Analysis base class################
 ##############################################
@@ -34,7 +42,7 @@ class Analysis(object):
 
 	_analysis_type = None
 
-	def __init__(self,parameter_set=None,training_set=None,observed_set=None):
+	def __init__(self,parameter_set=None,training_set=None):
 
 		assert self._analysis_type is not None,"Don't instantiate this class directly, use one of its subclasses!"
 		
@@ -43,7 +51,6 @@ class Analysis(object):
 
 		self.parameter_set = parameter_set
 		self.training_set = training_set
-		self.observed_set = observed_set
 
 	def __repr__(self):
 
@@ -168,11 +175,26 @@ class FisherAnalysis(Analysis):
 
 
 
+#######################################################
+#############Full analysis#############################
+#######################################################
 
+class LikelihoodAnalysis(Analysis):
 
+	_analysis_type = "Likelihood"
+	_likelihood_function = gaussian_likelihood
 
+	"""
+	The class handler of a full likelihood analysis; the parameter likelihood function is calculated with an interpolation of various kind between simulation points
 
+	"""
 
+	def set_likelihood(self,function=None):
 
+		"""
+		Sets the likelihood function to a custom function input by the user: the default is the usual exp(-0.5*chi^2)
 
+		"""
 
+		assert function is not None
+		self._likelihood_function = function
