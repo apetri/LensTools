@@ -32,7 +32,10 @@ Constraining cosmology
 	:inherited-members:
 
 .. autoclass:: lenstools.constraints.FisherAnalysis
-	:members:
+	:inherited-members:
+
+.. autoclass:: lenstools.constraints.LikelihoodAnalysis
+	:inherited-members:
 
 Noise
 =====
