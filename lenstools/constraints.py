@@ -182,12 +182,15 @@ class FisherAnalysis(Analysis):
 class LikelihoodAnalysis(Analysis):
 
 	_analysis_type = "Likelihood"
-	_likelihood_function = gaussian_likelihood
 
 	"""
 	The class handler of a full likelihood analysis; the parameter likelihood function is calculated with an interpolation of various kind between simulation points
 
 	"""
+
+	def __init__(self,parameter_set=None,training_set=None):
+		super(LikelihoodAnalysis,self).__init__(parameter_set=parameter_set,training_set=training_set) 
+		self._likelihood_function = gaussian_likelihood
 
 	def set_likelihood(self,function=None):
 
