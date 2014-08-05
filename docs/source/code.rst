@@ -70,6 +70,14 @@ Simulation sets
 .. autoclass:: lenstools.simulations.CFHTemu1
 	:members: getNames, squeeze, getModels
 
+Observation sets
+================
+
+.. automodule:: lenstools.observations
+
+.. autoclass:: lenstools.observations.CFHTLens
+	:inherited-members:
+
 Defaults
 ========
 

@@ -32,6 +32,19 @@ class CFHTLens(object):
 
 	def getName(self,subfield=1,smoothing=0.5):
 
+		"""
+		Get the names of the FITS files where the subfield images are stored
+
+		:param subfield: the subfield number (1-13)
+		:type subfield: int.
+
+		:param smoothing: the smoothing scale of the subfield image, in arcminutes
+		:type smoothing: float.
+
+		:returns: str. : the FITS file name
+
+		"""
+
 		full_name = os.path.join(self.root_path,"KS_obs")
 		full_name += "_subfield{0}_".format(subfield)
 		full_name += "sigma{0:02d}".format(int(smoothing*10))

@@ -56,12 +56,12 @@ for ext_module in external_sources.keys():
 
 	sources = list()
 	for source in external_sources[ext_module]:
-		sources.append("{0}/{1}/{2}".format(name,external_dir,source))
+		sources.append(os.path.join(name,external_dir,source))
 
 	ext.append(Extension(ext_module,sources,extra_link_args=link_flags))
 
 #Data files on which the package depends on
-package_data = {name:["book/CFHTemu1.txt"]}
+package_data = {name:[os.path.join("book","CFHTemu1.txt")]}
 
 setup(
 	name=name,
@@ -70,13 +70,13 @@ setup(
 	author_email=email,
 	packages=[name,"{0}.{1}".format(name,external_dir)],
 	package_data=package_data,
-	install_requires=["numpy","scipy"],
+	install_requires=["numpy","scipy","astropy"],
 	url=url,
 	license="?",
 	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd("docs/source/index.rst"),
+	long_description=rd(os.path.join("docs","source","index.rst")),
 	classifiers=classifiers,
-	ext_package="{0}/{1}".format(name,external_dir),
+	ext_package=os.path.join(name,external_dir),
 	ext_modules=ext,
 	include_dirs=numpy.distutils.misc_util.get_numpy_include_dirs(),
 )
