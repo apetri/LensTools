@@ -2,7 +2,7 @@
 
 .. module:: simulations 
 	:platform: Unix
-	:synopsis: This module handles the book keeping of a simulation set map names, cosmological parameters, etc...
+	:synopsis: This module handles the book keeping of simulation sets map names, cosmological parameters, etc...
 
 
 .. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>
@@ -29,6 +29,7 @@ class IGS1(FlatwCDM):
 	"""
 
 	#Don't touch these! 
+	_class_name = "IGS1"
 	_series_name = "m"
 	_num_particles = 512
 	_box_size_mpc = 240
@@ -41,7 +42,7 @@ class IGS1(FlatwCDM):
 		self.sigma8 = sigma8
 		self.ns = ns
 
-		assert root_path is not None,"You must specify the root path of your IGS1 local copy!"
+		assert root_path is not None,"You must specify the root path of your {0} local copy!".format(self._class_name)
 
 		self.root_path = root_path
 
@@ -147,6 +148,7 @@ class CFHTemu1(IGS1):
 	"""
 
 	#Don't touch these! 
+	_class_name = "CFHTemu1"
 	_series_name = "emu1"
 	_num_particles = 512
 	_box_size_mpc = 240
