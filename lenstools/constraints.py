@@ -352,6 +352,8 @@ class LikelihoodAnalysis(Analysis):
 
 			for n in range(self._num_bins):
 				interpolated_feature[n] = self._interpolator[n](*parameters)
+
+			return interpolated_feature.reshape(self.training_set.shape[1:])
 		
 		else:
 			
@@ -360,8 +362,7 @@ class LikelihoodAnalysis(Analysis):
 			for n in range(self._num_bins):
 				interpolated_feature[:,n] = self._interpolator[n](*parameters.transpose())
 
-		#Return the result
-		return interpolated_feature
+			return interpolated_feature.reshape((parameters.shape[0],) + self.training_set.shape[1:])
 
 	def chi2(self,parameters,observed_feature,feature_covariance,pool=None):
 
