@@ -41,6 +41,25 @@ def _chi2(parameters,**kwargs):
 #############Feature prediction wrapper################################
 #######################################################################
 
+def _predict(parameters,num_bins,interpolator):
+
+	#For each feature bin, compute its interpolated value
+	if parameters.ndim == 1:
+		
+		interpolated_feature = np.zeros(num_bins)
+
+		for n in range(num_bins):
+			interpolated_feature[n] = interpolator[n](*parameters)
+		
+	else:
+			
+		interpolated_feature = np.zeros((parameters.shape[0],num_bins))
+
+		for n in range(num_bins):
+			interpolated_feature[:,n] = interpolator[n](*parameters.transpose())
+
+	return interpolated_feature
+
 
 ##############################################
 ###########Analysis base class################
@@ -360,24 +379,15 @@ class LikelihoodAnalysis(Analysis):
 		if not hasattr(self,"_interpolator"):
 			self.train()
 
-		#For each feature bin, compute its interpolated value
+		#Interpolate to compute the features
+		interpolated_feature = _predict(parameters,self._num_bins,self._interpolator)
+
+		#Return the result
 		if parameters.ndim == 1:
-			
-			interpolated_feature = np.zeros(self._num_bins)
-
-			for n in range(self._num_bins):
-				interpolated_feature[n] = self._interpolator[n](*parameters)
-
 			return interpolated_feature.reshape(self.training_set.shape[1:])
-		
 		else:
-			
-			interpolated_feature = np.zeros((parameters.shape[0],self._num_bins))
-
-			for n in range(self._num_bins):
-				interpolated_feature[:,n] = self._interpolator[n](*parameters.transpose())
-
 			return interpolated_feature.reshape((parameters.shape[0],) + self.training_set.shape[1:])
+
 
 	def chi2(self,parameters,observed_feature,feature_covariance,split_chunks=None,pool=None):
 
