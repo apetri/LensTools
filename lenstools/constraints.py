@@ -21,6 +21,8 @@ import numpy as np
 from numpy.linalg import solve,inv
 from scipy.interpolate import Rbf
 
+from emcee.ensemble import _function_wrapper
+
 #########################################################
 #############Default Gaussian data likelihood############
 #########################################################
@@ -33,9 +35,22 @@ def gaussian_likelihood(chi2,norm=1.0):
 ##########Default chi2 calculation with the sandwich product##########
 ######################################################################
 
-def _chi2(parameters,**kwargs):
+def _chi2(parameters,*args,**kwargs):
 
-	return
+	model_feature = _predict(parameters,kwargs["num_bins"],kwargs["interpolator"])
+	inverse_covariance = kwargs["inverse_covariance"]
+
+	if model_feature.ndim == 1:
+		observed_feature = kwargs["observed_feature"]
+	else: 
+		observed_feature = kwargs["observed_feature"][np.newaxis,:]
+
+	inverse_covariance_dot = np.dot(observed_feature - model_feature,inverse_covariance)
+
+	return ((observed_feature - model_feature) * inverse_covariance_dot).sum(-1)
+	
+
+	
 
 #######################################################################
 #############Feature prediction wrapper################################
@@ -389,7 +404,7 @@ class LikelihoodAnalysis(Analysis):
 			return interpolated_feature.reshape((parameters.shape[0],) + self.training_set.shape[1:])
 
 
-	def chi2(self,parameters,observed_feature,feature_covariance,split_chunks=None,pool=None):
+	def chi2(self,parameters,observed_feature,features_covariance,split_chunks=None,pool=None):
 
 		"""
 		Computes the chi2 part of the parameter likelihood with the usual sandwich product with the covariance matrix; the model features are computed with the interpolators
@@ -416,21 +431,40 @@ class LikelihoodAnalysis(Analysis):
 		assert observed_feature.shape == self.training_set.shape[1:]
 		assert features_covariance.shape == observed_feature.shape * 2
 
+		#If you didn't do training before, train now with the default settings
+		if not hasattr(self,"_interpolator"):
+			self.train()
+
 		#Reformat the parameter input into a list of chunks
 		if parameters.ndim==1:
-
-			parameters_chunks = [parameters]
-		
-		elif split_chunks is not None and split_chunks>0:
-
+			num_points = 1
+		else:
 			num_points = parameters.shape[0]
+
+		if split_chunks is None:
+			
+			parameter_chunks = [parameters]
+		
+		elif split_chunks > 0:
+			
 			assert num_points%split_chunks == 0,"split_chunks must divide exactly the number of points!!"
-
 			chunk_length = num_points//split_chunks
-
 			parameter_chunks = [ parameters[n*chunk_length:(n+1)*chunk_length] for n in range(split_chunks) ]
 
-		
+		else:
 
+			raise ValueError("split_chunks must be >0!!")
 
-		return None
+		#Compute the inverse of the covariance matrix once and for all
+		covinv = inv(features_covariance)
+
+		#Build the keyword argument dictionary to be passed to the chi2 calculator
+		kwargs = {"num_bins":self._num_bins,"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
+
+		#Hack to make the chi2 pickleable (from emcee)
+		chi2_calculator = _function_wrapper(_chi2,tuple(),kwargs)
+
+		#Finally map chi2 calculator on the list of chunks
+		chi2_list = map(chi2_calculator,parameter_chunks)
+
+		return np.array(chi2_list).reshape(num_points)

@@ -177,10 +177,26 @@ def test_interpolation():
 	ax[1].set_ylabel(r"$P_l^I-P_l^M/P_l^M$")
 	
 	ax[0].set_yscale("log")
-	ax[0].legend(loc="upper left")
 
 	plt.savefig("power_interpolator_test_2.png")
 	plt.clf()
+
+	#Generate a fudge power spectrum covariance matrix
+	covariance = np.diag(testing_Pl**2/(0.5 + l))
+
+	#Generate a fudge observation by wiggling the testing power spectrum
+	observation = testing_Pl + np.random.uniform(low=-testing_Pl*0.1,high=testing_Pl*0.1)
+
+	#Choose a bunch of points in parameter space
+	points = analysis.parameter_set[:,:-1]
+
+	#Compute the chi2
+	chi2_values_1 = analysis.chi2(points,observation,covariance)
+	chi2_values_2 = analysis.chi2(points,observation,covariance,split_chunks=4)
+
+	assert chi2_values_1.shape == chi2_values_2.shape
+
+	return chi2_values_1,chi2_values_2
 
 
 
