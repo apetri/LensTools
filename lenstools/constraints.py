@@ -10,8 +10,14 @@
 
 """
 
+from operator import mul
+from functools import reduce
+
+#########################################################
+
 import numpy as np
 from numpy.linalg import solve,inv
+from scipy.interpolate import Rbf
 
 #########################################################
 #############Default Gaussian data likelihood############
@@ -292,3 +298,93 @@ class LikelihoodAnalysis(Analysis):
 
 		assert function is not None
 		self._likelihood_function = function
+
+	def train(self,use_parameters="all",**kwargs):
+
+		"""
+		Builds the interpolators for each of the feature bins using a radial basis function approach
+
+		:param use_parameters: which parameters actually vary in the supplied parameter set (it doesn't make sense to interpolate over the constant ones)
+		:type use_parameters: list. or "all"
+
+		:param kwargs: keyword arguments to be passed to the interpolator constructor
+
+		"""
+
+		#input sanity check
+		if use_parameters != "all":
+			assert type(use_parameters) == list
+			used_parameters = self.parameter_set[:,use_parameters].transpose()
+		else:
+			used_parameters = self.parameter_set.transpose()
+
+		#Compute total number of feature bins and reshape the training set accordingly
+		self._num_bins = reduce(mul,self.training_set.shape[1:])
+		flattened_training_set = self.training_set.reshape((self.training_set.shape[0],self._num_bins))
+
+		#Build one interpolator for each feature bin (not optimal but we suck it up for now)
+		self._interpolator = list()
+
+		for n in range(self._num_bins):
+
+			self._interpolator.append(Rbf(*(tuple(used_parameters) + (flattened_training_set[:,n],)),**kwargs))
+
+		return None
+
+	def predict(self,parameters):
+
+		"""
+		Predicts the feature at a new point in parameter space using the bin interpolators, trained with the simulated features
+
+		:param parameters: new points in parameter space on which to compute the chi2 statistic; it'a (N,p) array where N is the number of points and p the number of parameters, or array of size p if there is only one point
+		:type parameters: array  
+
+		"""
+
+		#If you didn't do training before, train now with the default settings
+		if not hasattr(self,"_interpolator"):
+			self.train()
+
+		#For each feature bin, compute its interpolated value
+		if len(parameters.shape)==1:
+			
+			interpolated_feature = np.zeros(self._num_bins)
+
+			for n in range(self._num_bins):
+				interpolated_feature[n] = self._interpolator[n](*parameters)
+		
+		else:
+			
+			interpolated_feature = np.zeros((parameters.shape[0],self._num_bins))
+
+			for n in range(self._num_bins):
+				interpolated_feature[:,n] = self._interpolator[n](*parameters.transpose())
+
+		#Return the result
+		return interpolated_feature
+
+	def chi2(self,parameters,observed_feature,feature_covariance,pool=None):
+
+		"""
+		Computes the chi2 part of the parameter likelihood with the usual sandwich product with the covariance matrix; the model features are computed with the interpolators
+
+		:param parameters: new points in parameter space on which to compute the chi2 statistic
+		:type parameters: (N,p) array where N is the number of points and p the number of parameters
+
+		:param observed_feature: observed feature on which to condition the parameter likelihood
+		:type observed_feature: array
+
+		:param features_covariance: covariance matrix of the features, must be supplied
+		:type features_covariance: array
+
+		:returns: array with the chi2 values, with the same shape of the parameters input
+
+		"""
+
+		#Sanity checks
+		assert observed_feature is not None 
+		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+		assert observed_feature.shape == self.training_set.shape[1:]
+		assert features_covariance.shape == observed_feature.shape * 2
+
+		return None

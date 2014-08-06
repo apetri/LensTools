@@ -1,16 +1,21 @@
-import sys
+import os,sys
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 try:
 	
-	from lenstools.constraints import FisherAnalysis
+	from lenstools import Ensemble
+	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis
+	from lenstools.simulations import CFHTemu1
 
 except ImportError:
 
 	sys.path.append("..")
-	from lenstools.constraints import FisherAnalysis
+
+	from lenstools import Ensemble
+	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis
+	from lenstools.simulations import CFHTemu1
 
 
 #Test Fisher analysis with power spectrum
@@ -71,5 +76,111 @@ def test_fisher():
 	np.savetxt("fisher_constraints.txt",np.sqrt(np.linalg.inv(fisher).diagonal()))
 
 	return f
+
+#Test interpolation of power spectrum
+def test_interpolation():
+
+	root_path = "Data/all"
+	analysis = LikelihoodAnalysis()
+
+	#Read in model names
+	models = CFHTemu1.getModels()[:17]
+	assert len(models) == 17
+
+	#Shuffle the models
+	np.random.seed(1)
+	np.random.shuffle(models)
+
+	#Divide into training and testing
+	training_models = models[:-1]
+	testing_model = models[-1]
+
+	#Read multipoles
+	l = np.load(os.path.join(root_path,"ell.npy"))
+
+	#Load in the means of the power spectra of the 17 models, and populate the analysis instance
+	for model in training_models:
+
+		ens = Ensemble.fromfilelist([os.path.join(root_path,model._cosmo_id_string,"subfield1","sigma05","power_spectrum.npy")])
+		ens.load(from_old=True)
+
+		analysis.add_model(parameters=model.squeeze(with_ns=True),feature=ens.mean())
+
+	ens = Ensemble.fromfilelist([os.path.join(root_path,testing_model._cosmo_id_string,"subfield1","sigma05","power_spectrum.npy")])
+	ens.load(from_old=True)
+	testing_Pl = ens.mean()
+
+	#Output the analysis stats
+	np.savetxt("16_parameter_points.txt",analysis.parameter_set)
+
+	for n in range(len(training_models)):
+
+		plt.plot(l,l*(l+1)*analysis.training_set[n]/(2*np.pi))
+
+	plt.xlabel(r"$l$")
+	plt.ylabel(r"$l(l+1)P_l/2\pi$")
+	plt.yscale("log")
+
+	plt.savefig("16_power_spectra.png")
+	plt.clf()
+
+	#Train the interpolators
+	analysis.train(use_parameters=range(3))
+	assert hasattr(analysis,"_interpolator")
+	assert hasattr(analysis,"_num_bins")
+
+	#Predict the power spectrum at the remaining point
+	predicted_Pl = analysis.predict(testing_model.squeeze())
+
+	#Plot it against the measured one
+	fig,ax = plt.subplots(2,1,figsize=(16,8))
+
+	#Measured
+	ax[0].plot(l,l*(l+1)*testing_Pl/(2*np.pi),label="measured")
+
+	#Predicted
+	ax[0].plot(l,l*(l+1)*predicted_Pl/(2*np.pi),label="interpolated")
+	
+	#Fractional difference
+	ax[1].plot(l,(predicted_Pl - testing_Pl)/testing_Pl)
+
+	ax[1].set_xlabel(r"$l$")
+	ax[0].set_ylabel(r"$l(l+1)P_l/2\pi$")
+	ax[1].set_ylabel(r"$P_l^I-P_l^M/P_l^M$")
+	
+	ax[0].set_yscale("log")
+	ax[0].legend(loc="upper left")
+
+	plt.savefig("power_interpolator_test.png")
+	plt.clf()
+
+	#Give it a shot with two points in parameter space to test vectorization
+	two_parameter_points = np.array((training_models[0].squeeze(),testing_model.squeeze()))
+	two_predicted_Pl = analysis.predict(two_parameter_points)
+
+	fig,ax = plt.subplots(2,1,figsize=(16,8))
+
+	#Predicted
+	ax[0].plot(l,l*(l+1)*two_predicted_Pl[0]/(2*np.pi),color="red",linestyle="--")
+	ax[0].plot(l,l*(l+1)*two_predicted_Pl[1]/(2*np.pi),color="green",linestyle="--")
+
+	#Measured
+	ax[0].plot(l,l*(l+1)*analysis.training_set[0]/(2*np.pi),color="red",linestyle="-")
+	ax[0].plot(l,l*(l+1)*testing_Pl/(2*np.pi),color="green",linestyle="-")
+
+	#Fractional difference
+	ax[1].plot(l,(two_predicted_Pl[0] - analysis.training_set[0])/analysis.training_set[0],color="red")
+	ax[1].plot(l,(two_predicted_Pl[1] - testing_Pl)/testing_Pl,color="green")
+
+	ax[1].set_xlabel(r"$l$")
+	ax[0].set_ylabel(r"$l(l+1)P_l/2\pi$")
+	ax[1].set_ylabel(r"$P_l^I-P_l^M/P_l^M$")
+	
+	ax[0].set_yscale("log")
+	ax[0].legend(loc="upper left")
+
+	plt.savefig("power_interpolator_test_2.png")
+	plt.clf()
+
 
 
