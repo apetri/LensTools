@@ -15,26 +15,20 @@ import logging
 from emcee.utils import MPIPool
 
 
-def generate_and_measure(args):
-
-	assert "map_id" in args.keys()
-	assert "generator" in args.keys()
-	assert "power_func" in args.keys()
+def generate_and_measure(map_id,generator,power_func):
 
 	#Generate the noise map
-	logging.debug("Processing mock map {0}".format(args["map_id"]))
-	conv_map = args["generator"].fromConvPower(power_func=args["power_func"],seed=args["map_id"],bounds_error=False,fill_value=0.0)
+	logging.debug("Processing mock map {0}".format(map_id))
+	conv_map = generator.fromConvPower(power_func=power_func,seed=map_id,bounds_error=False,fill_value=0.0)
 
 	#Measure its moments
 	return conv_map.moments(connected=True,dimensionless=True)
 
-def measure_from_IGS1(args):
-
-	assert "map_id" in args.keys()
+def measure_from_IGS1(filename):
 
 	#Read in the map
-	logging.debug("Processing IGS1 map {0}".format(args["map_id"]))
-	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
+	logging.debug("Processing IGS1 map {0}".format(filename))
+	conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
 
 	#Smooth 1 arcmin
 	conv_map.smooth(1.0,inplace=True)

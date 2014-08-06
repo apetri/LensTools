@@ -23,39 +23,32 @@ import argparse
 #########This function gets called on every map image and computes the histograms########
 #########################################################################################
 
-def compute_histograms(args):
+def compute_histograms(map_id,simulation_set,smoothing_scales,index,generator,bin_edges):
 
-	assert "map_id" in args.keys()
-	assert "simulation_set" in args.keys()
-	assert "smoothing_scales" in args.keys()
-	assert "index" in args.keys()
-	assert "generator" in args.keys()
-	assert "bin_edges" in args.keys()
-
-	assert len(args["index"].descriptor_list) == len(args["smoothing_scales"])
+	assert len(index.descriptor_list) == len(smoothing_scales)
 
 	z = 1.0
 
 	#Get map name to analyze
-	map_name = args["simulation_set"].getNames(z=z,realizations=[args["map_id"]])[0]
+	map_name = simulation_set.getNames(z=z,realizations=[map_id])[0]
 
 	#Load the convergence map
 	convergence_map = ConvergenceMap.fromfilename(map_name,loader=load_fits_default_convergence)
 
 	#Generate the shape noise map
-	noise_map = args["generator"].getShapeNoise(z=z,ngal=15.0,seed=args["map_id"])
+	noise_map = generator.getShapeNoise(z=z,ngal=15.0,seed=map_id)
 
 	#Add the noise
 	convergence_map += noise_map
 
 	#Measure the features
-	hist_output = np.zeros(args["index"].size)
-	for n,descriptor in enumerate(args["index"].descriptor_list):
+	hist_output = np.zeros(index.size)
+	for n,descriptor in enumerate(index.descriptor_list):
 
-		logging.debug("Processing {0} x {1} arcmin".format(map_name,args["smoothing_scales"][n]))
+		logging.debug("Processing {0} x {1} arcmin".format(map_name,smoothing_scales[n]))
 
-		smoothed_map = convergence_map.smooth(args["smoothing_scales"][n])
-		v,hist_output[descriptor.first:descriptor.last] = smoothed_map.pdf(args["bin_edges"])
+		smoothed_map = convergence_map.smooth(smoothing_scales[n])
+		v,hist_output[descriptor.first:descriptor.last] = smoothed_map.pdf(bin_edges)
 
 	#Return the histograms in array format
 	return hist_output

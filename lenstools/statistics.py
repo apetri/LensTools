@@ -17,12 +17,14 @@ from lenstools.index import Indexer
 import numpy as np
 import scipy.io as sio
 
+from emcee.ensemble import _function_wrapper
+
 ##########################################
 #########np.load wrapper##################
 ##########################################
 
-def _np_load(args):
-	return np.load(args["map_id"])
+def _np_load(filename):
+	return np.load(filename)
 
 ##########################################
 ########Ensemble class####################
@@ -79,8 +81,8 @@ class Ensemble(object):
 		"""
 		Loads the ensemble into memory, can spread the calculations on multiple processors using a MPI pool
 
-		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble; must take in a dictionary as its only parameter and must return a numpy array. If None, it performs a numpy.load on the specified files
-		:type callback_loader: function, must take in a file name (str.) and return a numpy array with the loaded data
+		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble. If None provided, it performs a numpy.load on the specified files. Must return a numpy array with the loaded data
+		:type callback_loader: function
 
 		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
 		:type pool: MPI pool object
@@ -107,12 +109,8 @@ class Ensemble(object):
 
 		self.pool = pool
 
-		#Build list with tasks to execute (dirty, maybe optimize in the future?)
-		tasks = list()
-		for map_id in self.file_list:
-			task = kwargs.copy()
-			task.update({"map_id":map_id})
-			tasks.append(task)
+		#Build a function wrapper of the callback loader, so it becomes pickleable
+		_callback_wrapper = _function_wrapper(callback_loader,args=tuple(),kwargs=kwargs)
 
 		#Execute the callback on each file in the list (spread calculations with MPI pool if it is not none)
 		if pool is not None:
@@ -120,7 +118,7 @@ class Ensemble(object):
 		else:
 			M = map
 
-		full_data = np.array(M(callback_loader,tasks))
+		full_data = np.array(M(_callback_wrapper,self.file_list))
 		
 		assert type(full_data) == np.ndarray
 		assert full_data.shape[0] == self.num_realizations 

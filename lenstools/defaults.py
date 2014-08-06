@@ -21,7 +21,7 @@ from index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle,Moments
 ##########################################
 #####Default Fits loader convergence######
 ##########################################
-def load_fits_default_convergence(*args):
+def load_fits_default_convergence(filename):
 	"""
 	This is the default convergence fits file loader, it assumes that the two components of the shear are stored in two different image FITS files, which have an ANGLE keyword in the header
 
@@ -35,7 +35,7 @@ def load_fits_default_convergence(*args):
 	"""
 
 	#Open the files
-	kappa_file = fits.open(args[0])
+	kappa_file = fits.open(filename)
 
 	#Read the ANGLE keyword from the header
 	angle = kappa_file[0].header["ANGLE"]
@@ -51,7 +51,7 @@ def load_fits_default_convergence(*args):
 ##########################################
 #####Default Fits loader shear############
 ##########################################
-def load_fits_default_shear(*args):
+def load_fits_default_shear(filename):
 	"""
 	This is the default shear fits file loader, it assumes that the two components of the shear are stored in a single image FITS file, which have an ANGLE keyword in the header
 
@@ -65,7 +65,7 @@ def load_fits_default_shear(*args):
 	"""
 
 	#Open the files
-	gamma_file = fits.open(args[0])
+	gamma_file = fits.open(filename)
 
 	#Read the ANGLE keyword from the header
 	angle = gamma_file[0].header["ANGLE"]
@@ -82,7 +82,7 @@ def load_fits_default_shear(*args):
 ##########Default callback loader, loads in the measured power spectrum#########
 ################################################################################
 
-def default_callback_loader(args):
+def default_callback_loader(filename,l_edges):
 	"""
 	
 	Default ensemble loader: reads a FITS data file containing a convergence map and measures its power spectrum
@@ -96,46 +96,37 @@ def default_callback_loader(args):
 
 	"""
 
-	assert "map_id" in args.keys()
-	assert "l_edges" in args.keys()
+	logging.debug("Processing {0} power".format(filename))
 
-	logging.debug("Processing {0} power".format(args["map_id"]))
-
-	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
-	l,Pl = conv_map.powerSpectrum(args["l_edges"])
+	conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+	l,Pl = conv_map.powerSpectrum(l_edges)
 	return Pl
 
-def peaks_loader(args):
+def peaks_loader(filename,thresholds):
 
-	assert "map_id" in args.keys()
-	assert "thresholds" in args.keys()
+	logging.debug("Processing {0} peaks".format(filename))
+	conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
 
-	logging.debug("Processing {0} peaks".format(args["map_id"]))
-	conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
-
-	v,pk = conv_map.peakCount(args["thresholds"],norm=True)
+	v,pk = conv_map.peakCount(thresholds,norm=True)
 	return v
 
-def convergence_measure_all(args):
+def convergence_measure_all(filename,index,fits_loader=None):
 
 	"""
-	Measures all the statistical descriptors of a convergence map as indicated by the Indexer instance args['index']
+	Measures all the statistical descriptors of a convergence map as indicated by the index instance
 	
 	"""
 
-	assert "map_id" in args.keys()
-	assert "index" in args.keys()
-
-	logging.debug("Processing {0}".format(args["map_id"]))
+	logging.debug("Processing {0}".format(filename))
 
 	#Load the map
-	if "fits_loader" in args.keys():
-		conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=args["fits_loader"])
+	if fits_loader is not None:
+		conv_map = ConvergenceMap.fromfilename(filename,loader=fits_loader)
 	else: 
-		conv_map = ConvergenceMap.fromfilename(args["map_id"],loader=load_fits_default_convergence)
+		conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
 
 	#Allocate memory for observables
-	descriptors = args["index"]
+	descriptors = index
 	observables = np.zeros(descriptors.size)
 
 	#Measure descriptors as directed by input
