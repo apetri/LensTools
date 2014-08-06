@@ -10,6 +10,8 @@
 
 """
 
+from __future__ import division,print_function,with_statement
+
 from operator import mul
 from functools import reduce
 
@@ -26,6 +28,19 @@ from scipy.interpolate import Rbf
 def gaussian_likelihood(chi2,norm=1.0):
 
 	return norm*np.exp(-0.5*chi2**2)
+
+######################################################################
+##########Default chi2 calculation with the sandwich product##########
+######################################################################
+
+def _chi2(parameters,**kwargs):
+
+	return
+
+#######################################################################
+#############Feature prediction wrapper################################
+#######################################################################
+
 
 ##############################################
 ###########Analysis base class################
@@ -346,7 +361,7 @@ class LikelihoodAnalysis(Analysis):
 			self.train()
 
 		#For each feature bin, compute its interpolated value
-		if len(parameters.shape)==1:
+		if parameters.ndim == 1:
 			
 			interpolated_feature = np.zeros(self._num_bins)
 
@@ -364,7 +379,7 @@ class LikelihoodAnalysis(Analysis):
 
 			return interpolated_feature.reshape((parameters.shape[0],) + self.training_set.shape[1:])
 
-	def chi2(self,parameters,observed_feature,feature_covariance,pool=None):
+	def chi2(self,parameters,observed_feature,feature_covariance,split_chunks=None,pool=None):
 
 		"""
 		Computes the chi2 part of the parameter likelihood with the usual sandwich product with the covariance matrix; the model features are computed with the interpolators
@@ -378,6 +393,9 @@ class LikelihoodAnalysis(Analysis):
 		:param features_covariance: covariance matrix of the features, must be supplied
 		:type features_covariance: array
 
+		:param split_chunks: if set to an integer bigger than 0, splits the calculation of the chi2 into subsequent chunks, each that takes care of an equal number of points. Each chunk could be taken care of by a different processor
+		:type split_chunks: int.
+
 		:returns: array with the chi2 values, with the same shape of the parameters input
 
 		"""
@@ -387,5 +405,22 @@ class LikelihoodAnalysis(Analysis):
 		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
 		assert observed_feature.shape == self.training_set.shape[1:]
 		assert features_covariance.shape == observed_feature.shape * 2
+
+		#Reformat the parameter input into a list of chunks
+		if parameters.ndim==1:
+
+			parameters_chunks = [parameters]
+		
+		elif split_chunks is not None and split_chunks>0:
+
+			num_points = parameters.shape[0]
+			assert num_points%split_chunks == 0,"split_chunks must divide exactly the number of points!!"
+
+			chunk_length = num_points//split_chunks
+
+			parameter_chunks = [ parameters[n*chunk_length:(n+1)*chunk_length] for n in range(split_chunks) ]
+
+		
+
 
 		return None
