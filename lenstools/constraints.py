@@ -468,3 +468,18 @@ class LikelihoodAnalysis(Analysis):
 		chi2_list = map(chi2_wrapper,parameter_chunks)
 
 		return np.array(chi2_list).reshape(num_points)
+
+
+	def likelihood(self,chi2_value,**kwargs):
+
+		"""
+		Computes the likelihood value with the selected likelihood function, given the pre-computed chi2 value
+
+		:param chi2_value: chi squared values 
+		:type chi2_value: array
+
+		:param kwargs: keyword arguments to be passed to your likelihood function
+
+		"""
+
+		return self._likelihood_function(chi2_value,**kwargs) 
