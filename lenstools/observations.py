@@ -47,7 +47,7 @@ class CFHTLens(object):
 
 		full_name = os.path.join(self.root_path,"CFHT_KS")
 		full_name += "_sigma{0:02d}_".format(int(smoothing*10))
-		full_name += "subfield{0}".format(subfield)
+		full_name += "subfield{0:02d}".format(subfield)
 		full_name += ".fits"
 
 		return full_name
