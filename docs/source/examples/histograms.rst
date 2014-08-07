@@ -6,73 +6,66 @@ Histograms of convergence maps
 .. figure:: ../../../examples/histograms.png
 
 ::
-	
+
 	import sys
-	
+
 	####################################################
 	#######LensTools functionality######################
 	####################################################
-	
+
 	from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
 	from lenstools.index import PDF,Indexer
 	from lenstools.defaults import load_fits_default_convergence
 	from lenstools.simulations import IGS1
-	
+
 	#####################################################
-	
+
 	import numpy as np
 	import matplotlib.pyplot as plt
-	
+
 	from emcee.utils import MPIPool
-	
+
 	import logging
 	import argparse
-	
+
 	#########################################################################################
 	#########This function gets called on every map image and computes the histograms########
 	#########################################################################################
-	
-	def compute_histograms(args):
-	
-		assert "map_id" in args.keys()
-		assert "simulation_set" in args.keys()
-		assert "smoothing_scales" in args.keys()
-		assert "index" in args.keys()
-		assert "generator" in args.keys()
-		assert "bin_edges" in args.keys()
-	
-		assert len(args["index"].descriptor_list) == len(args["smoothing_scales"])
-	
+
+	def compute_histograms(map_id,simulation_set,smoothing_scales,index,generator,bin_edges):
+
+		assert len(index.descriptor_list) == len(smoothing_scales)
+
 		z = 1.0
-	
+
 		#Get map name to analyze
-		map_name = args["simulation_set"].getNames(z=z,realizations=[args["map_id"]])[0]
-	
+		map_name = simulation_set.getNames(z=z,realizations=[map_id])[0]
+
 		#Load the convergence map
 		convergence_map = ConvergenceMap.fromfilename(map_name,loader=load_fits_default_convergence)
-	
+
 		#Generate the shape noise map
-		noise_map = args["generator"].getShapeNoise(z=z,ngal=15.0,seed=args["map_id"])
-	
+		noise_map = generator.getShapeNoise(z=z,ngal=15.0,seed=map_id)
+
 		#Add the noise
 		convergence_map += noise_map
-	
+
 		#Measure the features
-		hist_output = np.zeros(args["index"].size)
-		for n,descriptor in enumerate(args["index"].descriptor_list):
-	
-			logging.debug("Processing {0} x {1} arcmin".format(map_name,args["smoothing_scales"][n]))
-	
-			smoothed_map = convergence_map.smooth(args["smoothing_scales"][n])
-			v,hist_output[descriptor.first:descriptor.last] = smoothed_map.pdf(args["bin_edges"])
-	
+		hist_output = np.zeros(index.size)
+		for n,descriptor in enumerate(index.descriptor_list):
+
+			logging.debug("Processing {0} x {1} arcmin".format(map_name,smoothing_scales[n]))
+
+			smoothed_map = convergence_map.smooth(smoothing_scales[n])
+			v,hist_output[descriptor.first:descriptor.last] = smoothed_map.pdf(bin_edges)
+
 		#Return the histograms in array format
 		return hist_output
-	
+
 	############################################################
 	########################Main loop###########################
 	############################################################
-	
+
 	if __name__=="__main__":
 		
 		#Initialize MPI pool
@@ -80,21 +73,21 @@ Histograms of convergence maps
 			pool = MPIPool()
 		except ValueError:
 			pool = None
-	
+
 		#Parse command line arguments
 		parser = argparse.ArgumentParser()
 		parser.add_argument("-v","--verbose",action="store_true",default=False,dest="verbose",help="Display degug info")
 		parser.add_argument("-p","--path",action="store",dest="path",default="/Users/andreapetri/Documents/Columbia/spurious_shear/convergence_maps",help="Root path of IGS1 simulations")
 		parser.add_argument("-n","--num_realizations",dest="num_realizations",action="store",type=int,default=3,help="How many realizations to process")
-	
+
 		cmd_args = parser.parse_args()
-	
+
 		#Set logging level
 		if cmd_args.verbose:
 			logging.basicConfig(level=logging.DEBUG)
 		else:
 			logging.basicConfig(level=logging.INFO)
-	
+
 		if (pool is not None) and not(pool.is_master()):
 		
 			pool.wait()
@@ -129,7 +122,7 @@ Histograms of convergence maps
 		
 		if pool is not None:
 			pool.close()
-	
+
 		##########################################################################################################################################
 		###############################Ensemble data available at this point for covariance, PCA, etc...##########################################
 		##########################################################################################################################################

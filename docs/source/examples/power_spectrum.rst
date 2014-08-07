@@ -9,7 +9,7 @@ Measure the power spectrum of a convergence map
 
 	from lenstools import Ensemble
 	from lenstools.defaults import default_callback_loader,peaks_loader
-	
+
 	try:
 
 		from emcee.utils import MPIPool
@@ -47,7 +47,7 @@ Measure the power spectrum of a convergence map
 		sys.exit(0)
 
 	map_list = ["Data/conv1.fit","Data/conv2.fit","Data/conv3.fit","Data/conv4.fit"]
-	
+
 	l_edges = np.arange(200.0,50000.0,200.0)
 	l = 0.5*(l_edges[:-1] + l_edges[1:])
 

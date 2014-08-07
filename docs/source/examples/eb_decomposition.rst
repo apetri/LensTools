@@ -17,14 +17,14 @@ Decompose a shear map into E and B modes
 
 	from astropy.io import fits
 
-	def two_file_loader(*args):
+	def two_file_loader(filename1,filename2):
 
-		shear_file_1 = fits.open(args[0])
+		shear_file_1 = fits.open(filename1)
 		angle = shear_file_1[0].header["ANGLE"]
 		gamma = shear_file_1[0].data.astype(np.float)
 		shear_file_1.close()
 
-		shear_file_2 = fits.open(args[1])
+		shear_file_2 = fits.open(filename2)
 		assert shear_file_2[0].header["ANGLE"] == angle
 		gamma = np.array((gamma,shear_file_2[0].data.astype(np.float)))
 		shear_file_2.close()
@@ -51,7 +51,7 @@ Decompose a shear map into E and B modes
 	ax.set_yscale("log")
 	ax.set_xlabel(r"$l$")
 	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
-	
+
 	ax.legend(loc="upper left")
 
 	plt.savefig("EB.png")
