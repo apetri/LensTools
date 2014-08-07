@@ -39,7 +39,7 @@ class Ensemble(object):
 
 	"""
 
-	def __init__(self,file_list=None,data=None,num_realizations=0,metric="chi2"):
+	def __init__(self,file_list=list(),data=None,num_realizations=0,metric="chi2"):
 		
 		self.file_list = file_list
 		self.data = data
@@ -225,7 +225,10 @@ class Ensemble(object):
 
 		try:
 			
-			new_data = np.vstack((self.data,rhs.data))
+			if self.data is not None:
+				new_data = np.vstack((self.data,rhs.data))
+			else:
+				new_data = rhs.data
 		
 		except ValueError:
 			
