@@ -35,7 +35,7 @@ def gaussian_likelihood(chi2,norm=1.0):
 ##########Default chi2 calculation with the sandwich product##########
 ######################################################################
 
-def _chi2(parameters,*args,**kwargs):
+def chi2(parameters,*args,**kwargs):
 
 	model_feature = _predict(parameters,kwargs["num_bins"],kwargs["interpolator"])
 	inverse_covariance = kwargs["inverse_covariance"]
@@ -462,9 +462,9 @@ class LikelihoodAnalysis(Analysis):
 		kwargs = {"num_bins":self._num_bins,"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
 
 		#Hack to make the chi2 pickleable (from emcee)
-		chi2_calculator = _function_wrapper(_chi2,tuple(),kwargs)
+		chi2_wrapper = _function_wrapper(chi2,tuple(),kwargs)
 
 		#Finally map chi2 calculator on the list of chunks
-		chi2_list = map(chi2_calculator,parameter_chunks)
+		chi2_list = map(chi2_wrapper,parameter_chunks)
 
 		return np.array(chi2_list).reshape(num_points)
