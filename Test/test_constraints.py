@@ -110,6 +110,11 @@ def test_interpolation():
 	ens.load(from_old=True)
 	testing_Pl = ens.mean()
 
+	#Load in also the observed power spectrum
+	ens = Ensemble.fromfilelist([os.path.join(root_path,"observations","subfield1","sigma05","power_spectrum.npy")])
+	ens.load(from_old=True)
+	observed_Pl = ens.mean() 
+
 	#Output the analysis stats
 	np.savetxt("16_parameter_points.txt",analysis.parameter_set)
 
@@ -117,9 +122,13 @@ def test_interpolation():
 
 		plt.plot(l,l*(l+1)*analysis.training_set[n]/(2*np.pi))
 
+	plt.plot(l,l*(l+1)*observed_Pl/(2*np.pi),linestyle="--",label="Observation")	
+
 	plt.xlabel(r"$l$")
 	plt.ylabel(r"$l(l+1)P_l/2\pi$")
 	plt.yscale("log")
+
+	plt.legend(loc="upper left")
 
 	plt.savefig("16_power_spectra.png")
 	plt.clf()
