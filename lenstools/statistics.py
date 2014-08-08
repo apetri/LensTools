@@ -250,10 +250,6 @@ class Ensemble(object):
 		assert self.metric == rhs.metric
 		assert self.num_realizations == rhs.num_realizations
 
-		#Throw an error if the file lists do not coincide
-		if not self.file_list == rhs.file_list:
-			raise ValueError("You are try to multiply ensembles built from different files!!")
-
 		try:
 
 			new_data = np.hstack((self.data,rhs.data))
@@ -263,7 +259,7 @@ class Ensemble(object):
 			print("The data of these two ensembles cannot be hstacked!")
 			return None
 
-		return Ensemble(file_list=self.file_list,data=new_data,num_realizations=self.num_realizations,metric=self.metric)
+		return Ensemble(file_list=list(set(self.file_list + rhs.file_list)),data=new_data,num_realizations=self.num_realizations,metric=self.metric)
 
 	def split(self,index):
 
