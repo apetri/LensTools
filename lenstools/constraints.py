@@ -29,7 +29,7 @@ from emcee.ensemble import _function_wrapper
 
 def gaussian_likelihood(chi2,norm=1.0):
 
-	return norm*np.exp(-0.5*chi2**2)
+	return norm*np.exp(-0.5*chi2)
 
 ######################################################################
 ##########Default chi2 calculation with the sandwich product##########
