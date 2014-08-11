@@ -135,3 +135,25 @@ def test_peaks():
 	ax.set_ylabel(r"$dN/d\nu$")
 
 	plt.savefig("peaks.png")
+
+def test_mask():
+
+	unmasked = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
+	mask = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+
+	fig,ax = plt.subplots(1,2,figsize=(16,8))
+	ax[0].imshow(mask.kappa,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0.0,mask.side_angle,0.0,mask.side_angle])
+	ax[1].imshow((unmasked*mask).kappa,origin="lower",cmap=plt.cm.Reds,interpolation="nearest",extent=[0.0,mask.side_angle,0.0,mask.side_angle])
+
+	ax[0].set_xlabel(r"$x$(deg)")
+	ax[0].set_ylabel(r"$y$(deg)")
+	ax[1].set_xlabel(r"$x$(deg)")
+	ax[1].set_ylabel(r"$y$(deg)")
+
+	ax[0].set_title("Mask")
+	ax[1].set_title("Masked map")
+
+	fig.tight_layout()
+	plt.savefig("mask.png")
+
+	plt.clf()

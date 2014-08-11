@@ -409,3 +409,37 @@ class ConvergenceMap(object):
 
 		return ConvergenceMap(new_kappa,self.side_angle)
 
+
+	def __mul__(self,rhs):
+
+		"""
+		Defines the multiplication operator between ConvergenceMap instances; the convergence values are multiplied (for example the rhs can be a mask...)
+
+		:returns: ConvergenceMap instances with the result of the multiplication
+
+		:raises: AssertionError if the operation cannot be performed
+
+		""" 
+
+		if isinstance(rhs,ConvergenceMap):
+
+			assert self.side_angle == rhs.side_angle
+			assert self.kappa.shape == rhs.kappa.shape
+
+			new_kappa = self.kappa * rhs.kappa
+
+		elif type(rhs) == np.float:
+
+			new_kappa = self.kappa * rhs
+
+		elif type(rhs) == np.ndarray:
+
+			assert rhs.shape == self.kappa.shape
+			new_kappa = self.kappa * rhs
+
+		else:
+
+			raise TypeError("Cannot multiply by the right hand side!!")
+
+		return ConvergenceMap(new_kappa,self.side_angle)
+
