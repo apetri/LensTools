@@ -110,7 +110,7 @@ def peaks_loader(filename,thresholds):
 	v,pk = conv_map.peakCount(thresholds,norm=True)
 	return v
 
-def convergence_measure_all(filename,index,fits_loader=None):
+def convergence_measure_all(filename,index,fits_loader=None,mask_file=None):
 
 	"""
 	Measures all the statistical descriptors of a convergence map as indicated by the index instance
@@ -121,9 +121,16 @@ def convergence_measure_all(filename,index,fits_loader=None):
 
 	#Load the map
 	if fits_loader is not None:
-		conv_map = ConvergenceMap.fromfilename(filename,loader=fits_loader)
+		loader = fits_loader
 	else: 
-		conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+		loader = load_fits_default_convergence
+
+	conv_map = ConvergenceMap.fromfilename(filename,loader=loader)
+
+	#If a mask is provided, mask it
+	if mask_file is not None:
+		mask = ConvergenceMap.fromfilename(mask_file,loader=loader)
+		conv_map *= mask
 
 	#Allocate memory for observables
 	descriptors = index
