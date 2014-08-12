@@ -12,6 +12,9 @@
 
 from __future__ import division
 
+from operator import mul
+from functools import reduce
+
 from external import _topology
 
 import numpy as np
@@ -35,10 +38,11 @@ class ConvergenceMap(object):
 
 	"""
 
-	def __init__(self,kappa,angle):
+	def __init__(self,kappa,angle,masked=False):
 
 		self.kappa = kappa
 		self.side_angle = angle
+		self.masked = masked
 
 	@classmethod
 	def fromfilename(cls,*args,**kwargs):
@@ -57,6 +61,40 @@ class ConvergenceMap(object):
 
 		angle,kappa = loader(*args)
 		return cls(kappa,angle)
+
+	def mask(self,mask_profile):
+
+		"""
+		Applies a mask to the convergence map: all masked pixels are given a nan value because they cannot be used in the calculations
+
+		:param mask_profile: profile of the mask, must be an array of 1 byte intergers that are either 0 (if the pixel is masked) or 1 (if the pixel is not masked). Must be of the same shape as the original map
+		:type mask_profile: array. or ConvergenceMap instance
+
+		"""
+
+		if isinstance(mask_profile,np.ndarray):
+
+			assert mask_profile.dtype == np.int8
+			assert len(mask_profile[mask_profile==0]) + len(mask_profile[mask_profile==1]) == reduce(mul,mask_profile.shape),"The mask must be made of 0 and 1 only!"
+			assert mask_profile.shape == self.kappa.shape
+
+			self.kappa[mask_profile==0] = np.nan
+			self.masked = True
+
+		elif isinstance(mask_profile,ConvergenceMap):
+
+			assert mask_profile.side_angle == self.side_angle
+			assert len(mask_profile.kappa[mask_profile.kappa==0]) + len(mask_profile.kappa[mask_profile.kappa==1]) == reduce(mul,mask_profile.kappa.shape),"The mask must be made of 0 and 1 only!"
+			assert mask_profile.kappa.shape == self.kappa.shape
+
+			self.kappa[mask_profile.kappa==0] = np.nan
+			self.masked = True
+
+		else: 
+
+			raise TypeError("Mask type not supported")
+
+
 
 	def gradient(self):
 		
