@@ -157,3 +157,20 @@ def test_mask():
 	plt.savefig("mask.png")
 
 	plt.clf()
+
+	fig,ax = plt.subplots()
+
+	l,P_original = unmasked.powerSpectrum(l_edges)
+	l,P_mask = (unmasked*mask).powerSpectrum(l_edges)
+
+	ax.plot(l,l*(l+1)*P_original/(2*np.pi),label="Unmasked")
+	ax.plot(l,l*(l+1)*P_mask/(2*np.pi),label="Masked")
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+
+	ax.legend(loc="upper left")
+
+	plt.savefig("power_mask.png")
+	plt.clf()
