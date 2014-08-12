@@ -161,16 +161,18 @@ def test_mask():
 	fig,ax = plt.subplots()
 
 	l,P_original = unmasked.powerSpectrum(l_edges)
-	l,P_mask = (unmasked*mask).powerSpectrum(l_edges)
+	l,P_masked = (unmasked*mask).powerSpectrum(l_edges)
+	l,P_mask = mask.powerSpectrum(l_edges)
 
 	ax.plot(l,l*(l+1)*P_original/(2*np.pi),label="Unmasked")
-	ax.plot(l,l*(l+1)*P_mask/(2*np.pi),label="Masked")
+	ax.plot(l,l*(l+1)*P_masked/(2*np.pi),label="Masked")
+	ax.plot(l,l*(l+1)*P_mask/(2*np.pi),label="Mask")
 	ax.set_xscale("log")
 	ax.set_yscale("log")
 	ax.set_xlabel(r"$l$")
 	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
 
-	ax.legend(loc="upper left")
+	ax.legend(loc="lower left")
 
 	plt.savefig("power_mask.png")
 	plt.clf()
