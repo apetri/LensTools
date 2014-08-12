@@ -74,18 +74,18 @@ def test_boundaries():
 	conv_map.mask(mask_profile)
 
 	#Compute boundaries
-	gradient_boundary,hessian_boundary = conv_map.maskBoundaries()
+	perimeter_area = conv_map.maskBoundaries()
 
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
 
 	#Plot gradient boundary
-	ax[0].imshow(gradient_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[0].imshow(conv_map._gradient_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	#Plot hessian (but not gradient) boundary
-	ax[1].imshow(gradient_boundary ^ hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[1].imshow(conv_map._gradient_boundary ^ conv_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	#Plot gradient and hessian boundary
-	ax[2].imshow(hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[2].imshow(conv_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	ax[0].set_xlabel(r"$x$(deg)")
 	ax[0].set_ylabel(r"$y$(deg)")
@@ -97,7 +97,7 @@ def test_boundaries():
 
 	ax[2].set_xlabel(r"$x$(deg)")
 	ax[2].set_ylabel(r"$y$(deg)")
-	ax[2].set_title("Full boundary: perimeter/area={0:.3f}".format(conv_map.perimeter_area))
+	ax[2].set_title("Full boundary: perimeter/area={0:.3f}".format(perimeter_area))
 
 	fig.tight_layout()
 

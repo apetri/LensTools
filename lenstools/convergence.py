@@ -121,22 +121,21 @@ class ConvergenceMap(object):
 
 		#Check where gradient starts to have problems
 		nan_gradient_pixels = np.isnan(self.gradient_x) + np.isnan(self.gradient_y)
-		gradient_boundary = ~self._mask ^ nan_gradient_pixels
+		self._gradient_boundary = ~self._mask ^ nan_gradient_pixels
 
 		#Check where the hessian has alsp problems
 		nan_gradient_pixels = nan_gradient_pixels + np.isnan(self.hessian_xx) + np.isnan(self.hessian_yy) + np.isnan(self.hessian_xy)
-		hessian_boundary = ~self._mask ^ nan_gradient_pixels
+		self._hessian_boundary = ~self._mask ^ nan_gradient_pixels
 
 		#Create attribute that holds the full mask (including gradients)
 		self._full_mask = self._mask * (~nan_gradient_pixels)
 		assert self._full_mask.sum() < self._mask.sum()
 
-		#Create attribute that holds the perimeter/area of the mask
-		self.perimeter_area = hessian_boundary.sum() / (~self._full_mask).sum()
+		#Compute perimeter/area of the mask
+		perimeter_area = self._hessian_boundary.sum() / (~self._full_mask).sum()
 
 		#Return
-		return gradient_boundary,hessian_boundary
-
+		return perimeter_area
 
 	def gradient(self):
 		
