@@ -42,7 +42,7 @@ class ConvergenceMap(object):
 
 		self.kappa = kappa
 		self.side_angle = angle
-		self.masked = masked
+		self._masked = masked
 
 	@classmethod
 	def fromfilename(cls,*args,**kwargs):
@@ -94,7 +94,7 @@ class ConvergenceMap(object):
 
 			raise TypeError("Mask type not supported")
 
-		self.masked = True
+		self._masked = True
 		self._mask = ~np.isnan(self.kappa)
 
 		return 1.0 - self._mask.sum() / reduce(mul,self.kappa.shape)
@@ -108,7 +108,7 @@ class ConvergenceMap(object):
 		
 		"""
 
-		if not self.masked:
+		if not self._masked:
 			print("The map is not masked!!")
 			return None
 
