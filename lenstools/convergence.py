@@ -95,12 +95,14 @@ class ConvergenceMap(object):
 			raise TypeError("Mask type not supported")
 
 		self.masked = True
-		return np.isnan(self.kappa).sum() / reduce(mul,self.kappa.shape)
+		self._mask = ~np.isnan(self.kappa)
+
+		return 1.0 - self._mask.sum() / reduce(mul,self.kappa.shape)
 
 	def maskBoundaries(self):
 
 		"""
-		Computes the mask boundaries defined in the following way: a boundary is a region where the convergence value is defined, but the gradients are not defined. Sets an attribute full_mask as a boolean array with 0 in the pixel where map and hessians are not defined
+		Computes the mask boundaries defined in the following way: a boundary is a region where the convergence value is defined, but the gradients are not defined.
 
 		:returns: tuple of boolean arrays -- (gradient_boundary,hessian_boundary): the gradient boundary is solely defined by the gradient, the hessian boundary is defined by the gradient and the hessian
 		
@@ -119,14 +121,18 @@ class ConvergenceMap(object):
 
 		#Check where gradient starts to have problems
 		nan_gradient_pixels = np.isnan(self.gradient_x) + np.isnan(self.gradient_y)
-		gradient_boundary = np.isnan(self.kappa) ^ nan_gradient_pixels
+		gradient_boundary = ~self._mask ^ nan_gradient_pixels
 
 		#Check where the hessian has alsp problems
 		nan_gradient_pixels = nan_gradient_pixels + np.isnan(self.hessian_xx) + np.isnan(self.hessian_yy) + np.isnan(self.hessian_xy)
-		hessian_boundary = np.isnan(self.kappa) ^ nan_gradient_pixels
+		hessian_boundary = ~self._mask ^ nan_gradient_pixels
 
 		#Create attribute that holds the full mask (including gradients)
-		self.full_mask = ~(np.isnan(self.kappa) + nan_gradient_pixels)
+		self._full_mask = self._mask * (~nan_gradient_pixels)
+		assert self._full_mask.sum() < self._mask.sum()
+
+		#Create attribute that holds the perimeter/area of the mask
+		self.perimeter_area = hessian_boundary.sum() / (~self._full_mask).sum()
 
 		#Return
 		return gradient_boundary,hessian_boundary

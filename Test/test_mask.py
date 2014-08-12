@@ -97,7 +97,7 @@ def test_boundaries():
 
 	ax[2].set_xlabel(r"$x$(deg)")
 	ax[2].set_ylabel(r"$y$(deg)")
-	ax[2].set_title("Gradient and hessian boundary")
+	ax[2].set_title("Full boundary: perimeter/area={0:.3f}".format(conv_map.perimeter_area))
 
 	fig.tight_layout()
 
