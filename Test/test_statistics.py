@@ -114,7 +114,6 @@ def test_multiply():
 	conv_ensemble_both = conv_ensemble * conv_ensemble_peaks
 
 	assert conv_ensemble_both.num_realizations == 4
-	assert conv_ensemble_both.file_list == conv_ensemble.file_list
 	assert conv_ensemble_both.data.shape[0] == 4
 	assert conv_ensemble_both.data.shape[1] == len(l_edges) + len(thresholds_pk) - 2
 
