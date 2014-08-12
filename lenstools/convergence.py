@@ -70,6 +70,8 @@ class ConvergenceMap(object):
 		:param mask_profile: profile of the mask, must be an array of 1 byte intergers that are either 0 (if the pixel is masked) or 1 (if the pixel is not masked). Must be of the same shape as the original map
 		:type mask_profile: array. or ConvergenceMap instance
 
+		:returns: the masked fraction of the map
+
 		"""
 
 		if isinstance(mask_profile,np.ndarray):
@@ -79,7 +81,6 @@ class ConvergenceMap(object):
 			assert mask_profile.shape == self.kappa.shape
 
 			self.kappa[mask_profile==0] = np.nan
-			self.masked = True
 
 		elif isinstance(mask_profile,ConvergenceMap):
 
@@ -88,12 +89,47 @@ class ConvergenceMap(object):
 			assert mask_profile.kappa.shape == self.kappa.shape
 
 			self.kappa[mask_profile.kappa==0] = np.nan
-			self.masked = True
 
 		else: 
 
 			raise TypeError("Mask type not supported")
 
+		self.masked = True
+		return np.isnan(self.kappa).sum() / reduce(mul,self.kappa.shape)
+
+	def maskBoundaries(self):
+
+		"""
+		Computes the mask boundaries defined in the following way: a boundary is a region where the convergence value is defined, but the gradients are not defined. Sets an attribute full_mask as a boolean array with 0 in the pixel where map and hessians are not defined
+
+		:returns: tuple of boolean arrays -- (gradient_boundary,hessian_boundary): the gradient boundary is solely defined by the gradient, the hessian boundary is defined by the gradient and the hessian
+		
+		"""
+
+		if not self.masked:
+			print("The map is not masked!!")
+			return None
+
+		#Check if gradient and hessian attributes are available; if not, compute them
+		if not (hasattr(self,"gradient_x") and hasattr(self,"gradient_y")):
+			self.gradient()
+
+		if not (hasattr(self,"hessian_xx") and hasattr(self,"hessian_yy") and hasattr(self,"hessian_xy")):
+			self.hessian()
+
+		#Check where gradient starts to have problems
+		nan_gradient_pixels = np.isnan(self.gradient_x) + np.isnan(self.gradient_y)
+		gradient_boundary = np.isnan(self.kappa) ^ nan_gradient_pixels
+
+		#Check where the hessian has alsp problems
+		nan_gradient_pixels = nan_gradient_pixels + np.isnan(self.hessian_xx) + np.isnan(self.hessian_yy) + np.isnan(self.hessian_xy)
+		hessian_boundary = np.isnan(self.kappa) ^ nan_gradient_pixels
+
+		#Create attribute that holds the full mask (including gradients)
+		self.full_mask = ~(np.isnan(self.kappa) + nan_gradient_pixels)
+
+		#Return
+		return gradient_boundary,hessian_boundary
 
 
 	def gradient(self):
