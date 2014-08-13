@@ -432,7 +432,9 @@ class ConvergenceMap(object):
 
 		"""
 
+		assert not self._masked,"Power spectrum calculation for masked maps is not allowed yet!"
 		assert l_edges is not None
+
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
 		#Calculate the Fourier transform of the map with numpy FFT
@@ -466,6 +468,8 @@ class ConvergenceMap(object):
 		>>> l,Pl = test_map.cross(other_map,l_edges)
 
 		"""
+
+		assert not (self._masked or other._masked),"Power spectrum calculation for masked maps is not allowed yet!"
 
 		assert l_edges is not None
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
@@ -503,6 +507,7 @@ class ConvergenceMap(object):
 
 		"""
 
+		assert not self._masked,"You cannot smooth a masked convergence map!!"
 		assert kind == "gaussian","Only gaussian smoothing implemented!!"
 
 		#Compute the smoothing scale in pixel units
