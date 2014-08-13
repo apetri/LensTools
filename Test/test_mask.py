@@ -109,6 +109,31 @@ def test_boundaries():
 	plt.savefig("boundaries.png")
 	plt.clf()
 
+#Check the differences in PDF with and without masking
+def test_pdf():
+
+	th_pdf = np.ogrid[-0.15:0.15:50j]
+
+	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
+	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+
+	masked_map = conv_map.mask(mask_profile)
+
+	v,p_original = conv_map.pdf(th_pdf)
+	v,p_masked = masked_map.pdf(th_pdf)
+
+	#Plot the two histograms
+	plt.plot(v,p_original,label="Unmasked")
+	plt.plot(v,p_masked,label="Masked {0:.1f}%".format(masked_map.maskedFraction * 100))
+
+	#Labels
+	plt.xlabel(r"$\kappa$")
+	plt.ylabel(r"$P(\kappa)$")
+	plt.legend(loc="upper right")
+
+	plt.savefig("masked_pdf.png")
+	plt.clf()
+
 #Check the differences in peak counts with and without masking
 def test_peaks():
 

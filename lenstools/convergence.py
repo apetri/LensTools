@@ -245,7 +245,10 @@ class ConvergenceMap(object):
 			sigma = 1.0
 
 		#Compute the histogram
-		hist,bin_edges = np.histogram(self.kappa,bins=thresholds*sigma,density=True)
+		if self._masked:
+			hist,bin_edges = np.histogram(self.kappa[self._mask],bins=thresholds*sigma,density=True)
+		else:
+			hist,bin_edges = np.histogram(self.kappa,bins=thresholds*sigma,density=True)
 
 		#Return
 		return midpoints,hist*sigma
