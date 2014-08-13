@@ -62,7 +62,7 @@ class ConvergenceMap(object):
 		angle,kappa = loader(*args)
 		return cls(kappa,angle)
 
-	def mask(self,mask_profile):
+	def mask(self,mask_profile,inplace=False):
 
 		"""
 		Applies a mask to the convergence map: all masked pixels are given a nan value because they cannot be used in the calculations
@@ -70,9 +70,16 @@ class ConvergenceMap(object):
 		:param mask_profile: profile of the mask, must be an array of 1 byte intergers that are either 0 (if the pixel is masked) or 1 (if the pixel is not masked). Must be of the same shape as the original map
 		:type mask_profile: array. or ConvergenceMap instance
 
-		:returns: the masked fraction of the map
+		:param inplace: if True the masking is performed in place and the original map is lost, otherwise a new instance of ConvergenceMap with the masked map is returned
+
+		:returns: the masked convergence map if inplace is False, otherwise a float corresponding to the masked fraction of the map
 
 		"""
+
+		if inplace:
+			new_map = self
+		else:
+			new_map = ConvergenceMap(self.kappa.copy(),self.side_angle) 
 
 		if isinstance(mask_profile,np.ndarray):
 
@@ -80,7 +87,7 @@ class ConvergenceMap(object):
 			assert len(mask_profile[mask_profile==0]) + len(mask_profile[mask_profile==1]) == reduce(mul,mask_profile.shape),"The mask must be made of 0 and 1 only!"
 			assert mask_profile.shape == self.kappa.shape
 
-			self.kappa[mask_profile==0] = np.nan
+			new_map.kappa[mask_profile==0] = np.nan
 
 		elif isinstance(mask_profile,ConvergenceMap):
 
@@ -88,16 +95,20 @@ class ConvergenceMap(object):
 			assert len(mask_profile.kappa[mask_profile.kappa==0]) + len(mask_profile.kappa[mask_profile.kappa==1]) == reduce(mul,mask_profile.kappa.shape),"The mask must be made of 0 and 1 only!"
 			assert mask_profile.kappa.shape == self.kappa.shape
 
-			self.kappa[mask_profile.kappa==0] = np.nan
+			new_map.kappa[mask_profile.kappa==0] = np.nan
 
 		else: 
 
 			raise TypeError("Mask type not supported")
 
-		self._masked = True
-		self._mask = ~np.isnan(self.kappa)
+		new_map._masked = True
+		new_map._mask = ~np.isnan(new_map.kappa)
+		new_map._masked_fraction = 1.0 - new_map._mask.sum() / reduce(mul,new_map.kappa.shape)
 
-		return 1.0 - self._mask.sum() / reduce(mul,self.kappa.shape)
+		if inplace:
+			return new_map._masked_fraction
+		else:
+			return new_map 
 
 	def maskBoundaries(self):
 

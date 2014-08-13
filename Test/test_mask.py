@@ -19,7 +19,7 @@ def test_visualize():
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
 	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
-	masked_fraction = conv_map.mask(mask_profile)
+	masked_fraction = conv_map.mask(mask_profile,inplace=True)
 
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
 	ax[0].imshow(mask_profile.kappa,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0.0,mask_profile.side_angle,0.0,mask_profile.side_angle])
@@ -71,21 +71,25 @@ def test_boundaries():
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
 	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
-	conv_map.mask(mask_profile)
+	masked_map = conv_map.mask(mask_profile)
+	assert hasattr(masked_map,"_mask")
+	assert masked_map._masked
+	assert masked_map.side_angle == conv_map.side_angle
+	assert masked_map.kappa.shape == conv_map.kappa.shape
 
 	#Compute boundaries
-	perimeter_area = conv_map.maskBoundaries()
+	perimeter_area = masked_map.maskBoundaries()
 
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
 
 	#Plot gradient boundary
-	ax[0].imshow(conv_map._gradient_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[0].imshow(masked_map._gradient_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	#Plot hessian (but not gradient) boundary
-	ax[1].imshow(conv_map._gradient_boundary ^ conv_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[1].imshow(masked_map._gradient_boundary ^ masked_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	#Plot gradient and hessian boundary
-	ax[2].imshow(conv_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[2].imshow(masked_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	ax[0].set_xlabel(r"$x$(deg)")
 	ax[0].set_ylabel(r"$y$(deg)")
