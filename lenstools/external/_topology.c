@@ -297,11 +297,11 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 
 	/*These are the inputs: the map, its gradients, the chosen thresholds and the normalization*/
-	PyObject *map_obj,*grad_x_obj,*grad_y_obj,*hess_xx_obj,*hess_yy_obj,*hess_xy_obj,*thresholds_obj;
+	PyObject *map_obj,*mask_obj,*grad_x_obj,*grad_y_obj,*hess_xx_obj,*hess_yy_obj,*hess_xy_obj,*thresholds_obj;
 	double sigma;
 
 	/*Parse input tuple*/
-	if(!PyArg_ParseTuple(args,"OOOOOOOd",&map_obj,&grad_x_obj,&grad_y_obj,&hess_xx_obj,&hess_yy_obj,&hess_xy_obj,&thresholds_obj,&sigma)){
+	if(!PyArg_ParseTuple(args,"OOOOOOOOd",&map_obj,&mask_obj,&grad_x_obj,&grad_y_obj,&hess_xx_obj,&hess_yy_obj,&hess_xy_obj,&thresholds_obj,&sigma)){
 		return NULL;
 	}
 
@@ -330,6 +330,31 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 
 	}
 
+	/*Decide if creating a mask array or not*/
+	PyObject *mask_array;
+	if(mask_obj != Py_None){
+
+		mask_array = PyArray_FROM_OTF(mask_obj,NPY_BOOL,NPY_IN_ARRAY);
+		if(mask_array==NULL){
+
+			Py_DECREF(map_array);
+			Py_DECREF(grad_x_array);
+			Py_DECREF(grad_y_array);
+			Py_DECREF(hess_xx_array);
+			Py_DECREF(hess_yy_array);
+			Py_DECREF(hess_xy_array);
+			Py_DECREF(thresholds_array);
+
+			return NULL;
+
+		}
+
+	}
+	else{
+
+		mask_array = NULL;
+	}
+
 	/*Get the size of the map (in pixels)*/
 	int Nside = (int)PyArray_DIM(map_array,0);
 	/*Get the number of excurion sets*/
@@ -355,6 +380,10 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 		Py_DECREF(hess_xy_array);
 		Py_DECREF(thresholds_array);
 
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
 		Py_XDECREF(mink0_array);
 		Py_XDECREF(mink1_array);
 		Py_XDECREF(mink2_array);
@@ -364,8 +393,17 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 
 	}
 
+	/*Decide if mask_profile is null or not*/
+	unsigned char *mask_profile;
+	if(mask_array){
+		mask_profile = (unsigned char *)PyArray_DATA(mask_array);
+	}
+	else{
+		mask_profile = NULL;
+	}
+
 	/*Call the underlying C function that measures the Minkowski functionals*/
-	minkowski_functionals((double *)PyArray_DATA(map_array),Nside,sigma,(double *)PyArray_DATA(grad_x_array),(double *)PyArray_DATA(grad_y_array),(double *)PyArray_DATA(hess_xx_array),(double *)PyArray_DATA(hess_yy_array),(double *)PyArray_DATA(hess_xy_array),Nthreshold,(double *)PyArray_DATA(thresholds_array),(double *)PyArray_DATA(mink0_array),(double *)PyArray_DATA(mink1_array),(double *)PyArray_DATA(mink2_array));
+	minkowski_functionals((double *)PyArray_DATA(map_array),mask_profile,Nside,sigma,(double *)PyArray_DATA(grad_x_array),(double *)PyArray_DATA(grad_y_array),(double *)PyArray_DATA(hess_xx_array),(double *)PyArray_DATA(hess_yy_array),(double *)PyArray_DATA(hess_xy_array),Nthreshold,(double *)PyArray_DATA(thresholds_array),(double *)PyArray_DATA(mink0_array),(double *)PyArray_DATA(mink1_array),(double *)PyArray_DATA(mink2_array));
 
 	/*Add the results to the tuple output*/
 	if(PyTuple_SetItem(mink_output,0,mink0_array)){
@@ -377,6 +415,10 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 		Py_DECREF(hess_yy_array);
 		Py_DECREF(hess_xy_array);
 		Py_DECREF(thresholds_array);
+
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
 
 		Py_DECREF(mink0_array);
 		Py_DECREF(mink1_array);
@@ -397,6 +439,10 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 		Py_DECREF(hess_xy_array);
 		Py_DECREF(thresholds_array);
 
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
 		Py_DECREF(mink0_array);
 		Py_DECREF(mink1_array);
 		Py_DECREF(mink2_array);
@@ -416,6 +462,10 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 		Py_DECREF(hess_xy_array);
 		Py_DECREF(thresholds_array);
 
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
 		Py_DECREF(mink0_array);
 		Py_DECREF(mink1_array);
 		Py_DECREF(mink2_array);
@@ -433,6 +483,10 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 	Py_DECREF(hess_yy_array);
 	Py_DECREF(hess_xy_array);
 	Py_DECREF(thresholds_array);
+
+	if(mask_array){
+		Py_DECREF(mask_array);
+	}
 
 	/*Done, return Minkowski tuple*/
 	return mink_output;

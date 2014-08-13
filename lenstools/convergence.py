@@ -123,12 +123,9 @@ class ConvergenceMap(object):
 			print("The map is not masked!!")
 			return None
 
-		#Check if gradient and hessian attributes are available; if not, compute them
-		if not (hasattr(self,"gradient_x") and hasattr(self,"gradient_y")):
-			self.gradient()
-
-		if not (hasattr(self,"hessian_xx") and hasattr(self,"hessian_yy") and hasattr(self,"hessian_xy")):
-			self.hessian()
+		#Recompute gradients and hessians for safety
+		self.gradient()
+		self.hessian()
 
 		#Check where gradient starts to have problems
 		nan_gradient_pixels = np.isnan(self.gradient_x) + np.isnan(self.gradient_y)
@@ -315,6 +312,18 @@ class ConvergenceMap(object):
 		else:
 			sigma = 1.0
 
+		#Check if the map is masked
+		if self._masked:
+
+			if not hasattr(self,"_full_mask"):
+				self.maskBoundaries()
+
+			mask_profile = self._full_mask
+
+		else:
+
+			mask_profile = None 
+
 		#Check if gradient and hessian attributes are available; if not, compute them
 		if not (hasattr(self,"gradient_x") and hasattr(self,"gradient_y")):
 			self.gradient()
@@ -323,7 +332,7 @@ class ConvergenceMap(object):
 			self.hessian()
 
 		#Compute the Minkowski functionals and return them as tuple
-		v0,v1,v2 = _topology.minkowski(self.kappa,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
+		v0,v1,v2 = _topology.minkowski(self.kappa,mask_profile,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
 
 		return midpoints,v0,v1,v2
 

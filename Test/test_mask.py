@@ -132,3 +132,48 @@ def test_peaks():
 	plt.legend(loc="upper left")
 
 	plt.savefig("masked_peaks.png")
+
+#Check the differences in minkowski functionals with and without masking
+def test_minkowski():
+
+	th_minkowski = np.ogrid[-0.15:0.15:50j]
+
+	#Set up plots
+	fig,ax = plt.subplots(1,3,figsize=(24,8))
+
+	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
+	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+
+	#Compute and plot the MFs for the unmasked map
+	v,V0,V1,V2 = conv_map.minkowskiFunctionals(th_minkowski)
+	ax[0].plot(v,V0,label="Unmasked")
+	ax[1].plot(v,V1,label="Unmasked")
+	ax[2].plot(v,V2,label="Unmasked")
+
+	#Compute and plot the MFs for the masked, zero padded mask
+	v,V0,V1,V2 = (conv_map*mask_profile).minkowskiFunctionals(th_minkowski)
+	ax[0].plot(v,V0,linestyle="--",label="Zero padded")
+	ax[1].plot(v,V1,linestyle="--",label="Zero padded")
+	ax[2].plot(v,V2,linestyle="--",label="Zero padded")
+
+	#Compute and plot the MFs for the masked map
+	masked_fraction = conv_map.mask(mask_profile,inplace=True)
+	v,V0,V1,V2 = conv_map.minkowskiFunctionals(th_minkowski)
+	ax[0].plot(v,V0,label="Masked {0:.1f}%".format(masked_fraction*100))
+	ax[1].plot(v,V1,label="Masked {0:.1f}%".format(masked_fraction*100))
+	ax[2].plot(v,V2,label="Masked {0:.1f}%".format(masked_fraction*100))
+
+	#Labels
+	ax[0].set_xlabel(r"$\kappa$")
+	ax[0].set_ylabel(r"$V_0(\kappa)$")
+
+	ax[1].set_xlabel(r"$\kappa$")
+	ax[1].set_ylabel(r"$V_1(\kappa)$")
+
+	ax[2].set_xlabel(r"$\kappa$")
+	ax[2].set_ylabel(r"$V_2(\kappa)$")
+
+	ax[0].legend(loc="upper right")
+
+	plt.savefig("masked_minkowski.png")
+	plt.clf()
