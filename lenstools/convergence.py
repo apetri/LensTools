@@ -149,6 +149,21 @@ class ConvergenceMap(object):
 		return perimeter_area
 
 	@property
+	def maskedFraction(self):
+
+		"""
+		Computes the masked fraction of the map
+
+		:returns: float, the masked fraction of the map
+
+		"""
+
+		if not self._masked:
+			return 0.0
+		else:
+			return self._masked_fraction
+
+	@property
 	def boundary(self):
 
 		"""

@@ -124,7 +124,7 @@ def test_peaks():
 
 	#Plot the difference
 	plt.plot(v,pk_orig,label=r"Unmasked: $N_p=${0}".format(int(integrate.simps(pk_orig,x=v))))
-	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(masked_map._masked_fraction * 100,int(integrate.simps(pk_masked,x=v))))
+	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(masked_map.maskedFraction * 100,int(integrate.simps(pk_masked,x=v))))
 
 	#Labels
 	plt.xlabel(r"$\kappa$")
