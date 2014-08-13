@@ -290,8 +290,14 @@ class ConvergenceMap(object):
 
 			mask_profile = None 
 
+		#Decide if normalizin thresholds
 		if norm:
-			sigma = self.kappa.std()
+			
+			if self._masked:
+				sigma = self.kappa[self._full_mask].std()
+			else:
+				sigma = self.kappa.std()
+
 		else:
 			sigma = 1.0
 
@@ -321,11 +327,6 @@ class ConvergenceMap(object):
 		assert thresholds is not None
 		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
 
-		if norm:
-			sigma = self.kappa.std()
-		else:
-			sigma = 1.0
-
 		#Check if the map is masked
 		if self._masked:
 
@@ -337,6 +338,17 @@ class ConvergenceMap(object):
 		else:
 
 			mask_profile = None 
+
+		#Decide if normalize thresholds or not
+		if norm:
+
+			if self._masked:
+				sigma = self.kappa[self._full_mask].std()
+			else:
+				sigma = self.kappa.std()
+		
+		else:
+			sigma = 1.0
 
 		#Check if gradient and hessian attributes are available; if not, compute them
 		if not (hasattr(self,"gradient_x") and hasattr(self,"gradient_y")):
@@ -376,21 +388,44 @@ class ConvergenceMap(object):
 
 		if not (hasattr(self,"hessian_xx") and hasattr(self,"hessian_yy") and hasattr(self,"hessian_xy")):
 			self.hessian()
+
+		#Decide if using the full map or only the unmasked region
+		if self._masked:
+
+			if not hasattr(self,"_full_mask"):
+				self.maskBoundaries()
+			
+			kappa = self.kappa[self._full_mask]
+			gradient_x = self.gradient_x[self._full_mask]
+			gradient_y = self.gradient_y[self._full_mask]
+			hessian_xx = self.hessian_xx[self._full_mask]
+			hessian_yy = self.hessian_yy[self._full_mask]
+			hessian_xy = self.hessian_xy[self._full_mask]
+
+		else:
+
+			kappa = self.kappa
+			gradient_x = self.gradient_x
+			gradient_y = self.gradient_y
+			hessian_xx = self.hessian_xx
+			hessian_yy = self.hessian_yy
+			hessian_xy = self.hessian_xy
+
 		
 		#Quadratic moments
-		sigma0 = self.kappa.std()
-		sigma1 = np.sqrt((self.gradient_x**2 + self.gradient_y**2).mean())
+		sigma0 = kappa.std()
+		sigma1 = np.sqrt((gradient_x**2 + gradient_y**2).mean())
 
 		#Cubic moments
-		S0 = (self.kappa**3).mean()
-		S1 = ((self.kappa**2)*(self.hessian_xx + self.hessian_yy)).mean()
-		S2 = ((self.gradient_x**2 + self.gradient_y**2)*(self.hessian_xx + self.hessian_yy)).mean()
+		S0 = (kappa**3).mean()
+		S1 = ((kappa**2)*(hessian_xx + hessian_yy)).mean()
+		S2 = ((gradient_x**2 + gradient_y**2)*(hessian_xx + hessian_yy)).mean()
 
 		#Quartic moments
-		K0 = (self.kappa**4).mean()
-		K1 = ((self.kappa**3) * (self.hessian_xx + self.hessian_yy)).mean()
-		K2 = ((self.kappa) * (self.gradient_x**2 + self.gradient_y**2) * (self.hessian_xx + self.hessian_yy)).mean()
-		K3 = ((self.gradient_x**2 + self.gradient_y**2)**2).mean()
+		K0 = (kappa**4).mean()
+		K1 = ((kappa**3) * (hessian_xx + hessian_yy)).mean()
+		K2 = ((kappa) * (gradient_x**2 + gradient_y**2) * (hessian_xx + hessian_yy)).mean()
+		K3 = ((gradient_x**2 + gradient_y**2)**2).mean()
 
 		#Compute connected moments (only quartic affected)
 		if connected:

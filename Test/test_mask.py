@@ -15,6 +15,10 @@ import matplotlib.pyplot as plt
 from scipy import integrate
 
 #Visualize the masked map
+# do not edit! added by PythonBreakpoints
+from pdb import set_trace as _breakpoint
+
+
 def test_visualize():
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
@@ -205,3 +209,21 @@ def test_minkowski():
 
 	plt.savefig("masked_minkowski.png")
 	plt.clf()
+
+#Check the differences in moments with and without masking
+def test_moments():
+
+	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
+	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+
+	masked_map = conv_map.mask(mask_profile)
+
+	#Compute the moments in both masked and unmasked cases
+	mom_original = conv_map.moments(connected=True)
+	mom_masked = masked_map.moments(connected=True)
+	rel_difference = np.abs(mom_masked/mom_original - 1.0)
+
+	#Save the values and relative differences to file
+	np.savetxt("masked_moments.txt",np.array([mom_original,mom_masked,rel_difference]),fmt="%.2e")
+
+
