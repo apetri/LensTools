@@ -105,6 +105,14 @@ class ConvergenceMap(object):
 		new_map._mask = ~np.isnan(new_map.kappa)
 		new_map._masked_fraction = 1.0 - new_map._mask.sum() / reduce(mul,new_map.kappa.shape)
 
+		#Recompute gradients
+		if (hasattr(new_map,"gradient_x") or hasattr(new_map,"gradient_y")):
+			new_map.gradient()
+
+		if (hasattr(new_map,"hessian_xx") or hasattr(new_map,"hessian_yy") or hasattr(new_map,"hessian_xy")):
+			new_map.hessian()
+
+		#Return
 		if inplace:
 			return new_map._masked_fraction
 		else:
@@ -123,9 +131,12 @@ class ConvergenceMap(object):
 			print("The map is not masked!!")
 			return None
 
-		#Recompute gradients and hessians for safety
-		self.gradient()
-		self.hessian()
+		#First check that the instance has the gradient and hessian attributes; if not, compute them
+		if not (hasattr(self,"gradient_x") and hasattr(self,"gradient_y")):
+			self.gradient()
+
+		if not (hasattr(self,"hessian_xx") and hasattr(self,"hessian_yy") and hasattr(self,"hessian_xy")):
+			self.hessian()
 
 		#Check where gradient starts to have problems
 		nan_gradient_pixels = np.isnan(self.gradient_x) + np.isnan(self.gradient_y)

@@ -132,6 +132,7 @@ def test_peaks():
 	plt.legend(loc="upper left")
 
 	plt.savefig("masked_peaks.png")
+	plt.clf()
 
 #Check the differences in minkowski functionals with and without masking
 def test_minkowski():
