@@ -89,7 +89,7 @@ def test_boundaries():
 	ax[1].imshow(masked_map._gradient_boundary ^ masked_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	#Plot gradient and hessian boundary
-	ax[2].imshow(masked_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[2].imshow(masked_map.boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
 
 	ax[0].set_xlabel(r"$x$(deg)")
 	ax[0].set_ylabel(r"$y$(deg)")

@@ -115,7 +115,7 @@ class ConvergenceMap(object):
 		"""
 		Computes the mask boundaries defined in the following way: a boundary is a region where the convergence value is defined, but the gradients are not defined.
 
-		:returns: tuple of boolean arrays -- (gradient_boundary,hessian_boundary): the gradient boundary is solely defined by the gradient, the hessian boundary is defined by the gradient and the hessian
+		:returns: float. : perimeter/area ratio of the mask boundaries
 		
 		"""
 
@@ -147,6 +147,22 @@ class ConvergenceMap(object):
 
 		#Return
 		return perimeter_area
+
+	@property
+	def boundary(self):
+
+		"""
+		Computes the boundaries of the masked regions, defined as the regions in which the convergence is still well defined but the first and second derivatives are not
+
+		:returns: array of bool. of the same shape as the map, with True values along the boundaries
+		
+		"""
+
+		if not hasattr(self,"_hessian_boundary"):
+			self.maskBoundaries()
+
+		return self._hessian_boundary
+			
 
 	def gradient(self):
 		
