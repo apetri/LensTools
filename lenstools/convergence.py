@@ -252,12 +252,24 @@ class ConvergenceMap(object):
 		assert thresholds is not None
 		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
 
+		#Check if the map is masked
+		if self._masked:
+
+			if not hasattr(self,"_full_mask"):
+				self.maskBoundaries()
+
+			mask_profile = self._full_mask
+
+		else:
+
+			mask_profile = None 
+
 		if norm:
 			sigma = self.kappa.std()
 		else:
 			sigma = 1.0
 
-		return midpoints,_topology.peakCount(self.kappa,thresholds,sigma)
+		return midpoints,_topology.peakCount(self.kappa,mask_profile,thresholds,sigma)
 
 	def minkowskiFunctionals(self,thresholds,norm=False):
 

@@ -57,17 +57,18 @@ PyMODINIT_FUNC init_topology(void){
 //peakCount() implementation
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 
-	PyObject *map_obj,*thresholds_obj; 
+	PyObject *map_obj,*mask_obj,*thresholds_obj; 
 	double sigma;
 
 	/*Parse the input tuple*/
-	if(!PyArg_ParseTuple(args,"OOd",&map_obj,&thresholds_obj,&sigma)){ 
+	if(!PyArg_ParseTuple(args,"OOOd",&map_obj,&mask_obj,&thresholds_obj,&sigma)){ 
 		return NULL;
 	}
 
 	/*Interpret the inputs as a numpy arrays*/
 	PyObject *map_array = PyArray_FROM_OTF(map_obj,NPY_DOUBLE,NPY_IN_ARRAY);
 	PyObject *thresholds_array = PyArray_FROM_OTF(thresholds_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *mask_array;
 
 	if(map_array==NULL || thresholds_array==NULL){
 		
@@ -75,6 +76,25 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 		Py_XDECREF(thresholds_array);
 
 		return NULL;
+
+	}
+
+	if(mask_obj != Py_None){
+
+		mask_array = PyArray_FROM_OTF(mask_obj,NPY_BOOL,NPY_IN_ARRAY);
+
+		if(mask_array==NULL){
+			
+			Py_DECREF(map_array);
+			Py_DECREF(thresholds_array);
+			
+			return NULL;
+		}
+
+	}
+	else{
+
+		mask_array = NULL;
 
 	}
 
@@ -93,15 +113,32 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 		Py_DECREF(map_array);
 		Py_DECREF(thresholds_array);
 
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
 		return NULL;
 	}
 
+	/*Decide if mask profile is not NULL*/
+	unsigned char *mask_profile;
+	if(mask_array){
+		mask_profile = (unsigned char *)PyArray_DATA(mask_array);
+	}
+	else{
+		mask_profile = NULL;
+	}
+
 	/*Call the underlying C function that counts the peaks*/
-	peak_count((double *)PyArray_DATA(map_array),Nside,sigma,Nthreshold,(double *)PyArray_DATA(thresholds_array),(double *)PyArray_DATA(peaks_array));
+	peak_count((double *)PyArray_DATA(map_array),mask_profile,Nside,sigma,Nthreshold,(double *)PyArray_DATA(thresholds_array),(double *)PyArray_DATA(peaks_array));
 
 	/*Clean up and return*/
 	Py_DECREF(map_array);
 	Py_DECREF(thresholds_array);
+
+	if(mask_array){
+		Py_DECREF(mask_array);
+	}
 
 	return peaks_array;
 

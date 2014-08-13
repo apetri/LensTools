@@ -25,29 +25,65 @@ int is_peak(int i,int j,long map_size,double *map){
 }
 
 //count the peaks in the map for varying threshold
-void peak_count(double *map,long map_size, double sigma, int Nthresh, double *thresholds, double *peaks){
+void peak_count(double *map,unsigned char *mask,long map_size, double sigma, int Nthresh, double *thresholds, double *peaks){
 	
 	int Nbins=Nthresh-1,i,j,k;
-	
-	for(i=0;i<map_size;i++){
-		for(j=0;j<map_size;j++){
-		
-			if(is_peak(i,j,map_size,map)){
-				
-				for(k=0;k<Nbins;k++){
-					
-					if(map[coordinate(i,j,map_size)]>=thresholds[k]*sigma && map[coordinate(i,j,map_size)]<thresholds[k+1]*sigma){
-						peaks[k]+= 1.0/(thresholds[k+1]-thresholds[k]);
-					}
-					
+	long l;
+
+	if(mask){
+
+		for(i=0;i<map_size;i++){
+			for(j=0;j<map_size;j++){
+
+				l = coordinate(i,j,map_size);
+
+				//If the pixel is masked, skip it
+				if(!mask[l]){
+					continue;
 				}
+		
+				if(is_peak(i,j,map_size,map)){
 				
+					for(k=0;k<Nbins;k++){
+					
+						if(map[l]>=thresholds[k]*sigma && map[l]<thresholds[k+1]*sigma){
+							peaks[k]+= 1.0/(thresholds[k+1]-thresholds[k]);
+						}
+					
+					}
+				
+				}			   
+		
 			}
+		}
+
+	}
+	
+
+	else{
+	
+		//If there is no mask available don't bother check if the pixel is masked or not
+		for(i=0;i<map_size;i++){
+			for(j=0;j<map_size;j++){
+
+				l = coordinate(i,j,map_size);
+		
+				if(is_peak(i,j,map_size,map)){
+				
+					for(k=0;k<Nbins;k++){
+					
+						if(map[l]>=thresholds[k]*sigma && map[l]<thresholds[k+1]*sigma){
+							peaks[k]+= 1.0/(thresholds[k+1]-thresholds[k]);
+						}
+					
+					}
+				
+				}
 			   
 		
+			}
 		}
 	}
-
 }
 
 		

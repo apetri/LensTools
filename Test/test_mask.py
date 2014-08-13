@@ -12,6 +12,7 @@ except ImportError:
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import integrate
 
 #Visualize the masked map
 def test_visualize():
@@ -107,3 +108,27 @@ def test_boundaries():
 
 	plt.savefig("boundaries.png")
 	plt.clf()
+
+#Check the differences in peak counts with and without masking
+def test_peaks():
+
+	th_peaks = np.ogrid[-0.04:0.12:50j]
+
+	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
+	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+
+	masked_map = conv_map.mask(mask_profile)
+
+	v,pk_orig = conv_map.peakCount(th_peaks)
+	v,pk_masked = masked_map.peakCount(th_peaks)
+
+	#Plot the difference
+	plt.plot(v,pk_orig,label=r"Unmasked: $N_p=${0}".format(int(integrate.simps(pk_orig,x=v))))
+	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(masked_map._masked_fraction * 100,int(integrate.simps(pk_masked,x=v))))
+
+	#Labels
+	plt.xlabel(r"$\kappa$")
+	plt.ylabel(r"$dN/d\kappa$")
+	plt.legend(loc="upper left")
+
+	plt.savefig("masked_peaks.png")
