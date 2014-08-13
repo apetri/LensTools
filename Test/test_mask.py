@@ -175,5 +175,7 @@ def test_minkowski():
 
 	ax[0].legend(loc="upper right")
 
+	fig.tight_layout()
+
 	plt.savefig("masked_minkowski.png")
 	plt.clf()
