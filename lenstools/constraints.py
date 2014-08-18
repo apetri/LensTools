@@ -64,14 +64,14 @@ def _predict(parameters,num_bins,interpolator):
 		interpolated_feature = np.zeros(num_bins)
 
 		for n in range(num_bins):
-			interpolated_feature[n] = interpolator[n](*parameters)
+			interpolated_feature[n] = interpolator[n]()(*parameters)
 		
 	else:
 			
 		interpolated_feature = np.zeros((parameters.shape[0],num_bins))
 
 		for n in range(num_bins):
-			interpolated_feature[:,n] = interpolator[n](*parameters.transpose())
+			interpolated_feature[:,n] = interpolator[n]()(*parameters.transpose())
 
 	return interpolated_feature
 
@@ -376,7 +376,7 @@ class LikelihoodAnalysis(Analysis):
 
 		for n in range(self._num_bins):
 
-			self._interpolator.append(Rbf(*(tuple(used_parameters) + (flattened_training_set[:,n],)),**kwargs))
+			self._interpolator.append(_interpolate_wrapper(Rbf,args=(tuple(used_parameters) + (flattened_training_set[:,n],)),kwargs=kwargs))
 
 		return None
 
@@ -488,3 +488,27 @@ class LikelihoodAnalysis(Analysis):
 		"""
 
 		return self._likelihood_function(chi2_value,**kwargs) 
+
+
+
+
+###########################################################################
+###########Hack to make scipy interpolate objects pickleable###############
+###########################################################################
+
+class _interpolate_wrapper(object):
+
+	def __init__(self,f,args,kwargs):
+		self.f = f
+		self.args = args
+		self.kwargs = kwargs
+	
+	def __call__(self):
+		try:
+			return self.f(*self.args,**self.kwargs)
+		except:
+			import traceback
+			print("lenstools: Exception while building the interpolators")
+			print(" exception:")
+			traceback.print_exc()
+			raise
