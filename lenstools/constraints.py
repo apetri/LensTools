@@ -465,7 +465,12 @@ class LikelihoodAnalysis(Analysis):
 		chi2_wrapper = _function_wrapper(chi2,tuple(),kwargs)
 
 		#Finally map chi2 calculator on the list of chunks
-		chi2_list = map(chi2_wrapper,parameter_chunks)
+		if pool is not None:
+			M = pool.map
+		else:
+			M = map
+		
+		chi2_list = M(chi2_wrapper,parameter_chunks)
 
 		return np.array(chi2_list).reshape(num_points)
 
