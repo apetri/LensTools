@@ -17,6 +17,7 @@ from scipy import interpolate,integrate
 
 from astropy import cosmology
 from astropy.constants import c
+from astropy.units import Mpc
 
 ##################################################
 #############Limber Integrator class##############
@@ -25,12 +26,7 @@ from astropy.constants import c
 class LimberIntegrator(object):
 	
 	"""
-	A 3D power spectrum integrator that will compute the convergence power spectrum  using the Limber approximation. The units for quantities with dimensions of length are assumed to be Mpc
-
-	
-	:param lValues: Desired multipole values for the convergence power spectrum
-
-	:type lValues: array
+	A 3D power spectrum integrator that will compute the convergence power spectrum  using the Limber approximation.
 
 	:param cosmoModel: One of astropy.cosmology objects (WMAP9 cosmology is set by default)
 
@@ -38,141 +34,108 @@ class LimberIntegrator(object):
 
 	"""
 
-	def __init__(self,lValues,cosmoModel=cosmology.WMAP9):
+	def __init__(self,cosmoModel=cosmology.WMAP9):
 
-		self.lValues = lValues
+		assert isinstance(cosmoModel,cosmology.FLRW),"cosmoModel should be a valid astropy cosmology instance!"
 		self.cosmoModel = cosmoModel
 
-	def computeConvergence(self,z,matterPower=None,powFileRoot=None,extension=".dat"):
+	def load3DPowerSpectrum(self,loader,*args,**kwargs):
+
 		"""
-		Computes the convergence power spectrum with the Limber integral of the 3D matter power spectrum;
-		this still assumes a single source redshift at z0 = max(z) 
+		Loads in the matter power spectrum from (pre-computed) external files; args and kwargs are passed to the loader
 
-		
-		:param z:
-			redshift bins at which the matter power spectrum is calculated; the z array must be sorted in ascending order
-			and z[0] must be >0 even if small, otherwise this throws an exception
-
-		:type z: array
-
-		
-		:param matterPower:
-			values of the matter power spectrum at corresponding z (first column must be k, the rest P(k,z), one for each z)
-
-		:type matterPower: ndarray
-
-		
-		:param powFileRoot:
-			common root name of files in which the 3d power spectrum is stored; if None it is assumed that all the
-			information is already loaded in the matterPower array. Throws and exception if both are None
-
-		:type powFileRoot: str.
-
-		
-		:param extension:
-			extension of text files with 3d power spectrum, default is .dat
-
-		:type extension: str.
-
-		:returns: array -- the convergence power spectrum at the l Values specified in the constructor
-
-		:raises: ValueError
-		
+		:param loader: must return, in order, k, z, P(k,z)
+		:type loader: function
 
 		"""
 
-		#Check validity of redshift values
-		if(z[0]<=0.0):
-			raise ValueError("first redshift must be >0!!")
+		self.z,self.kappa,self.power = loader(*args,**kwargs)
+		assert self.power.shape == self.kappa.shape + self.z.shape
+		assert self.z[0] > 0.0,"first redshift must be >0!!"
 
-		#Check validity of imput arguments
-		if(matterPower==None and powFileRoot==None):
-			raise ValueError("matterPower and powFileRoot cannot be both None!!")
+		self.setUnits()
+
+	def setUnits(self,kappa_units=Mpc**-1,power_units=Mpc**3):
+
+		"""
+		Set the physical units for wavenumber and matter power spectrum, default for length is Mpc
+
+		"""
+
+		assert (power_units*(kappa_units**3)).physical_type == u"dimensionless"
+
+		assert hasattr(self,"kappa")
+		assert hasattr(self,"power")
+
+		self.kappa *= kappa_units
+		self.power *= power_units
+
+	def convergencePowerSpectrum(self,l):
+		"""
+		Computes the convergence power spectrum with the Limber integral of the 3D matter power spectrum; this still assumes a single source redshift at z0 = max(z) 
+	
+		:param l: multipole moments at which to compute the convergence power spectrum
+
+		:type l: array
+
+		:returns: array -- the convergence power spectrum at the l values specified
+
+		"""
+
+		z = self.z
 
 		#Power spectrum normalization
-		normalization = (9.0/4)*(self.cosmoModel.Om0)**2*(self.cosmoModel.H0.value/c.to("km/s").value)**4
-
-		#l bins and convergence power spectrum
-		l = self.lValues
+		normalization = (9.0/4)*(self.cosmoModel.Om0)**2*(self.cosmoModel.H0/c)**4
 
 		#Compute comoving distances and integral kernel
 		chi = self.cosmoModel.comoving_distance(z)
-		chi0 = chi[len(chi)-1]
+		chi0 = chi[-1]
 		kernel = (1.0 - chi/chi0)**2
-
-		#Load information about kappa (wavenumber) and P(kappa) (matter power spectrum)
-		if(powFileRoot!=None):
-
-			#Load matter power spectra from camb output files#
-			#See how many k's are stored
-			kappa,try_power = (np.loadtxt(powFileRoot + int(z[0]*100) + extension)).transpose()
-
-			#Load power spectrum
-			power_spectrum = np.zeros([len(kappa),len(z)])
-
-			for i in range(len(z)):
-				try_power = np.loadtxt(powFileRoot + ('%d%s'%(int(z[i]*100,extension))))
-
-				#Normalize power spectrum correctly
-				power_spectrum[:,i] = try_power[:,1] / (self.cosmoModel.h**3)
-
-		else:
-
-			#Fill in values from the matterPower array
-			kappa = matterPower[:,0]
-			power_spectrum = matterPower[:,1:]
 
 		#############################################################
 		#Compute the integral for lensing convergence power spectrum#
 		#############################################################
 		
-		power_interpolation = interpolate.interp1d(kappa*self.cosmoModel.h,power_spectrum,axis=0,bounds_error=False,fill_value=0.0)
-
-		power_integrand = np.zeros((len(l),len(z)))
+		power_interpolation = interpolate.interp1d(self.kappa*self.cosmoModel.h,self.power,axis=0,bounds_error=False,fill_value=0.0)
 		lchi = np.outer(l,1.0/chi).reshape(len(l)*len(z))
 
-		power_integrand = power_interpolation(lchi).reshape(len(l),len(z),len(z)).diagonal(axis1=1,axis2=2)
+		power_integrand = power_interpolation(lchi).reshape(len(l),len(z),len(z)).diagonal(axis1=1,axis2=2) * self.power.unit
 		full_integrand = kernel[np.newaxis,:] * (1.0 + z[np.newaxis,:])**2 * power_integrand
 	
 		#Finally compute the integral
-		C = integrate.simps(full_integrand,chi,axis=1) * normalization
+		C = integrate.simps(full_integrand,chi,axis=1) * normalization * full_integrand.unit * chi.unit
+		assert C.unit.physical_type == u"dimensionless"
 
 		#Return the final result
-		return C
+		return C.decompose().value
 
-	def writeCAMBSettings(self,z,powFileRoot="matterpower",transfer_high_precision=False,transfer_k_per_logint=0,transfer_interp_matterpower=True):
+	def writeCAMBSettings(self,l,z,powFileRoot="matterpower",transfer_high_precision=False,transfer_k_per_logint=0,transfer_interp_matterpower=True):
 		"""
-		
-		Outputs a StringIO object that will contain the redshift settings of the CAMB parameter file that will needed
-		in order for CAMB to produce the linear or non linear matter power spectra that will then be integrated by 
-		the computeConvergence() method
 
-		
-		:param z:
-			redshift bins at which the matter power spectrum is calculated (assumed to be a monotonic array with more than 1 element)
+		Outputs a StringIO object that will contain the redshift settings of the CAMB parameter file that will needed in order for CAMB to produce the linear or non linear matter power spectra that will then be integrated by the computeConvergence() method
+
+		:param l: multipole moments at which to compute the convergence power spectrum
+		:type l: array
+
+		:param z: redshift bins at which the matter power spectrum is calculated (assumed to be a monotonic array with more than 1 element)
 
 		:type z: array
-
 		
-		:param powFileRoot:
-			root of the filename that you want to give to the CAMB power spectrum outputs
+		:param powFileRoot: root of the filename that you want to give to the CAMB power spectrum outputs
 
 		:type powFileRoot: str.
 
 		
-		:param transfer_high_precision:
-			read CAMB documentation (this sets the precision of the calculated transfer function)
+		:param transfer_high_precision: read CAMB documentation (this sets the precision of the calculated transfer function)
 
 		:type transfer_high_precision: bool.
 
 		
-		:param transfer_k_per_logint:
-			read CAMB documentation (this sets the k wavenumber binning)
+		:param transfer_k_per_logint: read CAMB documentation (this sets the k wavenumber binning)
 
 		:type transfer_k_per_logint: int.
 		
-		:param transfer_interp_matterpower:
-			read CAMB documentation (this sets how the matter power is interpolated between different k's)
+		:param transfer_interp_matterpower: read CAMB documentation (this sets how the matter power is interpolated between different k's)
 
 		:type transfer_interp_matterpower: bool.
 

@@ -10,6 +10,8 @@
 
 """
 
+import glob,os,re
+
 import logging
 
 import numpy as np
@@ -166,10 +168,6 @@ def convergence_measure_all(filename,index,fits_loader=None):
 	return observables
 
 
-
-
-
-
 ####################################################################################
 #############Default power spectrum template for testing############################
 ####################################################################################
@@ -177,3 +175,45 @@ def convergence_measure_all(filename,index,fits_loader=None):
 def sample_power_shape(l,**kwargs):
 
 	return np.exp(-0.5*(l/kwargs["scale"])**2)
+
+#####################################################################################
+###############Default loader for 3D matter power spectrum###########################
+#####################################################################################
+
+def load_power_default(path,root_name="fiducial_matterpower_"):
+	"""
+	This is the default matter power spectrum loader: it loads matter power spectra generated with CAMB
+
+	"""
+
+	#Find the number of power spectrum frames (one for each z)
+	power_spectrum_files = glob.glob(os.path.join(path,root_name) + "*.dat")[1:]
+
+	#Redshift array
+	z_label = np.zeros(len(power_spectrum_files),dtype=np.int)
+
+	#Check the first file
+	k_try,P = np.loadtxt(power_spectrum_files[0],unpack=True)
+	z_label[0] = int(re.match(os.path.join(path,root_name)+r"([0-9]+).dat",power_spectrum_files[0]).group(1))
+
+	#Power spectrum array P(k,z)
+	power = np.zeros((len(k_try),len(z_label)))
+	power[:,0] = P
+
+	#Load all the other frames
+	for n,power_file in enumerate(power_spectrum_files[1:]):
+		k,P = np.loadtxt(power_file,unpack=True)
+		assert all(k==k_try)
+		power[:,n+1] = P
+		z_label[n+1] = int(re.match(os.path.join(path,root_name)+r"([0-9]+).dat",power_file).group(1))
+
+	#Compute the redshifts
+	z = np.array([ label/100.0 for label in z_label ])
+
+	#The redshifts might not be in ascending order, we need to make sure they are
+	z_reindex = range(len(z))
+	z_reindex.sort(key=z.__getitem__)
+	z_reindex = np.array(z_reindex)
+
+	#Return the tuple
+	return z[z_reindex],k,power[:,z_reindex]

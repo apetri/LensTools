@@ -7,6 +7,7 @@
 
 __version__ = "0.2"
 
+from .limber import LimberIntegrator
 from .convergence import ConvergenceMap
 from .shear import ShearMap
 from .statistics import Ensemble

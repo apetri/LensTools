@@ -90,5 +90,5 @@ Defaults
 Limber integration
 ==================
 
-.. automodule:: lenstools.limber
-	:members: LimberIntegrator
+.. autoclass:: lenstools.LimberIntegrator
+	:inherited-members:
