@@ -8,7 +8,7 @@
 __version__ = "0.2"
 
 from .limber import LimberIntegrator
-from .convergence import ConvergenceMap
+from .convergence import ConvergenceMap,Mask
 from .shear import ShearMap
 from .statistics import Ensemble
 from .noise import GaussianNoiseGenerator

@@ -2,7 +2,7 @@
 
 .. module:: convergence
 	:platform: Unix
-	:synopsis: This module implements the tools to compute topological statistics on 2D convergence maps: measure the power spectrum, counting peaks, measure the minkowski functionals
+	:synopsis: This module implements the tools to compute topological statistics on 2D convergence maps: measure the power spectrum, counting peaks, measure the minkowski functionals; handling of masks is also provided
 
 
 .. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>
@@ -638,4 +638,40 @@ class ConvergenceMap(object):
 			raise TypeError("Cannot multiply by the right hand side!!")
 
 		return ConvergenceMap(new_kappa,self.side_angle)
+
+
+
+###############################################
+###################Mask class##################
+###############################################
+
+class Mask(ConvergenceMap):
+
+	"""
+	A class that handles the convergence masked regions
+
+	"""
+
+	def __init__(self,kappa,angle,masked=False):
+
+		super(Mask,self).__init__(kappa,angle,masked)
+		assert len(self.kappa[self.kappa==0]) + len(self.kappa[self.kappa==1]) == reduce(mul,self.kappa.shape),"The mask must be made of 0 and 1 only!"
+		self._masked_fraction = len(self.kappa[self.kappa==0]) / reduce(mul,self.kappa.shape)
+
+	@property
+	def maskedFraction(self):
+
+		"""
+		Computes the fraction of masked pixels
+
+		"""
+
+		return self._masked_fraction
+
+	def maskBoundaries(self):
+		raise AttributeError("Can only call this method on a ConvergenceMap instance!")
+
+	@property
+	def boundary(self):
+		raise AttributeError("This property is only defined on ConvergenceMap instances!")
 

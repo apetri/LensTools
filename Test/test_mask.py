@@ -1,13 +1,13 @@
 try:
 	
-	from lenstools import ConvergenceMap
+	from lenstools import ConvergenceMap,Mask
 	from lenstools.defaults import load_fits_default_convergence
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
-	from lenstools import ConvergenceMap
+	from lenstools import ConvergenceMap,Mask
 	from lenstools.defaults import load_fits_default_convergence
 
 import numpy as np
@@ -22,7 +22,7 @@ from pdb import set_trace as _breakpoint
 def test_visualize():
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
-	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+	mask_profile = Mask.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
 	masked_fraction = conv_map.mask(mask_profile,inplace=True)
 
@@ -47,7 +47,7 @@ def test_visualize():
 def test_power():
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
-	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+	mask_profile = Mask.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
 	l_edges = np.arange(200.0,50000.0,200.0)
 	
@@ -74,7 +74,7 @@ def test_power():
 def test_boundaries():
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
-	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+	mask_profile = Mask.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
 	masked_map = conv_map.mask(mask_profile)
 	assert hasattr(masked_map,"_mask")
@@ -119,7 +119,7 @@ def test_pdf():
 	th_pdf = np.ogrid[-0.15:0.15:50j]
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
-	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+	mask_profile = Mask.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
 	masked_map = conv_map.mask(mask_profile)
 
@@ -128,7 +128,7 @@ def test_pdf():
 
 	#Plot the two histograms
 	plt.plot(v,p_original,label="Unmasked")
-	plt.plot(v,p_masked,label="Masked {0:.1f}%".format(masked_map.maskedFraction * 100))
+	plt.plot(v,p_masked,label="Masked {0:.1f}%".format(mask_profile.maskedFraction * 100))
 
 	#Labels
 	plt.xlabel(r"$\kappa$")
@@ -144,7 +144,7 @@ def test_peaks():
 	th_peaks = np.ogrid[-0.04:0.12:50j]
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
-	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+	mask_profile = Mask.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
 	masked_map = conv_map.mask(mask_profile)
 
@@ -153,7 +153,7 @@ def test_peaks():
 
 	#Plot the difference
 	plt.plot(v,pk_orig,label=r"Unmasked: $N_p=${0}".format(int(integrate.simps(pk_orig,x=v))))
-	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(masked_map.maskedFraction * 100,int(integrate.simps(pk_masked,x=v))))
+	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(mask_profile.maskedFraction * 100,int(integrate.simps(pk_masked,x=v))))
 
 	#Labels
 	plt.xlabel(r"$\kappa$")
@@ -172,7 +172,7 @@ def test_minkowski():
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
-	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+	mask_profile = Mask.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
 	#Compute and plot the MFs for the unmasked map
 	v,V0,V1,V2 = conv_map.minkowskiFunctionals(th_minkowski)
@@ -214,7 +214,7 @@ def test_minkowski():
 def test_moments():
 
 	conv_map = ConvergenceMap.fromfilename("Data/unmasked.fit",loader=load_fits_default_convergence)
-	mask_profile = ConvergenceMap.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
+	mask_profile = Mask.fromfilename("Data/mask.fit",loader=load_fits_default_convergence)
 
 	masked_map = conv_map.mask(mask_profile)
 
