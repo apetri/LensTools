@@ -171,6 +171,26 @@ class Ensemble(object):
 		
 		return self._mean
 
+	def scale(self,weights):
+
+		"""
+		Set manually the units of each row of the ensemble by multiplying it by a row of weights
+
+		:param weights: row of weights used to scale the ensemble, must have the same length as the number of rows
+		:type weights: array
+
+		"""
+
+		if isinstance(weights,np.ndarray):
+			
+			assert len(weights)==self.data.shape[0]
+			self.data *= weights.reshape(self.data.shape)
+
+		else:
+
+			self.data *= weights
+
+
 	def covariance(self):
 
 		"""
