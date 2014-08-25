@@ -59,6 +59,7 @@ def test_power():
 
 	ax.plot(l,l*(l+1)*P_original/(2*np.pi),label="Unmasked")
 	ax.plot(l,l*(l+1)*P_masked/(2*np.pi),label="Masked")
+	ax.plot(l,l*(l+1)*P_masked/(2*np.pi*(1.0 - mask_profile.maskedFraction)**2),label="Re-scaled")
 	ax.plot(l,l*(l+1)*P_mask/(2*np.pi),label="Mask")
 	ax.set_xscale("log")
 	ax.set_yscale("log")
@@ -154,6 +155,7 @@ def test_peaks():
 	#Plot the difference
 	plt.plot(v,pk_orig,label=r"Unmasked: $N_p=${0}".format(int(integrate.simps(pk_orig,x=v))))
 	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(mask_profile.maskedFraction * 100,int(integrate.simps(pk_masked,x=v))))
+	plt.plot(v,pk_masked/(1.0 - mask_profile.maskedFraction),label="Re-scaled")
 
 	#Labels
 	plt.xlabel(r"$\kappa$")
