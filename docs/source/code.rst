@@ -13,6 +13,8 @@ Convergence maps
 .. autoclass:: lenstools.ConvergenceMap
 	:inherited-members:
 
+.. autoclass:: lenstools.Mask
+
 Shear maps
 ==========
 
