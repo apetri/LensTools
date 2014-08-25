@@ -17,7 +17,7 @@ from scipy import interpolate,integrate
 
 from astropy import cosmology
 from astropy.constants import c
-from astropy.units import Mpc
+from astropy.units import Mpc,def_unit
 
 ##################################################
 #############Limber Integrator class##############
@@ -39,6 +39,9 @@ class LimberIntegrator(object):
 		assert isinstance(cosmoModel,cosmology.FLRW),"cosmoModel should be a valid astropy cosmology instance!"
 		self.cosmoModel = cosmoModel
 
+		#Define also the Mpc/h units for convenience
+		self.Mpc_over_h = def_unit("Mpc/h",Mpc/self.cosmoModel.h)
+
 	def load3DPowerSpectrum(self,loader,*args,**kwargs):
 
 		"""
@@ -55,14 +58,20 @@ class LimberIntegrator(object):
 
 		self.setUnits()
 
-	def setUnits(self,kappa_units=Mpc**-1,power_units=Mpc**3):
+	def setUnits(self,kappa_units=None,power_units=None):
 
 		"""
 		Set the physical units for wavenumber and matter power spectrum, default for length is Mpc
 
 		"""
 
-		assert (power_units*(kappa_units**3)).physical_type == u"dimensionless"
+		if kappa_units is None:
+			kappa_units = self.Mpc_over_h**-1
+
+		if power_units is None:
+			power_units = self.Mpc_over_h**3
+
+		assert (power_units*(kappa_units**3)).physical_type == "dimensionless"
 
 		assert hasattr(self,"kappa")
 		assert hasattr(self,"power")
@@ -87,7 +96,7 @@ class LimberIntegrator(object):
 		#Power spectrum normalization
 		normalization = (9.0/4)*(self.cosmoModel.Om0)**2*(self.cosmoModel.H0/c)**4
 
-		#Compute comoving distances and integral kernel
+		#Compute comoving distances and integral kernel (modify in case there is an arbitrary galaxy distribution)
 		chi = self.cosmoModel.comoving_distance(z)
 		chi0 = chi[-1]
 		kernel = (1.0 - chi/chi0)**2
@@ -96,7 +105,7 @@ class LimberIntegrator(object):
 		#Compute the integral for lensing convergence power spectrum#
 		#############################################################
 		
-		power_interpolation = interpolate.interp1d(self.kappa*self.cosmoModel.h,self.power,axis=0,bounds_error=False,fill_value=0.0)
+		power_interpolation = interpolate.interp1d(self.kappa.to(chi.unit**-1),self.power,axis=0,bounds_error=False,fill_value=0.0)
 		lchi = np.outer(l,1.0/chi).reshape(len(l)*len(z))
 
 		power_integrand = power_interpolation(lchi).reshape(len(l),len(z),len(z)).diagonal(axis1=1,axis2=2) * self.power.unit
