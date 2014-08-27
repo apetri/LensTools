@@ -12,10 +12,14 @@
 
 from __future__ import division
 
+from operator import add
+from functools import reduce
+
 from lenstools.index import Indexer
 
 import numpy as np
 import scipy.io as sio
+from scipy import sparse
 
 from emcee.ensemble import _function_wrapper
 
@@ -189,6 +193,49 @@ class Ensemble(object):
 		else:
 
 			self.data *= weights
+
+	def group(self,group_size,kind="sparse"):
+
+		"""
+		Sometimes it happens that different realizations in the ensemble need to be grouped together, for example when they belong to different subfields of the same observation field. With this function you can group different realizations together by taking the mean, and reduce the total number of realizations in the ensemble
+
+		:param group_size: how many realizations to put in a group, must divide exactly the total number of realizations in the ensemble
+		:type group_size: int
+
+		:param kind: specifies how to do the grouping; if set to "sparse" the groups are formed by taking one realizations every num_realizations/group_size (for example ([1,1001,...,9001],[2,1002,...,9002]) if num_realizations=10000 and group_size=10). If set to "contiguous" then the realizations are grouped as ([1,2,...,10],[11,12,...,20]). Otherwise you can set kind to your own sparse matrix scheme 
+		:type kind: str. or scipy.sparse 
+
+		"""
+
+		assert not(self.num_realizations%group_size),"The group size must divide exactly the number of realizations!"
+		num_groups = self.num_realizations//group_size
+
+		#Build the appropriate grouping scheme
+		if isinstance(kind,sparse.csr.csr_matrix):
+
+			assert kind.dtype == np.bool,"The scheme type must be bool, only 0 and 1!"
+			scheme = kind
+		
+		elif kind=="sparse":
+
+			scheme = reduce(add,[ sparse.eye(num_groups,self.num_realizations,k=num_groups*i,dtype=np.int8) for i in range(group_size)])
+
+		elif kind=="contiguous":
+			
+			row = np.array(reduce(add,[ (i,) * group_size  for i in range(group_size) ]))
+			col = np.arange(self.num_realizations,dtype=np.int)
+			dat = np.ones(self.num_realizations,dtype=np.int8)
+
+			scheme = sparse.csr_matrix((dat,(row,col)),shape=(group_size,self.num_realizations),dtype=np.int8)
+
+		else:
+			raise TypeError("The scheme kind you inputed is not valid!")
+
+		self._scheme = scheme
+
+		#Dot the data with the scheme to produce the groups, and take the mean in every group
+		self.num_realizations = num_groups
+		self.data = scheme.dot(self.data) / group_size
 
 
 	def covariance(self):

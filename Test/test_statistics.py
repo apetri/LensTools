@@ -128,6 +128,43 @@ def test_save_and_load():
 	assert conv_ensemble_new.num_realizations == conv_ensemble.num_realizations
 	assert conv_ensemble_new.data.shape == conv_ensemble.data.shape
 
+def test_group():
+
+	conv_ensemble_sparse = Ensemble.fromfilelist(map_list)
+	conv_ensemble_sparse.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	conv_ensemble_sparse.group(group_size=2,kind="sparse")
+	
+	assert conv_ensemble_sparse.num_realizations==2
+
+	conv_ensemble_contiguous = Ensemble.fromfilelist(map_list)
+	conv_ensemble_contiguous.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	conv_ensemble_contiguous.group(group_size=2,kind="contiguous")
+	
+	assert conv_ensemble_contiguous.num_realizations==2
+
+	fig,ax = plt.subplots()
+	for n in range(conv_ensemble.num_realizations):
+		ax.plot(l,l*(l+1)*conv_ensemble.data[n]/(2.0*np.pi),label="Original {0}".format(n+1),linestyle="-")
+
+	for n in range(conv_ensemble_sparse.num_realizations):
+		ax.plot(l,l*(l+1)*conv_ensemble_sparse.data[n]/(2.0*np.pi),label="Sparse {0}".format(n+1),linestyle="--")
+
+	for n in range(conv_ensemble_contiguous.num_realizations):
+		ax.plot(l,l*(l+1)*conv_ensemble_contiguous.data[n]/(2.0*np.pi),label="Contiguous {0}".format(n+1),linestyle="-.")
+
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+	ax.legend(loc="upper left",prop={"size":7})
+
+	plt.savefig("power_ensemble_grouped.png")
+	plt.clf()
+
+	return conv_ensemble_sparse._scheme,conv_ensemble_contiguous._scheme
+
+
+
 
 
 
