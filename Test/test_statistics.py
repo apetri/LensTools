@@ -163,10 +163,24 @@ def test_group():
 
 	return conv_ensemble_sparse._scheme,conv_ensemble_contiguous._scheme
 
+def test_cut():
 
+	fig,ax = plt.subplots()
+	ax.plot(l,l*(l+1)*conv_ensemble.mean()/(2.0*np.pi),label="Full")
 
+	#Perform the cut
+	l_cut = conv_ensemble.cut(10000.0,30000.0,feature_label=l)
+	assert conv_ensemble.data.shape[1] == len(l_cut)
 
+	#Plot
+	ax.plot(l_cut,l_cut*(l_cut+1)*conv_ensemble.mean()/(2.0*np.pi),label="Cut",color="yellow")
 
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+	ax.legend(loc="upper left")
 
-
+	plt.savefig("power_ensemble_cut.png")
+	plt.clf()
 

@@ -170,8 +170,7 @@ class Ensemble(object):
 
 		"""
 		
-		if not hasattr(self,"_mean"):
-			self._mean = self.data.mean(axis=0)
+		self._mean = self.data.mean(axis=0)
 		
 		return self._mean
 
@@ -193,6 +192,10 @@ class Ensemble(object):
 		else:
 
 			self.data *= weights
+
+		#If a mean was precomputed, need to recompute the new one
+		if hasattr(self,"_mean"):
+			self.mean()
 
 	def group(self,group_size,kind="sparse"):
 
@@ -236,6 +239,53 @@ class Ensemble(object):
 		#Dot the data with the scheme to produce the groups, and take the mean in every group
 		self.num_realizations = num_groups
 		self.data = scheme.dot(self.data) / group_size
+
+		#If a mean was precomputed, need to recompute the new one
+		if hasattr(self,"_mean"):
+			self.mean()
+
+	def cut(self,min,max,feature_label=None):
+
+		"""
+		Allows to manually cut the ensemble along the second axis, if you want to select a feature subset; you better know what you are doing if you are using this function
+
+		:param min: left extreme of the cut, included
+		:type min: int or float
+
+		:param max: right extreme of the cut, included
+		:type max: int or float
+
+		:param feature_label: if not None, serves as a reference for min and max, in which the ensemble is cut according to the position of the min and max elements in the feature_label array
+		:type feature_label: array
+
+		:returns: the min and max cut indices if feature_label is None, otherwise it returns the array of the cut feature
+
+		"""
+
+		assert self.data.ndim==2,"Only one dimensional feature cuts implemented so far!"
+
+		if feature_label is not None:
+
+			#Look for the corresponding indices in the feature label
+			min_idx = np.abs(feature_label-min).argmin()
+			max_idx = np.abs(feature_label-max).argmin()
+
+		else:
+
+			#Interpret max and min as indices between which to perform the cut
+			min_idx = min
+			max_idx = max
+
+		self.data = self.data[:,min_idx:max_idx+1]
+		#Recompute mean after cut, if mean was precomputed
+		if hasattr(self,"_mean"):
+			self.mean()
+
+		#Return
+		if feature_label is not None:
+			return feature_label[min_idx:max_idx+1]
+		else:
+			return min_idx,max_idx
 
 
 	def covariance(self):
