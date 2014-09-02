@@ -15,6 +15,8 @@ from __future__ import division,print_function,with_statement
 from operator import mul
 from functools import reduce
 
+import cPickle as pickle
+
 #########################################################
 
 import numpy as np
@@ -145,6 +147,53 @@ class Analysis(object):
 			self.parameter_set = np.vstack((self.parameter_set,parameters))
 			self.training_set = np.vstack((self.training_set,feature))
 
+
+	def save(self,filename):
+
+		"""
+		Save the current Analysis instance as a pickled binary file for future reuse as an emulator; useful after you trained the emulator with a simulated feature set and you want to reuse it in the future 
+
+		:param filename: Name of the file to which you want to save the emulator, or file object
+		:type filename: str. or file object
+
+		"""
+
+		assert type(filename) in [str,file],"filename must be a string or a file object!"
+
+		if type(filename)==str:
+			
+			with open(filename,"wb") as dumpfile:
+				pickle.dump(self,dumpfile)
+
+		else:  
+
+			pickle.dump(self,filename)
+
+	@classmethod
+	def load(cls,filename):
+
+		"""
+		Unpickle an already trained and pickled emulator: be sure the file you are unpickling comes from a trusted source, this operation is potentially dangerous for your computer!
+
+		:param filename: Name of the file from which you want to load the emulator, or file object
+		:type filename: str. or file object
+
+		"""
+
+		assert type(filename) in [str,file],"filename must be a string or a file object!"
+
+		if type(filename)==str:
+			
+			with open(filename,"rb") as dumpfile:
+				emulator = pickle.load(dumpfile)
+
+		else:  
+
+			emulator = pickle.load(filename)
+
+		assert isinstance(emulator,cls)
+
+		return emulator
 
 
 

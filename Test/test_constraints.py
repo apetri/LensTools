@@ -138,8 +138,12 @@ def test_interpolation():
 	assert hasattr(analysis,"_interpolator")
 	assert hasattr(analysis,"_num_bins")
 
+	#Emulator portability test with pickle/unpickle
+	analysis.save("analysis.p")
+	emulator = LikelihoodAnalysis.load("analysis.p")
+
 	#Predict the power spectrum at the remaining point
-	predicted_Pl = analysis.predict(testing_model.squeeze())
+	predicted_Pl = emulator.predict(testing_model.squeeze())
 
 	#Plot it against the measured one
 	fig,ax = plt.subplots(2,1,figsize=(16,8))
@@ -165,7 +169,7 @@ def test_interpolation():
 
 	#Give it a shot with two points in parameter space to test vectorization
 	two_parameter_points = np.array((training_models[0].squeeze(),testing_model.squeeze()))
-	two_predicted_Pl = analysis.predict(two_parameter_points)
+	two_predicted_Pl = emulator.predict(two_parameter_points)
 
 	fig,ax = plt.subplots(2,1,figsize=(16,8))
 
@@ -174,11 +178,11 @@ def test_interpolation():
 	ax[0].plot(l,l*(l+1)*two_predicted_Pl[1]/(2*np.pi),color="green",linestyle="--")
 
 	#Measured
-	ax[0].plot(l,l*(l+1)*analysis.training_set[0]/(2*np.pi),color="red",linestyle="-")
+	ax[0].plot(l,l*(l+1)*emulator.training_set[0]/(2*np.pi),color="red",linestyle="-")
 	ax[0].plot(l,l*(l+1)*testing_Pl/(2*np.pi),color="green",linestyle="-")
 
 	#Fractional difference
-	ax[1].plot(l,(two_predicted_Pl[0] - analysis.training_set[0])/analysis.training_set[0],color="red")
+	ax[1].plot(l,(two_predicted_Pl[0] - emulator.training_set[0])/emulator.training_set[0],color="red")
 	ax[1].plot(l,(two_predicted_Pl[1] - testing_Pl)/testing_Pl,color="green")
 
 	ax[1].set_xlabel(r"$l$")
@@ -197,11 +201,11 @@ def test_interpolation():
 	observation = testing_Pl + np.random.uniform(low=-testing_Pl*0.1,high=testing_Pl*0.1)
 
 	#Choose a bunch of points in parameter space
-	points = analysis.parameter_set[:,:-1]
+	points = emulator.parameter_set[:,:-1]
 
 	#Compute the chi2
-	chi2_values_1 = analysis.chi2(points,observation,covariance)
-	chi2_values_2 = analysis.chi2(points,observation,covariance,split_chunks=4)
+	chi2_values_1 = emulator.chi2(points,observation,covariance)
+	chi2_values_2 = emulator.chi2(points,observation,covariance,split_chunks=4)
 
 	assert chi2_values_1.shape == chi2_values_2.shape
 
