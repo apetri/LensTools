@@ -1,4 +1,4 @@
-/*Python wrapper module for peak count code interpolation code;
+/*Python wrapper module for convergence map operations;
 the method used is the same as in 
 http://dan.iel.fm/posts/python-c-extensions/ 
 

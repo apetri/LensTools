@@ -45,9 +45,10 @@ external_dir = "external"
 
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
+external_sources["_design"] = ["_design.c","design.c"]
 
 #Extra compiler options
-link_flags = ['-lm']
+link_flags = ["-lm","-lgsl","-lgslcblas"]
 
 #Extension objects
 ext = list()
