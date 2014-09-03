@@ -4,6 +4,7 @@ name = "lenstools"
 me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
 url = "http://www.columbia.edu/~ap3020/LensTools/html"
+default_gsl = "/usr/local"
 
 try:
 	import numpy.distutils.misc_util 
@@ -45,10 +46,51 @@ external_dir = "external"
 
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
-external_sources["_design"] = ["_design.c","design.c"]
 
-#Extra compiler options
-link_flags = ["-lm","-lgsl","-lgslcblas"]
+#Check for GSL installation, necessary for using the Design feature
+gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h"]
+gsl_required_links = ["libgsl.a","libgslcblas.a"]
+gsl_location = raw_input("Enter the location of your GSL installation (default '{0}'): ".format(default_gsl))
+gsl_ok = True
+
+if gsl_location == "":
+	gsl_location = default_gsl
+
+#Check for required GSL includes and links
+for include in gsl_required_includes:
+	
+	include_filename = os.path.join(gsl_location,"include","gsl",include)
+	print("Checking if {0} exists".format(include_filename))
+
+	if os.path.isfile(include_filename):
+		print("OK")
+	else:
+		print("FAIL")
+		gsl_ok = False
+		break
+
+for lib in gsl_required_links:
+
+	lib_filename = os.path.join(gsl_location,"lib",lib)
+	print("Checking if {0} exists".format(lib_filename))
+
+	if os.path.isfile(lib_filename):
+		print("OK")
+	else:
+		print("FAIL")
+		gsl_ok = False
+		break
+
+#Decide if we can install the Design feature, if not throw a warning
+if gsl_ok:
+	print("Checked GSL installation, OK, the Design feature will be installed")
+	lenstools_includes = [ os.path.join(gsl_location,"include","gsl",include) for include in gsl_required_includes ]
+	lenstools_link = ["-lm","-L {0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	external_sources["_design"] = ["_design.c","design.c"] 
+else:
+	raw_input("GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
+	lenstools_includes = list()
+	lenstools_link = ["-lm"]
 
 #Extension objects
 ext = list()
@@ -59,10 +101,13 @@ for ext_module in external_sources.keys():
 	for source in external_sources[ext_module]:
 		sources.append(os.path.join(name,external_dir,source))
 
-	ext.append(Extension(ext_module,sources,extra_link_args=link_flags))
+	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
 
 #Data files on which the package depends on
 package_data = {name:[os.path.join("book","CFHTemu1.txt")]}
+
+#Append numpy includes
+lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
 
 setup(
 	name=name,
@@ -79,5 +124,5 @@ setup(
 	classifiers=classifiers,
 	ext_package=os.path.join(name,external_dir),
 	ext_modules=ext,
-	include_dirs=numpy.distutils.misc_util.get_numpy_include_dirs(),
+	include_dirs=lenstools_includes,
 )

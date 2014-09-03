@@ -45,7 +45,7 @@ class Design(object):
 	def __init__(self):
 
 		#Input sanity check
-		assert _design is not None,"The _design external library has not been installed!"
+		assert _design is not None,"The _design external library has not been installed, probably because GSL is missing!"
 
 		#Initialize with 0 points in 0 dimensions
 		self.ndim = 0
