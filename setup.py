@@ -84,7 +84,7 @@ for lib in gsl_required_links:
 #Decide if we can install the Design feature, if not throw a warning
 if gsl_ok:
 	print("Checked GSL installation, OK, the Design feature will be installed")
-	lenstools_includes = [ os.path.join(gsl_location,"include","gsl",include) for include in gsl_required_includes ]
+	lenstools_includes = [ os.path.join(gsl_location,"include","gsl") ]
 	lenstools_link = ["-lm","-L {0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
