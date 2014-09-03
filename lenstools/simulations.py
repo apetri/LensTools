@@ -201,6 +201,36 @@ class Design(object):
 
 		self.fig.savefig(filename)
 
+	def set_title(self,title):
+
+		"""
+		Give a title to the visualized design
+
+		:param title: title of the figure
+		:type title: str.
+
+		"""
+
+		self.ax.set_title(title)
+
+	################################################################################################################################
+	######################These methods make use of the external _design library to compute and optimize design costs###############
+	################################################################################################################################
+
+	def diagonalCost(self,Lambda):
+
+		"""
+		Compute the cost function of a diagonal configuration with a specified number of points and a metric parameter lambda; the cost function is calculated on the scaled parameter values, which are always between 0 and 1
+
+		:param Lambda: metric parameter of the cost function; if set to 1.0 the cost function corresponds is the Coulomb potential energy
+		:type Lambda: float.
+
+		"""
+
+		assert self.npoints>2,"You must lay down at least 3 points!"
+		return _design.diagonalCost(self.npoints,Lambda)
+
+
 
 ######################################
 ###########IGS1 class#################

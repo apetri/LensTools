@@ -27,6 +27,7 @@ def test_visualize():
 
 	#Visualize the 3d diagonal configuration
 	design.visualize(color="blue")
+	design.set_title("Cost={0:.2f}".format(design.diagonalCost(1.0)))
 	design.savefig("design_diagonal_3d.png")
 
 	#Visualize the 2d (Om,si8) projection
