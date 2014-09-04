@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 #Test the visualization of a design
 def test_visualize():
 
+	#This fails if GSL is not installed
 	try:
 		design = Design()
 	except ImportError:
