@@ -270,7 +270,7 @@ class Design(object):
 		:param maxIterations: maximum number of iterations that the sampler can perform before stopping
 		:type maxIterations: int.
 
-		:returns: the relative change of the cost function with the last iteration
+		:returns: the relative change of the cost function the last time it varied during the sampling
 
 		"""
 

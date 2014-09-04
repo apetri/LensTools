@@ -60,6 +60,6 @@ def test_visualize():
 	ax.plot(design.cost_values)
 	ax.set_xlabel(r"$N$")
 	ax.set_ylabel("cost")
-	ax.set_title("Relative change with last iteration={0:.1f}".format(deltaPerc*100))
+	ax.set_title("Last change={0:.1e}%".format(deltaPerc*100))
 	ax.set_xscale("log")
 	fig.savefig("cost.png")

@@ -135,7 +135,7 @@ double sample(int Npoints,int D,double p,double lambda,int seed,int maxIteration
 	gsl_rng *r;
 	gsl_permutation *perm = gsl_permutation_alloc(Npoints);
 
-	double currentCost,deltaCost;
+	double currentCost,deltaCost,deltaPerc;
 
 	//Initialize random number generator
 	gsl_rng_env_setup();
@@ -167,6 +167,7 @@ double sample(int Npoints,int D,double p,double lambda,int seed,int maxIteration
 
 	iterCount = 0;
 	currentCost = cost(data,Npoints,D,p,lambda);
+	deltaPerc = 0.0;
 
 	while(1){
 
@@ -179,12 +180,14 @@ double sample(int Npoints,int D,double p,double lambda,int seed,int maxIteration
 		//Compute the change in the cost function
 		deltaCost = swap(data,Npoints,D,p,lambda,i1,i2,d);
 
+
 		/*Check if gain in cost is positive or negative: if positive, revert the swap, if negative keep it;
 		anyway, log the result*/
 		if(deltaCost>=0){
 			swapBack(data,i1,i2,d);
 		} else{
 			currentCost += deltaCost;
+			deltaPerc = deltaCost/currentCost;
 		}
 
 		//Save the current cost to array
@@ -200,6 +203,6 @@ double sample(int Npoints,int D,double p,double lambda,int seed,int maxIteration
 	gsl_permutation_free(perm);
 
 	//Return the relative cost change due to the last iteration
-	return deltaCost/currentCost;
+	return deltaPerc;
 
 }
