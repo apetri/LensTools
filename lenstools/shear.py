@@ -133,7 +133,7 @@ class ShearMap(object):
 		return new
 
 
-	def sticks(self,ax,pixel_step=10,multiplier=1.0):
+	def sticks(self,fig=None,ax=None,pixel_step=10,multiplier=1.0):
 
 		"""
 		Draw the ellipticity map using the shear components
@@ -160,6 +160,13 @@ class ShearMap(object):
 			print("matplotlib is not installed, please install it!!")
 			return None
 
+		#Instantiate fig,ax objects
+		if (fig is None) or (ax is None):
+			self.fig,self.ax = plt.subplots()
+		else:
+			self.fig = fig
+			self.ax = ax
+
 		x,y = np.meshgrid(np.arange(0,self.gamma.shape[2],pixel_step),np.arange(0,self.gamma.shape[1],pixel_step))
 
 		#Translate shear components into sines and cosines
@@ -174,14 +181,7 @@ class ShearMap(object):
 		cos_phi[sin_2_phi==0] = np.sqrt(0.5*(1.0 + cos_2_phi[sin_2_phi==0]))
 
 		#Draw map using matplotlib quiver
-		if ax is None:
-			fig,ax = plt.subplots()
-
-		ax.quiver(x*self.side_angle/self.gamma.shape[2],y*self.side_angle/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
-
-		return ax
-
-
+		self.ax.quiver(x*self.side_angle/self.gamma.shape[2],y*self.side_angle/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
 
 
 	def decompose(self,l_edges,keep_fourier=False):

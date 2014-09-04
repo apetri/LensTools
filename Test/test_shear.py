@@ -92,12 +92,11 @@ def test_visualize2():
 	fig,ax = plt.subplots()
 	
 	ax.imshow(test_map_conv.kappa,origin="lower",interpolation="nearest",cmap=plt.cm.Reds,extent=[0.0,test_map_conv.side_angle,0.0,test_map_conv.side_angle])
-	test_map.sticks(ax,pixel_step=40)
+	test_map.sticks(fig=fig,ax=ax,pixel_step=40)
 
 	ax.set_xlabel(r"$x$(deg)")
 	ax.set_ylabel(r"$y$(deg)")
-	plt.savefig("sticks.png")
-	plt.clf()
+	fig.savefig("sticks.png")
 
 def test_visualize3():
 
