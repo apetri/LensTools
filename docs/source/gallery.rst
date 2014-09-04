@@ -8,3 +8,4 @@ Gallery
 	examples/power_spectrum
 	examples/gaussian_random_field
 	examples/eb_decomposition
+	examples/design

@@ -75,6 +75,12 @@ Simulation sets
 .. autoclass:: lenstools.simulations.CFHTemu1
 	:members: getNames, squeeze, getModels
 
+Simulation design
+=================
+
+.. autoclass:: lenstools.simulations.Design
+	:inherited-members:
+
 Observation sets
 ================
 
