@@ -8,13 +8,17 @@ except ImportError:
 	sys.path.append("..")
 	from lenstools.simulations import Design
 
+import numpy as np
 import matplotlib.pyplot as plt
 
 
 #Test the visualization of a design
 def test_visualize():
 
-	design = Design()
+	try:
+		design = Design()
+	except ImportError:
+		return
 
 	#Add the dimensions
 	design.add_parameter("Omega_m",min=0.1,max=0.9,label=r"$\Omega_m$")
@@ -25,9 +29,12 @@ def test_visualize():
 	design.put_points(50)
 	print(design)
 
+	#The cost function should be the diagonal one
+	np.testing.assert_approx_equal(design.diagonalCost(Lambda=1.0),design.cost(p=2.0,Lambda=1.0))
+
 	#Visualize the 3d diagonal configuration
 	design.visualize(color="blue")
-	design.set_title("Cost={0:.2f}".format(design.diagonalCost(1.0)))
+	design.set_title("Cost={0:.2f}".format(design.diagonalCost(Lambda=1.0)))
 	design.savefig("design_diagonal_3d.png")
 
 	#Visualize the 2d (Om,si8) projection

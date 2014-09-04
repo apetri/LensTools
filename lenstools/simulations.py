@@ -44,8 +44,9 @@ class Design(object):
 
 	def __init__(self):
 
-		#Input sanity check
-		assert _design is not None,"The _design external library has not been installed, probably because GSL is missing!"
+		#Check for GSL installation problems
+		if _design is None:
+			raise ImportError("couldn't import the _design library, probably GSL is not installed!")
 
 		#Initialize with 0 points in 0 dimensions
 		self.ndim = 0
@@ -220,16 +221,37 @@ class Design(object):
 	def diagonalCost(self,Lambda):
 
 		"""
-		Compute the cost function of a diagonal configuration with a specified number of points and a metric parameter lambda; the cost function is calculated on the scaled parameter values, which are always between 0 and 1
+		Computes the cost function of a diagonal configuration with a specified number of points and a metric parameter lambda; the cost function is calculated on the scaled parameter values, which are always between 0 and 1
 
 		:param Lambda: metric parameter of the cost function; if set to 1.0 the cost function corresponds is the Coulomb potential energy
 		:type Lambda: float.
+
+		:returns: the value of the cost function for a diagonal configuration
 
 		"""
 
 		assert self.npoints>2,"You must lay down at least 3 points!"
 		return _design.diagonalCost(self.npoints,Lambda)
 
+	def cost(self,p,Lambda):
+
+		"""
+		Computes the cost function of the current configuration given the metric parameters (p,Lambda)
+
+		:param Lambda: metric parameter of the cost function; if set to 1.0 the cost function corresponds is the Coulomb potential energy
+		:type Lambda: float.
+
+		:param p: metric parameter of the cost function; if set to 2.0 the distances between points are the Euclidean ones
+		:type p: float.
+
+		:returns: the value of the cost function
+
+		"""
+
+		assert self.ndim>1,"The design must have at least 2 dimensions before laying down points!"
+		assert self.npoints>2,"You must lay down at least 3 points!"
+
+		return _design.cost(self.points_raw,p,Lambda)**(1.0/Lambda)
 
 
 ######################################

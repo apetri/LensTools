@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <gsl/gsl_matrix.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
@@ -27,7 +28,7 @@ double distance(double *x,double *y,int D,double p){
 the pairs distances, with some tunable exponent lambda; note that the final
 1/lambda exponentiation is not performed here!*/
 
-double cost(double **data,int Npoints,int D,double p,double lambda){
+double cost(gsl_matrix *data,int Npoints,int D,double p,double lambda){
 
 	double sum = 0.0;
 	int i,j;
@@ -36,7 +37,7 @@ double cost(double **data,int Npoints,int D,double p,double lambda){
 		for(j=i+1;j<Npoints;j++){
 
 			//Add the contribution of pair (i,j) to the cost function
-			sum += pow(pow(D,1.0/p)/distance(data[i],data[j],D,p),lambda); 
+			sum += pow(pow(D,1.0/p)/distance(gsl_matrix_ptr(data,i,0),gsl_matrix_ptr(data,j,0),D,p),lambda); 
 
 		}
 	}
