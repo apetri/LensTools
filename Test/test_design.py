@@ -41,3 +41,25 @@ def test_visualize():
 	fig,ax = plt.subplots()
 	design.visualize(fig=fig,ax=ax,parameters=["Omega_m","sigma8"],color="red",marker=".")
 	design.savefig("design_diagonal_2d.png")
+
+	#Now perform the sampling of the parameter space
+	deltaPerc = design.sample(Lambda=1.0,p=2.0,seed=1,maxIterations=100000)
+
+	#Visualize the 3d configuration
+	design.visualize(color="blue")
+	design.set_title("Cost={0:.2f}".format(design.cost(Lambda=1.0,p=2.0)))
+	design.savefig("design_3d.png")
+
+	#Visualize the 2d (Om,si8) projection
+	fig,ax = plt.subplots()
+	design.visualize(fig=fig,ax=ax,parameters=["Omega_m","sigma8"],color="red",marker=".")
+	design.savefig("design_2d.png")
+
+	#Visualize the changes in the cost function
+	fig,ax = plt.subplots()
+	ax.plot(design.cost_values)
+	ax.set_xlabel(r"$N$")
+	ax.set_ylabel("cost")
+	ax.set_title("Relative change with last iteration={0:.1f}".format(deltaPerc*100))
+	ax.set_xscale("log")
+	fig.savefig("cost.png")

@@ -72,7 +72,9 @@ this function also performs an in-place swap of the coordinates. More specifical
 this function swaps coordinate d of points i1 and i2 and returns the variation of the cost
 function due to this swap*/
 
-double swap(double **data,int Npoints,int D,double p,double lambda,int i1,int i2, int d){
+/**/
+
+double swap(gsl_matrix *data,int Npoints,int D,double p,double lambda,int i1,int i2, int d){
 
 	double costBefore,costAfter,temp;
 	int i;
@@ -85,22 +87,22 @@ double swap(double **data,int Npoints,int D,double p,double lambda,int i1,int i2
 	for(i=0;i<Npoints;i++){
 		
 		if(i!=i1 && i!=i2){
-			costBefore += pow(pow(D,1.0/p)/distance(data[i],data[i1],D,p),lambda) + pow(pow(D,1.0/p)/distance(data[i],data[i2],D,p),lambda);
+			costBefore += pow(pow(D,1.0/p)/distance(gsl_matrix_ptr(data,i,0),gsl_matrix_ptr(data,i1,0),D,p),lambda) + pow(pow(D,1.0/p)/distance(gsl_matrix_ptr(data,i,0),gsl_matrix_ptr(data,i2,0),D,p),lambda);
 		}
 	
 	}
 
 	//perform the coordinate swap
-	temp = data[i1][d];
-	data[i1][d] = data[i2][d];
-	data[i2][d] = temp;
+	temp = gsl_matrix_get(data,i1,d);
+	gsl_matrix_set(data,i1,d,gsl_matrix_get(data,i2,d));
+	gsl_matrix_set(data,i2,d,temp);
 
 	/*compute the contribution of points i1 and i2 to the cost function, after swapping;
 	sum over all the particles except i1 and i2*/
 	for(i=0;i<Npoints;i++){
 		
 		if(i!=i1 && i!=i2){
-			costAfter += pow(pow(D,1.0/p)/distance(data[i],data[i1],D,p),lambda) + pow(pow(D,1.0/p)/distance(data[i],data[i2],D,p),lambda);
+			costAfter += pow(pow(D,1.0/p)/distance(gsl_matrix_ptr(data,i,0),gsl_matrix_ptr(data,i1,0),D,p),lambda) + pow(pow(D,1.0/p)/distance(gsl_matrix_ptr(data,i,0),gsl_matrix_ptr(data,i2,0),D,p),lambda);
 		}
 	
 	}
@@ -112,19 +114,20 @@ double swap(double **data,int Npoints,int D,double p,double lambda,int i1,int i2
 
 /*This function swaps the particle pair back: needed if the original swap didn't improve the cost function*/
 
-void swapBack(double **data,int i1,int i2,int d){
+void swapBack(gsl_matrix *data,int i1,int i2,int d){
 
 	double temp;
 
-	temp = data[i1][d];
-	data[i1][d] = data[i2][d];
-	data[i2][d] = temp;
+	//perform the coordinate swap
+	temp = gsl_matrix_get(data,i1,d);
+	gsl_matrix_set(data,i1,d,gsl_matrix_get(data,i2,d));
+	gsl_matrix_set(data,i2,d,temp);
 
 }
 
 /*Main design sampler*/
 
-double sampler(int Npoints,int D,double p,double lambda,int seed,int maxIterations,double **data,double *costValues){
+double sample(int Npoints,int D,double p,double lambda,int seed,int maxIterations,gsl_matrix *data,double *costValues){
 
 	int i,d,i1,i2,iterCount;
 	
@@ -153,7 +156,7 @@ double sampler(int Npoints,int D,double p,double lambda,int seed,int maxIteratio
 
 		//Permute coordinates
 		for(i=0;i<Npoints;i++){
-			data[i][d] = ((double)perm->data[i])/(Npoints-1);
+			gsl_matrix_set(data,i,d,(double)perm->data[i]/(Npoints-1));
 		}
 
 	}

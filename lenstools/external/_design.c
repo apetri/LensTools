@@ -133,5 +133,66 @@ static PyObject *_design_cost(PyObject *self,PyObject *args){
 //sampler() implementation
 static PyObject *_design_sample(PyObject *self,PyObject *args){
 
-	return NULL;
+	int i,j,maxIterations,seed;
+	double p,lambda;
+	PyObject *data_obj,*cost_obj;
+
+	/*Parse the input tuple*/
+	if(!PyArg_ParseTuple(args,"OddiiO",&data_obj,&p,&lambda,&maxIterations,&seed,&cost_obj)){
+		return NULL;
+	}
+
+	/*Interpret the data_obj as an array*/
+	PyObject *data_array = PyArray_FROM_OTF(data_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *cost_array = PyArray_FROM_OTF(cost_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	
+	if(data_array==NULL || cost_array==NULL){
+		
+		Py_XDECREF(data_array);
+		Py_XDECREF(cost_array);
+
+		return NULL;
+	}
+
+	/*Get a pointer to the array data*/
+	double *data = (double *)PyArray_DATA(data_array);
+
+	/*Get a pointer to the cost values*/
+	double *cost_values = (double *)PyArray_DATA(cost_array);
+
+	/*squeeze the dimensions of the parameter space and the number of points*/
+	int Npoints = (int)PyArray_DIM(data_array,0);
+	int Ndim = (int)PyArray_DIM(data_array,1);
+
+	/*Wrap a gsl matrix object around the data_array*/
+	gsl_matrix *m = gsl_matrix_alloc(Npoints,Ndim);
+	
+	/*Copy the elements into it*/
+	for(i=0;i<Npoints;i++){
+		for(j=0;j<Ndim;j++){
+			gsl_matrix_set(m,i,j,data[i*Ndim+j]);
+		}
+	}
+
+	/*Spread the points in the parameter space looking for the cost function minimum*/
+	double deltaPerc = sample(Npoints,Ndim,p,lambda,seed,maxIterations,m,cost_values);
+
+	/*Copy the points positions from the gsl matrix to the data array*/
+	for(i=0;i<Npoints;i++){
+		for(j=0;j<Ndim;j++){
+			data[i*Ndim+j] = gsl_matrix_get(m,i,j);
+		}
+	}
+
+	/*Release the gsl resources*/
+	gsl_matrix_free(m);
+
+	/*Release the other resources*/
+	Py_DECREF(data_array);
+	Py_DECREF(cost_array);
+
+	/*Build the return value*/
+	PyObject *ret = Py_BuildValue("d",deltaPerc);
+	return ret;
+
 }

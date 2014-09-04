@@ -253,6 +253,43 @@ class Design(object):
 
 		return _design.cost(self.points_raw,p,Lambda)**(1.0/Lambda)
 
+	def sample(self,p,Lambda,seed=0,maxIterations=10000):
+
+		"""
+		Evenly samples the parameter space by minimizing the cost function computed with the metric parameters (p,Lambda)
+
+		:param Lambda: metric parameter of the cost function; if set to 1.0 the cost function corresponds is the Coulomb potential energy
+		:type Lambda: float.
+
+		:param p: metric parameter of the cost function; if set to 2.0 the distances between points are the Euclidean ones
+		:type p: float.
+
+		:param seed: random seed with which the sampler random generator will be initialized
+		:type seed: int.
+
+		:param maxIterations: maximum number of iterations that the sampler can perform before stopping
+		:type maxIterations: int.
+
+		:returns: the relative change of the cost function with the last iteration
+
+		"""
+
+		assert self.ndim>1,"The design must have at least 2 dimensions before laying down points!"
+		assert self.npoints>2,"You must lay down at least 3 points!"
+
+		#Create array that holds the values of the cost function
+		self.cost_values = np.ones(maxIterations) * -1.0
+
+		deltaPerc = _design.sample(self.points_raw,p,Lambda,maxIterations,seed,self.cost_values)
+		self.scale()
+
+		#Cut the cost_values if we stopped before the maxIterations limit
+		cut = (self.cost_values==-1).argmin()
+		if cut:
+			self.cost_values = self.cost_values[:cut]
+
+		return deltaPerc
+
 
 ######################################
 ###########IGS1 class#################
