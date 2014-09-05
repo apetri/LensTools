@@ -24,6 +24,7 @@ from numpy.linalg import solve,inv
 from scipy.interpolate import Rbf
 
 from emcee.ensemble import _function_wrapper
+from utils import _interpolate_wrapper
 
 #########################################################
 #############Default Gaussian data likelihood############
@@ -537,27 +538,3 @@ class LikelihoodAnalysis(Analysis):
 		"""
 
 		return self._likelihood_function(chi2_value,**kwargs) 
-
-
-
-
-###########################################################################
-###########Hack to make scipy interpolate objects pickleable###############
-###########################################################################
-
-class _interpolate_wrapper(object):
-
-	def __init__(self,f,args,kwargs):
-		self.f = f
-		self.args = args
-		self.kwargs = kwargs
-	
-	def __call__(self):
-		try:
-			return self.f(*self.args,**self.kwargs)
-		except:
-			import traceback
-			print("lenstools: Exception while building the interpolators")
-			print(" exception:")
-			traceback.print_exc()
-			raise

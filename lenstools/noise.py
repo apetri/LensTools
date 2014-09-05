@@ -20,7 +20,7 @@ import numpy as np
 try:
 	np.fft.rfftfreq
 except AttributeError:
-	from rfftfreq import rfftfreq
+	from utils import rfftfreq
 	np.fft.rfftfreq = rfftfreq
 
 from scipy import interpolate
