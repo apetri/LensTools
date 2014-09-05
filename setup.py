@@ -48,7 +48,7 @@ external_dir = "external"
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
 
 #Check for GSL installation, necessary for using the Design feature
-gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h"]
+gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h","gsl_matrix.h"]
 gsl_required_links = ["libgsl.a","libgslcblas.a"]
 gsl_location = raw_input("Enter the location of your GSL installation (default '{0}'): ".format(default_gsl))
 gsl_ok = True
