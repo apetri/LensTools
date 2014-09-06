@@ -220,5 +220,14 @@ def test_remove():
 	assert emulator.parameter_set.shape[0] == 14
 	assert emulator.training_set.shape[0] == 14 
 
+def test_find():
+
+	emulator = LikelihoodAnalysis.load("analysis.p")
+	parameters_to_find = emulator.parameter_set[7]
+
+	n = emulator.find(parameters_to_find)
+	assert len(n)==1
+	assert n[0] == 7
+
 
 

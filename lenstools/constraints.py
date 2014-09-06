@@ -167,6 +167,26 @@ class Analysis(object):
 
 			print("No models to delete or indices are out of bounds!")
 
+	def find(self,parameters,rtol=1.0e-05):
+
+		"""
+		Finds the index of the training model that has the specified combination of parameters
+
+		:param parameters: the parameters of the model to find
+		:type parameters: array.
+
+		:param rtol: tolerance of the search (must be less than 1)
+		:type rtol: float.
+
+		:returns: array of int. with the indices of the corresponding models
+
+		"""
+
+		assert len(parameters)==self.parameter_set.shape[1]
+
+		search_result = np.all(np.isclose(self.parameter_set,parameters,rtol=rtol),axis=1)
+		return np.where(search_result==True)[0]
+
 
 	def save(self,filename):
 
