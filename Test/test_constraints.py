@@ -211,5 +211,14 @@ def test_interpolation():
 
 	return chi2_values_1,chi2_values_2
 
+def test_remove():
+
+	emulator = LikelihoodAnalysis.load("analysis.p")
+	emulator.remove_model([8,10])
+	emulator.train(use_parameters=range(3))
+
+	assert emulator.parameter_set.shape[0] == 14
+	assert emulator.training_set.shape[0] == 14 
+
 
 

@@ -148,6 +148,25 @@ class Analysis(object):
 			self.parameter_set = np.vstack((self.parameter_set,parameters))
 			self.training_set = np.vstack((self.training_set,feature))
 
+	def remove_model(self,model_list):
+
+		"""
+		Remove one or more models from the Analysis instance
+
+		:param model_list: list of the indices of the models to remove (0 indicates the first model)
+		:type model_list: int. or list of int.
+
+		"""
+
+		try:
+			
+			self.parameter_set = np.delete(self.parameter_set,model_list,axis=0)
+			self.training_set = np.delete(self.training_set,model_list,axis=0)
+
+		except:
+
+			print("No models to delete or indices are out of bounds!")
+
 
 	def save(self,filename):
 
