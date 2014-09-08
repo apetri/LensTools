@@ -43,6 +43,7 @@ classifiers = [
 
 external_sources = dict()
 external_dir = "external"
+simulations_dir = "simulations"
 
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
@@ -114,7 +115,7 @@ setup(
 	version=version,
 	author=me,
 	author_email=email,
-	packages=[name,"{0}.{1}".format(name,external_dir)],
+	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir)],
 	package_data=package_data,
 	install_requires=["numpy","scipy","astropy"],
 	url=url,
