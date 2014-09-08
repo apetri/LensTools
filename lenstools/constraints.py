@@ -118,6 +118,19 @@ class Analysis(object):
 		except AttributeError:
 			return "{0} type analysis, no models in it yet!".format(self._analysis_type)
 
+	def add_feature_label(self,feature_label):
+
+		"""
+		Add a feature label to the current analysis, i.e. a set of multipole moments if the feature is the power spectrum, or a set of thresholds if the feature is a PDF, etc...
+
+		:param feature_label: the feature label to add, must have the same shape as the training set
+		:type feature_label: array.
+
+		"""
+
+		assert feature_label.shape == self.training_set.shape[1:],"Feature label must have the same shape as the simulated feature!"
+		self.feature_label = feature_label
+
 	def add_model(self,parameters,feature):
 
 		"""

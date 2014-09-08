@@ -96,7 +96,7 @@ def test_interpolation():
 	testing_model = models[-1]
 
 	#Read multipoles
-	l = np.load(os.path.join(root_path,"ell.npy"))
+	ell = np.load(os.path.join(root_path,"ell.npy"))
 
 	#Load in the means of the power spectra of the 17 models, and populate the analysis instance
 	for model in training_models:
@@ -105,6 +105,10 @@ def test_interpolation():
 		ens.load(from_old=True)
 
 		analysis.add_model(parameters=model.squeeze(with_ns=True),feature=ens.mean())
+
+	#Add the multipoles to the analysis
+	analysis.add_feature_label(ell)
+	l = analysis.feature_label
 
 	ens = Ensemble.fromfilelist([os.path.join(root_path,testing_model._cosmo_id_string,"subfield1","sigma05","power_spectrum.npy")])
 	ens.load(from_old=True)
