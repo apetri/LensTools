@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 try:
 	
 	from lenstools import Ensemble
-	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis
+	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis,Emulator
 	from lenstools.simulations import CFHTemu1
 
 except ImportError:
@@ -14,7 +14,7 @@ except ImportError:
 	sys.path.append("..")
 
 	from lenstools import Ensemble
-	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis
+	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis,Emulator
 	from lenstools.simulations import CFHTemu1
 
 
@@ -232,6 +232,39 @@ def test_find():
 	n = emulator.find(parameters_to_find)
 	assert len(n)==1
 	assert n[0] == 7
+
+def test_emulator():
+
+	#Unpickle the emulator
+	emulator = Emulator.load("analysis.p")
+	emulator.train()
+
+	#Set the model
+	emulator.set_to_model(np.array([ 0.26,-2.66,1.31,0.96]))
+	ell = emulator.feature_label
+	Pell = emulator._current_predicted_feature
+
+	#Select the new multipoles
+	l = np.arange(900.0,3000.0,200.0)
+	#Emulate the power spectrum
+	Pl = emulator.emulate(l)
+
+	#Plot
+	fig,ax = plt.subplots()
+	ax.plot(ell,ell*(ell+1)*Pell/(2*np.pi),label="Fully emulated")
+	ax.plot(l,l*(l+1)*Pl/(2.0*np.pi),label="New multipoles",color="yellow")
+
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+	ax.set_yscale("log")
+	ax.legend(loc="upper left")
+
+	fig.savefig("emulated_power.png")
+
+
+
+
+
 
 
 

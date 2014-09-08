@@ -21,7 +21,7 @@ import cPickle as pickle
 
 import numpy as np
 from numpy.linalg import solve,inv
-from scipy.interpolate import Rbf
+from scipy.interpolate import interp1d,Rbf
 
 from emcee.ensemble import _function_wrapper
 from utils import _interpolate_wrapper
@@ -589,4 +589,89 @@ class LikelihoodAnalysis(Analysis):
 
 		"""
 
-		return self._likelihood_function(chi2_value,**kwargs) 
+		return self._likelihood_function(chi2_value,**kwargs)
+
+
+
+########################################################
+################Emulator class##########################
+######################################################## 
+
+class Emulator(LikelihoodAnalysis):
+
+	"""
+	The class handler of a Weak Gravitational Lensing emulator: it uses the information gained from the simulated features to predict the same features at different points in parameter space and at different bin values
+
+	"""
+
+	@classmethod
+	def load(cls,filename):
+
+		"""
+		Unpickle an already trained and pickled emulator: be sure the file you are unpickling comes from a trusted source, this operation is potentially dangerous for your computer!
+
+		:param filename: Name of the file from which you want to load the emulator, or file object
+		:type filename: str. or file object
+
+		"""
+
+		assert type(filename) in [str,file],"filename must be a string or a file object!"
+
+		if type(filename)==str:
+			
+			with open(filename,"rb") as dumpfile:
+				emulator_unpickled = pickle.load(dumpfile)
+
+		else:  
+
+			emulator_unpickled = pickle.load(filename)
+
+		assert isinstance(emulator_unpickled,cls) or isinstance(emulator_unpickled,cls.__bases__[0])
+		assert hasattr(emulator_unpickled,"feature_label"),"You didn't specify a feature label (i.e. multipole moments) for the emulator!"
+
+		if isinstance(emulator_unpickled,cls):
+
+			return emulator_unpickled
+
+		else:
+
+			emulator = cls(parameter_set=emulator_unpickled.parameter_set,training_set=emulator_unpickled.training_set)
+			emulator.add_feature_label(emulator_unpickled.feature_label)
+			emulator.train()
+
+			return emulator
+
+
+	def set_to_model(self,parameters):
+
+		"""
+		Set the current model of the emulator to the one specified by the parameter set
+
+		:param parameters: parameters for which the feature will be emulated
+		:type parameters: array.
+
+		"""
+
+		assert parameters.shape[0]==self.parameter_set.shape[1]
+		
+		if not hasattr(self,"_interpolator"):
+			self.train()
+		
+		self._current_model_parameters = parameters
+		self._current_predicted_feature = self.predict(parameters)
+		self._current_interpolated_feature = interp1d(self.feature_label,self._current_predicted_feature)
+
+
+	def emulate(self,new_feature_label):
+
+		"""
+		Compute an emulated feature at the new feature label specified (multipoles, thresholds, ...) for the current model, using a linear interpolation between bins
+
+		:param new_feature_label: new feature label for which you want to emulate the feature
+		:type new_feature_label: array.
+
+		:returns: the emulated feature
+
+		""" 
+
+		return self._current_interpolated_feature(new_feature_label)
