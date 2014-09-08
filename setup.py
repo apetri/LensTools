@@ -62,35 +62,35 @@ if gsl_location == "":
 for include in gsl_required_includes:
 	
 	include_filename = os.path.join(gsl_location,"include","gsl",include)
-	print("Checking if {0} exists".format(include_filename))
+	sys.stderr.write("Checking if {0} exists... ".format(include_filename))
 
 	if os.path.isfile(include_filename):
-		print("OK")
+		sys.stderr.write("[OK]\n")
 	else:
-		print("FAIL")
+		sys.stderr.write("[FAIL]\n")
 		gsl_ok = False
 		break
 
 for lib in gsl_required_links:
 
 	lib_filename = os.path.join(gsl_location,"lib",lib)
-	print("Checking if {0} exists".format(lib_filename))
+	sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
 
 	if os.path.isfile(lib_filename):
-		print("OK")
+		sys.stderr.write("[OK]\n")
 	else:
-		print("FAIL")
+		sys.stderr.write("[FAIL]\n")
 		gsl_ok = False
 		break
 
 #Decide if we can install the Design feature, if not throw a warning
 if gsl_ok:
-	print("Checked GSL installation, OK, the Design feature will be installed")
+	print("[OK] Checked GSL installation, the Design feature will be installed")
 	lenstools_includes = [ os.path.join(gsl_location,"include") ]
 	lenstools_link = ["-lm","-L {0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
-	raw_input("GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
+	raw_input("[FAIL] GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
 	lenstools_includes = list()
 	lenstools_link = ["-lm"]
 
@@ -106,7 +106,7 @@ for ext_module in external_sources.keys():
 	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
 
 #Data files on which the package depends on
-package_data = {name:[os.path.join("book","CFHTemu1.txt")]}
+package_data = {name:[os.path.join(simulations_dir,"book","CFHTemu1.txt")]}
 
 #Append numpy includes
 lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
