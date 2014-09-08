@@ -1,15 +1,3 @@
-"""
-
-.. module:: observations
-	:platform: Unix
-	:synopsis: This module handles the book keeping of a observation set map names (for example the CFHTLens subfields)
-
-
-.. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>
-
-
-"""
-
 from __future__ import division,print_function,with_statement
 
 import os
