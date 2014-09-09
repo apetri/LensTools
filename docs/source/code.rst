@@ -81,6 +81,12 @@ Simulation design
 .. autoclass:: lenstools.simulations.Design
 	:inherited-members:
 
+Read Gadget2 snapshot information
+=================================
+
+.. autoclass:: lenstools.simulations.Gadget2Snapshot
+	:inherited-members:
+
 Observation sets
 ================
 
