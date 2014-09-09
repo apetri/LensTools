@@ -378,6 +378,18 @@ class Ensemble(object):
 
 		return Ensemble(file_list=list(set(self.file_list + rhs.file_list)),data=new_data,num_realizations=self.num_realizations,metric=self.metric)
 
+	def __getitem__(self,n):
+
+		"""
+		Retrieves the n-th realization of the ensemble (starting from 0)
+
+		:raises: IndexError if out of bounds
+
+		"""
+
+		return self.data[n]
+	
+
 	def split(self,index):
 
 		"""
