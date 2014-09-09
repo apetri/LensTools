@@ -1,5 +1,7 @@
 from lenstools.external import _gadget
 
+from astropy.units import kpc,g
+
 ############################################################
 #################Gadget2Snapshot class######################
 ############################################################
@@ -17,6 +19,13 @@ class Gadget2Snapshot(object):
 
 		self.fp = fp
 		self._header = _gadget.getHeader(fp)
+
+		#Scale box to kpc
+		self._header["box_size"] *= kpc
+
+		#Scale masses to correct units
+		self._header["masses"] *= (1.989e43 / self._header["h"])
+		self._header["masses"] *= g 
 
 	@classmethod
 	def open(cls,filename):
