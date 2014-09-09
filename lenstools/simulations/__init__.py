@@ -13,3 +13,4 @@
 from .design import Design
 from .igs1 import IGS1
 from .cfhtemu1 import CFHTemu1
+from .gadget2 import Gadget2Snapshot
