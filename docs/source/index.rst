@@ -78,6 +78,14 @@ Gallery
 
    gallery
 
+Weak lensing simulations
+------------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   simulations
+
 Indices and tables
 ==================
 
