@@ -1,6 +1,9 @@
+from __future__ import division
+
 from lenstools.external import _gadget
 
-from astropy.units import kpc,g
+import numpy as np
+from astropy.units import kpc,Mpc,g
 
 ############################################################
 #################Gadget2Snapshot class######################
@@ -22,10 +25,15 @@ class Gadget2Snapshot(object):
 
 		#Scale box to kpc
 		self._header["box_size"] *= kpc
+		#Convert to Mpc
+		self._header["box_size"] = self._header["box_size"].to(Mpc)
 
 		#Scale masses to correct units
 		self._header["masses"] *= (1.989e43 / self._header["h"])
 		self._header["masses"] *= g 
+
+		#Update the dictionary with the number of particles per side
+		self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))
 
 	@classmethod
 	def open(cls,filename):
@@ -46,6 +54,7 @@ class Gadget2Snapshot(object):
 		
 		return cls(fp)
 
+	@property
 	def header(self):
 
 		"""
@@ -69,7 +78,7 @@ class Gadget2Snapshot(object):
 		offset = 4 + 256 + 8
 
 		#Read in the particles positions and return the corresponding array
-		return _gadget.getPosVel(self.fp,offset,self._header["num_particles_file"]) * kpc
+		return (_gadget.getPosVel(self.fp,offset,self._header["num_particles_file"]) * kpc).to(Mpc)
 
 	def close(self):
 
