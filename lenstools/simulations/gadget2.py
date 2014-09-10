@@ -67,18 +67,48 @@ class Gadget2Snapshot(object):
 
 		return self._header
 
-	def getPositions(self):
+	def getPositions(self,first=None,last=None):
 
 		"""
-		Reads in the particles positions
+		Reads in the particles positions (read in of a subset is allowed): when first and last are specified, the numpy array convention is followed (i.e. getPositions(first=a,last=b)=getPositions()[a:b])
+
+		:param first: first particle in the file to be read, if None 0 is assumed
+		:type first: int. or None
+
+		:param last: last particle in the file to be read, if None the total number of particles is assumed
+		:type last: int. or None
+
+		:returns: numpy array with the particle positions
 
 		"""
+
+		numPart = self._header["num_particles_file"]
 
 		#Calculate the offset from the beginning of the file: 4 bytes (endianness) + 256 bytes (header) + 8 bytes (void)
 		offset = 4 + 256 + 8
 
+		#If first is specified, offset the file pointer by that amount
+		if first is not None:
+			
+			assert first>=0
+			offset += 4 * 3 * first
+			numPart -= first
+
+		if last is not None:
+
+			if first is not None:
+				
+				assert last>=first and last<=self._header["num_particles_file"]
+				numPart = last - first
+
+			else:
+
+				assert last<=self._header["num_particles_file"]
+				numPart = last
+
+
 		#Read in the particles positions and return the corresponding array
-		return (_gadget.getPosVel(self.fp,offset,self._header["num_particles_file"]) * kpc).to(Mpc)
+		return (_gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc)
 
 	def close(self):
 
