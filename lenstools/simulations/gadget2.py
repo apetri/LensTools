@@ -58,6 +58,19 @@ class Gadget2Snapshot(object):
 
 		return self._header
 
+	def getPositions(self):
+
+		"""
+		Reads in the particles positions
+
+		"""
+
+		#Calculate the offset from the beginning of the file: 4 bytes (endianness) + 256 bytes (header) + 8 bytes (void)
+		offset = 4 + 256 + 8
+
+		#Read in the particles positions and return the corresponding array
+		return _gadget.getPosVel(self.fp,offset,self._header["num_particles_file"]) * kpc
+
 	def close(self):
 
 		"""
