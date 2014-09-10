@@ -16,16 +16,19 @@ The module is called _gadget and it defines the methods below (see docstrings)
 static char module_docstring[] = "This module provides a python interface for reading Gadget2 snapshots";
 static char getHeader_docstring[] = "Reads the header of a Gadget2 snapshot";
 static char getPosVel_docstring[] = "Gets the positions or velocities of the particles in a Gadget2 snapshot";
+static char getID_docstring[] = "Gets the 4 byte int particles IDs from the Gadget2 snapshot";
 
 //Method declarations
 static PyObject *_gadget_getHeader(PyObject *self,PyObject *args);
 static PyObject *_gadget_getPosVel(PyObject *self,PyObject *args);
+static PyObject *_gadget_getID(PyObject *self,PyObject *args);
 
 //_gadget method definitions
 static PyMethodDef module_methods[] = {
 
 	{"getHeader",_gadget_getHeader,METH_VARARGS,getHeader_docstring},
 	{"getPosVel",_gadget_getPosVel,METH_VARARGS,getPosVel_docstring},
+	{"getID",_gadget_getID,METH_VARARGS,getID_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -41,7 +44,7 @@ PyMODINIT_FUNC init_gadget(void){
 
 }
 
-//getHeader implementation
+//getHeader() implementation
 static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 
 	struct io_header_1 header;
@@ -191,5 +194,51 @@ static PyObject *_gadget_getPosVel(PyObject *self,PyObject *args){
 
 	//Return the array with the particle data (positions or velocities)
 	return particle_data_array;
+
+}
+
+
+//getID() implementation
+static PyObject *_gadget_getID(PyObject *self,PyObject *args){
+
+	PyObject *file_obj;
+	long offset;
+	int NumPart;
+
+	//Interpret the tuple of arguments
+	if(!PyArg_ParseTuple(args,"Oli",&file_obj,&offset,&NumPart)){
+		return NULL;
+	}
+
+	//Build the numpy array that will hold the particles IDs
+	npy_intp dims[] = { (npy_intp) NumPart };
+	PyObject *id_data_array = PyArray_ZEROS(1,dims,NPY_INT32,0);
+
+	if(id_data_array==NULL){
+		return NULL;
+	}
+
+	//Get a data pointer out of the array
+	int *id_data = (int *)PyArray_DATA(id_data_array);
+
+	//Get a file pointer out of the file object
+	FILE *fp = PyFile_AsFile(file_obj); 
+	PyFile_IncUseCount((PyFileObject *)file_obj);
+
+	//Read in the IDs of the particles
+	if(getID(fp,offset,id_data,NumPart)==-1){
+
+
+		PyFile_DecUseCount((PyFileObject *)file_obj);
+		Py_DECREF(id_data_array);
+		return NULL;
+
+	}
+
+	//Release the file pointer
+	PyFile_DecUseCount((PyFileObject *)file_obj);
+
+	//Return the array with the particle data (positions or velocities)
+	return id_data_array;
 
 }

@@ -26,5 +26,6 @@ struct io_header_1
 //Methods
 int getHeader(FILE *fp,struct io_header_1 *header);
 int getPosVel(FILE *fp,long offset,float *data,int Npart);
+int getID(FILE *fp,long offset,int *data,int Npart);
 
 #endif
