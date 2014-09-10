@@ -26,3 +26,6 @@ def test_positions():
 	#Save the visualization
 	snapshot.ax.set_title(r"${0}^3$ particles".format(snapshot.header["num_particles_total_side"]))
 	snapshot.savefig("gadget_snapshot.png")
+
+	#Close the snapshot
+	snapshot.close()
