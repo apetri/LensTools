@@ -3,7 +3,7 @@ from __future__ import division
 from lenstools.external import _gadget
 
 import numpy as np
-from astropy.units import kpc,Mpc,cm,g,s
+from astropy.units import kpc,Mpc,cm,g,s,Msun
 
 try:
 	
@@ -40,7 +40,8 @@ class Gadget2Snapshot(object):
 
 		#Scale masses to correct units
 		self._header["masses"] *= (1.989e43 / self._header["h"])
-		self._header["masses"] *= g 
+		self._header["masses"] *= g
+		self._header["masses"] = self._header["masses"].to(Msun) 
 
 		#Update the dictionary with the number of particles per side
 		self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))

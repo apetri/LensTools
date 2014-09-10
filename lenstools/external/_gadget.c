@@ -139,9 +139,9 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	if(PyDict_SetItemString(header_dict,"num_files",Py_BuildValue("i",header.num_files))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_total",Py_BuildValue("i",NumPart))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_file",Py_BuildValue("i",NumPartFile))) return NULL;
-	if(PyDict_SetItemString(header_dict,"num_particles_gas",Py_BuildValue("i",Ngas))) return NULL;
-	if(PyDict_SetItemString(header_dict,"num_particles_with_mass",Py_BuildValue("i",Nwithmass))) return NULL;
-	if(PyDict_SetItemString(header_dict,"num_particles",NumPart_array)) return NULL;
+	if(PyDict_SetItemString(header_dict,"num_particles_total_gas",Py_BuildValue("i",Ngas))) return NULL;
+	if(PyDict_SetItemString(header_dict,"num_particles_total_with_mass",Py_BuildValue("i",Nwithmass))) return NULL;
+	if(PyDict_SetItemString(header_dict,"num_particles_total_of_type",NumPart_array)) return NULL;
 	if(PyDict_SetItemString(header_dict,"masses",Mass_array)) return NULL;
 	if(PyDict_SetItemString(header_dict,"flag_cooling",Py_BuildValue("i",header.flag_cooling))) return NULL;
 	if(PyDict_SetItemString(header_dict,"flag_feedback",Py_BuildValue("i",header.flag_feedback))) return NULL;
