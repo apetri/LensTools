@@ -3,7 +3,7 @@ from __future__ import division
 from lenstools.external import _gadget
 
 import numpy as np
-from astropy.units import kpc,Mpc,g
+from astropy.units import kpc,Mpc,cm,g,s
 
 try:
 	
@@ -122,6 +122,63 @@ class Gadget2Snapshot(object):
 		
 		#Return
 		return self.positions
+
+	def getVelocities(self,first=None,last=None):
+
+		"""
+		Reads in the particles velocities (read in of a subset is allowed): when first and last are specified, the numpy array convention is followed (i.e. getVelocities(first=a,last=b)=getVelocities()[a:b])
+
+		:param first: first particle in the file to be read, if None 0 is assumed
+		:type first: int. or None
+
+		:param last: last particle in the file to be read, if None the total number of particles is assumed
+		:type last: int. or None
+
+		:returns: numpy array with the particle velocities
+
+		"""
+
+		numPart = self._header["num_particles_file"]
+
+		#Calculate the offset from the beginning of the file: 4 bytes (endianness) + 256 bytes (header) + 8 bytes (void)
+		offset = 4 + 256 + 8
+
+		#Skip other 8 void bytes
+		offset += 8
+
+		#Skip all the particle positions
+		offset += 4 * 3 * numPart
+
+		#If first is specified, offset the file pointer by that amount
+		if first is not None:
+			
+			assert first>=0
+			offset += 4 * 3 * first
+			numPart -= first
+
+		if last is not None:
+
+			if first is not None:
+				
+				assert last>=first and last<=self._header["num_particles_file"]
+				numPart = last - first
+
+			else:
+
+				assert last<=self._header["num_particles_file"]
+				numPart = last
+
+
+		#Read in the particles positions and return the corresponding array
+		self.velocities = _gadget.getPosVel(self.fp,offset,numPart)
+
+		#Scale units
+		self.velocities *= 1.0e5
+		self.velocities *= cm / s
+		
+		#Return
+		return self.velocities
+
 
 	def visualize(self,fig=None,ax=None,**kwargs):
 
