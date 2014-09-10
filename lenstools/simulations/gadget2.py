@@ -5,6 +5,16 @@ from lenstools.external import _gadget
 import numpy as np
 from astropy.units import kpc,Mpc,g
 
+try:
+	
+	import matplotlib.pyplot as plt
+	from mpl_toolkits.mplot3d import Axes3D
+	matplotlib = True
+
+except ImportError:
+
+	matplotlib = False
+
 ############################################################
 #################Gadget2Snapshot class######################
 ############################################################
@@ -108,7 +118,55 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		return (_gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc)
+		self.positions = (_gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc) 
+		
+		#Return
+		return self.positions
+
+	def visualize(self,fig=None,ax=None,**kwargs):
+
+		"""
+		Visualize the particles in the Gadget snapshot using the matplotlib 3D plotting engine, the kwargs are passed to the matplotlib scatter method
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot visualize!")
+
+		#Get the positions if you didn't do it before
+		if not hasattr(self,"positions"):
+			self.getPositions()
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig = plt.figure()
+			self.ax = self.fig.add_subplot(111,projection="3d")
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Put the particles in the figure
+		self.ax.scatter(*self.positions.transpose(),**kwargs)
+
+		#Put the labels on the axes
+		self.ax.set_xlabel(r"$x({0})$".format(self.positions.unit.to_string()))
+		self.ax.set_ylabel(r"$y({0})$".format(self.positions.unit.to_string()))
+		self.ax.set_zlabel(r"$z({0})$".format(self.positions.unit.to_string()))
+
+	def savefig(self,filename):
+
+		"""
+		Save the snapshot visualization to an external file
+
+		:param filename: file name to which the figure will be saved
+		:type filename: str.
+
+		"""
+
+		self.fig.savefig(filename)
 
 	def close(self):
 
