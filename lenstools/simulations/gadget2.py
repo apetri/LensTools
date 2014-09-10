@@ -57,3 +57,12 @@ class Gadget2Snapshot(object):
 		"""
 
 		return self._header
+
+	def close(self):
+
+		"""
+		Closes the snapshot file
+
+		"""
+
+		self.fp.close()

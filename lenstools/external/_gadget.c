@@ -46,7 +46,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	int k;
 
 	//Header contents
-	int NumPart=0,Ngas=0,Nwithmass=0;
+	int NumPart=0,NumPartFile=0,Ngas=0,Nwithmass=0;
 	
 	//Interpret the tuple of arguments (there should be only one: the file descriptor)
 	if(!PyArg_ParseTuple(args,"O",&file_obj)){
@@ -95,6 +95,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 			
 			NumPart_data[k] = header.npart[k];
 			NumPart += header.npart[k];
+			NumPartFile += header.npart[k];
 			Mass_data[k] = header.mass[k];
 			if(header.mass[k]==0) Nwithmass+=header.npart[k]; 
 		
@@ -108,6 +109,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 
 			NumPart_data[k] = header.npartTotal[k];
 			NumPart += header.npartTotal[k];
+			NumPartFile += header.npart[k];
 			Mass_data[k] = header.mass[k];
 			if(header.mass[k]==0) Nwithmass+=header.npartTotal[k];
 		}
@@ -130,6 +132,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	if(PyDict_SetItemString(header_dict,"box_size",Py_BuildValue("d",header.BoxSize))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_files",Py_BuildValue("i",header.num_files))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_total",Py_BuildValue("i",NumPart))) return NULL;
+	if(PyDict_SetItemString(header_dict,"num_particles_file",Py_BuildValue("i",NumPartFile))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_gas",Py_BuildValue("i",Ngas))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_with_mass",Py_BuildValue("i",Nwithmass))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles",NumPart_array)) return NULL;

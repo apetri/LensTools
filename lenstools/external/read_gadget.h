@@ -1,6 +1,7 @@
 #ifndef __READ_GADGET_H
 #define __READ_GADGET_H
 
+#include <stdio.h>
 
 //Gadget2 snapshot header
 struct io_header_1
@@ -21,16 +22,9 @@ struct io_header_1
   char fill[256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8];	/* fills to 256 Bytes */
 };
 
-struct particle_data
-{
-  float Pos[3];
-  float Vel[3];
-  float Mass;
-  int Type;
 
-  float Rho, U, Temp, Ne;
-};
-
+//Methods
 int getHeader(FILE *fp,struct io_header_1 *header);
+int getPosVel(FILE *fp,int offset,float *data);
 
 #endif
