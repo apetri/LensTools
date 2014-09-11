@@ -73,24 +73,26 @@ class Gadget2Snapshot(object):
 
 	def __init__(self,fp):
 
-		assert type(fp)==file,"Call the open() method instead!!"
+		assert (type(fp)==file) or (fp is None),"Call the open() method instead!!"
 
-		self.fp = fp
-		self._header = Gadget2Header(_gadget.getHeader(fp))
-		self._header["files"] = [self.fp.name]
+		if fp is not None:
+		
+			self.fp = fp
+			self._header = Gadget2Header(_gadget.getHeader(fp))
+			self._header["files"] = [self.fp.name]
 
-		#Scale box to kpc
-		self._header["box_size"] *= kpc
-		#Convert to Mpc
-		self._header["box_size"] = self._header["box_size"].to(Mpc)
+			#Scale box to kpc
+			self._header["box_size"] *= kpc
+			#Convert to Mpc
+			self._header["box_size"] = self._header["box_size"].to(Mpc)
 
-		#Scale masses to correct units
-		self._header["masses"] *= (1.989e43 / self._header["h"])
-		self._header["masses"] *= g
-		self._header["masses"] = self._header["masses"].to(Msun) 
+			#Scale masses to correct units
+			self._header["masses"] *= (1.989e43 / self._header["h"])
+			self._header["masses"] *= g
+			self._header["masses"] = self._header["masses"].to(Msun) 
 
-		#Update the dictionary with the number of particles per side
-		self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))
+			#Update the dictionary with the number of particles per side
+			self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))
 
 	@classmethod
 	def open(cls,filename):
@@ -285,6 +287,31 @@ class Gadget2Snapshot(object):
 		return self.id
 
 
+	def reorder(self):
+
+		"""
+		Sort particles attributes according to their ID
+
+		"""
+
+		assert hasattr(self,"id")
+
+		#Sort positions
+		if hasattr(self,"positions"):
+			
+			assert self.positions.shape[0]==len(self.id)
+			self.positions = self.positions[self.id - 1]
+
+		#Sort velocities
+		if hasattr(self,"velocities"):
+
+			assert self.velocities.shape[0]==len(self.id)
+			self.velocities = self.velocities[self.id - 1]
+
+		#Finally sort IDs
+		self.id.sort() 
+
+
 	def visualize(self,fig=None,ax=None,**kwargs):
 
 		"""
@@ -338,3 +365,35 @@ class Gadget2Snapshot(object):
 		"""
 
 		self.fp.close()
+
+	def __add__(self,rhs):
+
+		"""
+		Add two gadget snapshots together: useful when the particle content is split between different files; all the positions and particle velocities are vstacked together
+
+		"""
+
+		merged_snapshot = Gadget2Snapshot(None)
+		merged_snapshot._header = self._header + rhs._header
+
+		if hasattr(self,"positions") and hasattr(rhs,"positions"):
+			
+			assert self.positions.unit==rhs.positions.unit
+			merged_snapshot.positions = np.vstack((self.positions.value,rhs.positions.value))
+			merged_snapshot.positions *= self.positions.unit
+
+		if hasattr(self,"velocities") and hasattr(rhs,"velocities"):
+			
+			assert self.velocities.unit==rhs.velocities.unit
+			merged_snapshot.velocities = np.vstack((self.velocities.value,rhs.velocities.value))
+			merged_snapshot.velocities *= self.velocities.unit
+
+		if hasattr(self,"id") and hasattr(rhs,"id"):
+
+			merged_snapshot.id = np.hstack((self.id,rhs.id))
+
+
+		return merged_snapshot
+
+
+
