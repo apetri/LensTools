@@ -17,11 +17,13 @@ static char module_docstring[] = "This module provides a python interface for re
 static char getHeader_docstring[] = "Reads the header of a Gadget2 snapshot";
 static char getPosVel_docstring[] = "Gets the positions or velocities of the particles in a Gadget2 snapshot";
 static char getID_docstring[] = "Gets the 4 byte int particles IDs from the Gadget2 snapshot";
+static char write_docstring[] = "Writes the particles information to a Gadget snapshot, with a proper header";
 
 //Method declarations
 static PyObject *_gadget_getHeader(PyObject *self,PyObject *args);
 static PyObject *_gadget_getPosVel(PyObject *self,PyObject *args);
 static PyObject *_gadget_getID(PyObject *self,PyObject *args);
+static PyObject * _gadget_write(PyObject *self,PyObject *args);
 
 //_gadget method definitions
 static PyMethodDef module_methods[] = {
@@ -29,6 +31,7 @@ static PyMethodDef module_methods[] = {
 	{"getHeader",_gadget_getHeader,METH_VARARGS,getHeader_docstring},
 	{"getPosVel",_gadget_getPosVel,METH_VARARGS,getPosVel_docstring},
 	{"getID",_gadget_getID,METH_VARARGS,getID_docstring},
+	{"write",_gadget_write,METH_VARARGS,write_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -240,5 +243,71 @@ static PyObject *_gadget_getID(PyObject *self,PyObject *args){
 
 	//Return the array with the particle data (positions or velocities)
 	return id_data_array;
+
+}
+
+//write() implementation
+static PyObject *_gadget_write(PyObject *self,PyObject *args){
+
+	PyObject *header_obj;
+	const char *filename;
+	int k;
+
+	struct io_header_1 header;
+
+	//interpret input tuple
+	if(!PyArg_ParseTuple(args,"Os",&header_obj,&filename)){
+		return NULL;
+	}
+
+	//interpret arrays
+	PyObject *mass_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"masses"),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *NumPart_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"num_particles_total_of_type"),NPY_INT32,NPY_IN_ARRAY);
+
+	//get pointers
+	double *mass_data = (double *)PyArray_DATA(mass_array);
+	int *NumPart_data = (int *)PyArray_DATA(NumPart_array);
+
+	if(mass_array==NULL || NumPart_array==NULL){
+		Py_XDECREF(mass_array);
+		Py_XDECREF(NumPart_array);
+		return NULL;
+	}
+
+	//Fill in the header values
+
+	//simple doubles
+	header.Omega0 = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"Om0"));
+	header.OmegaLambda = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"Ode0"));
+	header.time = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"scale_factor"));
+	header.redshift = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"redshift"));
+	header.BoxSize = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"box_size"));
+	header.HubbleParam = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"h"));
+
+	//simple ints
+	header.flag_cooling = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_cooling"));
+	header.flag_sfr = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_sfr"));
+	header.flag_feedback = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_feedback"));
+	header.num_files = 1;
+
+	//double and int arrays
+	for(k=0;k<6;k++){
+		header.mass[k] = mass_data[k];
+		header.npart[k] = NumPart_data[k];
+		header.npartTotal[k] = NumPart_data[k];
+	}
+
+	//release resources
+	Py_DECREF(mass_array);
+	Py_DECREF(NumPart_array);
+
+	//ready to write header to Gadget snapshot	
+
+	printf("Omega_m = %le, OmegaL = %le\n",header.Omega0,header.OmegaLambda);
+	printf("flag_cooling = %d\n",header.flag_cooling);
+	printf("%s\n",filename);
+	printf("%e %d %d\n",header.mass[1],header.npart[1],header.npartTotal[1]);
+
+	Py_RETURN_NONE;
 
 }

@@ -366,6 +366,18 @@ class Gadget2Snapshot(object):
 
 		self.fp.close()
 
+	def write(self,filename):
+
+		"""
+		Writes particles information (positions, velocities, etc...) to a properly formatter Gadget snapshot
+
+		"""
+		_header_bare = self._header.copy()
+		_header_bare["box_size"] = _header_bare["box_size"].to(kpc).value
+		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"]
+
+		_gadget.write(_header_bare,filename)
+
 	def __add__(self,rhs):
 
 		"""
