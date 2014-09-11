@@ -16,6 +16,51 @@ except ImportError:
 	matplotlib = False
 
 ############################################################
+################Gadget2Header class#########################
+############################################################
+
+class Gadget2Header(dict):
+
+	"""
+	Class handler of a Gadget2 snapshot header
+
+	"""
+
+	def __init__(self,HeaderDict):
+
+		super(Gadget2Header,self).__init__()
+		for key in HeaderDict.keys():
+			self[key] = HeaderDict[key]
+
+	def __repr__(self):
+
+		keys = self.keys()
+		keys.sort()
+		
+		return "\n".join([ "{0} : {1}".format(key,self[key]) for key in keys ]) 
+
+	def __add__(self,rhs):
+
+		assert isinstance(rhs,Gadget2Header),"addition not defined if rhs is not a Gadget2Header!"
+
+		#Check that it makes sense to add the snapshots (cosmological parameters, box size, time and redshift must agree)
+		fields_to_match = ["Ode0","Om0","h","box_size","endianness","flag_cooling","flag_feedback","flag_sfr","num_files"]
+		fields_to_match += ["num_particles_total","num_particles_total_gas","num_particles_total_side","num_particles_total_with_mass","redshift","scale_factor"]
+
+		for field in fields_to_match:
+			assert self[field] == rhs[field],"{0} fields do not match!".format(field)
+
+		assert np.all(self["masses"]==rhs["masses"])
+		assert np.all(self["num_particles_total_of_type"]==rhs["num_particles_total_of_type"])
+
+		#Construct the header of the merged snapshot
+		merged_header = self.copy()
+		merged_header["files"] += rhs["files"]
+		merged_header["num_particles_file"] += rhs["num_particles_file"]
+
+		return merged_header
+
+############################################################
 #################Gadget2Snapshot class######################
 ############################################################
 
@@ -31,7 +76,8 @@ class Gadget2Snapshot(object):
 		assert type(fp)==file,"Call the open() method instead!!"
 
 		self.fp = fp
-		self._header = _gadget.getHeader(fp)
+		self._header = Gadget2Header(_gadget.getHeader(fp))
+		self._header["files"] = [self.fp.name]
 
 		#Scale box to kpc
 		self._header["box_size"] *= kpc
