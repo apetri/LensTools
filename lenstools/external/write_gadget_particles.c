@@ -5,7 +5,7 @@
 binary file format*/
 int writeSnapshot(FILE *fp,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart){
 
-	int garbage=256;
+	int k,id,garbage=256;
 
 	//the first 4 bytes are for endianness check
 	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
@@ -15,6 +15,29 @@ int writeSnapshot(FILE *fp,struct io_header_1 *header,float *positions,float *ve
 
 	//the next 8 bytes are garbage
 	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+
+	//positions come next
+	if(fwrite(positions,sizeof(float)*3,NumPart,fp)!=NumPart) return -1;
+
+	//the next 8 bytes are garbage
+	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+
+	//velocities come next
+	if(fwrite(velocities,sizeof(float)*3,NumPart,fp)!=NumPart) return -1;
+
+	//the next 8 bytes are garbage
+	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+
+	//particle IDs come next
+	for(k=0;k<NumPart;k++){
+		id = firstID + k;
+		if(fwrite(&id,sizeof(int),1,fp)!=1) return -1;
+	}
+
+	//the next 4 bytes are garbage
 	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
 
 

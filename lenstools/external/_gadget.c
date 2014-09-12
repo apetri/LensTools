@@ -244,14 +244,14 @@ static PyObject *_gadget_getID(PyObject *self,PyObject *args){
 //write() implementation
 static PyObject *_gadget_write(PyObject *self,PyObject *args){
 
-	PyObject *header_obj;
+	PyObject *header_obj,*positions_obj,*velocities_obj;
 	const char *filename;
-	int k;
+	int k,NumPart,firstID;
 
 	struct io_header_1 header;
 
 	//interpret input tuple
-	if(!PyArg_ParseTuple(args,"Os",&header_obj,&filename)){
+	if(!PyArg_ParseTuple(args,"OOOis",&header_obj,&positions_obj,&velocities_obj,&firstID,&filename)){
 		return NULL;
 	}
 
@@ -308,8 +308,25 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	Py_DECREF(NumPart_array);
 	Py_DECREF(NumPart_file_array);
 
+	//now interpret positions and velocities as numpy arrays
+	PyObject *positions_array = PyArray_FROM_OTF(positions_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+	PyObject *velocities_array = PyArray_FROM_OTF(velocities_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+
+	if(positions_array==NULL || velocities_array==NULL){
+		Py_XDECREF(positions_array);
+		Py_XDECREF(velocities_array);
+		fclose(fp);
+		return NULL;
+	}
+
+	//get the number of particles
+	NumPart = (int)PyArray_DIM(positions_array,0);
+	//get data pointers
+	float *positions_data = (float *)PyArray_DATA(positions_array);
+	float *velocities_data = (float *)PyArray_DATA(velocities_array);
+
 	//ready to write Gadget snapshot, do it!
-	if(writeSnapshot(fp,&header,NULL,NULL,1,1)==-1){
+	if(writeSnapshot(fp,&header,positions_data,velocities_data,firstID,NumPart)==-1){
 		
 		fclose(fp);
 		PyErr_SetString(PyExc_IOError,"Coulnd't write snapshot!");
@@ -317,7 +334,9 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 
 	}
 
-	//close the snapshot file
+	//release resources and close the snapshot file
+	Py_DECREF(positions_array);
+	Py_DECREF(velocities_array);
 	fclose(fp);	
 
 	Py_RETURN_NONE;

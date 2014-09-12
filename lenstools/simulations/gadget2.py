@@ -26,7 +26,7 @@ class Gadget2Header(dict):
 
 	"""
 
-	def __init__(self,HeaderDict):
+	def __init__(self,HeaderDict=dict()):
 
 		super(Gadget2Header,self).__init__()
 		for key in HeaderDict.keys():
@@ -74,7 +74,7 @@ class Gadget2Snapshot(object):
 
 	"""
 
-	def __init__(self,fp):
+	def __init__(self,fp=None):
 
 		assert (type(fp)==file) or (fp is None),"Call the open() method instead!!"
 
@@ -383,12 +383,97 @@ class Gadget2Snapshot(object):
 		"""
 		Writes particles information (positions, velocities, etc...) to a properly formatter Gadget snapshot
 
+		:param filename: name of the file to which to write the snapshot
+		:type filename: str.
+
 		"""
+
+		#Sanity checks
+		assert hasattr(self,"positions") and hasattr(self,"velocities"),"Positions and velocities must be specified!!"
+		assert self.positions.shape[0]==self.velocities.shape[0]
+
+		if not hasattr(self,"_header"):
+			self.setHeaderInfo()	
+
+		#Build a bare header based on the available info (need to convert units back to the Gadget ones)
 		_header_bare = self._header.copy()
 		_header_bare["box_size"] = _header_bare["box_size"].to(kpc).value
-		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"]
+		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"] / 1.989e43
+		_header_bare["num_particles_file_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
+		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 
-		_gadget.write(_header_bare,filename)
+		#Convert units for positions and velocities
+		_positions_converted = self.positions.to(kpc).value.astype(np.float32)
+		_velocities_converted = (self.velocities.to(cm/s).value / 1.0e5).astype(np.float32)
+
+		#Write it!!
+		_gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename)
+
+	
+	def setPositions(self,positions):
+
+		"""
+		Sets the positions in the current snapshot (with the intent of writing them to a properly formatted snapshot file)
+
+		:param positions: positions of the particles, must have units
+		:type positions: (N,3) array with units
+
+		"""
+
+		assert positions.shape[1]==3
+		assert positions.unit.physical_type=="length"
+
+		self.positions = positions
+
+	def setVelocities(self,velocities):
+
+		"""
+		Sets the velocities in the current snapshot (with the intent of writing them to a properly formatted snapshot file)
+
+		:param velocities: velocities of the particles, must have units
+		:type velocities: (N,3) array with units
+
+		"""
+
+		assert velocities.shape[1]==3
+		assert positions.unit.physical_type=="speed"
+
+		self.velocities = velocities
+
+	
+	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,h=0.72,redshift=1.0,box_size=15.0*Mpc,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
+
+		"""
+		Sets the header info in the snapshot to write
+
+		"""
+
+		if num_particles_file_of_type is None:
+			num_particles_file_of_type = np.array([0,1,0,0,0,0],dtype=np.int32) * self.positions.shape[0]
+
+		assert num_particles_file_of_type.sum()==self.positions.shape[0],"The total number of particles must match!!"
+		assert box_size.unit.physical_type=="length"
+		assert masses.unit.physical_type=="mass"
+
+		#Create the header
+		self._header = Gadget2Header()
+		
+		#Fill in
+		self._header["Om0"] = Om0
+		self._header["Ode0"] = Ode0
+		self._header["h"] = h
+		self._header["redshift"] = redshift
+		self._header["scale_factor"] = 1.0 / (1.0 + redshift)
+		self._header["box_size"] = box_size
+		self._header["flag_cooling"] = flag_cooling
+		self._header["flag_sfr"] = flag_sfr
+		self._header["flag_feedback"] = flag_feedback
+		self._header["masses"] = masses
+		self._header["num_particles_file_of_type"] = num_particles_file_of_type
+		self._header["num_particles_file"] = num_particles_file_of_type.sum()
+		self._header["num_particles_total_of_type"] = num_particles_file_of_type
+		self._header["num_particles_total"] = num_particles_file_of_type.sum()
+
 
 	def __add__(self,rhs):
 
