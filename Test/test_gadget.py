@@ -9,8 +9,9 @@ except ImportError:
 	from lenstools.simulations import Gadget2Snapshot
 
 import numpy as np
+from astropy.units import Mpc,m,s
 
-def test_positions():
+def test_read():
 
 	#Open the gadget snapshot
 	snapshot = Gadget2Snapshot.open("Data/gadget/snapshot_001")
@@ -29,3 +30,29 @@ def test_positions():
 
 	#Close the snapshot
 	snapshot.close()
+
+def test_write():
+
+	#Create an empty gadget snapshot
+	snap = Gadget2Snapshot()
+
+	#Generate random positions and velocities
+	NumPart = 32**3
+	x = np.random.normal(loc=7.0,scale=5.0,size=(NumPart,3)) * Mpc
+	v = np.random.uniform(-1,1,size=(NumPart,3)) * m / s
+
+	#Put the particles in the snapshot
+	snap.setPositions(x)
+	snap.setVelocities(v)
+
+	#Generate minimal header
+	snap.setHeaderInfo()
+
+	#Visualize
+	snap.visualize(s=1)
+	snap.savefig("gadget_initial_condition.png")
+
+	#Write the snapshot
+	snap.write("gadget_ic")
+
+

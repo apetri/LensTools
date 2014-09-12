@@ -436,7 +436,7 @@ class Gadget2Snapshot(object):
 		"""
 
 		assert velocities.shape[1]==3
-		assert positions.unit.physical_type=="speed"
+		assert velocities.unit.physical_type=="speed"
 
 		self.velocities = velocities
 
