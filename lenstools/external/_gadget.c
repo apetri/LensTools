@@ -255,19 +255,30 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 		return NULL;
 	}
 
+	//open the file to which the snapshot will be written, quit if cannot open the file
+	FILE *fp = fopen(filename,"wb");
+	if(fp==NULL){
+		PyErr_SetString(PyExc_IOError,"Couldn't open snapshot file!");
+		return NULL;
+	}
+
 	//interpret arrays
 	PyObject *mass_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"masses"),NPY_DOUBLE,NPY_IN_ARRAY);
 	PyObject *NumPart_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"num_particles_total_of_type"),NPY_INT32,NPY_IN_ARRAY);
+	PyObject *NumPart_file_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"num_particles_file_of_type"),NPY_INT32,NPY_IN_ARRAY);
+
+	if(mass_array==NULL || NumPart_array==NULL || NumPart_file_array==NULL){
+		Py_XDECREF(mass_array);
+		Py_XDECREF(NumPart_array);
+		Py_XDECREF(NumPart_file_array);
+		fclose(fp);
+		return NULL;
+	}
 
 	//get pointers
 	double *mass_data = (double *)PyArray_DATA(mass_array);
 	int *NumPart_data = (int *)PyArray_DATA(NumPart_array);
-
-	if(mass_array==NULL || NumPart_array==NULL){
-		Py_XDECREF(mass_array);
-		Py_XDECREF(NumPart_array);
-		return NULL;
-	}
+	int *NumPart_file_data = (int *)PyArray_DATA(NumPart_file_array);
 
 	//Fill in the header values
 
@@ -288,20 +299,26 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	//double and int arrays
 	for(k=0;k<6;k++){
 		header.mass[k] = mass_data[k];
-		header.npart[k] = NumPart_data[k];
+		header.npart[k] = NumPart_file_data[k];
 		header.npartTotal[k] = NumPart_data[k];
 	}
 
 	//release resources
 	Py_DECREF(mass_array);
 	Py_DECREF(NumPart_array);
+	Py_DECREF(NumPart_file_array);
 
-	//ready to write header to Gadget snapshot	
+	//ready to write Gadget snapshot, do it!
+	if(writeSnapshot(fp,&header,NULL,NULL,1,1)==-1){
+		
+		fclose(fp);
+		PyErr_SetString(PyExc_IOError,"Coulnd't write snapshot!");
+		return NULL;
 
-	printf("Omega_m = %le, OmegaL = %le\n",header.Omega0,header.OmegaLambda);
-	printf("flag_cooling = %d\n",header.flag_cooling);
-	printf("%s\n",filename);
-	printf("%e %d %d\n",header.mass[1],header.npart[1],header.npartTotal[1]);
+	}
+
+	//close the snapshot file
+	fclose(fp);	
 
 	Py_RETURN_NONE;
 

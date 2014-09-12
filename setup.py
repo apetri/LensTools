@@ -48,7 +48,7 @@ observations_dir = "observations"
 
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
-external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c"]
+external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c"]
 
 #Check for GSL installation, necessary for using the Design feature
 gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h","gsl_matrix.h"]
