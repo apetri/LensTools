@@ -3,7 +3,7 @@ from __future__ import division
 from lenstools.external import _gadget
 
 import numpy as np
-from astropy.units import kpc,Mpc,cm,g,s,Msun
+from astropy.units import kpc,Mpc,cm,km,g,s,Msun
 
 try:
 	
@@ -57,6 +57,9 @@ class Gadget2Header(dict):
 		merged_header = self.copy()
 		merged_header["files"] += rhs["files"]
 		merged_header["num_particles_file"] += rhs["num_particles_file"]
+		merged_header["num_particles_file_gas"] += rhs["num_particles_file_gas"]
+		merged_header["num_particles_file_of_type"] += rhs["num_particles_file_of_type"]
+		merged_header["num_particles_file_with_mass"] += rhs["num_particles_file_with_mass"]
 
 		return merged_header
 
@@ -90,6 +93,9 @@ class Gadget2Snapshot(object):
 			self._header["masses"] *= (1.989e43 / self._header["h"])
 			self._header["masses"] *= g
 			self._header["masses"] = self._header["masses"].to(Msun) 
+
+			#Scale Hubble parameter to correct units
+			self._header["H0"] = self._header["h"] * 100 * km / (s*Mpc)
 
 			#Update the dictionary with the number of particles per side
 			self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))
@@ -141,6 +147,8 @@ class Gadget2Snapshot(object):
 
 		"""
 
+		assert not self.fp.closed
+
 		numPart = self._header["num_particles_file"]
 
 		#Calculate the offset from the beginning of the file: 4 bytes (endianness) + 256 bytes (header) + 8 bytes (void)
@@ -186,6 +194,8 @@ class Gadget2Snapshot(object):
 		:returns: numpy array with the particle velocities
 
 		"""
+
+		assert not self.fp.closed
 
 		numPart = self._header["num_particles_file"]
 
@@ -242,6 +252,8 @@ class Gadget2Snapshot(object):
 		:returns: numpy array with the particle IDs
 
 		"""
+
+		assert not self.fp.closed
 
 		numPart = self._header["num_particles_file"]
 

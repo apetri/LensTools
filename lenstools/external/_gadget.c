@@ -55,7 +55,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	int k;
 
 	//Header contents
-	int NumPart=0,NumPartFile=0,Ngas=0,Nwithmass=0;
+	int NumPart=0,NumPartFile=0,Ngas=0,Ngas_file=0,Nwithmass=0,Nwithmass_file=0;
 	
 	//Interpret the tuple of arguments (there should be only one: the file descriptor)
 	if(!PyArg_ParseTuple(args,"O",&file_obj)){
@@ -83,46 +83,38 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	//Allocate resources
 	npy_intp Nkinds[] = {(npy_intp) 6};
 	PyObject *NumPart_array = PyArray_ZEROS(1,Nkinds,NPY_INT32,0);
+	PyObject *NumPart_array_file = PyArray_ZEROS(1,Nkinds,NPY_INT32,0);
 	PyObject *Mass_array = PyArray_ZEROS(1,Nkinds,NPY_DOUBLE,0);
 
-	if(NumPart_array==NULL || Mass_array==NULL){
+	if(NumPart_array==NULL || Mass_array==NULL || NumPart_array_file==NULL){
 		Py_XDECREF(NumPart_array);
 		Py_XDECREF(Mass_array);
+		Py_XDECREF(NumPart_array_file);
 		return NULL;
 	}
 
 	//Get pointers to the array elements
 	int *NumPart_data = (int *)PyArray_DATA(NumPart_array);
+	int *NumPart_file_data = (int *)PyArray_DATA(NumPart_array_file);
 	double *Mass_data = (double *)PyArray_DATA(Mass_array);
 
 	//Fill in the values
-	if(header.num_files==1){
+	Ngas = header.npartTotal[0];
+	Ngas_file = header.npart[0];
 
-		Ngas = header.npart[0];
-
-		for(k=0;k<6;k++){
+	for(k=0;k<6;k++){
 			
-			NumPart_data[k] = header.npart[k];
-			NumPart += header.npart[k];
-			NumPartFile += header.npart[k];
-			Mass_data[k] = header.mass[k];
-			if(header.mass[k]==0) Nwithmass+=header.npart[k]; 
+		NumPart_file_data[k] = header.npart[k];
+		NumPartFile += header.npart[k];
+		NumPart_data[k] = header.npartTotal[k];
+		NumPart += header.npartTotal[k];
+		Mass_data[k] = header.mass[k];
+			
+		if(header.mass[k]==0){ 
+			Nwithmass+=header.npartTotal[k];
+			Nwithmass_file+=header.npart[k];
+		} 
 		
-		}
-
-	}else{
-
-		Ngas = header.npartTotal[0];
-
-		for(k=0;k<6;k++){
-
-			NumPart_data[k] = header.npartTotal[k];
-			NumPart += header.npartTotal[k];
-			NumPartFile += header.npart[k];
-			Mass_data[k] = header.mass[k];
-			if(header.mass[k]==0) Nwithmass+=header.npartTotal[k];
-		}
-
 	}
 
 	//Build a dictionary with the header information
@@ -143,8 +135,11 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	if(PyDict_SetItemString(header_dict,"num_particles_total",Py_BuildValue("i",NumPart))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_file",Py_BuildValue("i",NumPartFile))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_total_gas",Py_BuildValue("i",Ngas))) return NULL;
+	if(PyDict_SetItemString(header_dict,"num_particles_file_gas",Py_BuildValue("i",Ngas_file))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_total_with_mass",Py_BuildValue("i",Nwithmass))) return NULL;
+	if(PyDict_SetItemString(header_dict,"num_particles_file_with_mass",Py_BuildValue("i",Nwithmass_file))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_total_of_type",NumPart_array)) return NULL;
+	if(PyDict_SetItemString(header_dict,"num_particles_file_of_type",NumPart_array_file)) return NULL;
 	if(PyDict_SetItemString(header_dict,"masses",Mass_array)) return NULL;
 	if(PyDict_SetItemString(header_dict,"flag_cooling",Py_BuildValue("i",header.flag_cooling))) return NULL;
 	if(PyDict_SetItemString(header_dict,"flag_feedback",Py_BuildValue("i",header.flag_feedback))) return NULL;
