@@ -3,6 +3,8 @@ from __future__ import division
 from lenstools.external import _gadget
 
 import numpy as np
+from scipy.stats import rankdata
+
 from astropy.units import kpc,Mpc,cm,km,g,s,Msun
 
 try:
@@ -307,18 +309,21 @@ class Gadget2Snapshot(object):
 		"""
 
 		assert hasattr(self,"id")
+		
+		#Rank the IDs
+		ranks = rankdata(self.id).astype(np.int32) - 1
 
 		#Sort positions
 		if hasattr(self,"positions"):
 			
 			assert self.positions.shape[0]==len(self.id)
-			self.positions = self.positions[self.id - 1]
+			self.positions = self.positions[ranks]
 
 		#Sort velocities
 		if hasattr(self,"velocities"):
 
 			assert self.velocities.shape[0]==len(self.id)
-			self.velocities = self.velocities[self.id - 1]
+			self.velocities = self.velocities[ranks]
 
 		#Finally sort IDs
 		self.id.sort() 
