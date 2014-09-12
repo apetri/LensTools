@@ -1,7 +1,7 @@
 I/O to and from Gadget2 snapshots
 =================================
 
-LensTools provides an easy to use API to interact with the Gadget2 binary format; you can use the numpy functionality to generate your own position and velocity fields, and then use the LensTools API to write them to a properly formatted Gadget2 snapshot (that you can subsequently evolve with Gadget2). Here's an example with :math:`32^3` particles distributed normally around the center of the box (15 Mpc), with uniform velocities in [-1,1]m/s. First we generate the profiles 
+LensTools provides an easy to use API to interact with the Gadget2 binary format (complete documentation in :doc:`../code`); you can use the numpy functionality to generate your own position and velocity fields, and then use the LensTools API to write them to a properly formatted Gadget2 snapshot (that you can subsequently evolve with Gadget2). Here's an example with :math:`32^3` particles distributed normally around the center of the box (15 Mpc), with uniform velocities in [-1,1]m/s. First we generate the profiles 
 
 ::
 	
