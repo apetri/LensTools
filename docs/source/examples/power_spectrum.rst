@@ -3,12 +3,40 @@
 Measure the power spectrum of a convergence map
 ===============================================
 
-.. figure:: ../../../examples/power_ensemble.png
+Snipped from lenstools.defaults 
+
+::
+
+	################################################################################
+	##########Default callback loader, loads in the measured power spectrum#########
+	################################################################################
+
+	def default_callback_loader(filename,l_edges):
+		"""
+	
+		Default ensemble loader: reads a FITS data file containing a convergence map and measures its power spectrum
+
+		:param args: A dictionary that contains all the relevant parameters as keys. Must have a "map_id" key
+		:type args: Dictionary
+
+		:returns: ndarray of the measured statistics
+
+		:raises: AssertionError if the input dictionary doesn't have the required keywords
+
+		"""
+
+		logging.debug("Processing {0} power".format(filename))
+
+		conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+		l,Pl = conv_map.powerSpectrum(l_edges)
+		return Pl
+
+This is the actual code 
 
 ::
 
 	from lenstools import Ensemble
-	from lenstools.defaults import default_callback_loader,peaks_loader
+	from lenstools.defaults import default_callback_loader
 
 	try:
 
@@ -73,3 +101,7 @@ Measure the power spectrum of a convergence map
 	ax.legend(loc="upper left")
 
 	plt.savefig("power_ensemble.png")
+
+And this is the result 
+
+.. figure:: ../../../examples/power_ensemble.png

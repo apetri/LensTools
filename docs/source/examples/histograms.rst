@@ -3,8 +3,6 @@
 Histograms of convergence maps
 ==============================
 
-.. figure:: ../../../examples/histograms.png
-
 ::
 
 	import sys
@@ -151,6 +149,10 @@ You run this typing::
 Or, if you have a MPI installation and want to run on multiple processors::
 
 	mpiexec -n <number_of_processors> python histograms.py -p <path_to_your_simulations> -n <number_of_realizations>
+
+This is how the result looks like 
+
+.. figure:: ../../../examples/histograms.png
 
 
 

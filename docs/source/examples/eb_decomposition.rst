@@ -3,9 +3,6 @@
 Decompose a shear map into E and B modes
 ========================================
 
-.. figure:: ../../../examples/EB.png
-
-.. figure:: ../../../examples/EB_corr.png
 
 ::
 
@@ -63,3 +60,11 @@ Decompose a shear map into E and B modes
 	ax.set_ylabel(r"$P_{EB}/\sqrt{P_{EE}P_{BB}}$")
 
 	plt.savefig("EB_corr.png")
+
+These are the :math:`P_{EE}(l),P_{BB}(l),P_{EB}(l)` power spectra 
+
+.. figure:: ../../../examples/EB.png
+
+and this is their cross correlation 
+
+.. figure:: ../../../examples/EB_corr.png

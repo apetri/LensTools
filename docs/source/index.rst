@@ -37,7 +37,10 @@ If you want to test the build before installing to your system, look to the inst
 
    python setup.py install
 
-The core features require `numpy <http://www.numpy.org>`_ and `scipy <http://www.scipy.org>`_ to run, and the Test suite requires additionally the `matplotlib <http://matplotlib.org>`_ and `astropy <http://www.astropy.org>`_ packages. If you want to run the calculations in parallel on a computer cluster you will need to install `mpi4py <http://mpi4py.scipy.org>`_ (a python wrapper for the MPI library) and `emcee <http://dan.iel.fm/emcee/current/>`_ (from which LensTools borrows the MPI Pool utility)
+Dependencies
+------------
+
+The core features require `numpy <http://www.numpy.org>`_, `scipy <http://www.scipy.org>`_ and `astropy <http://www.astropy.org>`_ (mainly for the cosmology and measure units support)  to run, and the Test suite requires additionally the `matplotlib <http://matplotlib.org>`_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to run the calculations in parallel on a computer cluster you will need to install `mpi4py <http://mpi4py.scipy.org>`_ (a python wrapper for the MPI library) and `emcee <http://dan.iel.fm/emcee/current/>`_ (from which LensTools borrows the MPI Pool utility). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway)
 
 Test
 ----

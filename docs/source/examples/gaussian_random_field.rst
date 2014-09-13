@@ -3,8 +3,6 @@
 Generate a realization of a gaussian random field with known power spectrum
 ===========================================================================
 
-.. figure:: ../../../examples/example_map.png
-
 ::
 
 	import numpy as np
@@ -30,3 +28,7 @@ Generate a realization of a gaussian random field with known power spectrum
 	plt.xlabel(r"$x$(deg)")
 	plt.ylabel(r"$y$(deg)")
 	plt.savefig("example_map.png")
+
+This is the result 
+
+.. figure:: ../../../examples/example_map.png
