@@ -383,13 +383,16 @@ class Gadget2Snapshot(object):
 
 		self.fp.close()
 
-	def write(self,filename):
+	def write(self,filename,files=1):
 
 		"""
 		Writes particles information (positions, velocities, etc...) to a properly formatter Gadget snapshot
 
 		:param filename: name of the file to which to write the snapshot
 		:type filename: str.
+
+		:param files: number of files on which to split the writing of the snapshot (useful if the number of particles is large); if > 1 the extension ".n" is appended to the filename
+		:type files: int.
 
 		"""
 
@@ -411,8 +414,41 @@ class Gadget2Snapshot(object):
 		_positions_converted = self.positions.to(kpc).value.astype(np.float32)
 		_velocities_converted = (self.velocities.to(cm/s).value / 1.0e5).astype(np.float32)
 
-		#Write it!!
-		ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename)
+		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
+		if files>1:
+
+			#Distribute particles among files
+			particles_per_file = _header_bare["num_particles_total"] // files
+
+			#Write each file
+			for n in range(files - 1):
+				
+				#Update header
+				_header_bare["num_particles_file"] = particles_per_file
+				#TODO all particles are DM, fix distribution in the future
+				_header_bare["num_particles_file_of_type"] = np.array([0,particles_per_file,0,0,0,0],dtype=np.int32)
+
+				#Write it!
+				filename_with_extension = "{0}.{1}".format(filename,n)
+				ext._gadget.write(_header_bare,_positions_converted[n*particles_per_file:(n+1)*particles_per_file],_velocities_converted[n*particles_per_file:(n+1)*particles_per_file],n*particles_per_file+1,filename_with_extension)
+
+			
+			#The last file might have a different number of particles
+			particles_last_file = len(_positions_converted[particles_per_file*(files-1):])
+
+			#Update header
+			_header_bare["num_particles_file"] = particles_last_file
+			#TODO all particles are DM, fix distribution in the future
+			_header_bare["num_particles_file_of_type"] = np.array([0,particles_last_file,0,0,0,0],dtype=np.int32)
+
+			#Write it!
+			filename_with_extension = "{0}.{1}".format(filename,files-1)
+			ext._gadget.write(_header_bare,_positions_converted[particles_per_file*(files-1):],_velocities_converted[particles_per_file*(files-1):],(files-1)*particles_per_file+1,filename_with_extension)
+
+		else:
+			
+			#Write it!!
+			ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename)
 
 	
 	def setPositions(self,positions):
