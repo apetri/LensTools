@@ -81,8 +81,8 @@ Simulation design
 .. autoclass:: lenstools.simulations.Design
 	:inherited-members:
 
-Read Gadget2 snapshot information
-=================================
+I/O from Gadget2 snapshots
+==========================
 
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
