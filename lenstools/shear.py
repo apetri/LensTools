@@ -17,12 +17,14 @@ from convergence import ConvergenceMap
 
 import numpy as np
 
+#FFT engines
+from numpy.fft import rfft2,irfft2,fftfreq
+
 #Check if rfftfreq is implemented (requires numpy>=1.8)
 try:
-	np.fft.rfftfreq
-except AttributeError:
+	from numpy.fft import rfftfreq
+except ImportError:
 	from utils import rfftfreq
-	np.fft.rfftfreq = rfftfreq
 
 try:
 	import matplotlib.pyplot as plt
@@ -100,8 +102,8 @@ class ShearMap(object):
 		assert fourier_E.shape == fourier_B.shape
 
 		#Compute frequencies
-		lx = np.fft.rfftfreq(fourier_E.shape[0])
-		ly = np.fft.fftfreq(fourier_E.shape[0])
+		lx = rfftfreq(fourier_E.shape[0])
+		ly = fftfreq(fourier_E.shape[0])
 
 		#Safety check
 		assert len(lx)==fourier_E.shape[1]
@@ -122,8 +124,8 @@ class ShearMap(object):
 		ft_gamma2 = sin_2_phi * fourier_E + cos_2_phi * fourier_B
 
 		#Invert Fourier transforms
-		gamma1 = np.fft.irfft2(ft_gamma1)
-		gamma2 = np.fft.irfft2(ft_gamma2)
+		gamma1 = irfft2(ft_gamma1)
+		gamma2 = irfft2(ft_gamma2)
 
 		#Instantiate new shear map class
 		new = cls(np.array([gamma1,gamma2]),angle)
@@ -204,12 +206,12 @@ class ShearMap(object):
 		"""
 
 		#Perform Fourier transforms
-		ft_gamma1 = np.fft.rfft2(self.gamma[0])
-		ft_gamma2 = np.fft.rfft2(self.gamma[1])
+		ft_gamma1 = rfft2(self.gamma[0])
+		ft_gamma2 = rfft2(self.gamma[1])
 
 		#Compute frequencies
-		lx = np.fft.rfftfreq(ft_gamma1.shape[0])
-		ly = np.fft.fftfreq(ft_gamma1.shape[0])
+		lx = rfftfreq(ft_gamma1.shape[0])
+		ly = fftfreq(ft_gamma1.shape[0])
 
 		#Safety check
 		assert len(lx)==ft_gamma1.shape[1]
@@ -261,7 +263,7 @@ class ShearMap(object):
 			l,EE,BB,EB = self.decompose(l_edges,keep_fourier=True)
 
 		#Invert the Fourier transform to go back to real space
-		conv = np.fft.irfft2(self.fourier_E)
+		conv = irfft2(self.fourier_E)
 
 		#Return the ConvergenceMap instance
 		return ConvergenceMap(conv,self.side_angle)

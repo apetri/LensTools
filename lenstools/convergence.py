@@ -18,6 +18,10 @@ from functools import reduce
 from external import _topology
 
 import numpy as np
+
+#FFT engines
+from numpy.fft import rfft2
+
 from scipy.ndimage import filters
 
 
@@ -476,7 +480,7 @@ class ConvergenceMap(object):
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
 		#Calculate the Fourier transform of the map with numpy FFT
-		ft_map = np.fft.rfft2(self.kappa)
+		ft_map = rfft2(self.kappa)
 
 		#Compute the power spectrum with the C backend implementation
 		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle,l_edges)
@@ -517,8 +521,8 @@ class ConvergenceMap(object):
 		assert self.kappa.shape == other.kappa.shape
 
 		#Calculate the Fourier transform of the maps with numpy FFTs
-		ft_map1 = np.fft.rfft2(self.kappa)
-		ft_map2 = np.fft.rfft2(other.kappa)
+		ft_map1 = rfft2(self.kappa)
+		ft_map2 = rfft2(other.kappa)
 
 		#Compute the cross power spectrum with the C backend implementation
 		cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle,l_edges)

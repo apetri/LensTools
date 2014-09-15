@@ -16,12 +16,14 @@ from convergence import ConvergenceMap
 
 import numpy as np
 
+#FFT engines
+from numpy.fft import fftfreq,irfft2
+
 #Check if rfftfreq is implemented (requires numpy>=1.8)
 try:
-	np.fft.rfftfreq
-except AttributeError:
+	from numpy.fft import rfftfreq
+except ImportError:
 	from utils import rfftfreq
-	np.fft.rfftfreq = rfftfreq
 
 from scipy import interpolate
 
@@ -98,8 +100,8 @@ class GaussianNoiseGenerator(object):
 
 		#Assert the shape of the blueprint, to tune the right size for the fourier transform
 		lpix = 360.0/self.side_angle
-		lx = np.fft.rfftfreq(self.shape[0]) * self.shape[0] * lpix
-		ly = np.fft.fftfreq(self.shape[0]) * self.shape[0] * lpix
+		lx = rfftfreq(self.shape[0]) * self.shape[0] * lpix
+		ly = fftfreq(self.shape[0]) * self.shape[0] * lpix
 
 		#Compute the multipole moment of each FFT pixel
 		l = np.sqrt(lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2)
@@ -157,7 +159,7 @@ class GaussianNoiseGenerator(object):
 
 		#Generate a random Fourier realization and invert it
 		ft_map = self._fourierMap(power_func,**kwargs)
-		noise_map = np.fft.irfft2(ft_map)
+		noise_map = irfft2(ft_map)
 
 		return ConvergenceMap(noise_map,self.side_angle)
 
