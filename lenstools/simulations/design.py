@@ -1,9 +1,9 @@
 from __future__ import division,print_function,with_statement
 
 try:
-	from lenstools.external import _design
-	_design = _design
-except ImportError:
+	from .. import external as ext
+	_design = ext._design
+except AttributeError:
 	_design = None
 
 import numpy as np

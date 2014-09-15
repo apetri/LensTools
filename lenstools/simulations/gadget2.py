@@ -1,6 +1,6 @@
 from __future__ import division
 
-from lenstools.external import _gadget
+from .. import external as ext
 
 import numpy as np
 from scipy.stats import rankdata
@@ -83,7 +83,7 @@ class Gadget2Snapshot(object):
 		if fp is not None:
 		
 			self.fp = fp
-			self._header = Gadget2Header(_gadget.getHeader(fp))
+			self._header = Gadget2Header(ext._gadget.getHeader(fp))
 			self._header["files"] = [self.fp.name]
 
 			#Scale box to kpc
@@ -177,7 +177,7 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		self.positions = (_gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc) 
+		self.positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc) 
 		
 		#Return
 		return self.positions
@@ -231,7 +231,7 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		self.velocities = _gadget.getPosVel(self.fp,offset,numPart)
+		self.velocities = ext._gadget.getPosVel(self.fp,offset,numPart)
 
 		#Scale units
 		self.velocities *= 1.0e5
@@ -295,7 +295,7 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		self.id = _gadget.getID(self.fp,offset,numPart)
+		self.id = ext._gadget.getID(self.fp,offset,numPart)
 		
 		#Return
 		return self.id
@@ -412,7 +412,7 @@ class Gadget2Snapshot(object):
 		_velocities_converted = (self.velocities.to(cm/s).value / 1.0e5).astype(np.float32)
 
 		#Write it!!
-		_gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename)
+		ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename)
 
 	
 	def setPositions(self,positions):
