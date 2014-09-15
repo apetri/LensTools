@@ -5,7 +5,7 @@ from .. import external as ext
 import numpy as np
 from scipy.stats import rankdata
 
-from astropy.units import kpc,Mpc,cm,km,g,s,Msun
+from astropy.units import kpc,Mpc,cm,km,g,s,Msun,quantity
 
 try:
 	
@@ -76,6 +76,9 @@ class Gadget2Snapshot(object):
 
 	"""
 
+	_mass_unit = 1.989e43
+	_velocity_unit = 1.0e5
+
 	def __init__(self,fp=None):
 
 		assert (type(fp)==file) or (fp is None),"Call the open() method instead!!"
@@ -92,7 +95,7 @@ class Gadget2Snapshot(object):
 			self._header["box_size"] = self._header["box_size"].to(Mpc)
 
 			#Scale masses to correct units
-			self._header["masses"] *= (1.989e43 / self._header["h"])
+			self._header["masses"] *= (self._mass_unit / self._header["h"])
 			self._header["masses"] *= g
 			self._header["masses"] = self._header["masses"].to(Msun) 
 
@@ -134,7 +137,7 @@ class Gadget2Snapshot(object):
 
 		return self._header
 
-	def getPositions(self,first=None,last=None):
+	def getPositions(self,first=None,last=None,save=True):
 
 		"""
 		Reads in the particles positions (read in of a subset is allowed): when first and last are specified, the numpy array convention is followed (i.e. getPositions(first=a,last=b)=getPositions()[a:b])
@@ -144,6 +147,9 @@ class Gadget2Snapshot(object):
 
 		:param last: last particle in the file to be read, if None the total number of particles is assumed
 		:type last: int. or None
+
+		:param save: if True saves the particles positions as attribute
+		:type save: bool.
 
 		:returns: numpy array with the particle positions
 
@@ -177,12 +183,14 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		self.positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc) 
+		positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc) 
+		if save:
+			self.positions = positions
 		
 		#Return
-		return self.positions
+		return positions
 
-	def getVelocities(self,first=None,last=None):
+	def getVelocities(self,first=None,last=None,save=True):
 
 		"""
 		Reads in the particles velocities (read in of a subset is allowed): when first and last are specified, the numpy array convention is followed (i.e. getVelocities(first=a,last=b)=getVelocities()[a:b])
@@ -192,6 +200,9 @@ class Gadget2Snapshot(object):
 
 		:param last: last particle in the file to be read, if None the total number of particles is assumed
 		:type last: int. or None
+
+		:param save: if True saves the particles velocities as attrubute
+		:type save: bool.
 
 		:returns: numpy array with the particle velocities
 
@@ -231,16 +242,19 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		self.velocities = ext._gadget.getPosVel(self.fp,offset,numPart)
+		velocities = ext._gadget.getPosVel(self.fp,offset,numPart)
 
 		#Scale units
-		self.velocities *= 1.0e5
-		self.velocities *= cm / s
+		velocities *= self._velocity_unit
+		velocities *= cm / s
+
+		if save:
+			self.velocities = velocities
 		
 		#Return
-		return self.velocities
+		return velocities
 
-	def getID(self,first=None,last=None):
+	def getID(self,first=None,last=None,save=True):
 
 		"""
 		Reads in the particles IDs, 4 byte ints, (read in of a subset is allowed): when first and last are specified, the numpy array convention is followed (i.e. getID(first=a,last=b)=getID()[a:b])
@@ -250,6 +264,9 @@ class Gadget2Snapshot(object):
 
 		:param last: last particle in the file to be read, if None the total number of particles is assumed
 		:type last: int. or None
+
+		:param save: if True saves the particles IDs as attribute
+		:type save: bool.
 
 		:returns: numpy array with the particle IDs
 
@@ -295,10 +312,12 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		self.id = ext._gadget.getID(self.fp,offset,numPart)
+		ids = ext._gadget.getID(self.fp,offset,numPart)
+		if save:
+			self.id = ids
 		
 		#Return
-		return self.id
+		return ids
 
 
 	def reorder(self):
@@ -406,13 +425,13 @@ class Gadget2Snapshot(object):
 		#Build a bare header based on the available info (need to convert units back to the Gadget ones)
 		_header_bare = self._header.copy()
 		_header_bare["box_size"] = _header_bare["box_size"].to(kpc).value
-		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"] / 1.989e43
+		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"] / self._mass_unit
 		_header_bare["num_particles_file_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 
 		#Convert units for positions and velocities
 		_positions_converted = self.positions.to(kpc).value.astype(np.float32)
-		_velocities_converted = (self.velocities.to(cm/s).value / 1.0e5).astype(np.float32)
+		_velocities_converted = (self.velocities.to(cm/s).value / self._velocity_unit).astype(np.float32)
 
 		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
 		if files>1:
@@ -514,6 +533,61 @@ class Gadget2Snapshot(object):
 		self._header["num_particles_file"] = num_particles_file_of_type.sum()
 		self._header["num_particles_total_of_type"] = num_particles_file_of_type
 		self._header["num_particles_total"] = num_particles_file_of_type.sum()
+
+
+	def numberDensity(self,resolution=0.5*Mpc):
+
+		"""
+		Uses the np.histogramdd function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
+
+		:param resolution: resolution below which particles are grouped together; if an int is passed, this is the size of the grid
+		:type resolution: float with units or int.
+
+		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes)  
+
+		"""
+
+		#Sanity checks
+		assert type(resolution) in [np.int,quantity.Quantity]
+		
+		if type(resolution)==quantity.Quantity:	
+			assert resolution.unit.physical_type=="length"
+
+		#Check if positions are already available, otherwise retrieve them
+		if hasattr(self,"positions"):
+			positions = self.positions
+		else:
+			positions = self.getPositions(save=False)
+
+		#Bin extremes
+		xmax,ymax,zmax = positions.max(axis=0)
+		xmin,ymin,zmin = positions.min(axis=0)
+
+		#Construct binning
+		if type(resolution)==quantity.Quantity:
+
+			#Scale to appropriate units
+			resolution = resolution.to(positions.unit)
+			xi = np.arange(xmin.value,xmax.value,resolution.value)
+			yi = np.arange(ymin.value,ymax.value,resolution.value)
+			zi = np.arange(zmin.value,zmax.value,resolution.value)
+
+		else:
+
+			xi = np.linspace(xmin.value,xmax.value,resolution+1)
+			yi = np.linspace(ymin.value,ymax.value,resolution+1)
+			zi = np.linspace(zmin.value,zmax.value,resolution+1)
+
+
+		#Compute the number count histogram
+		density,bins = np.histogramdd(positions.value,(xi,yi,zi))
+
+		#Recompute resolution to make sure it represents the bin size correctly
+		bin_resolution = ((bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit)
+
+		#Return the density histogram, along with the bin resolution along each axis
+		return density,bin_resolution
+
 
 
 	def __add__(self,rhs):
