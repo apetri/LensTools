@@ -26,12 +26,8 @@ def test_visualize():
 	assert test_map.kappa.dtype == np.float
 	assert type(test_map.side_angle) == np.float
 
-	fig,ax = plt.subplots()
-	ax.imshow(test_map.kappa,origin="lower",interpolation="nearest",extent=[0,test_map.side_angle,0,test_map.side_angle])
-	ax.set_xlabel(r"$x$(deg)")
-	ax.set_ylabel(r"$y$(deg)")
-	plt.savefig("map.png")
-	plt.clf()
+	test_map.visualize()
+	test_map.savefig("map.png")
 
 def test_power():
 

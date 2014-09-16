@@ -24,6 +24,12 @@ from numpy.fft import rfft2
 
 from scipy.ndimage import filters
 
+try:
+	import matplotlib.pyplot as plt
+	matplotlib = True
+except ImportError:
+	matplotlib = False
+
 
 ################################################
 ########ConvergenceMap class####################
@@ -65,6 +71,43 @@ class ConvergenceMap(object):
 
 		angle,kappa = loader(*args)
 		return cls(kappa,angle)
+
+	def visualize(self,fig=None,ax=None):
+
+		"""
+		Visualize the convergence map 
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot visualize!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Plot the map
+		self.ax.imshow(self.kappa,origin="lower",interpolation="nearest",extent=[0,self.side_angle,0,self.side_angle])
+		self.ax.set_xlabel(r"$x$(deg)")
+		self.ax.set_ylabel(r"$y$(deg)")
+
+	def savefig(self,filename):
+
+		"""
+		Saves the map visualization to an external file
+
+		:param filename: name of the file on which to save the map
+		:type filename: str.
+
+		"""
+
+		self.fig.savefig(filename)
 
 	def mask(self,mask_profile,inplace=False):
 
