@@ -1,11 +1,15 @@
 from __future__ import division
+from operator import mul
+from functools import reduce
 
 from .. import external as ext
 
 import numpy as np
 from scipy.stats import rankdata
-
 from astropy.units import kpc,Mpc,cm,km,g,s,Msun,quantity
+
+#FFT engines
+from numpy.fft import rfftn
 
 try:
 	
@@ -587,6 +591,55 @@ class Gadget2Snapshot(object):
 
 		#Return the density histogram, along with the bin resolution along each axis
 		return density,bin_resolution
+
+
+	def powerSpectrum(self,k_edges,resolution=None):
+
+		"""
+		Computes the power spectrum of the relative density fluctuations in the snapshot at the wavenumbers specified by k_edges; a discrete particle number density is computed before hand to prepare the FFT grid
+
+		:param k_edges: wavenumbers at which to compute the density power spectrum (must have units)
+		:type k_edges: array.
+
+		:param resolution: optional, fix the grid resolution to some value; to be passed to the numberDensity method. If none this is computed automatically from the k_edges
+		:type resolution: float with units, int. or None
+
+		:returns: tuple(k_values(bin centers),power spectrum at the specified k_values)
+
+		"""
+
+		#Check for correct units
+		assert k_edges.unit.physical_type=="wavenumber"
+
+		if resolution is None:
+			resolution = 2.0 * np.pi / k_edges.max()
+
+		#Sanity check on bin spacing (must not be smaller than the one allowed by the size of the box)
+		if (k_edges[1:] - k_edges[:-1]).mean() < 2.0*np.pi/self._header["box_size"]:
+			raise ValueError("Your bins are too small! Minimum allowed by the current box size is {0}".format(2.0*np.pi/self._header["box_size"]))
+
+		#Compute the gridded number density
+		density,bin_resolution = self.numberDensity(resolution=resolution)
+		resolution_volume = reduce(mul,bin_resolution) 
+
+		#Sanity check on maximum k: maximum is limited by the grid resolution
+		if k_edges.max() > 2.0*np.pi/resolution_volume**(1/3):
+			print("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}): results might be inaccurate".format(k_edges.max(),2.0*np.pi/resolution_volume**(1/3)))
+		
+		#Decide pixel sizes in Fourier spaces
+		kpixX = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
+		kpixY = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
+		kpixZ = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
+
+		#Perform the FFT
+		density_ft = rfftn(density)
+
+		#Compute the azimuthal averages
+		hits,power_spectrum = ext._topology.rfft3_azimuthal(density_ft,density_ft,kpixX,kpixY,kpixZ,k_edges.value)
+
+		#Return the result (normalize the power so it corresponds to the one of the density fluctuations)
+		k = 0.5*(k_edges[1:]+k_edges[:-1])
+		return k,(power_spectrum/hits) * (self._header["box_size"]**3) / (self._header["num_particles_total"]**2)
 
 
 

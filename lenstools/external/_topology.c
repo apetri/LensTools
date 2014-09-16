@@ -22,6 +22,7 @@ static char gradient_docstring[] = "Compute the gradient of a 2D image";
 static char hessian_docstring[] = "Compute the hessian of a 2D image"; 
 static char minkowski_docstring[] = "Measure the three Minkowski functionals of a 2D image";
 static char rfft2_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 2D image";
+static char rfft3_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 3D scalar field";
 
 //method declarations
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
@@ -29,6 +30,7 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args);
 static PyObject *_topology_hessian(PyObject *self,PyObject *args);
 static PyObject *_topology_minkowski(PyObject *self,PyObject *args);
 static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args);
+static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args);
 
 
 //_topology method definitions
@@ -39,6 +41,7 @@ static PyMethodDef module_methods[] = {
 	{"hessian",_topology_hessian,METH_VARARGS,hessian_docstring},
 	{"minkowski",_topology_minkowski,METH_VARARGS,minkowski_docstring},
 	{"rfft2_azimuthal",_topology_rfft2_azimuthal,METH_VARARGS,rfft2_azimuthal_docstring},
+	{"rfft3_azimuthal",_topology_rfft3_azimuthal,METH_VARARGS,rfft3_azimuthal_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -560,5 +563,104 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 
 	return power_array;
 
+}
+
+//rfft3_azimuthal() implementation
+static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args){
+
+	/*These are the inputs: the Fourier transforms of the two maps, the size of the pixel in k space, the k bin extremes at which calculate the azimuthal averages*/
+	PyObject *ft_map1_obj,*ft_map2_obj,*kvalues_obj;
+	double kpixX,kpixY,kpixZ;
+
+	/*Parse input tuple*/
+	if(!PyArg_ParseTuple(args,"OOdddO",&ft_map1_obj,&ft_map2_obj,&kpixX,&kpixY,&kpixZ,&kvalues_obj)){
+		return NULL;
+	}
+
+	/*Interpret the parsed objects as numpy arrays*/
+	PyObject *ft_map1_array = PyArray_FROM_OTF(ft_map1_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map2_array = PyArray_FROM_OTF(ft_map2_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *kvalues_array = PyArray_FROM_OTF(kvalues_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+
+	/*Check if anything failed*/
+	if(ft_map1_array==NULL || kvalues_array==NULL || ft_map2_array==NULL){
+
+		Py_XDECREF(ft_map1_array);
+		Py_XDECREF(ft_map2_array);
+		Py_XDECREF(kvalues_array);
+
+		return NULL;
+	}
+
+	/*Get the size of the map fourier transform*/
+	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
+	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+	int Nside_z = (int)PyArray_DIM(ft_map1_array,2);
+
+	/*Get the number of k bin edges*/
+	int Nvalues = (int)PyArray_DIM(kvalues_array,0);
+
+	/*Build the arrays that will contain the output:power spectrum and hits*/
+	npy_intp dims[] = {(npy_intp) Nvalues - 1};
+	PyObject *power_array = PyArray_ZEROS(1,dims,NPY_DOUBLE,0);
+	PyObject *hits_array = PyArray_ZEROS(1,dims,NPY_LONG,0);
+
+	/*Check for failure*/
+	if(power_array==NULL || hits_array==NULL){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(kvalues_array);
+		Py_XDECREF(power_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+	}
+
+	/*Call the C backend azimuthal average function*/
+	if(azimuthal_rfft3((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),Nside_x,Nside_y,Nside_z,kpixX,kpixY,kpixZ,Nvalues,(double *)PyArray_DATA(kvalues_array),(double *)PyArray_DATA(power_array),(long *)PyArray_DATA(hits_array))){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(kvalues_array);
+		Py_DECREF(power_array);
+		Py_DECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	/*If the call succeeded, build the output tuple and quit*/
+	PyObject *output = PyTuple_New(2);
+	if(PyTuple_SetItem(output,0,hits_array)){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(kvalues_array);
+		Py_DECREF(power_array);
+		Py_DECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(output,1,power_array)){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(kvalues_array);
+		Py_DECREF(power_array);
+		Py_DECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	//Cleanup and return
+	Py_DECREF(ft_map1_array);
+	Py_DECREF(ft_map2_array);
+	Py_DECREF(kvalues_array);
+
+	return output;
 }
 
