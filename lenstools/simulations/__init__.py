@@ -12,5 +12,5 @@
 
 from .design import Design
 from .igs1 import IGS1
-from .cfhtemu1 import CFHTemu1
+from .cfhtemu1 import CFHTemu1,CFHTcov
 from .gadget2 import Gadget2Snapshot

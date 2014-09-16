@@ -6,9 +6,9 @@ import numpy as np
 
 from .igs1 import IGS1
 
-################################
-#######EMU1 class###############
-################################
+######################################
+#######EMU1 simulations###############
+######################################
 
 class CFHTemu1(IGS1):
 
@@ -93,3 +93,38 @@ class CFHTemu1(IGS1):
 			return name + "{0:0004d}r.fit".format(realizations)
 		else:
 			return [name + "{0:0004d}r.fit".format(r) for r in realizations]
+
+
+#########################################
+########cfhtcov simulations##############
+#########################################
+
+class CFHTcov(CFHTemu1):
+
+	"""
+	Class handler of the weak lensing CFHTcov simulations set, inherits from CFHTemu1; this simulation suite contains 1000 realizations for each of the 13 CFHT subfields, based on 50 independent N-body simulations of a fiducial LambdaCDM universe
+
+	"""
+
+	#Don't touch these! 
+	_class_name = "CFHTcov"
+	_series_name = "cfhtcov"
+	_num_particles = 512
+	_box_size_mpc = 240
+
+
+	@classmethod
+	def getModels(cls,root_path="/default"):
+
+		"""
+		On call, this class method returns a CFHTcov instance initialized with the cosmological parameters of the only available model in the suite 
+
+		:param root_path: path of your CFHT emu1 simulations copy
+		:type root_path: str.
+
+		:returns: CFHTcov instance initialized with the fiducial cosmological parameters
+
+		"""
+
+		return cls(root_path=root_path,name="Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(0.26,0.74,-1.0,0.960,0.800),H0=70.0,Om0=0.26,w0=-1.0,sigma8=0.800,ns=0.960)
+
