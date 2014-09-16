@@ -102,7 +102,7 @@ class CFHTemu1(IGS1):
 class CFHTcov(CFHTemu1):
 
 	"""
-	Class handler of the weak lensing CFHTcov simulations set, inherits from CFHTemu1; this simulation suite contains 1000 realizations for each of the 13 CFHT subfields, based on 50 independent N-body simulations of a fiducial LambdaCDM universe
+	Class handler of the weak lensing CFHTcov simulations set, inherits from CFHTemu1; this simulation suite contains 1000 realizations for each of the 13 CFHT subfields, based on 50 independent N-body simulations of a fiducial LambdaCDM universe. Useful to measure accurately descriptor covariance matrices
 
 	"""
 
@@ -119,7 +119,7 @@ class CFHTcov(CFHTemu1):
 		"""
 		On call, this class method returns a CFHTcov instance initialized with the cosmological parameters of the only available model in the suite 
 
-		:param root_path: path of your CFHT emu1 simulations copy
+		:param root_path: path of your CFHTcov simulations copy
 		:type root_path: str.
 
 		:returns: CFHTcov instance initialized with the fiducial cosmological parameters

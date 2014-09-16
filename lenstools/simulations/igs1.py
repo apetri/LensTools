@@ -37,7 +37,7 @@ class IGS1(FlatwCDM):
 		#Don't touch these! 
 		self._cosmo_id_string =  "Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(self.Om0,1.0-self.Om0,self.w0,self.ns,self.sigma8)
 		self._box_string = str(self._num_particles)+"b"+str(self._box_size_mpc)
-		self._full_path = self.root_path.rstrip("/") + "/"+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string
+		self._full_path = os.path.join(self.root_path,self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string)
 
 	def __repr__(self):
 
@@ -75,6 +75,35 @@ class IGS1(FlatwCDM):
 			return np.array([self.Om0,self.w0,self.sigma8,self.ns])
 		else:
 			return np.array([self.Om0,self.w0,self.sigma8])
+
+	@classmethod
+	def getModels(cls,root_path="/default"):
+
+		"""
+		On call, this class method returns a list of IGS1 instances initialized with the cosmological parameters of all the models available in the suite
+
+		:param root_path: path of your IGS1 simulations copy
+		:type root_path: str.
+
+		:returns: list of IGS1 instances initialized with the cosmological parameters available in the suite
+
+		"""
+
+		#These are the available models in the suite
+		available_models = [ {"Om0":0.26,"Ode0":0.74,"w0":-1.0,"si8":0.798,"ns":0.960} ] 
+		available_models.append({"Om0":0.29,"Ode0":0.71,"w0":-1.0,"si8":0.798,"ns":0.960})
+		available_models.append({"Om0":0.23,"Ode0":0.77,"w0":-1.0,"si8":0.798,"ns":0.960})
+		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-0.8,"si8":0.798,"ns":0.960})
+		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-1.2,"si8":0.798,"ns":0.960})
+		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-1.0,"si8":0.850,"ns":0.960})
+		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-1.0,"si8":0.750,"ns":0.960})
+		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-1.0,"si8":0.798,"ns":1.000})
+		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-1.0,"si8":0.798,"ns":0.920})
+
+		model_list = [ cls(root_path=root_path,name="Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(model["Om0"],model["Ode0"],model["w0"],model["ns"],model["si8"]),H0=70.0,Om0=model["Om0"],w0=model["w0"],sigma8=model["si8"],ns=model["ns"]) for model in available_models ]
+
+		return model_list
+
 
 
 	def getNames(self,realizations,z=1.0,kind="convergence",big_fiducial_set=False):
@@ -116,9 +145,13 @@ class IGS1(FlatwCDM):
 			assert self.Om0==0.26 and self.w0==-1.0 and self.sigma8==0.798 and self.ns==0.96
 			full_path += "_f"
 
-		full_path += "/{0}".format(direct)
+		full_path = os.path.join(full_path,direct)
 
 		if type(realizations) == int:
-			return full_path + "/{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(realizations,self._plane_id(z),int(z*100))
+			return os.path.join(full_path,"{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(realizations,self._plane_id(z),int(z*100)))
 		else:
-			return [full_path + "/{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(r,self._plane_id(z),int(z*100)) for r in realizations]
+			return [ os.path.join(full_path,"{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(r,self._plane_id(z),int(z*100))) for r in realizations ]
+
+
+
+
