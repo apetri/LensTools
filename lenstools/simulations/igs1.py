@@ -97,6 +97,27 @@ class IGS1(FlatwCDM):
 		else:
 			return np.array([self.Om0,self.w0,self.sigma8])
 
+
+	def squeezePower(self,power=0.5,with_ns=False):
+
+		"""
+		Same as squeeze, but returns the doublet (w0,si8 x Om0^p) where p can be specified
+
+		:param p: power at which to raise Om0 in the combination with sigma8
+		:type p: float.
+
+		:param with_ns: if True returns also ns as the last parameter
+		:type with_ns: bool.
+
+		:returns: numpy array (w0,si8 x Om^p,ns--optionally)
+
+		"""
+
+		if with_ns:
+			return np.array([self.w0,self.sigma8*(self.Om0**power),self.ns])
+		else:
+			return np.array([self.w0,self.sigma8*(self.Om0**power)])
+
 	@classmethod
 	def getModels(cls,root_path="/default"):
 
