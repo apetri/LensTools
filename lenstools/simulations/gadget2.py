@@ -1,6 +1,4 @@
 from __future__ import division
-from operator import mul
-from functools import reduce
 
 from .. import external as ext
 
@@ -563,8 +561,7 @@ class Gadget2Snapshot(object):
 		else:
 			positions = self.getPositions(save=False)
 
-		#Bin extremes
-		xmax,ymax,zmax = positions.max(axis=0)
+		#Bin extremes (we start from the leftmost position up to the box size)
 		xmin,ymin,zmin = positions.min(axis=0)
 
 		#Construct binning
@@ -572,15 +569,15 @@ class Gadget2Snapshot(object):
 
 			#Scale to appropriate units
 			resolution = resolution.to(positions.unit)
-			xi = np.arange(xmin.value,xmax.value,resolution.value)
-			yi = np.arange(ymin.value,ymax.value,resolution.value)
-			zi = np.arange(zmin.value,zmax.value,resolution.value)
+			xi = np.arange(xmin.value,xmin.value + self._header["box_size"],resolution.value)
+			yi = np.arange(ymin.value,ymin.value + self._header["box_size"],resolution.value)
+			zi = np.arange(zmin.value,zmin.value + self._header["box_size"],resolution.value)
 
 		else:
 
-			xi = np.linspace(xmin.value,xmax.value,resolution+1)
-			yi = np.linspace(ymin.value,ymax.value,resolution+1)
-			zi = np.linspace(zmin.value,zmax.value,resolution+1)
+			xi = np.linspace(xmin.value,xmin.value + self._header["box_size"],resolution+1)
+			yi = np.linspace(ymin.value,ymin.value + self._header["box_size"],resolution+1)
+			zi = np.linspace(zmin.value,zmin.value + self._header["box_size"],resolution+1)
 
 
 		#Compute the number count histogram
@@ -619,17 +616,20 @@ class Gadget2Snapshot(object):
 			raise ValueError("Your bins are too small! Minimum allowed by the current box size is {0}".format(2.0*np.pi/self._header["box_size"]))
 
 		#Compute the gridded number density
-		density,bin_resolution = self.numberDensity(resolution=resolution)
-		resolution_volume = reduce(mul,bin_resolution) 
-
-		#Sanity check on maximum k: maximum is limited by the grid resolution
-		if k_edges.max() > 2.0*np.pi/resolution_volume**(1/3):
-			print("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}): results might be inaccurate".format(k_edges.max(),2.0*np.pi/resolution_volume**(1/3)))
+		density,bin_resolution = self.numberDensity(resolution=resolution) 
 		
 		#Decide pixel sizes in Fourier spaces
 		kpixX = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
 		kpixY = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
 		kpixZ = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
+
+		#Compute the maximum allowed wavenumber
+		k_max = 0.5*np.sqrt((kpixX * density.shape[0])**2 + (kpixY * density.shape[1])**2 + (kpixZ * density.shape[2])**2)
+		k_max_recommended = 1 / (max(bin_resolution))
+
+		#Sanity check on maximum k: maximum is limited by the grid resolution
+		if k_edges.max() > k_max:
+			print("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}, distortions might start to appear already at {2}): results might be inaccurate".format(k_edges.max(),k_max,k_max_recommended))
 
 		#Perform the FFT
 		density_ft = rfftn(density)
