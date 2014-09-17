@@ -140,6 +140,52 @@ class ShearMap(object):
 
 		return new
 
+	
+	def visualize(self,fig=None,ax=None,**kwargs):
+
+		"""
+		Visualize the shear map; the kwargs are passed to imshow 
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot visualize!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots(1,2,figsize=(16,8))
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Plot the map
+		self.ax[0].imshow(self.gamma[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		self.ax[1].imshow(self.gamma[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+
+		#Axes labels
+		self.ax[0].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
+		self.ax[0].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
+		self.ax[0].set_title(r"$\gamma_1$")
+		self.ax[1].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
+		self.ax[1].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
+		self.ax[1].set_title(r"$\gamma_2$")
+
+	
+	def savefig(self,filename):
+
+		"""
+		Saves the map visualization to an external file
+
+		:param filename: name of the file on which to save the map
+		:type filename: str.
+
+		"""
+
+		self.fig.savefig(filename)
+
 
 	def sticks(self,fig=None,ax=None,pixel_step=10,multiplier=1.0):
 
@@ -165,8 +211,7 @@ class ShearMap(object):
 		"""
 
 		if not(matplotlib):
-			print("matplotlib is not installed, please install it!!")
-			return None
+			raise ImportError("matplotlib is not installed, cannot visualize!")
 
 		#Instantiate fig,ax objects
 		if (fig is None) or (ax is None):
@@ -190,6 +235,11 @@ class ShearMap(object):
 
 		#Draw map using matplotlib quiver
 		self.ax.quiver(x*self.side_angle.value/self.gamma.shape[2],y*self.side_angle.value/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
+
+		#Axes labels
+		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
+		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
+
 
 
 	def decompose(self,l_edges,keep_fourier=False):
@@ -253,7 +303,6 @@ class ShearMap(object):
 		return l,P_EE,P_BB,P_EB
 
 
-
 	def convergence(self):
 		
 		"""
@@ -274,13 +323,16 @@ class ShearMap(object):
 		#Return the ConvergenceMap instance
 		return ConvergenceMap(conv,self.side_angle)
 
-	def visualizeComponents(self,axes,components="EE,BB,EB",region=(200,9000,-9000,9000)):
+	def visualizeComponents(self,fig,ax,components="EE,BB,EB",region=(200,9000,-9000,9000)):
 
 		"""
 		Plots the full 2D E and B mode power spectrum (useful to test statistical isotropicity)
 
-		:param axes: axes on which to draw the ellipticity field
-		:type axes: matplotlib ax object or array of ax objects, can be None in which case new axes are created
+		:param fig: figure on which to draw the ellipticity field
+		:type fig: matplotlibfigure object
+
+		:param ax: ax on which to draw the ellipticity field
+		:type ax: matplotlib ax object or array of ax objects, can be None in which case new ax are created
 
 		:param components: string that contains the components to plot; the format is a sequence of {EE,BB,EB} separated by commas 
 		:type components:
@@ -288,13 +340,10 @@ class ShearMap(object):
 		:param region: selects the multipole region to visualize
 		:type region: tuple (lx_min,lx_max,ly_min,ly_max)
 
-		:returns: axes -- array of matplotlib axes objects on which the plots were drawn
-
 		"""
 
 		if not(matplotlib):
-			print("matplotlib is not installed, please install it!!")
-			return None
+			raise ImportError("matplotlib is not installed, cannot visualize!")
 
 		#Set value for frequency pixelization
 		lpix = 360.0/self.side_angle.to(deg).value
@@ -312,19 +361,25 @@ class ShearMap(object):
 			l_edges = np.array([200.0,400.0])
 			self.decompose(l_edges,keep_fourier=True)
 
-		#Create the axes objects
-		if axes is not None:
-			assert len(component_list) == np.size(axes), "You should specify a plotting ax for each component!"
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots(1,len(components))
+
 		else:
-			fig,axes = plt.subplots(1,len(components))
+
+			assert len(component_list)==np.size(ax), "You should specify a plotting ax for each component!"
+			self.fig = fig
+			self.ax = ax
+
 
 		#Do the plotting
 		for n,component in enumerate(component_list):
 
 			if len(component_list)==1:
-				plot_ax = axes
+				plot_ax = self.ax
 			else:
-				plot_ax = axes[n]
+				plot_ax = self.ax[n]
 
 			#Select the numpy array of the appropriate component
 			if component=="EE":
@@ -355,13 +410,3 @@ class ShearMap(object):
 			plot_ax.xaxis.get_major_formatter().set_powerlimits((0, 1))
 			plot_ax.yaxis.get_major_formatter().set_powerlimits((0, 1))
 			plot_ax.ticklabel_format(style='sci')
-
-
-		#return the axes object
-		return axes 
-
-
-
-
-
-

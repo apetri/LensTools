@@ -44,20 +44,8 @@ def test_visualize1():
 	assert hasattr(test_map,"side_angle")
 	assert test_map.gamma.shape[0] == 2
 
-	fig,ax = plt.subplots(1,2,figsize=(16,8))
-	ax[0].imshow(test_map.gamma[0],origin="lower",interpolation="nearest",extent=[0,test_map.side_angle.value,0,test_map.side_angle.value])
-	ax[1].imshow(test_map.gamma[1],origin="lower",interpolation="nearest",extent=[0,test_map.side_angle.value,0,test_map.side_angle.value])
-
-	ax[0].set_xlabel(r"$x$(deg)")
-	ax[0].set_ylabel(r"$y$(deg)")
-	ax[0].set_title(r"$\gamma_1$")
-
-	ax[1].set_xlabel(r"$x$(deg)")
-	ax[1].set_ylabel(r"$y$(deg)")
-	ax[1].set_title(r"$\gamma_2$")
-
-	plt.savefig("shear.png")
-	plt.clf()
+	test_map.visualize()
+	test_map.savefig("shear.png")
 
 def test_EB_decompose():
 
@@ -92,7 +80,7 @@ def test_visualize2():
 
 	fig,ax = plt.subplots()
 	
-	test_map_conv.visualize(fig,ax)
+	test_map_conv.visualize(fig,ax,cmap=plt.cm.Reds)
 	test_map.sticks(fig=fig,ax=ax,pixel_step=40)
 
 	fig.savefig("sticks.png")
@@ -100,18 +88,16 @@ def test_visualize2():
 def test_visualize3():
 
 	fig,ax = plt.subplots(1,2)
-	test_map.visualizeComponents(ax,components="EE,BB",region=(200,20000,-20000,20000))
+	test_map.visualizeComponents(fig,ax,components="EE,BB",region=(200,20000,-20000,20000))
 	fig.tight_layout()
 
-	plt.savefig("auto.png")
-	plt.clf()
+	test_map.savefig("auto.png")
 
 	fig,ax = plt.subplots()
-	test_map.visualizeComponents(ax,components="EB",region=(200,20000,-20000,20000))
+	test_map.visualizeComponents(fig,ax,components="EB",region=(200,20000,-20000,20000))
 	fig.tight_layout()
 
-	plt.savefig("cross.png")
-	plt.clf()
+	test_map.savefig("cross.png")
 
 def test_reconstruct():
 
