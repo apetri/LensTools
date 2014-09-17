@@ -625,9 +625,9 @@ class Gadget2Snapshot(object):
 		density,bin_resolution = self.numberDensity(resolution=resolution) 
 		
 		#Decide pixel sizes in Fourier spaces
-		kpixX = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
-		kpixY = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
-		kpixZ = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit).value
+		kpixX = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit)
+		kpixY = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit)
+		kpixZ = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit)
 
 		#Compute the maximum allowed wavenumber
 		k_max = 0.5*np.sqrt((kpixX * density.shape[0])**2 + (kpixY * density.shape[1])**2 + (kpixZ * density.shape[2])**2)
@@ -641,7 +641,7 @@ class Gadget2Snapshot(object):
 		density_ft = rfftn(density)
 
 		#Compute the azimuthal averages
-		hits,power_spectrum = ext._topology.rfft3_azimuthal(density_ft,density_ft,kpixX,kpixY,kpixZ,k_edges.value)
+		hits,power_spectrum = ext._topology.rfft3_azimuthal(density_ft,density_ft,kpixX.value,kpixY.value,kpixZ.value,k_edges.value)
 
 		#Return the result (normalize the power so it corresponds to the one of the density fluctuations)
 		k = 0.5*(k_edges[1:]+k_edges[:-1])
