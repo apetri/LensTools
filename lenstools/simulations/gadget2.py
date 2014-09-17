@@ -353,10 +353,13 @@ class Gadget2Snapshot(object):
 		self.id.sort() 
 
 
-	def visualize(self,fig=None,ax=None,**kwargs):
+	def visualize(self,fig=None,ax=None,scale=False,**kwargs):
 
 		"""
 		Visualize the particles in the Gadget snapshot using the matplotlib 3D plotting engine, the kwargs are passed to the matplotlib scatter method
+
+		:param scale: if True, multiply all the (comoving) positions by the scale factor
+		:type scale: bool.
 
 		"""
 
@@ -379,7 +382,10 @@ class Gadget2Snapshot(object):
 			self.ax = ax
 
 		#Put the particles in the figure
-		self.ax.scatter(*self.positions.transpose(),**kwargs)
+		if scale:
+			self.ax.scatter(*(self.positions.transpose()*self._header["scale_factor"]),**kwargs)
+		else:
+			self.ax.scatter(*self.positions.transpose(),**kwargs)
 
 		#Put the labels on the axes
 		self.ax.set_xlabel(r"$x({0})$".format(self.positions.unit.to_string()))
