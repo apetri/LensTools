@@ -575,15 +575,15 @@ class Gadget2Snapshot(object):
 
 			#Scale to appropriate units
 			resolution = resolution.to(positions.unit)
-			xi = np.arange(xmin.value,xmin.value + self._header["box_size"],resolution.value)
-			yi = np.arange(ymin.value,ymin.value + self._header["box_size"],resolution.value)
-			zi = np.arange(zmin.value,zmin.value + self._header["box_size"],resolution.value)
+			xi = np.arange(xmin.value,(xmin + self._header["box_size"]).value,resolution.value)
+			yi = np.arange(ymin.value,(ymin + self._header["box_size"]).value,resolution.value)
+			zi = np.arange(zmin.value,(zmin + self._header["box_size"]).value,resolution.value)
 
 		else:
 
-			xi = np.linspace(xmin.value,xmin.value + self._header["box_size"],resolution+1)
-			yi = np.linspace(ymin.value,ymin.value + self._header["box_size"],resolution+1)
-			zi = np.linspace(zmin.value,zmin.value + self._header["box_size"],resolution+1)
+			xi = np.linspace(xmin.value,(xmin + self._header["box_size"]).value,resolution+1)
+			yi = np.linspace(ymin.value,(ymin + self._header["box_size"]).value,resolution+1)
+			zi = np.linspace(zmin.value,(zmin + self._header["box_size"]).value,resolution+1)
 
 
 		#Compute the number count histogram
