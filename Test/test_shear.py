@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.io import fits
-from astropy.units import deg
+from astropy.units import deg,arcsec
 
 def two_file_loader(filename1,filename2):
 
@@ -44,8 +44,10 @@ def test_visualize1():
 	assert hasattr(test_map,"side_angle")
 	assert test_map.gamma.shape[0] == 2
 
+	test_map.setAngularUnits(arcsec)
 	test_map.visualize()
 	test_map.savefig("shear.png")
+	test_map.setAngularUnits(deg)
 
 def test_EB_decompose():
 

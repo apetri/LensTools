@@ -78,6 +78,22 @@ class ConvergenceMap(object):
 		angle,kappa = loader(*args)
 		return cls(kappa,angle)
 
+	def setAngularUnits(self,unit):
+
+		"""
+		Convert the angular units of the map to the desired unit
+
+		:param unit: astropy unit instance to which to perform the conversion
+		:type unit: astropy units 
+		
+		"""
+
+		#Sanity check
+		assert unit.physical_type=="angle"
+		self.side_angle = self.side_angle.to(unit)
+
+
+
 	def visualize(self,fig=None,ax=None,**kwargs):
 
 		"""

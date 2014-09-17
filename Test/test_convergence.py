@@ -11,6 +11,8 @@ except ImportError:
 	from lenstools.defaults import load_fits_default_convergence
 
 import numpy as np
+from astropy.units import deg,rad
+
 import matplotlib.pyplot as plt
 
 
@@ -25,8 +27,10 @@ def test_visualize():
 
 	assert test_map.kappa.dtype == np.float
 
+	test_map.setAngularUnits(rad)
 	test_map.visualize()
 	test_map.savefig("map.png")
+	test_map.setAngularUnits(deg)
 
 def test_power():
 
