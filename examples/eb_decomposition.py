@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.io import fits
+from astropy.units import deg
 
 def two_file_loader(filename1,filename2):
 
@@ -18,7 +19,7 @@ def two_file_loader(filename1,filename2):
 	gamma = np.array((gamma,shear_file_2[0].data.astype(np.float)))
 	shear_file_2.close()
 
-	return angle,gamma
+	return angle*deg,gamma
 
 
 

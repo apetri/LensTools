@@ -9,6 +9,7 @@ from lenstools.defaults import load_fits_default_convergence
 from lenstools.simulations import IGS1
 
 import numpy as np
+from astropy.units import deg,arcmin
 
 import logging
 
@@ -31,7 +32,7 @@ def measure_from_IGS1(filename):
 	conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
 
 	#Smooth 1 arcmin
-	conv_map.smooth(1.0,inplace=True)
+	conv_map.smooth(1.0*arcmin,inplace=True)
 
 	#Measure the moments
 	return conv_map.moments(connected=True,dimensionless=True)
@@ -55,10 +56,10 @@ if (pool is not None) and not(pool.is_master()):
 
 map_mock_ids = range(int(sys.argv[1]))
 
-igs1_set = IGS1(root_path="/astro/astronfs01/jank/Storage/wl/IG/m-series")
-map_igs1_ids = igs1_set.getNames(z=2.0,realizations=range(1,int(sys.argv[1])+1))
+igs1_set = IGS1(root_path="/Users/andreapetri/Documents/Columbia/spurious_shear/convergence_maps")
+map_igs1_ids = igs1_set.getNames(z=1.0,realizations=range(1,int(sys.argv[1])+1))
 
-gen = GaussianNoiseGenerator(shape=(2048,2048),side_angle=3.41,label="convergence") 
+gen = GaussianNoiseGenerator(shape=(2048,2048),side_angle=3.41*deg,label="convergence") 
 power_func = np.loadtxt("Data/ee4e-7.txt",unpack=True)
 
 ens_mock = Ensemble.fromfilelist(map_mock_ids)

@@ -12,6 +12,7 @@ from lenstools.simulations import IGS1
 #####################################################
 
 import numpy as np
+from astropy.units import deg,arcmin
 import matplotlib.pyplot as plt
 
 from emcee.utils import MPIPool
@@ -36,7 +37,7 @@ def compute_histograms(map_id,simulation_set,smoothing_scales,index,generator,bi
 	convergence_map = ConvergenceMap.fromfilename(map_name,loader=load_fits_default_convergence)
 
 	#Generate the shape noise map
-	noise_map = generator.getShapeNoise(z=z,ngal=15.0,seed=map_id)
+	noise_map = generator.getShapeNoise(z=z,ngal=15.0*arcmin**-2,seed=map_id)
 
 	#Add the noise
 	convergence_map += noise_map
@@ -45,7 +46,7 @@ def compute_histograms(map_id,simulation_set,smoothing_scales,index,generator,bi
 	hist_output = np.zeros(index.size)
 	for n,descriptor in enumerate(index.descriptor_list):
 
-		logging.debug("Processing {0} x {1} arcmin".format(map_name,smoothing_scales[n]))
+		logging.debug("Processing {0} x {1}".format(map_name,smoothing_scales[n]))
 
 		smoothed_map = convergence_map.smooth(smoothing_scales[n])
 		v,hist_output[descriptor.first:descriptor.last] = smoothed_map.pdf(bin_edges)
@@ -89,7 +90,7 @@ if __name__=="__main__":
 	num_realizations = cmd_args.num_realizations
 	
 	#Smoothing scales in arcmin
-	smoothing_scales = [0.1,0.5,1.0,2.0]
+	smoothing_scales = [ theta*arcmin for theta in [0.1,0.5,1.0,2.0] ]
 	bin_edges = np.ogrid[-0.15:0.15:128j]
 	bin_midpoints = 0.5*(bin_edges[1:] + bin_edges[:-1])
 	
@@ -129,7 +130,7 @@ if __name__=="__main__":
 	
 		ax[i].set_xlabel(r"$\kappa$")
 		ax[i].set_ylabel(r"$P(\kappa)$")
-		ax[i].set_title(r"${0:.1f}^\prime={1:.1f}$pix".format(smoothing_scales[i],smoothing_scales[i] * sample_map.kappa.shape[0]/(sample_map.side_angle*60.0)))
+		ax[i].set_title(r"${0:.1f}^\prime={1:.1f}$pix".format(smoothing_scales[i].value,(smoothing_scales[i] * sample_map.kappa.shape[0]/(sample_map.side_angle)).decompose().value))
 	
 	
 	fig.tight_layout()
