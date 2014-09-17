@@ -25,7 +25,7 @@ from numpy.fft import rfft2
 from scipy.ndimage import filters
 
 #Units
-from astropy.units import deg
+from astropy.units import deg,arcsec
 
 try:
 	import matplotlib.pyplot as plt
@@ -58,6 +58,7 @@ class ConvergenceMap(object):
 
 		self.kappa = kappa
 		self.side_angle = angle
+		self.resolution = self.side_angle.to(arcsec) / self.kappa.shape[0]
 		self._masked = masked
 
 	@classmethod

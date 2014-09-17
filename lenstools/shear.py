@@ -27,7 +27,7 @@ except ImportError:
 	from utils import rfftfreq
 
 #Units
-from astropy.units import deg,rad
+from astropy.units import deg,rad,arcsec
 
 try:
 	import matplotlib.pyplot as plt
@@ -62,6 +62,7 @@ class ShearMap(object):
 
 		self.gamma = gamma
 		self.side_angle = angle
+		self.resolution = self.side_angle.to(arcsec) / self.gamma.shape[1]
 
 	@classmethod
 	def fromfilename(cls,*args,**kwargs):
