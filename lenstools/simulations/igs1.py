@@ -3,7 +3,27 @@ from __future__ import division,print_function,with_statement
 import os,re
 
 import numpy as np
+
 from astropy.cosmology import FlatwCDM
+from astropy.io import fits
+from astropy.units import deg
+
+from .. import ConvergenceMap
+
+
+######################################
+#######Loader function for IGS1#######
+######################################
+
+def igs1_load(self,filename):
+
+	kappa_file = fits.open(filename)
+	angle = kappa_file[0].header["ANGLE"] * deg
+	kappa = kappa_file[0].data.astype(np.float)
+	kappa_file.close()
+
+	return angle,kappa
+
 
 ######################################
 ###########IGS1 class#################
@@ -22,9 +42,10 @@ class IGS1(FlatwCDM):
 	_num_particles = 512
 	_box_size_mpc = 240
 	_lens_plane_size = 4096
+	_data_loader = igs1_load
 
 
-	def __init__(self,H0=70.0,Om0=0.26,w0=-1.0,sigma8=0.798,ns=0.960,root_path=None,name=None):
+	def __init__(self,H0=72.0,Om0=0.26,w0=-1.0,sigma8=0.798,ns=0.960,root_path=None,name=None):
 
 		super(IGS1,self).__init__(H0,Om0,w0=w0,name=name)
 		self.sigma8 = sigma8
@@ -100,7 +121,7 @@ class IGS1(FlatwCDM):
 		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-1.0,"si8":0.798,"ns":1.000})
 		available_models.append({"Om0":0.26,"Ode0":0.74,"w0":-1.0,"si8":0.798,"ns":0.920})
 
-		model_list = [ cls(root_path=root_path,name="Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(model["Om0"],model["Ode0"],model["w0"],model["ns"],model["si8"]),H0=70.0,Om0=model["Om0"],w0=model["w0"],sigma8=model["si8"],ns=model["ns"]) for model in available_models ]
+		model_list = [ cls(root_path=root_path,name="Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(model["Om0"],model["Ode0"],model["w0"],model["ns"],model["si8"]),H0=72.0,Om0=model["Om0"],w0=model["w0"],sigma8=model["si8"],ns=model["ns"]) for model in available_models ]
 
 		return model_list
 
@@ -151,6 +172,26 @@ class IGS1(FlatwCDM):
 			return os.path.join(full_path,"{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(realizations,self._plane_id(z),int(z*100)))
 		else:
 			return [ os.path.join(full_path,"{0}_".format(prefix)+self._series_name+"-"+self._box_string+"_"+self._cosmo_id_string+"_"+str(self._lens_plane_size)+"xy_{0:0004d}r_{1}_{2:0004d}z_og.gre.fit".format(r,self._plane_id(z),int(z*100))) for r in realizations ]
+
+
+	def load(self,realization,**kwargs):
+
+		"""
+		Reads in a specific realization of the convergence field (in FITS format) and returns a ConvergenceMap instance with the loaded map
+
+		:param realization: the specific realization to read
+		:type realization: int.
+
+		:param kwargs: the keyword arguments are passed to the getNames method
+
+		:returns: ConvergenceMap instance with the loaded map
+
+		"""
+
+		filename = self.getNames(realization,**kwargs)
+		return ConvergenceMap.fromfilename(filename,loader=self._data_loader) 
+
+
 
 
 

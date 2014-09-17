@@ -3,8 +3,23 @@ from __future__ import division,print_function,with_statement
 import os,re
 
 import numpy as np
+from astropy.io import fits
+from astropy.units import deg
 
 from .igs1 import IGS1
+
+######################################
+#######Loader function for CFHT#######
+######################################
+
+def cfht_load(self,filename):
+
+	kappa_file = fits.open(filename)
+	angle = 3.4641016151377544 * deg
+	kappa = kappa_file[0].data.astype(np.float)
+	kappa_file.close()
+
+	return angle,kappa
 
 ######################################
 #######EMU1 simulations###############
@@ -22,6 +37,7 @@ class CFHTemu1(IGS1):
 	_series_name = "emu1"
 	_num_particles = 512
 	_box_size_mpc = 240
+	_data_loader = cfht_load
 
 	@classmethod
 	def getModels(cls,root_path="/default"):
