@@ -24,7 +24,6 @@ thresholds_pk = np.arange(-1.0,5.0,0.2)
 def test_visualize():
 
 	assert test_map.kappa.dtype == np.float
-	assert type(test_map.side_angle) == np.float
 
 	test_map.visualize()
 	test_map.savefig("map.png")

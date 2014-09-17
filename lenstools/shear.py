@@ -26,6 +26,9 @@ try:
 except ImportError:
 	from utils import rfftfreq
 
+#Units
+from astropy.units import deg,rad
+
 try:
 	import matplotlib.pyplot as plt
 	from matplotlib.colors import LogNorm
@@ -54,6 +57,9 @@ class ShearMap(object):
 
 	def __init__(self,gamma,angle):
 
+		#Sanity check
+		assert angle.unit.physical_type=="angle"
+
 		self.gamma = gamma
 		self.side_angle = angle
 
@@ -76,7 +82,7 @@ class ShearMap(object):
 		return cls(gamma,angle)
 
 	@classmethod
-	def fromEBmodes(cls,fourier_E,fourier_B,angle=3.14):
+	def fromEBmodes(cls,fourier_E,fourier_B,angle=3.14*deg):
 
 		"""
 		This class method allows to build a shear map specifying its E and B mode components
@@ -183,7 +189,7 @@ class ShearMap(object):
 		cos_phi[sin_2_phi==0] = np.sqrt(0.5*(1.0 + cos_2_phi[sin_2_phi==0]))
 
 		#Draw map using matplotlib quiver
-		self.ax.quiver(x*self.side_angle/self.gamma.shape[2],y*self.side_angle/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
+		self.ax.quiver(x*self.side_angle.value/self.gamma.shape[2],y*self.side_angle.value/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
 
 
 	def decompose(self,l_edges,keep_fourier=False):
@@ -236,9 +242,9 @@ class ShearMap(object):
 
 		#Compute and return power spectra
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
-		P_EE = _topology.rfft2_azimuthal(ft_E,ft_E,self.side_angle,l_edges)
-		P_BB = _topology.rfft2_azimuthal(ft_B,ft_B,self.side_angle,l_edges)
-		P_EB = _topology.rfft2_azimuthal(ft_E,ft_B,self.side_angle,l_edges)
+		P_EE = _topology.rfft2_azimuthal(ft_E,ft_E,self.side_angle.to(deg).value,l_edges)
+		P_BB = _topology.rfft2_azimuthal(ft_B,ft_B,self.side_angle.to(deg).value,l_edges)
+		P_EB = _topology.rfft2_azimuthal(ft_E,ft_B,self.side_angle.to(deg).value,l_edges)
 
 		if keep_fourier:
 			self.fourier_E = ft_E
@@ -291,7 +297,7 @@ class ShearMap(object):
 			return None
 
 		#Set value for frequency pixelization
-		lpix = 360.0/self.side_angle
+		lpix = 360.0/self.side_angle.to(deg).value
 
 		#First parse the components to plot from the components string
 		component_list = components.split(",")
@@ -328,7 +334,7 @@ class ShearMap(object):
 			elif component=="EB":
 				mode = np.abs((self.fourier_E * self.fourier_B.conjugate()).real)
 
-			stacked = np.vstack((mode[self.fourier_E.shape[0]/2:],mode[:self.fourier_E.shape[0]/2])) * (self.side_angle * np.pi/180.0)**2/(self.fourier_E.shape[0]**4)
+			stacked = np.vstack((mode[self.fourier_E.shape[0]/2:],mode[:self.fourier_E.shape[0]/2])) * (self.side_angle.to(rad).value)**2/(self.fourier_E.shape[0]**4)
 			assert stacked.shape == self.fourier_E.shape
 
 			#Plot the components with the right frequencies on the axes

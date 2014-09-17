@@ -27,21 +27,14 @@ def test_visualize():
 	masked_fraction = conv_map.mask(mask_profile,inplace=True)
 
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
-	ax[0].imshow(mask_profile.kappa,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0.0,mask_profile.side_angle,0.0,mask_profile.side_angle])
-	ax[1].imshow(conv_map.kappa,origin="lower",interpolation="nearest",extent=[0.0,mask_profile.side_angle,0.0,mask_profile.side_angle])
-
-	ax[0].set_xlabel(r"$x$(deg)")
-	ax[0].set_ylabel(r"$y$(deg)")
-	ax[1].set_xlabel(r"$x$(deg)")
-	ax[1].set_ylabel(r"$y$(deg)")
+	mask_profile.visualize(fig,ax[0],cmap=plt.cm.binary)
+	conv_map.visualize(fig,ax[1])
 
 	ax[0].set_title("Mask")
 	ax[1].set_title("Masked map: masking fraction {0:.2f}".format(masked_fraction))
 
 	fig.tight_layout()
-	plt.savefig("mask.png")
-
-	plt.clf()
+	fig.savefig("mask.png")
 
 #Pad the mask with zeros and see the effect on the power spectrum
 def test_power():
@@ -89,13 +82,13 @@ def test_boundaries():
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
 
 	#Plot gradient boundary
-	ax[0].imshow(masked_map._gradient_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[0].imshow(masked_map._gradient_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle.value,0,conv_map.side_angle.value])
 
 	#Plot hessian (but not gradient) boundary
-	ax[1].imshow(masked_map._gradient_boundary ^ masked_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[1].imshow(masked_map._gradient_boundary ^ masked_map._hessian_boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle.value,0,conv_map.side_angle.value])
 
 	#Plot gradient and hessian boundary
-	ax[2].imshow(masked_map.boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle,0,conv_map.side_angle])
+	ax[2].imshow(masked_map.boundary,origin="lower",cmap=plt.cm.binary,interpolation="nearest",extent=[0,conv_map.side_angle.value,0,conv_map.side_angle.value])
 
 	ax[0].set_xlabel(r"$x$(deg)")
 	ax[0].set_ylabel(r"$y$(deg)")

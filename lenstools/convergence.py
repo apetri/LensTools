@@ -24,6 +24,9 @@ from numpy.fft import rfft2
 
 from scipy.ndimage import filters
 
+#Units
+from astropy.units import deg
+
 try:
 	import matplotlib.pyplot as plt
 	matplotlib = True
@@ -50,6 +53,9 @@ class ConvergenceMap(object):
 
 	def __init__(self,kappa,angle,masked=False):
 
+		#Sanity check
+		assert angle.unit.physical_type=="angle"
+
 		self.kappa = kappa
 		self.side_angle = angle
 		self._masked = masked
@@ -72,10 +78,10 @@ class ConvergenceMap(object):
 		angle,kappa = loader(*args)
 		return cls(kappa,angle)
 
-	def visualize(self,fig=None,ax=None):
+	def visualize(self,fig=None,ax=None,**kwargs):
 
 		"""
-		Visualize the convergence map 
+		Visualize the convergence map; the kwargs are passed to imshow 
 
 		"""
 
@@ -93,9 +99,9 @@ class ConvergenceMap(object):
 			self.ax = ax
 
 		#Plot the map
-		self.ax.imshow(self.kappa,origin="lower",interpolation="nearest",extent=[0,self.side_angle,0,self.side_angle])
-		self.ax.set_xlabel(r"$x$(deg)")
-		self.ax.set_ylabel(r"$y$(deg)")
+		self.ax.imshow(self.kappa,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
+		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
 
 	def savefig(self,filename):
 
@@ -526,7 +532,7 @@ class ConvergenceMap(object):
 		ft_map = rfft2(self.kappa)
 
 		#Compute the power spectrum with the C backend implementation
-		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle,l_edges)
+		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle.to(deg).value,l_edges)
 
 		#Output the power spectrum
 		return l,power_spectrum
@@ -568,19 +574,19 @@ class ConvergenceMap(object):
 		ft_map2 = rfft2(other.kappa)
 
 		#Compute the cross power spectrum with the C backend implementation
-		cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle,l_edges)
+		cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(deg).value,l_edges)
 
 		#Output the cross power spectrum
 		return l,cross_power_spectrum
 
 
-	def smooth(self,angle_in_arcmin,kind="gaussian",inplace=False):
+	def smooth(self,scale_angle,kind="gaussian",inplace=False):
 
 		"""
 		Performs a smoothing operation on the convergence map
 
-		:param angle_in_arcmin: size of the smoothing kernel in arcminutes
-		:type angle_in_arcmin: float.
+		:param scale_angle: size of the smoothing kernel (must have units)
+		:type scale_angle: float.
 
 		:param kind: type of smoothing to be performed (only implemented gaussian so far)
 		:type kind: str.
@@ -594,9 +600,10 @@ class ConvergenceMap(object):
 
 		assert not self._masked,"You cannot smooth a masked convergence map!!"
 		assert kind == "gaussian","Only gaussian smoothing implemented!!"
+		assert scale_angle.unit.physical_type=="angle"
 
 		#Compute the smoothing scale in pixel units
-		smoothing_scale_pixel = angle_in_arcmin * self.kappa.shape[0] / (self.side_angle*60.0)
+		smoothing_scale_pixel = (scale_angle * self.kappa.shape[0] / (self.side_angle)).decompose().value
 
 		#Perform the smoothing
 		smoothed_kappa = filters.gaussian_filter(self.kappa,smoothing_scale_pixel)

@@ -27,6 +27,9 @@ except ImportError:
 
 from scipy import interpolate
 
+#Units 
+from astropy.units import deg,arcmin
+
 ########################################################
 ########GaussianNoiseGenerator class####################
 ########################################################
@@ -39,6 +42,9 @@ class GaussianNoiseGenerator(object):
 	"""
 
 	def __init__(self,shape,side_angle,label):
+
+		#Sanity check
+		assert side_angle.unit.physical_type=="angle"
 		
 		self.shape = shape
 		self.side_angle = side_angle
@@ -61,7 +67,7 @@ class GaussianNoiseGenerator(object):
 
 		return cls(conv_map.kappa.shape,conv_map.side_angle,label="convergence")
 
-	def getShapeNoise(self,z=1.0,ngal=15.0,seed=0):
+	def getShapeNoise(self,z=1.0,ngal=15.0*arcmin**-2,seed=0):
 
 		"""
 		This method generates a white, gaussian shape noise map for the given redshift of the map
@@ -69,7 +75,7 @@ class GaussianNoiseGenerator(object):
 		:param z: single redshift of the backround sources on the map
 		:type z: float.
 
-		:param ngal: assumed number of galaxies per square arcminute
+		:param ngal: assumed angular number density of galaxies (must have units of angle^-2)
 		:type ngal: float.
 
 		:param seed: seed of the random generator
@@ -79,11 +85,14 @@ class GaussianNoiseGenerator(object):
 
 		"""
 
+		#Sanity check
+		assert (ngal.unit**-0.5).physical_type=="angle"
+
 		if self.label == "convergence":
 		
 			#Compute shape noise amplitude
-			pixel_side_arcmin = 60.0 * self.side_angle / self.shape[0]
-			sigma = (0.15 + 0.035*z) / (pixel_side_arcmin * np.sqrt(ngal))
+			pixel_angular_side = self.side_angle / self.shape[0]
+			sigma = ((0.15 + 0.035*z) / (pixel_angular_side * np.sqrt(ngal))).decompose().value
 
 			#Generate shape noise
 			np.random.seed(seed)
@@ -99,7 +108,7 @@ class GaussianNoiseGenerator(object):
 	def _fourierMap(self,power_func,**kwargs):
 
 		#Assert the shape of the blueprint, to tune the right size for the fourier transform
-		lpix = 360.0/self.side_angle
+		lpix = 360.0/self.side_angle.to(deg).value
 		lx = rfftfreq(self.shape[0]) * self.shape[0] * lpix
 		ly = fftfreq(self.shape[0]) * self.shape[0] * lpix
 

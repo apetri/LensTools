@@ -13,12 +13,14 @@ except ImportError:
 import numpy as np
 import matplotlib.pyplot as plt
 
+from astropy.units import deg,arcmin
+
 test_map_conv = ConvergenceMap.fromfilename("Data/conv.fit",loader=load_fits_default_convergence)
 
 shape_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
 corr_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
 
-test_map_noisy = test_map_conv + shape_noise_gen.getShapeNoise(z=1.0,ngal=15.0,seed=1)
+test_map_noisy = test_map_conv + shape_noise_gen.getShapeNoise(z=1.0,ngal=15.0*arcmin**-2,seed=1)
 
 l = np.arange(200.0,50000.0,200.0)
 scale = 5000.0
@@ -26,49 +28,34 @@ scale = 5000.0
 
 def test_smooth():
 
-	test_map_conv_smoothed = test_map_conv.smooth(1.0)
+	test_map_conv_smoothed = test_map_conv.smooth(1.0*arcmin)
 
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
-	ax[0].imshow(test_map_conv.kappa,origin="lower",interpolation="nearest",extent=[0,test_map_conv.side_angle,0,test_map_conv.side_angle])
-	ax[1].imshow(test_map_conv_smoothed.kappa,origin="lower",interpolation="nearest",extent=[0,test_map_conv.side_angle,0,test_map_conv.side_angle])
+	test_map_conv.visualize(fig,ax[0])
+	test_map_conv_smoothed.visualize(fig,ax[1])
 
-	ax[0].set_xlabel(r"$x$(deg)")
-	ax[0].set_ylabel(r"$y$(deg)")
 	ax[0].set_title("Unsmoothed")
-	ax[1].set_xlabel(r"$x$(deg)")
-	ax[1].set_ylabel(r"$y$(deg)")
 	ax[1].set_title(r"$1^\prime$")
 
 	fig.tight_layout()
-	plt.savefig("smooth.png")
-
-	plt.clf()
+	fig.savefig("smooth.png")
 
 def test_shape_noise():
 
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
-	
-	ax[0].imshow(test_map_conv.kappa,origin="lower",interpolation="nearest",extent=[0,test_map_conv.side_angle,0,test_map_conv.side_angle])
-	ax[1].imshow(test_map_noisy.kappa,origin="lower",interpolation="nearest",extent=[0,test_map_conv.side_angle,0,test_map_conv.side_angle])
 
-	test_map_conv_smoothed = test_map_noisy.smooth(1.0)
+	test_map_conv.visualize(fig,ax[0])
+	test_map_noisy.visualize(fig,ax[1])
 
-	ax[2].imshow(test_map_conv_smoothed.kappa,origin="lower",interpolation="nearest",extent=[0,test_map_conv.side_angle,0,test_map_conv.side_angle])
+	test_map_conv_smoothed = test_map_noisy.smooth(1.0*arcmin)
+	test_map_conv_smoothed.visualize(fig,ax[2])
 
-	ax[0].set_xlabel(r"$x$(deg)")
-	ax[0].set_ylabel(r"$y$(deg)")
 	ax[0].set_title("Bare")
-	ax[1].set_xlabel(r"$x$(deg)")
-	ax[1].set_ylabel(r"$y$(deg)")
 	ax[1].set_title("Noisy")
-	ax[2].set_xlabel(r"$x$(deg)")
-	ax[2].set_ylabel(r"$y$(deg)")
 	ax[2].set_title(r"Noisy, $1^\prime$")
 
 	fig.tight_layout()
-	plt.savefig("shape_noise.png")
-
-	plt.clf()
+	fig.savefig("shape_noise.png")
 
 def test_correlated_convergence_power():
 
@@ -103,14 +90,10 @@ def test_correlated_convergence_maps():
 	for i in range(3):
 		
 		noise_map = corr_noise_gen.fromConvPower(sample_power_shape,seed=i,scale=scale)
-		ax[i].imshow(noise_map.kappa,origin="lower",interpolation="nearest",extent=[0,noise_map.side_angle,0,noise_map.side_angle])
-		ax[i].set_xlabel(r"$x$(deg)")
-		ax[i].set_ylabel(r"$y$(deg)")
+		noise_map.visualize(fig,ax[i])
 
 	fig.tight_layout()
-	plt.savefig("correlated_maps.png")
-
-	plt.clf()
+	fig.savefig("correlated_maps.png")
 
 def test_interpolated_convergence_power():
 
@@ -149,14 +132,10 @@ def test_interpolated_convergence_maps():
 	for i in range(3):
 		
 		noise_map = corr_noise_gen.fromConvPower(power_func,seed=i,bounds_error=False,fill_value=0.0)
-		ax[i].imshow(noise_map.kappa,origin="lower",interpolation="nearest",extent=[0,noise_map.side_angle,0,noise_map.side_angle])
-		ax[i].set_xlabel(r"$x$(deg)")
-		ax[i].set_ylabel(r"$y$(deg)")
+		noise_map.visualize(fig,ax[i])
 
 	fig.tight_layout()
-	plt.savefig("interpolated_maps.png")
-
-	plt.clf()
+	fig.savefig("interpolated_maps.png")
 
 
 

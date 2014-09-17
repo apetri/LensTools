@@ -16,6 +16,7 @@ import logging
 
 import numpy as np
 from astropy.io import fits
+from astropy.units import deg
 
 from convergence import ConvergenceMap
 from index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle,Moments
@@ -48,7 +49,7 @@ def load_fits_default_convergence(filename):
 	#Close files and return
 	kappa_file.close()
 
-	return angle,kappa
+	return angle*deg,kappa
 
 ##########################################
 #####Default Fits loader shear############
@@ -78,7 +79,7 @@ def load_fits_default_shear(filename):
 	#Close files and return
 	gamma_file.close()
 
-	return angle,gamma
+	return angle*deg,gamma
 
 ################################################################################
 ##########Default callback loader, loads in the measured power spectrum#########
