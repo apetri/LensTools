@@ -4,7 +4,7 @@ from .. import external as ext
 
 import numpy as np
 from scipy.stats import rankdata
-from astropy.units import kpc,Mpc,cm,km,g,s,Msun,quantity
+from astropy.units import kpc,Mpc,cm,km,g,s,Msun,quantity,def_unit
 
 #FFT engines
 from numpy.fft import rfftn
@@ -106,6 +106,9 @@ class Gadget2Snapshot(object):
 
 			#Update the dictionary with the number of particles per side
 			self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))
+
+			#Define the Mpc/h unit for convenience
+			self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
 	@classmethod
 	def open(cls,filename):
@@ -535,6 +538,9 @@ class Gadget2Snapshot(object):
 		self._header["num_particles_file"] = num_particles_file_of_type.sum()
 		self._header["num_particles_total_of_type"] = num_particles_file_of_type
 		self._header["num_particles_total"] = num_particles_file_of_type.sum()
+
+		#Define the Mpc/h unit for convenience
+		self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
 
 	def numberDensity(self,resolution=0.5*Mpc):
