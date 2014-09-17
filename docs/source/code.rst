@@ -70,10 +70,13 @@ Simulation sets
 .. automodule:: lenstools.simulations
 
 .. autoclass:: lenstools.simulations.IGS1
-	:members: getNames, squeeze
+	:members: getNames, squeeze, load
 
 .. autoclass:: lenstools.simulations.CFHTemu1
-	:members: getNames, squeeze, getModels
+	:members: getNames, squeeze, getModels, load
+
+.. autoclass:: lenstools.simulations.CFHTcov
+	:members: getNames,squeeze, getModels, load
 
 Simulation design
 =================
