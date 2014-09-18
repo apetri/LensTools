@@ -144,3 +144,39 @@ class CFHTcov(CFHTemu1):
 
 		return cls(root_path=root_path,name="Om{0:.3f}_Ol{1:.3f}_w{2:.3f}_ns{3:.3f}_si{4:.3f}".format(0.26,0.74,-1.0,0.960,0.800),H0=70.0,Om0=0.26,w0=-1.0,sigma8=0.800,ns=0.960)
 
+
+	def getNames(self,realizations,subfield=1,smoothing=0.5):
+
+		"""
+		Get the full name of the CFHTcov maps, once a subfield and smoothing scale are specified
+
+		:param subfield: the specific CFHT subfield you want to retrieve, must be between 1 and 13
+		:type subfield: int.
+
+		:param smoothing: smoothing scale of the maps you wish to retrieve, in arcmin
+		:type smoothing: float.
+
+		:param realizations: list of realizations to get the names of, the elements must be in [1,1000]
+		:type realizations: list. or int.
+
+		"""
+
+		assert 1 <= subfield <= 13
+		assert type(realizations) == list or type(realizations) == int
+
+		#Build the file name
+		root_path = self.root_path
+
+		name = os.path.join(root_path,self._series_name + "-")
+		name += self._box_string + "_" 
+		name += self._cosmo_id_string 
+		name = os.path.join(name,"subfield{0}".format(subfield)) 
+		name = os.path.join(name,"sigma{0:02d}".format(int(smoothing*10)))
+		name = os.path.join(name,"SIM_KS_sigma{0:02d}_subfield{1}_WL-only_{2}-{3}_{4}_".format(int(smoothing*10),subfield,self._series_name,self._box_string,self._cosmo_id_string))
+
+		#return the results
+		if type(realizations) == int:
+			return name + "{0:0004d}r.fit".format(realizations)
+		else:
+			return [name + "{0:0004d}r.fit".format(r) for r in realizations]
+
