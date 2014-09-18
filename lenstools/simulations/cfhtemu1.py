@@ -172,7 +172,7 @@ class CFHTcov(CFHTemu1):
 		name += self._cosmo_id_string 
 		name = os.path.join(name,"subfield{0}".format(subfield)) 
 		name = os.path.join(name,"sigma{0:02d}".format(int(smoothing*10)))
-		name = os.path.join(name,"SIM_KS_sigma{0:02d}_subfield{1}_WL-only_{2}-{3}_{4}_".format(int(smoothing*10),subfield,self._series_name,self._box_string,self._cosmo_id_string))
+		name = os.path.join(name,"SIM_KS_sigma{0:02d}_subfield{1}_WL-only_{2}-{3}_{4}_{5}xy_".format(int(smoothing*10),subfield,self._series_name,self._box_string,self._cosmo_id_string,self._lens_plane_size))
 
 		#return the results
 		if type(realizations) == int:
