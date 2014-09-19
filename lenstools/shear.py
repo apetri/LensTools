@@ -63,6 +63,21 @@ class ShearMap(object):
 		self.gamma = gamma
 		self.side_angle = angle
 		self.resolution = self.side_angle.to(arcsec) / self.gamma.shape[1]
+		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
+		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
+
+	def info(self):
+
+		"""
+		Displays some of the information stored in the map (mainly resolution)
+
+		"""
+
+		print("Pixels on a side: {0}".format(self.kappa.shape[0]))
+		print("Pixel size: {0}".format(self.resolution))
+		print("Total angular size: {0}".format(self.side_angle))
+		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
+	
 
 	@classmethod
 	def fromfilename(cls,*args,**kwargs):
