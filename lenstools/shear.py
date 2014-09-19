@@ -404,11 +404,11 @@ class ShearMap(object):
 			elif component=="EB":
 				mode = np.abs((self.fourier_E * self.fourier_B.conjugate()).real)
 
-			stacked = np.vstack((mode[self.fourier_E.shape[0]/2:],mode[:self.fourier_E.shape[0]/2])) * (self.side_angle.to(rad).value)**2/(self.fourier_E.shape[0]**4)
-			assert stacked.shape == self.fourier_E.shape
+			#Roll it to get the frequencies in the right order
+			mode = np.roll(mode,mode.shape[0]//2,axis=0)  * (self.side_angle.to(rad).value)**2/(self.fourier_E.shape[0]**4)
 
 			#Plot the components with the right frequencies on the axes
-			plot_cbar = plot_ax.imshow(stacked,origin="lower",interpolation="nearest",norm=LogNorm(),extent=[0,lpix*stacked.shape[1],-lpix*stacked.shape[0]/2,lpix*stacked.shape[0]/2])
+			plot_cbar = plot_ax.imshow(mode,origin="lower",interpolation="nearest",norm=LogNorm(),extent=[0,lpix*mode.shape[1],-lpix*mode.shape[0]/2,lpix*mode.shape[0]/2])
 			plot_ax.set_xlim(region[0],region[1])
 			plot_ax.set_ylim(region[2],region[3])
 
