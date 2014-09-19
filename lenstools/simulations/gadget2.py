@@ -549,13 +549,16 @@ class Gadget2Snapshot(object):
 		self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
 
-	def numberDensity(self,resolution=0.5*Mpc):
+	def numberDensity(self,resolution=0.5*Mpc,save=False):
 
 		"""
 		Uses the np.histogramdd function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
 
 		:param resolution: resolution below which particles are grouped together; if an int is passed, this is the size of the grid
 		:type resolution: float with units or int.
+
+		:param save: if True saves the density histogram and resolution as instance attributes
+		:type save:
 
 		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes)  
 
@@ -599,6 +602,9 @@ class Gadget2Snapshot(object):
 		bin_resolution = ((bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit)
 
 		#Return the density histogram, along with the bin resolution along each axis
+		if save:
+			self.density,self.resolution = density,bin_resolution
+
 		return density,bin_resolution
 
 
@@ -628,7 +634,11 @@ class Gadget2Snapshot(object):
 			raise ValueError("Your bins are too small! Minimum allowed by the current box size is {0}".format(2.0*np.pi/self._header["box_size"]))
 
 		#Compute the gridded number density
-		density,bin_resolution = self.numberDensity(resolution=resolution) 
+		if not hasattr(self,"density"):
+			density,bin_resolution = self.numberDensity(resolution=resolution) 
+		else:
+			assert resolution is None,"The spatial resolution is already specified in the attributes of this instance! Call numberDensity() to modify!"
+			density,bin_resolution = self.density,self.resolution
 		
 		#Decide pixel sizes in Fourier spaces
 		kpixX = (2.0*np.pi/self._header["box_size"]).to(k_edges.unit)
