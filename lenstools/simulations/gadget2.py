@@ -74,7 +74,7 @@ class Gadget2Header(dict):
 class Gadget2Snapshot(object):
 
 	"""
-	A class that handles I/O from Gadget2 snapshots: it was mainly designed to parse physical information from binary gadget snapshots
+	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics
 
 	"""
 
@@ -693,6 +693,12 @@ class Gadget2Snapshot(object):
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = ((bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit)
+
+		#################################################################################################################################
+		######################################Ready to solve poisson equation via FFTs###################################################
+		#################################################################################################################################
+
+
 
 		#Return the computed density histogram
 		return density,bin_resolution

@@ -84,7 +84,7 @@ Simulation design
 .. autoclass:: lenstools.simulations.Design
 	:inherited-members:
 
-I/O from Gadget2 snapshots
+Gadget2 snapshot handling
 ==========================
 
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
