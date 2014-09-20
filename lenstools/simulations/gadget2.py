@@ -608,6 +608,96 @@ class Gadget2Snapshot(object):
 		return density,bin_resolution
 
 
+	def cutPlane(self,normal=2,thickness=0.4*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,thickness_resolution=0.1*Mpc,kind="density"):
+
+		"""
+		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab
+
+		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
+		:type normal: int. (0,1,2)
+
+		:param thickness: thickness of the plane
+		:type thickness: float. with units
+
+		:param center: location of the plane along the normal direction
+		:type thickness: float. with units
+
+		:param plane_resolution: plane resolution (perpendicular to the normal)
+		:type plane_resolution: float. with units (or int.)
+
+		:param thickness_resolution: plane resolution (along the normal)
+		:type thickness_resolution: float. with units (or int.)
+
+		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
+		:type kind: str. ("density" or "potential")
+
+		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes)
+
+		"""
+
+		#Sanity checks
+		assert normal in range(3),"There are only 3 dimensions!"
+		assert kind in ["density","potential"],"Specify density or potential plane!"
+		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
+		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
+
+		#Direction of the plane
+		plane_directions = range(3)
+		plane_directions.pop(normal)
+
+		#Get the particle positions if not available get
+		if hasattr(self,"positions"):
+			positions = self.positions
+		else:
+			positions = self.getPositions(save=False)
+
+		#Lower left corner of the plane
+		left_corner = positions.min(axis=0)
+
+		#Create a list that holds the bins
+		binning = [None,None,None]
+		
+		#Binning in the longitudinal direction
+		assert type(plane_resolution) in [np.int,quantity.Quantity]
+		
+		if type(plane_resolution)==quantity.Quantity:
+			
+			assert plane_resolution.unit.physical_type=="length"
+			plane_resolution = plane_resolution.to(positions.unit)
+			binning[plane_directions[0]] = np.arange(left_corner[plane_directions[0]].value,(left_corner[plane_directions[0]] + self._header["box_size"]).value,plane_resolution.value)
+			binning[plane_directions[1]] = np.arange(left_corner[plane_directions[1]].value,(left_corner[plane_directions[1]] + self._header["box_size"]).value,plane_resolution.value)
+
+		else:
+
+			binning[plane_directions[0]] = np.linspace(left_corner[plane_directions[0]].value,(left_corner[plane_directions[0]] + self._header["box_size"]).value,plane_resolution+1)
+			binning[plane_directions[1]] = np.linspace(left_corner[plane_directions[1]].value,(left_corner[plane_directions[1]] + self._header["box_size"]).value,plane_resolution+1)
+
+		
+		#Binning in the normal direction		
+		assert type(thickness_resolution) in [np.int,quantity.Quantity]
+		center = center.to(positions.unit)
+		thickness  = thickness.to(positions.unit)
+		
+		if type(thickness_resolution)==quantity.Quantity:
+			
+			assert thickness_resolution.unit.physical_type=="length"
+			thickness_resolution = thickness_resolution.to(positions.unit)
+			binning[normal] = np.arange((center - thickness/2).value,(center + thickness/2).value,thickness_resolution.value)
+
+		else:
+
+			binning[normal] = np.linspace((center - thickness/2).value,(center + thickness/2).value,thickness_resolution+1)
+
+		#Now use histogramdd to compute the density along the slab
+		density,bins = np.histogramdd(positions.value,binning)
+
+		#Recompute resolution to make sure it represents the bin size correctly
+		bin_resolution = ((bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit)
+
+		#Return the computed density histogram
+		return density,bin_resolution
+
+
 	def powerSpectrum(self,k_edges,resolution=None):
 
 		"""
