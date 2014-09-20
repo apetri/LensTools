@@ -67,7 +67,7 @@ class MPIWhirlPool(MPIPool):
 		#Stats of the memory to open a window onto
 		assert isinstance(memory,np.ndarray)
 		self.mpi_data_type = MPI.FLOAT
-		self.read_buffer = np.zeros(memory.shape,dtype=memory.dtype)
+		self.memory = memory
 
 		#Create the window
 		self.win = MPI.Win.Create(memory=memory,comm=self.comm)
@@ -81,15 +81,31 @@ class MPIWhirlPool(MPIPool):
 
 		"""
 
+		read_buffer = np.zeros(self.memory.shape,dtype=self.memory.dtype)
+
 		if self.is_master():
-			self.win.Get([self.read_buffer,self.mpi_data_type],process)
+			self.win.Get([read_buffer,self.mpi_data_type],process)
 
 		self.win.Fence()
 
 		if self.is_master():
-			return self.read_buffer
+			return read_buffer
 		else:
 			return None
+
+	def accumulate(self,op=MPI.SUM):
+
+		"""
+		Accumulates the all the window data on the master, performing a custom operation (default is sum)
+
+		"""
+
+		for n in range(1,self.size+1):
+
+			if(self.rank==n):
+				self.win.Accumulate(self.memory,0,op=op)
+
+			self.win.Fence()
 
 
 	def closeWindow(self):
