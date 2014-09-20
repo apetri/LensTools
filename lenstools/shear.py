@@ -66,6 +66,7 @@ class ShearMap(object):
 		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
 		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
 
+	@property
 	def info(self):
 
 		"""

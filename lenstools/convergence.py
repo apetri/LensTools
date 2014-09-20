@@ -63,6 +63,7 @@ class ConvergenceMap(object):
 		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
 		self._masked = masked
 
+	@property
 	def info(self):
 
 		"""

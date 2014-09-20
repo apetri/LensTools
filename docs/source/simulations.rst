@@ -28,7 +28,14 @@ This is an example on how you can use the LensTools API to interact with the sim
 	#Or you can load the images directly in memory
 	>>> image = igs1_ref.load(2,z=1.0)
 
-	#This wraps the image in a ConvergenceMap instance, now you can visualize the map
+	#This wraps the image in a ConvergenceMap instance, now you can, for example, display some info and visualize the map
+	>>> image.info
+	
+	Pixels on a side: 2048
+	Pixel size: 6.08923828125 arcsec
+	Total angular size: 3.4641 deg
+	lmin=1.0e+02 ; lmax=1.5e+05
+	
 	>>> image.visualize()
 
 .. figure:: ../../examples/conv_map.png
