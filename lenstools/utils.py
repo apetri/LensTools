@@ -66,7 +66,6 @@ class MPIWhirlPool(MPIPool):
 
 		#Stats of the memory to open a window onto
 		assert isinstance(memory,np.ndarray)
-		self.mpi_data_type = MPI.FLOAT
 		self.memory = memory
 
 		#Create the window
@@ -84,7 +83,7 @@ class MPIWhirlPool(MPIPool):
 		read_buffer = np.zeros(self.memory.shape,dtype=self.memory.dtype)
 
 		if self.is_master():
-			self.win.Get([read_buffer,self.mpi_data_type],process)
+			self.win.Get(read_buffer,process)
 
 		self.win.Fence()
 
