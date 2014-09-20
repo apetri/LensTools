@@ -7,7 +7,7 @@ from scipy.stats import rankdata
 from astropy.units import kpc,Mpc,cm,km,g,s,Msun,quantity,def_unit
 
 #FFT engines
-from numpy.fft import rfftn
+from numpy.fft import rfftn,irfftn,fftfreq,rfftfreq
 
 try:
 	
@@ -608,7 +608,7 @@ class Gadget2Snapshot(object):
 		return density,bin_resolution
 
 
-	def cutPlane(self,normal=2,thickness=0.4*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,thickness_resolution=0.1*Mpc,kind="density"):
+	def cutPlane(self,normal=2,thickness=0.4*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
 
 		"""
 		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab
@@ -627,6 +627,9 @@ class Gadget2Snapshot(object):
 
 		:param thickness_resolution: plane resolution (along the normal)
 		:type thickness_resolution: float. with units (or int.)
+
+		:param smooth: if not None, performs a smoothing of the density (or potential) with a gaussian kernel of scale "smooth x the pixel resolution"
+		:type smooth: int. or None
 
 		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
 		:type kind: str. ("density" or "potential")
@@ -698,7 +701,18 @@ class Gadget2Snapshot(object):
 		######################################Ready to solve poisson equation via FFTs###################################################
 		#################################################################################################################################
 
+		if smooth is not None:
+		
+			#Fourier transform the density field
+			fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
+			density_ft = rfftn(density)
 
+			#Perform the smoothing
+			density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
+
+			#Go back in real space
+			density = irfftn(density_ft)
+		
 
 		#Return the computed density histogram
 		return density,bin_resolution
