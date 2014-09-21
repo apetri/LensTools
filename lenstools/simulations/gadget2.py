@@ -559,13 +559,16 @@ class Gadget2Snapshot(object):
 		self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
 
-	def numberDensity(self,resolution=0.5*Mpc,save=False):
+	def numberDensity(self,resolution=0.5*Mpc,left_corner=None,save=False):
 
 		"""
 		Uses the np.histogramdd function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
 
 		:param resolution: resolution below which particles are grouped together; if an int is passed, this is the size of the grid
 		:type resolution: float with units or int.
+
+		:param left_corner: specify the position of the lower left corner of the box; if None, the minimum of the (x,y,z) of the contained particles is assumed
+		:type left_corner: tuple of quantities or None
 
 		:param save: if True saves the density histogram and resolution as instance attributes
 		:type save:
@@ -587,7 +590,10 @@ class Gadget2Snapshot(object):
 			positions = self.getPositions(save=False)
 
 		#Bin extremes (we start from the leftmost position up to the box size)
-		xmin,ymin,zmin = positions.min(axis=0)
+		if left_corner is None:
+			xmin,ymin,zmin = positions.min(axis=0)
+		else:
+			xmin,ymin,zmin = left_corner
 
 		#Construct binning
 		if type(resolution)==quantity.Quantity:
@@ -619,7 +625,7 @@ class Gadget2Snapshot(object):
 
 	###################################################################################################################################################
 
-	def cutPlane(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
+	def cutPlane(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
 
 		"""
 		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab; the plane coordinates are cartesian comoving
@@ -635,6 +641,9 @@ class Gadget2Snapshot(object):
 
 		:param plane_resolution: plane resolution (perpendicular to the normal)
 		:type plane_resolution: float. with units (or int.)
+
+		:param left_corner: specify the position of the lower left corner of the box; if None, the minimum of the (x,y,z) of the contained particles is assumed
+		:type left_corner: tuple of quantities or None
 
 		:param thickness_resolution: plane resolution (along the normal)
 		:type thickness_resolution: float. with units (or int.)
@@ -666,7 +675,8 @@ class Gadget2Snapshot(object):
 			positions = self.getPositions(save=False)
 
 		#Lower left corner of the plane
-		left_corner = positions.min(axis=0)
+		if left_corner is None:
+			left_corner = positions.min(axis=0)
 
 		#Create a list that holds the bins
 		binning = [None,None,None]
@@ -731,7 +741,7 @@ class Gadget2Snapshot(object):
 
 	############################################################################################################################################################################
 
-	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
+	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,left_corner=None,plane_lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
 
 		"""
 		Same as cutPlane(), except that this method will return a lens plane as seen from an observer at z=0; the spatial transverse units are converted in angular units as seen from the observer
@@ -745,8 +755,11 @@ class Gadget2Snapshot(object):
 		:param center: location of the plane along the normal direction; it is assumed that the center of the plane is seen from an observer with a redshift of self.header["redshift"]
 		:type center: float. with units
 
-		:param lower_corner: lower left corner of the plane, as seen from the observer (0,0) corresponds to the lower left corner of the snapshot
-		:type lower_corner: float with units.
+		:param left_corner: specify the position of the lower left corner of the box; if None, the minimum of the (x,y,z) of the contained particles is assumed
+		:type left_corner: tuple of quantities or None
+
+		:param plane_lower_corner: lower left corner of the plane, as seen from the observer (0,0) corresponds to the lower left corner of the snapshot
+		:type plane_lower_corner: float with units.
 
 		:param plane_size: angular size of the lens plane (angles start from 0 in the lower left corner)
 		:type plane_size: float with units
@@ -772,7 +785,7 @@ class Gadget2Snapshot(object):
 		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
-		assert type(lower_corner)==quantity.Quantity and lower_corner.unit.physical_type=="angle"
+		assert type(plane_lower_corner)==quantity.Quantity and plane_lower_corner.unit.physical_type=="angle"
 		assert type(plane_size)==quantity.Quantity and plane_size.unit.physical_type=="angle"
 
 		#Direction of the plane
@@ -790,7 +803,8 @@ class Gadget2Snapshot(object):
 		center = center.to(positions.unit)
 
 		#Lower left corner of the plane
-		left_corner = positions.min(axis=0)
+		if left_corner is None:
+			left_corner = positions.min(axis=0)
 
 		#Translate the transverse coordinates so that the lower corner is in (0,0)
 		for i in range(2):
@@ -806,13 +820,13 @@ class Gadget2Snapshot(object):
 			
 			assert plane_resolution.unit.physical_type=="angle"
 			plane_resolution = plane_resolution.to(rad)
-			binning[plane_directions[0]] = np.arange(lower_corner[0].to(rad).value,(lower_corner[0] + plane_size).to(rad).value,plane_resolution.value)
-			binning[plane_directions[1]] = np.arange(lower_corner[1].to(rad).value,(lower_corner[1] + plane_size).to(rad).value,plane_resolution.value)
+			binning[plane_directions[0]] = np.arange(plane_lower_corner[0].to(rad).value,(plane_lower_corner[0] + plane_size).to(rad).value,plane_resolution.value)
+			binning[plane_directions[1]] = np.arange(plane_lower_corner[1].to(rad).value,(plane_lower_corner[1] + plane_size).to(rad).value,plane_resolution.value)
 
 		else:
 
-			binning[plane_directions[0]] = np.linspace(lower_corner[0].to(rad).value,(lower_corner[0] + plane_size).to(rad).value,plane_resolution + 1)
-			binning[plane_directions[1]] = np.linspace(lower_corner[1].to(rad).value,(lower_corner[1] + plane_size).to(rad).value,plane_resolution + 1)
+			binning[plane_directions[0]] = np.linspace(plane_lower_corner[0].to(rad).value,(plane_lower_corner[0] + plane_size).to(rad).value,plane_resolution + 1)
+			binning[plane_directions[1]] = np.linspace(plane_lower_corner[1].to(rad).value,(plane_lower_corner[1] + plane_size).to(rad).value,plane_resolution + 1)
 
 		
 		#Get the snapshot comoving distance from the observer (which is the same as the plane comoving distance)
