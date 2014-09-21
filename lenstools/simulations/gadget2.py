@@ -8,7 +8,12 @@ from astropy.units import kpc,Mpc,cm,km,g,s,deg,arcmin,rad,Msun,quantity,def_uni
 from astropy.cosmology import wCDM
 
 #FFT engines
-from numpy.fft import rfftn,irfftn,fftfreq,rfftfreq
+from numpy.fft import rfftn,irfftn,fftfreq
+try:
+	from numpy.fft import rfftfreq
+except ImportError:
+	from .. import utils
+	rfftfreq = utils.rfftfreq
 
 try:
 	
