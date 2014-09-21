@@ -4,7 +4,8 @@ from .. import external as ext
 
 import numpy as np
 from scipy.stats import rankdata
-from astropy.units import kpc,Mpc,cm,km,g,s,Msun,quantity,def_unit
+from astropy.units import kpc,Mpc,cm,km,g,s,deg,arcmin,rad,Msun,quantity,def_unit
+from astropy.cosmology import wCDM
 
 #FFT engines
 from numpy.fft import rfftn,irfftn,fftfreq,rfftfreq
@@ -109,6 +110,10 @@ class Gadget2Snapshot(object):
 
 			#Define the Mpc/h unit for convenience
 			self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
+
+			#Once all the info is available, add a wCDM instance as attribute to facilitate the cosmological calculations
+			#TODO w0 is not read yet from the snapshot, so set default to -1 for now
+			self.cosmology = wCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=-1.0)
 
 	@classmethod
 	def open(cls,filename):
@@ -607,11 +612,12 @@ class Gadget2Snapshot(object):
 
 		return density,bin_resolution
 
+	###################################################################################################################################################
 
-	def cutPlane(self,normal=2,thickness=0.4*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
+	def cutPlane(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
 
 		"""
-		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab
+		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab; the plane coordinates are cartesian comoving
 
 		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
 		:type normal: int. (0,1,2)
@@ -620,7 +626,7 @@ class Gadget2Snapshot(object):
 		:type thickness: float. with units
 
 		:param center: location of the plane along the normal direction
-		:type thickness: float. with units
+		:type center: float. with units
 
 		:param plane_resolution: plane resolution (perpendicular to the normal)
 		:type plane_resolution: float. with units (or int.)
@@ -695,7 +701,7 @@ class Gadget2Snapshot(object):
 		density,bins = np.histogramdd(positions.value,binning)
 
 		#Recompute resolution to make sure it represents the bin size correctly
-		bin_resolution = ((bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit)
+		bin_resolution = [(bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit]
 
 		#################################################################################################################################
 		######################################Ready to solve poisson equation via FFTs###################################################
@@ -716,6 +722,161 @@ class Gadget2Snapshot(object):
 
 		#Return the computed density histogram
 		return density,bin_resolution
+
+
+	############################################################################################################################################################################
+
+	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
+
+		"""
+		Same as cutPlane(), except that this method will return a lens plane as seen from an observer at z=0; the spatial transverse units are converted in angular units as seen from the observer
+
+		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
+		:type normal: int. (0,1,2)
+
+		:param thickness: thickness of the plane
+		:type thickness: float. with units
+
+		:param center: location of the plane along the normal direction; it is assumed that the center of the plane is seen from an observer with a redshift of self.header["redshift"]
+		:type center: float. with units
+
+		:param lower_corner: lower left corner of the plane, as seen from the observer (0,0) corresponds to the lower left corner of the snapshot
+		:type lower_corner: float with units.
+
+		:param plane_size: angular size of the lens plane (angles start from 0 in the lower left corner)
+		:type plane_size: float with units
+
+		:param plane_resolution: plane angular resolution (perpendicular to the normal)
+		:type plane_resolution: float. with units (or int.)
+
+		:param thickness_resolution: plane resolution (along the normal)
+		:type thickness_resolution: float. with units (or int.)
+
+		:param smooth: if not None, performs a smoothing of the angular density (or potential) with a gaussian kernel of scale "smooth x the pixel resolution"
+		:type smooth: int. or None
+
+		:param kind: decide if computing an angular density or lensing potential plane (this is computed solving the poisson equation)
+		:type kind: str. ("density" or "potential")
+
+		:returns: tuple(numpy 3D array with the (unsmoothed) particle angular number density,bin angular resolution)
+
+		"""
+
+		#Sanity checks
+		assert normal in range(3),"There are only 3 dimensions!"
+		assert kind in ["density","potential"],"Specify density or potential plane!"
+		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
+		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
+		assert type(lower_corner)==quantity.Quantity and lower_corner.unit.physical_type=="angle"
+		assert type(plane_size)==quantity.Quantity and plane_size.unit.physical_type=="angle"
+
+		#Direction of the plane
+		plane_directions = range(3)
+		plane_directions.pop(normal)
+
+		#Get the particle positions if not available get
+		if hasattr(self,"positions"):
+			positions = self.positions
+		else:
+			positions = self.getPositions(save=False)
+
+		#Scale the units
+		thickness = thickness.to(positions.unit)
+		center = center.to(positions.unit)
+
+		#Lower left corner of the plane
+		left_corner = positions.min(axis=0)
+
+		#Translate the transverse coordinates so that the lower corner is in (0,0)
+		for i in range(2):
+			positions[:,plane_directions[i]] -= left_corner[plane_directions[i]]
+
+		#Create a list that holds the bins
+		binning = [None,None,None]
+		
+		#Binning in the longitudinal direction
+		assert type(plane_resolution) in [np.int,quantity.Quantity]
+		
+		if type(plane_resolution)==quantity.Quantity:
+			
+			assert plane_resolution.unit.physical_type=="angle"
+			plane_resolution = plane_resolution.to(rad)
+			binning[plane_directions[0]] = np.arange(lower_corner[0].to(rad).value,(lower_corner[0] + plane_size).to(rad).value,plane_resolution.value)
+			binning[plane_directions[1]] = np.arange(lower_corner[1].to(rad).value,(lower_corner[1] + plane_size).to(rad).value,plane_resolution.value)
+
+		else:
+
+			binning[plane_directions[0]] = np.linspace(lower_corner[0].to(rad).value,(lower_corner[0] + plane_size).to(rad).value,plane_resolution + 1)
+			binning[plane_directions[1]] = np.linspace(lower_corner[1].to(rad).value,(lower_corner[1] + plane_size).to(rad).value,plane_resolution + 1)
+
+		
+		#Get the snapshot comoving distance from the observer (which is the same as the plane comoving distance)
+		plane_comoving_distance = self.cosmology.comoving_distance(self._header["redshift"]).to(positions.unit)
+
+		#Binning in the normal direction		
+		assert type(thickness_resolution) in [np.int,quantity.Quantity]
+		center = center.to(positions.unit)
+		thickness  = thickness.to(positions.unit)
+		
+		if type(thickness_resolution)==quantity.Quantity:
+			
+			assert thickness_resolution.unit.physical_type=="length"
+			thickness_resolution = thickness_resolution.to(positions.unit)
+			binning[normal] = np.arange((plane_comoving_distance - thickness/2).value,(plane_comoving_distance + thickness/2).value,thickness_resolution.value)
+
+		else:
+
+			binning[normal] = np.linspace((plane_comoving_distance - thickness/2).value,(plane_comoving_distance + thickness/2).value,thickness_resolution+1)
+
+
+		#Now that everything has the same units, let's go dimensionless to convert into angular units
+		length_unit = positions.unit
+		positions = positions.value
+
+		#Convert the normal direction into comoving distance from the observer
+		positions[:,normal] += (plane_comoving_distance.value - center.value)
+
+		#Convert the longitudinal spatial coordinates into angles (theta = comiving transverse/comoving distance)
+		for i in range(2):
+			positions[:,plane_directions[i]] /= positions[:,normal]
+
+		#Now use histogramdd to compute the angular density on the lens plane
+		density,bins = np.histogramdd(positions,binning)
+
+		#Recompute resolution to make sure it represents the bin size correctly
+		bin_resolution = [ (bins[0][1:]-bins[0][:-1]).mean() , (bins[1][1:]-bins[1][:-1]).mean() , (bins[2][1:]-bins[2][:-1]).mean() ]
+		
+		#Restore units
+		bin_resolution[normal] *= length_unit
+	
+		for i in range(2):
+
+			try:
+				bin_resolution[plane_directions[i]] = (bin_resolution[plane_directions[i]] * rad).to(plane_resolution.unit)
+			except AttributeError:
+				bin_resolution[plane_directions[i]] = (bin_resolution[plane_directions[i]] * rad).to(arcmin)
+
+
+		#############################################################################################################################################
+		######################################Ready to solve the lensing poisson equation via FFTs###################################################
+		#############################################################################################################################################
+
+		if smooth is not None:
+		
+			#Fourier transform the density field
+			fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
+			density_ft = rfftn(density)
+
+			#Perform the smoothing
+			density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
+
+			#Go back in real space
+			density = irfftn(density_ft)
+
+
+		#Return
+		return density,bin_resolution
+
 
 
 	def powerSpectrum(self,k_edges,resolution=None):
