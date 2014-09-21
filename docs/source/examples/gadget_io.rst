@@ -5,15 +5,15 @@ LensTools provides an easy to use API to interact with the Gadget2 binary format
 
 ::
 	
-	from lenstools.simulations import Gadget2Snapshot
+	>>> from lenstools.simulations import Gadget2Snapshot
 
-	import numpy as np
-	from astropy.units import Mpc,m,s
+	>>> import numpy as np
+	>>> from astropy.units import Mpc,m,s
 
 	#Generate random positions and velocities
-	NumPart = 32**3
-	x = np.random.normal(loc=7.0,scale=5.0,size=(NumPart,3)) * Mpc
-	v = np.random.uniform(-1,1,size=(NumPart,3)) * m / s
+	>>> NumPart = 32**3
+	>>> x = np.random.normal(loc=7.0,scale=5.0,size=(NumPart,3)) * Mpc
+	>>> v = np.random.uniform(-1,1,size=(NumPart,3)) * m / s
 
 
 Then we write them to a snapshot 
@@ -23,17 +23,19 @@ Then we write them to a snapshot
 	########################Write#################################
 
 	#Create an empty gadget snapshot
-	snap = Gadget2Snapshot()
+
+	>>> snap = Gadget2Snapshot()
 
 	#Put the particles in the snapshot
-	snap.setPositions(x)
-	snap.setVelocities(v)
+	>>> snap.setPositions(x)
+	>>> snap.setVelocities(v)
 
 	#Generate minimal header
-	snap.setHeaderInfo()
+	>>> snap.setHeaderInfo()
 
 	#Write the snapshot
-	snap.write("gadget_ic")
+	>>> snap.write("gadget_ic")
+
 
 Now check that we did everything correctly, visualizing the snapshot 
 
@@ -42,19 +44,19 @@ Now check that we did everything correctly, visualizing the snapshot
 	######################Read and visualize#########################
 
 	#Open the snapshot
-	snap = Gadget2Snapshot.open("gadget_ic")
+	>>> snap = Gadget2Snapshot.open("gadget_ic")
 
 	#Visualize the header
-	print(snap.header)
+	>>> print(snap.header)
 
 	#Get positions and velocities
-	snap.getPositions()
-	snap.getVelocities()
+	>>> snap.getPositions()
+	>>> snap.getVelocities()
 
 	#Visualize the snapshot
-	snap.visualize(s=1)
-	snap.savefig("snapshot.png")
-	snap.close()
+	>>> snap.visualize(s=1)
+	>>> snap.savefig("snapshot.png")
+	>>> snap.close()
 
 This is the result 
 
@@ -64,62 +66,39 @@ If you don't believe that this works, here it is what happens with an actual sna
 
 ::
 
-
 	######################Read and visualize#########################
 
 	#Open the snapshot
-	snap = Gadget2Snapshot.open("../Test/Data/gadget/snapshot_001")
+	>>> snap = Gadget2Snapshot.open("../Test/Data/gadget/snapshot_001")
 
 	#Visualize the header
-	print(snap.header)
+	>>> print(snap.header)
 
-H0 : 72.0 km / (Mpc s) 
-
-Ode0 : 0.74 
-
-Om0 : 0.26 
-
-box_size : 15.0 Mpc 
-
-endianness : 0 
-
-files : ['../Test/Data/gadget/snapshot_001'] 
-
-flag_cooling : 0 
-
-flag_feedback : 0 
-
-flag_sfr : 0 
-
-h : 0.72 
-
-masses : [  0.00000000e+00   1.03224800e+10   0.00000000e+00   0.00000000e+00 0.00000000e+00   0.00000000e+00] solMass
-
-num_files : 1 
-
-num_particles_file : 32768 
-
-num_particles_file_gas : 0 
-
-num_particles_file_of_type : [    0 32768     0     0     0     0]
-
-num_particles_file_with_mass : 0 
-
-num_particles_total : 32768 
-
-num_particles_total_gas : 0 
-
-num_particles_total_of_type : [    0 32768     0     0     0     0]
-
-num_particles_total_side : 32 
-
-num_particles_total_with_mass : 0 
-
-redshift : 2.94758939237 
-
-scale_factor : 0.253319152679 
-
-::
+	H0 : 72.0 km / (Mpc s)
+	Ode0 : 0.74
+	Om0 : 0.26
+	box_size : 15.0 Mpc
+	endianness : 0
+	files : ['Test/Data/gadget/snapshot_001']
+	flag_cooling : 0
+	flag_feedback : 0
+	flag_sfr : 0
+	h : 0.72
+	masses : [  0.00000000e+00   1.03224800e+10   0.00000000e+00   0.00000000e+00 0.00000000e+00   0.00000000e+00] solMass
+	num_files : 1
+	num_particles_file : 32768
+	num_particles_file_gas : 0
+	num_particles_file_of_type : [    0 32768     0     0     0     0]
+	num_particles_file_with_mass : 0
+	num_particles_total : 32768
+	num_particles_total_gas : 0
+	num_particles_total_of_type : [    0 32768     0     0     0     0]
+	num_particles_total_side : 32
+	num_particles_total_with_mass : 0
+	redshift : 2.94758939237
+	scale_factor : 0.253319152679
+	w0 : -1.0
+	wa : 0.0
 
 	#Get positions and velocities
 	snap.getPositions()

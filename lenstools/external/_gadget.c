@@ -129,6 +129,8 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	if(PyDict_SetItemString(header_dict,"redshift",Py_BuildValue("d",header.redshift))) return NULL;
 	if(PyDict_SetItemString(header_dict,"Om0",Py_BuildValue("d",header.Omega0))) return NULL;
 	if(PyDict_SetItemString(header_dict,"Ode0",Py_BuildValue("d",header.OmegaLambda))) return NULL;
+	if(PyDict_SetItemString(header_dict,"w0",Py_BuildValue("d",header.w0))) return NULL;
+	if(PyDict_SetItemString(header_dict,"wa",Py_BuildValue("d",header.wa))) return NULL;
 	if(PyDict_SetItemString(header_dict,"h",Py_BuildValue("d",header.HubbleParam))) return NULL;
 	if(PyDict_SetItemString(header_dict,"box_size",Py_BuildValue("d",header.BoxSize))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_files",Py_BuildValue("i",header.num_files))) return NULL;
@@ -285,6 +287,8 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	//simple doubles
 	header.Omega0 = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"Om0"));
 	header.OmegaLambda = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"Ode0"));
+	header.w0 = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"w0"));
+	header.wa = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"wa"));
 	header.time = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"scale_factor"));
 	header.redshift = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"redshift"));
 	header.BoxSize = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"box_size"));

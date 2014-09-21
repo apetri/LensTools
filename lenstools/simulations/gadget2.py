@@ -5,7 +5,7 @@ from .. import external as ext
 import numpy as np
 from scipy.stats import rankdata
 from astropy.units import kpc,Mpc,cm,km,g,s,deg,arcmin,rad,Msun,quantity,def_unit
-from astropy.cosmology import wCDM
+from astropy.cosmology import w0waCDM
 
 #FFT engines
 from numpy.fft import rfftn,irfftn,fftfreq
@@ -54,7 +54,7 @@ class Gadget2Header(dict):
 		assert isinstance(rhs,Gadget2Header),"addition not defined if rhs is not a Gadget2Header!"
 
 		#Check that it makes sense to add the snapshots (cosmological parameters, box size, time and redshift must agree)
-		fields_to_match = ["Ode0","Om0","h","box_size","endianness","flag_cooling","flag_feedback","flag_sfr","num_files"]
+		fields_to_match = ["Ode0","Om0","h","w0","wa","box_size","endianness","flag_cooling","flag_feedback","flag_sfr","num_files"]
 		fields_to_match += ["num_particles_total","num_particles_total_gas","num_particles_total_side","num_particles_total_with_mass","redshift","scale_factor"]
 
 		for field in fields_to_match:
@@ -117,8 +117,7 @@ class Gadget2Snapshot(object):
 			self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
 			#Once all the info is available, add a wCDM instance as attribute to facilitate the cosmological calculations
-			#TODO w0 is not read yet from the snapshot, so set default to -1 for now
-			self.cosmology = wCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=-1.0)
+			self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
 
 	@classmethod
 	def open(cls,filename):
@@ -522,7 +521,7 @@ class Gadget2Snapshot(object):
 		self.velocities = velocities
 
 	
-	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,h=0.72,redshift=1.0,box_size=15.0*Mpc,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
+	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,w0=-1.0,wa=-1.0,h=0.72,redshift=1.0,box_size=15.0*Mpc,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
 
 		"""
 		Sets the header info in the snapshot to write
@@ -542,6 +541,8 @@ class Gadget2Snapshot(object):
 		#Fill in
 		self._header["Om0"] = Om0
 		self._header["Ode0"] = Ode0
+		self._header["w0"] = w0
+		self._header["wa"] = wa
 		self._header["h"] = h
 		self._header["redshift"] = redshift
 		self._header["scale_factor"] = 1.0 / (1.0 + redshift)
