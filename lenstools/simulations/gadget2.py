@@ -1,10 +1,15 @@
 from __future__ import division
+from operator import mul
+from functools import reduce
 
 from .. import external as ext
 
 import numpy as np
 from scipy.stats import rankdata
+
+#astropy stuff, invaluable here
 from astropy.units import kpc,Mpc,cm,km,g,s,deg,arcmin,rad,Msun,quantity,def_unit
+from astropy.constants import c
 from astropy.cosmology import w0waCDM
 
 #FFT engines
@@ -744,7 +749,7 @@ class Gadget2Snapshot(object):
 
 	############################################################################################################################################################################
 
-	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,left_corner=None,plane_lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
+	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,left_corner=None,plane_lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,tomography=False,kind="density"):
 
 		"""
 		Same as cutPlane(), except that this method will return a lens plane as seen from an observer at z=0; the spatial transverse units are converted in angular units as seen from the observer
@@ -776,10 +781,13 @@ class Gadget2Snapshot(object):
 		:param smooth: if not None, performs a smoothing of the angular density (or potential) with a gaussian kernel of scale "smooth x the pixel resolution"
 		:type smooth: int. or None
 
+		:param tomography: if True returns the lens plane angular density for each slab, otherwise a projected density (or lensing potential) is computed
+		:type tomography: bool.
+
 		:param kind: decide if computing an angular density or lensing potential plane (this is computed solving the poisson equation)
 		:type kind: str. ("density" or "potential")
 
-		:returns: tuple(numpy 3D array with the (unsmoothed) particle angular number density,bin angular resolution)
+		:returns: tuple(numpy 2D or 3D array with the (unsmoothed) particle angular number density,bin angular resolution); the constant spatial part of the density field is subtracted (we keep the fluctuation only)
 
 		"""
 
@@ -790,6 +798,9 @@ class Gadget2Snapshot(object):
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 		assert type(plane_lower_corner)==quantity.Quantity and plane_lower_corner.unit.physical_type=="angle"
 		assert type(plane_size)==quantity.Quantity and plane_size.unit.physical_type=="angle"
+
+		#First compute the overall normalization factor for the angular density
+		cosmo_normalization = 1.5 * (self._header["H0"]**2) * self._header["Om0"]  * self.cosmology.comoving_distance(self._header["redshift"]) / c**2
 
 		#Direction of the plane
 		plane_directions = range(3)
@@ -879,24 +890,64 @@ class Gadget2Snapshot(object):
 				bin_resolution[plane_directions[i]] = (bin_resolution[plane_directions[i]] * rad).to(arcmin) 
 
 		#############################################################################################################################################
+		######################################If tomography is desired, we can return now############################################################
+		#############################################################################################################################################
+
+		if tomography:
+
+			if kind=="potential":
+				raise ValueError("You selected kind=potential, but lensing potential tomography is not defined, the density fluctuation will be returned instead!")
+
+			return (density * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value - 1.0, bin_resolution
+
+		#############################################################################################################################################
 		######################################Ready to solve the lensing poisson equation via FFTs###################################################
 		#############################################################################################################################################
 
-		if smooth is not None:
+		#First project the density along the line of sight
+		density = density.sum(normal)
+		bin_resolution.pop(normal)
+
+		#Compute the normalization factor to convert the absolute number density into a relative number density
+		density_normalization = (self._header["box_size"]/self._header["num_particles_total"]) * (self.lensMaxSize() / bin_resolution[0])**2
+
+		#Then solve the poisson equation and/or smooth the density field with FFTs
+		if (smooth is not None) or kind=="potential":
 		
+			#Compute the multipoles
+			lx,ly = np.meshgrid(fftfreq(density.shape[0]),rfftfreq(density.shape[1]),indexing="ij")
+			l_squared = lx**2 + ly**2
+
+			#Save memory
+			del(lx)
+			del(ly)
+
+			#Avoid dividing by 0
+			l_squared[0,0] = 1.0
+
 			#Fourier transform the density field
-			fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
 			density_ft = rfftn(density)
 
 			#Perform the smoothing
-			density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
+			if smooth is not None:
+				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*l_squared)
+
+			#If kind is potential, solve the poisson equation
+			if kind=="potential":
+				density_ft *= -2.0 * ((bin_resolution[0].to(rad).value)**2) / l_squared
+				
+			#Return only the density fluctuation, dropping the zeroth frequency (i.e. uniform part)
+			density_ft[0,0] = 0.0 
 
 			#Go back in real space
 			density = irfftn(density_ft)
 
+		else:
+
+			density -= density.sum() / reduce(mul,density.shape)
 
 		#Return
-		return density,bin_resolution
+		return (density*cosmo_normalization*density_normalization).decompose().value,bin_resolution
 
 
 	#############################################################################################################################################
