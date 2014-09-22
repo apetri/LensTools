@@ -97,10 +97,14 @@ class Gadget2Snapshot(object):
 			self._header = Gadget2Header(ext._gadget.getHeader(fp))
 			self._header["files"] = [self.fp.name]
 
-			#Scale box to kpc
-			self._header["box_size"] *= kpc
-			#Convert to Mpc
-			self._header["box_size"] = self._header["box_size"].to(Mpc)
+			#Define the Mpc/h, and kpc/h units for convenience
+			self.kpc_over_h = def_unit("kpc/h",kpc/self._header["h"])
+			self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
+
+			#Scale box to kpc/h
+			self._header["box_size"] *= self.kpc_over_h
+			#Convert to Mpc/h
+			self._header["box_size"] = self._header["box_size"].to(self.Mpc_over_h)
 
 			#Scale masses to correct units
 			self._header["masses"] *= (self._mass_unit / self._header["h"])
@@ -112,9 +116,6 @@ class Gadget2Snapshot(object):
 
 			#Update the dictionary with the number of particles per side
 			self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))
-
-			#Define the Mpc/h unit for convenience
-			self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
 			#Once all the info is available, add a wCDM instance as attribute to facilitate the cosmological calculations
 			self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
@@ -197,7 +198,7 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * kpc).to(Mpc) 
+		positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * self.kpc_over_h).to(self.Mpc_over_h) 
 		if save:
 			self.positions = positions
 		
@@ -444,13 +445,13 @@ class Gadget2Snapshot(object):
 
 		#Build a bare header based on the available info (need to convert units back to the Gadget ones)
 		_header_bare = self._header.copy()
-		_header_bare["box_size"] = _header_bare["box_size"].to(kpc).value
+		_header_bare["box_size"] = _header_bare["box_size"].to(self.kpc_over_h).value
 		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"] / self._mass_unit
 		_header_bare["num_particles_file_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 
 		#Convert units for positions and velocities
-		_positions_converted = self.positions.to(kpc).value.astype(np.float32)
+		_positions_converted = self.positions.to(self.kpc_over_h).value.astype(np.float32)
 		_velocities_converted = (self.velocities.to(cm/s).value / self._velocity_unit).astype(np.float32)
 
 		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
@@ -556,7 +557,8 @@ class Gadget2Snapshot(object):
 		self._header["num_particles_total_of_type"] = num_particles_file_of_type
 		self._header["num_particles_total"] = num_particles_file_of_type.sum()
 
-		#Define the Mpc/h unit for convenience
+		#Define the kpc/h and Mpc/h units for convenience
+		self.kpc_over_h = def_unit("kpc/h",kpc/self._header["h"])
 		self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
 
@@ -601,15 +603,15 @@ class Gadget2Snapshot(object):
 
 			#Scale to appropriate units
 			resolution = resolution.to(positions.unit)
-			xi = np.arange(xmin.value,(xmin + self._header["box_size"]).value,resolution.value)
-			yi = np.arange(ymin.value,(ymin + self._header["box_size"]).value,resolution.value)
-			zi = np.arange(zmin.value,(zmin + self._header["box_size"]).value,resolution.value)
+			xi = np.arange(xmin.to(positions.unit).value,(xmin + self._header["box_size"]).to(positions.unit).value,resolution.value)
+			yi = np.arange(ymin.to(positions.unit).value,(ymin + self._header["box_size"]).to(positions.unit).value,resolution.value)
+			zi = np.arange(zmin.to(positions.unit).value,(zmin + self._header["box_size"]).to(positions.unit).value,resolution.value)
 
 		else:
 
-			xi = np.linspace(xmin.value,(xmin + self._header["box_size"]).value,resolution+1)
-			yi = np.linspace(ymin.value,(ymin + self._header["box_size"]).value,resolution+1)
-			zi = np.linspace(zmin.value,(zmin + self._header["box_size"]).value,resolution+1)
+			xi = np.linspace(xmin.to(positions.unit).value,(xmin + self._header["box_size"]).to(positions.unit).value,resolution+1)
+			yi = np.linspace(ymin.to(positions.unit).value,(ymin + self._header["box_size"]).to(positions.unit).value,resolution+1)
+			zi = np.linspace(zmin.to(positions.unit).value,(zmin + self._header["box_size"]).to(positions.unit).value,resolution+1)
 
 
 		#Compute the number count histogram
@@ -689,13 +691,13 @@ class Gadget2Snapshot(object):
 			
 			assert plane_resolution.unit.physical_type=="length"
 			plane_resolution = plane_resolution.to(positions.unit)
-			binning[plane_directions[0]] = np.arange(left_corner[plane_directions[0]].value,(left_corner[plane_directions[0]] + self._header["box_size"]).value,plane_resolution.value)
-			binning[plane_directions[1]] = np.arange(left_corner[plane_directions[1]].value,(left_corner[plane_directions[1]] + self._header["box_size"]).value,plane_resolution.value)
+			binning[plane_directions[0]] = np.arange(left_corner[plane_directions[0]].to(positions.unit).value,(left_corner[plane_directions[0]] + self._header["box_size"]).to(positions.unit).value,plane_resolution.value)
+			binning[plane_directions[1]] = np.arange(left_corner[plane_directions[1]].to(positions.unit).value,(left_corner[plane_directions[1]] + self._header["box_size"]).to(positions.unit).value,plane_resolution.value)
 
 		else:
 
-			binning[plane_directions[0]] = np.linspace(left_corner[plane_directions[0]].value,(left_corner[plane_directions[0]] + self._header["box_size"]).value,plane_resolution+1)
-			binning[plane_directions[1]] = np.linspace(left_corner[plane_directions[1]].value,(left_corner[plane_directions[1]] + self._header["box_size"]).value,plane_resolution+1)
+			binning[plane_directions[0]] = np.linspace(left_corner[plane_directions[0]].to(positions.unit).value,(left_corner[plane_directions[0]] + self._header["box_size"]).to(positions.unit).value,plane_resolution+1)
+			binning[plane_directions[1]] = np.linspace(left_corner[plane_directions[1]].to(positions.unit).value,(left_corner[plane_directions[1]] + self._header["box_size"]).to(positions.unit).value,plane_resolution+1)
 
 		
 		#Binning in the normal direction		
@@ -707,11 +709,11 @@ class Gadget2Snapshot(object):
 			
 			assert thickness_resolution.unit.physical_type=="length"
 			thickness_resolution = thickness_resolution.to(positions.unit)
-			binning[normal] = np.arange((center - thickness/2).value,(center + thickness/2).value,thickness_resolution.value)
+			binning[normal] = np.arange((center - thickness/2).to(positions.unit).value,(center + thickness/2).to(positions.unit).value,thickness_resolution.value)
 
 		else:
 
-			binning[normal] = np.linspace((center - thickness/2).value,(center + thickness/2).value,thickness_resolution+1)
+			binning[normal] = np.linspace((center - thickness/2).to(positions.unit).value,(center + thickness/2).to(positions.unit).value,thickness_resolution+1)
 
 		#Now use histogramdd to compute the density along the slab
 		density,bins = np.histogramdd(positions.value,binning)
@@ -842,11 +844,11 @@ class Gadget2Snapshot(object):
 			
 			assert thickness_resolution.unit.physical_type=="length"
 			thickness_resolution = thickness_resolution.to(positions.unit)
-			binning[normal] = np.arange((plane_comoving_distance - thickness/2).value,(plane_comoving_distance + thickness/2).value,thickness_resolution.value)
+			binning[normal] = np.arange((plane_comoving_distance - thickness/2).to(positions.unit).value,(plane_comoving_distance + thickness/2).to(positions.unit).value,thickness_resolution.value)
 
 		else:
 
-			binning[normal] = np.linspace((plane_comoving_distance - thickness/2).value,(plane_comoving_distance + thickness/2).value,thickness_resolution+1)
+			binning[normal] = np.linspace((plane_comoving_distance - thickness/2).to(positions.unit).value,(plane_comoving_distance + thickness/2).to(positions.unit).value,thickness_resolution+1)
 
 
 		#Now that everything has the same units, let's go dimensionless to convert into angular units
@@ -874,8 +876,7 @@ class Gadget2Snapshot(object):
 			try:
 				bin_resolution[plane_directions[i]] = (bin_resolution[plane_directions[i]] * rad).to(plane_resolution.unit)
 			except AttributeError:
-				bin_resolution[plane_directions[i]] = (bin_resolution[plane_directions[i]] * rad).to(arcmin)
-
+				bin_resolution[plane_directions[i]] = (bin_resolution[plane_directions[i]] * rad).to(arcmin) 
 
 		#############################################################################################################################################
 		######################################Ready to solve the lensing poisson equation via FFTs###################################################
@@ -897,6 +898,20 @@ class Gadget2Snapshot(object):
 		#Return
 		return density,bin_resolution
 
+
+	#############################################################################################################################################
+
+	def lensMaxSize(self):
+
+		"""
+		Computes the maximum observed size of a lens plane cut out of the current snapshot
+	
+		"""
+
+		return ((self._header["box_size"] / self.cosmology.comoving_distance(self._header["redshift"])) * rad).to(deg)
+
+
+	#############################################################################################################################################
 
 
 	def powerSpectrum(self,k_edges,resolution=None):
@@ -938,7 +953,7 @@ class Gadget2Snapshot(object):
 
 		#Compute the maximum allowed wavenumber
 		k_max = 0.5*np.sqrt((kpixX * density.shape[0])**2 + (kpixY * density.shape[1])**2 + (kpixZ * density.shape[2])**2)
-		k_max_recommended = 1 / (max(bin_resolution))
+		k_max_recommended = (1 / (max(bin_resolution))).to(k_max.unit)
 
 		#Sanity check on maximum k: maximum is limited by the grid resolution
 		if k_edges.max() > k_max:
