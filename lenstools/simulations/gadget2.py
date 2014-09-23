@@ -92,13 +92,14 @@ class Gadget2Snapshot(object):
 	_mass_unit = 1.989e43
 	_velocity_unit = 1.0e5
 
-	def __init__(self,fp=None):
+	def __init__(self,fp=None,pool=None):
 
 		assert (type(fp)==file) or (fp is None),"Call the open() method instead!!"
 
 		if fp is not None:
 		
 			self.fp = fp
+
 			self._header = Gadget2Header(ext._gadget.getHeader(fp))
 			self._header["files"] = [self.fp.name]
 
@@ -125,24 +126,39 @@ class Gadget2Snapshot(object):
 			#Once all the info is available, add a wCDM instance as attribute to facilitate the cosmological calculations
 			self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
 
+		self.pool = pool
+
 	@classmethod
-	def open(cls,filename):
+	def open(cls,filename,pool=None):
 
 		"""
 		Opens a gadget snapshot at filename
 
 		:param filename: file name of the gadget snapshot
 		:type filename: str. or file.
+
+		:param pool: use to distribute the calculations on different processors; if not None, each processor takes care of one of the snapshot parts, appending as ".n" to the filename
+		:type pool: MPIWhirlPool instance
+
 		"""
 
 		if type(filename)==str:
+
+			if pool is not None:
+				filename+=".{0}".format(pool.rank)
+			
 			fp = open(filename,"r")
+		
 		elif type(filename)==file:
+			
+			if pool is not None:
+				raise TypeError("Specifying file objects with MPIPools is not allowed!")
 			fp = filename
+		
 		else:
 			raise TypeError("filename must be string or file!")
 		
-		return cls(fp)
+		return cls(fp,pool)
 
 	@property
 	def header(self):
@@ -621,6 +637,15 @@ class Gadget2Snapshot(object):
 
 		#Compute the number count histogram
 		density,bins = np.histogramdd(positions.value,(xi,yi,zi))
+
+		#TODO use a more clever function then histogramdd to avoid this mess with C-contiguousness... This is a really dirty hack to pass into MPI calls...
+		density = np.ascontiguousarray(density)
+
+		#Accumulate from the other processors
+		if self.pool is not None:
+			self.pool.openWindow(density)
+			self.pool.accumulate()
+			self.pool.closeWindow()
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = ((bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit)
