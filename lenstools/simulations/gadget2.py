@@ -923,7 +923,19 @@ class Gadget2Snapshot(object):
 			if kind=="potential":
 				raise ValueError("You selected kind=potential, but lensing potential tomography is not defined, the density fluctuation will be returned instead!")
 
-			return (density * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value - 1.0, bin_resolution
+			if smooth is not None:
+
+				fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
+				density_ft = rfftn(density)
+				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
+				density_ft[0,0] = 0.0
+				density = irfftn(density_ft)
+
+				return (density * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value, bin_resolution
+
+			else:
+
+				return ((density - density.sum()/reduce(mul,density.shape)) * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value, bin_resolution
 
 		#############################################################################################################################################
 		######################################Ready to solve the lensing poisson equation via FFTs###################################################
