@@ -37,23 +37,11 @@ except ImportError:
 	matplotlib = False
 
 ##########################################
-########ShearMap class####################
+########Spin2 class#######################
 ##########################################
 
-class ShearMap(object):
+class Spin2(object):
 
-	"""
-	A class that handles 2D shear maps and allows to perform a set of operations on them
-
-	>>> from lenstools import ShearMap
-	
-	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.defaults.load_fits_default_shear)
-	>>> test.side_angle
-	1.95
-	>>> test.gamma
-	#The actual map values
-
-	"""
 
 	def __init__(self,gamma,angle):
 
@@ -334,26 +322,6 @@ class ShearMap(object):
 		return l,P_EE,P_BB,P_EB
 
 
-	def convergence(self):
-		
-		"""
-		Reconstructs the convergence from the E component of the shear
-
-		:returns: new ConvergenceMap instance 
-
-		"""
-
-		#Compute Fourier transforms if it wasn't done before
-		if not hasattr(self,"fourier_E"):
-			l_edges = np.array([200.0,400.0])
-			l,EE,BB,EB = self.decompose(l_edges,keep_fourier=True)
-
-		#Invert the Fourier transform to go back to real space
-		conv = irfft2(self.fourier_E)
-
-		#Return the ConvergenceMap instance
-		return ConvergenceMap(conv,self.side_angle)
-
 	def visualizeComponents(self,fig,ax,components="EE,BB,EB",region=(200,9000,-9000,9000)):
 
 		"""
@@ -441,3 +409,45 @@ class ShearMap(object):
 			plot_ax.xaxis.get_major_formatter().set_powerlimits((0, 1))
 			plot_ax.yaxis.get_major_formatter().set_powerlimits((0, 1))
 			plot_ax.ticklabel_format(style='sci')
+
+
+#############################################
+###########ShearMap class####################
+#############################################
+
+class ShearMap(Spin2):
+
+	"""
+	A class that handles 2D shear maps and allows to perform a set of operations on them
+
+	>>> from lenstools import ShearMap
+	
+	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.defaults.load_fits_default_shear)
+	>>> test.side_angle
+	1.95
+	>>> test.gamma
+	#The actual map values
+
+	"""
+
+	def convergence(self):
+		
+		"""
+		Reconstructs the convergence from the E component of the shear
+
+		:returns: new ConvergenceMap instance 
+
+		"""
+
+		#Compute Fourier transforms if it wasn't done before
+		if not hasattr(self,"fourier_E"):
+			l_edges = np.array([200.0,400.0])
+			l,EE,BB,EB = self.decompose(l_edges,keep_fourier=True)
+
+		#Invert the Fourier transform to go back to real space
+		conv = irfft2(self.fourier_E)
+
+		#Return the ConvergenceMap instance
+		return ConvergenceMap(conv,self.side_angle)
+
+

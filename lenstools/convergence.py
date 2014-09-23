@@ -35,21 +35,10 @@ except ImportError:
 
 
 ################################################
-########ConvergenceMap class####################
+########Spin0 class#############################
 ################################################
 
-class ConvergenceMap(object):
-
-	"""
-	A class that handles 2D convergence maps and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
-
-	>>> from lenstools import ConvergenceMap 
-	>>> from lenstools.defaults import load_fits_default_convergence
-
-	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default_convergence)
-	>>> imshow(test_map.kappa)
-
-	"""
+class Spin0(object):
 
 	def __init__(self,kappa,angle,masked=False):
 
@@ -166,7 +155,7 @@ class ConvergenceMap(object):
 		if inplace:
 			new_map = self
 		else:
-			new_map = ConvergenceMap(self.kappa.copy(),self.side_angle) 
+			new_map = self.__class__(self.kappa.copy(),self.side_angle) 
 
 		if isinstance(mask_profile,np.ndarray):
 
@@ -176,7 +165,7 @@ class ConvergenceMap(object):
 
 			new_map.kappa[mask_profile==0] = np.nan
 
-		elif isinstance(mask_profile,ConvergenceMap):
+		elif isinstance(mask_profile,self.__class__):
 
 			assert mask_profile.side_angle == self.side_angle
 			assert len(mask_profile.kappa[mask_profile.kappa==0]) + len(mask_profile.kappa[mask_profile.kappa==1]) == reduce(mul,mask_profile.kappa.shape),"The mask must be made of 0 and 1 only!"
@@ -599,7 +588,7 @@ class ConvergenceMap(object):
 		assert l_edges is not None
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-		assert isinstance(other,ConvergenceMap)
+		assert isinstance(other,self.__class__)
 		assert self.side_angle == other.side_angle
 		assert self.kappa.shape == other.kappa.shape
 
@@ -657,7 +646,7 @@ class ConvergenceMap(object):
 			return None
 
 		else:
-			return ConvergenceMap(smoothed_kappa,self.side_angle)
+			return self.__class__(smoothed_kappa,self.side_angle)
 
 
 	def __add__(self,rhs):
@@ -671,7 +660,7 @@ class ConvergenceMap(object):
 
 		"""
 
-		if isinstance(rhs,ConvergenceMap):
+		if isinstance(rhs,self.__class__):
 
 			assert self.side_angle == rhs.side_angle
 			assert self.kappa.shape == rhs.kappa.shape
@@ -691,7 +680,7 @@ class ConvergenceMap(object):
 
 			raise TypeError("The right hand side cannot be added!!")
 
-		return ConvergenceMap(new_kappa,self.side_angle)
+		return self.__class__(new_kappa,self.side_angle)
 
 
 	def __mul__(self,rhs):
@@ -705,7 +694,7 @@ class ConvergenceMap(object):
 
 		""" 
 
-		if isinstance(rhs,ConvergenceMap):
+		if isinstance(rhs,self.__class__):
 
 			assert self.side_angle == rhs.side_angle
 			assert self.kappa.shape == rhs.kappa.shape
@@ -725,8 +714,25 @@ class ConvergenceMap(object):
 
 			raise TypeError("Cannot multiply by the right hand side!!")
 
-		return ConvergenceMap(new_kappa,self.side_angle)
+		return self.__class__(new_kappa,self.side_angle)
 
+
+###############################################
+##########ConvergenceMap class#################
+###############################################
+
+class ConvergenceMap(Spin0):
+
+	"""
+	A class that handles 2D convergence maps and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
+
+	>>> from lenstools import ConvergenceMap 
+	>>> from lenstools.defaults import load_fits_default_convergence
+
+	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default_convergence)
+	>>> imshow(test_map.kappa)
+
+	"""
 
 
 ###############################################
