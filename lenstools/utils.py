@@ -4,9 +4,16 @@ import numpy as np
 from emcee.utils import MPIPool
 
 try:
+	
 	from mpi4py import MPI
-except:
-	pass
+	MPI=MPI
+	default_op = MPI.SUM
+
+except ImportError:
+	
+	MPI=None
+	default_op=None
+	print("Warning! mpy4py installation not found or broken!")
 
 #####################################################################################
 #######Supplying to the lack of rfftfreq implementation in numpy<1.8#################
@@ -92,7 +99,7 @@ class MPIWhirlPool(MPIPool):
 		else:
 			return None
 
-	def accumulate(self,op=MPI.SUM):
+	def accumulate(self,op=default_op):
 
 		"""
 		Accumulates the all the window data on the master, performing a custom operation (default is sum)
