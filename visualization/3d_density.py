@@ -3,6 +3,7 @@ sys.path.append("..")
 
 from lenstools.simulations import Gadget2Snapshot
 from lenstools.utils import MPIWhirlPool
+import numpy as np
 from scipy.ndimage import filters
 from mayavi import mlab
 
