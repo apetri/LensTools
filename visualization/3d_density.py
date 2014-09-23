@@ -1,3 +1,5 @@
+import sys
+sys.path.append("..")
 
 from lenstools.simulations import Gadget2Snapshot
 from lenstools.utils import MPIWhirlPool
