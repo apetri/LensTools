@@ -586,7 +586,7 @@ class Gadget2Snapshot(object):
 	def numberDensity(self,resolution=0.5*Mpc,left_corner=None,save=False):
 
 		"""
-		Uses the np.histogramdd function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
+		Uses a C backend gridding function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
 
 		:param resolution: resolution below which particles are grouped together; if an int is passed, this is the size of the grid
 		:type resolution: float with units or int.
@@ -636,10 +636,8 @@ class Gadget2Snapshot(object):
 
 
 		#Compute the number count histogram
-		density,bins = np.histogramdd(positions.value,(xi,yi,zi))
-
-		#TODO use a more clever function then histogramdd to avoid this mess with C-contiguousness... This is a really dirty hack to pass into MPI calls...
-		density = np.ascontiguousarray(density)
+		assert positions.value.dtype==np.float32
+		density = ext._gadget.grid3d(positions.value,(xi,yi,zi))
 
 		#Accumulate from the other processors
 		if self.pool is not None:
@@ -648,7 +646,7 @@ class Gadget2Snapshot(object):
 			self.pool.closeWindow()
 
 		#Recompute resolution to make sure it represents the bin size correctly
-		bin_resolution = ((bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit)
+		bin_resolution = ((xi[1:]-xi[:-1]).mean() * positions.unit,(yi[1:]-yi[:-1]).mean() * positions.unit,(zi[1:]-zi[:-1]).mean() * positions.unit)
 
 		#Return the density histogram, along with the bin resolution along each axis
 		if save:
@@ -746,10 +744,11 @@ class Gadget2Snapshot(object):
 			binning[normal] = np.linspace((center - thickness/2).to(positions.unit).value,(center + thickness/2).to(positions.unit).value,thickness_resolution+1)
 
 		#Now use histogramdd to compute the density along the slab
-		density,bins = np.histogramdd(positions.value,binning)
+		assert positions.value.dtype==np.float32
+		density = ext._gadget.grid3d(positions.value,tuple(binning))
 
 		#Recompute resolution to make sure it represents the bin size correctly
-		bin_resolution = [(bins[0][1:]-bins[0][:-1]).mean() * positions.unit,(bins[1][1:]-bins[1][:-1]).mean() * positions.unit,(bins[2][1:]-bins[2][:-1]).mean() * positions.unit]
+		bin_resolution = [(binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit,(binning[2][1:]-binning[2][:-1]).mean() * positions.unit]
 
 		#################################################################################################################################
 		######################################Ready to solve poisson equation via FFTs###################################################
@@ -899,10 +898,11 @@ class Gadget2Snapshot(object):
 			positions[:,plane_directions[i]] /= positions[:,normal]
 
 		#Now use histogramdd to compute the angular density on the lens plane
-		density,bins = np.histogramdd(positions,binning)
+		assert positions.dtype==np.float32
+		density = ext._gadget.grid3d(positions,tuple(binning))
 
 		#Recompute resolution to make sure it represents the bin size correctly
-		bin_resolution = [ (bins[0][1:]-bins[0][:-1]).mean() , (bins[1][1:]-bins[1][:-1]).mean() , (bins[2][1:]-bins[2][:-1]).mean() ]
+		bin_resolution = [ (binning[0][1:]-binning[0][:-1]).mean() , (binning[1][1:]-binning[1][:-1]).mean() , (binning[2][1:]-binning[2][:-1]).mean() ]
 		
 		#Restore units
 		bin_resolution[normal] *= length_unit
