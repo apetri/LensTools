@@ -56,7 +56,7 @@ snap.visualize(s=1)
 snap.savefig("snapshot_gadget.png")
 
 #Measure the power spectrum
-k_edges = np.arange(1.0,20.0,0.5) * (1/Mpc)
+k_edges = np.arange(1.0,20.0,0.5) * (1/snap.Mpc_over_h)
 k,Pk = snap.powerSpectrum(k_edges,resolution=64)
 
 #Plot
@@ -65,8 +65,8 @@ fig,ax = plt.subplots()
 ax.plot(k,Pk)
 ax.set_yscale("log")
 ax.set_xscale("log")
-ax.set_xlabel(r"$k(\mathrm{Mpc}^{-1})$")
-ax.set_ylabel(r"$P_k(\mathrm{Mpc}^3)$")
+ax.set_xlabel(r"$k(h\mathrm{Mpc}^{-1})$")
+ax.set_ylabel(r"$P_k(h^{-3}\mathrm{Mpc}^3)$")
 fig.savefig("snapshot_power_spectrum.png")
 
 snap.close()

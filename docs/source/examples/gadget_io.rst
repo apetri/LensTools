@@ -77,7 +77,7 @@ If you don't believe that this works, here it is what happens with an actual sna
 	H0 : 72.0 km / (Mpc s)
 	Ode0 : 0.74
 	Om0 : 0.26
-	box_size : 15.0 Mpc
+	box_size : 15.0 Mpc/h
 	endianness : 0
 	files : ['Test/Data/gadget/snapshot_001']
 	flag_cooling : 0
@@ -124,8 +124,8 @@ We can also measure the density fluctuations power spectrum :math:`P_k`, defined
 	ax.plot(k,Pk)
 	ax.set_yscale("log")
 	ax.set_xscale("log")
-	ax.set_xlabel(r"$k(\mathrm{Mpc}^{-1})$")
-	ax.set_ylabel(r"$P_k(\mathrm{Mpc}^3)$")
+	ax.set_xlabel(r"$k(h\mathrm{Mpc}^{-1})$")
+	ax.set_ylabel(r"h^{-3}$P_k(\mathrm{Mpc}^3)$")
 	fig.savefig("snapshot_power_spectrum.png")
 	snap.close()
 
