@@ -363,7 +363,7 @@ class Spin2(object):
 		#Instantiate figure
 		if (fig is None) or (ax is None):
 			
-			self.fig,self.ax = plt.subplots(1,len(components))
+			self.fig,self.ax = plt.subplots(1,len(component_list))
 
 		else:
 
