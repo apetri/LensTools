@@ -609,7 +609,7 @@ class Gadget2Snapshot(object):
 
 		#Check if positions are already available, otherwise retrieve them
 		if hasattr(self,"positions"):
-			positions = self.positions
+			positions = self.positions.copy()
 		else:
 			positions = self.getPositions(save=False)
 
@@ -701,7 +701,7 @@ class Gadget2Snapshot(object):
 
 		#Get the particle positions if not available get
 		if hasattr(self,"positions"):
-			positions = self.positions
+			positions = self.positions.copy()
 		else:
 			positions = self.getPositions(save=False)
 
@@ -832,7 +832,7 @@ class Gadget2Snapshot(object):
 
 		#Get the particle positions if not available get
 		if hasattr(self,"positions"):
-			positions = self.positions
+			positions = self.positions.copy()
 		else:
 			positions = self.getPositions(save=False)
 
