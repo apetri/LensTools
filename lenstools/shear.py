@@ -62,7 +62,7 @@ class Spin2(object):
 
 		"""
 
-		print("Pixels on a side: {0}".format(self.kappa.shape[0]))
+		print("Pixels on a side: {0}".format(self.gamma.shape[0]))
 		print("Pixel size: {0}".format(self.resolution))
 		print("Total angular size: {0}".format(self.side_angle))
 		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
