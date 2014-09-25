@@ -641,6 +641,7 @@ class Gadget2Snapshot(object):
 
 		#Accumulate from the other processors
 		if self.pool is not None:
+			
 			self.pool.openWindow(density)
 			self.pool.accumulate()
 			self.pool.closeWindow()
@@ -846,7 +847,7 @@ class Gadget2Snapshot(object):
 
 		#Translate the transverse coordinates so that the lower corner is in (0,0)
 		for i in range(2):
-			positions[:,plane_directions[i]] -= left_corner[plane_directions[i]]
+			positions[:,plane_directions[i]] -= left_corner[plane_directions[i]].astype(np.float32)
 
 		#Create a list that holds the bins
 		binning = [None,None,None]
@@ -897,9 +898,17 @@ class Gadget2Snapshot(object):
 		for i in range(2):
 			positions[:,plane_directions[i]] /= positions[:,normal]
 
-		#Now use histogramdd to compute the angular density on the lens plane
+		#Now use grid3d to compute the angular density on the lens plane
 		assert positions.dtype==np.float32
 		density = ext._gadget.grid3d(positions,tuple(binning))
+
+		#Accumulate the density from the other processors
+		if self.pool is not None:
+			
+			self.pool.openWindow(density)
+			self.pool.accumulate()
+			self.pool.closeWindow()
+
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = [ (binning[0][1:]-binning[0][:-1]).mean() , (binning[1][1:]-binning[1][:-1]).mean() , (binning[2][1:]-binning[2][:-1]).mean() ]
