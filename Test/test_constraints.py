@@ -213,6 +213,17 @@ def test_interpolation():
 
 	assert chi2_values_1.shape == chi2_values_2.shape
 
+	#Compute the individual contributions
+	chi2_contributions = emulator.chi2Contributions(points[0],observation,covariance)
+
+	#Plot
+	plt.imshow(chi2_contributions,interpolation="nearest")
+	plt.colorbar()
+	plt.xlabel(r"$j$")
+	plt.ylabel(r"$i$")
+	plt.savefig("chi2_contributions.png")
+	plt.clf()
+
 	return chi2_values_1,chi2_values_2
 
 def test_remove():

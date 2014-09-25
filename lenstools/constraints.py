@@ -577,6 +577,45 @@ class LikelihoodAnalysis(Analysis):
 		return np.array(chi2_list).reshape(num_points)
 
 
+	def chi2Contributions(self,parameters,observed_feature,features_covariance): 
+
+		"""
+		Computes the individual contributions of each feature bin to the chi2; the model features are computed with the interpolators. The full chi2 is the sum of the individual contributions
+
+		:param parameters: new points in parameter space on which to compute the chi2 statistic
+		:type parameters: (N,p) array where N is the number of points and p the number of parameters
+
+		:param observed_feature: observed feature on which to condition the parameter likelihood
+		:type observed_feature: array
+
+		:param features_covariance: covariance matrix of the features, must be supplied
+		:type features_covariance: array
+
+		:returns: numpy 2D array with the contributions to the chi2 (off diagonal elements are the contributions of the cross correlation between bins)
+
+		"""
+
+		#Sanity checks
+		assert observed_feature is not None 
+		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+		assert observed_feature.shape == self.training_set.shape[1:]
+		assert features_covariance.shape == observed_feature.shape * 2
+
+		#If you didn't do training before, train now with the default settings
+		if not hasattr(self,"_interpolator"):
+			self.train()
+
+		#Compute each bin contribution to the chi2
+		residuals = observed_feature - self.predict(parameters)
+
+		#Compute the inverse covariance
+		covinv = inv(features_covariance)
+
+		#Compute the hits map
+		return np.outer(residuals,residuals) * covinv
+
+
+
 	def likelihood(self,chi2_value,**kwargs):
 
 		"""
