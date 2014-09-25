@@ -101,7 +101,7 @@ class Spin0(object):
 
 
 
-	def visualize(self,fig=None,ax=None,**kwargs):
+	def visualize(self,fig=None,ax=None,colorbar=False,**kwargs):
 
 		"""
 		Visualize the convergence map; the kwargs are passed to imshow 
@@ -122,9 +122,13 @@ class Spin0(object):
 			self.ax = ax
 
 		#Plot the map
-		self.ax.imshow(self.kappa,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		ax0 = self.ax.imshow(self.kappa,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
+
+		#Add a colorbar maybe
+		if colorbar:
+			plt.colorbar(ax0,ax=self.ax)
 
 	def savefig(self,filename):
 
