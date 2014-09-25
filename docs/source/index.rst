@@ -63,7 +63,7 @@ The code is maintained and developed on `github <https://github.com/apetri/LensT
 License
 -------
 
-None so far
+Copyright 2014 Andrea Petri and contributors; lenstools is free software made available under the MIT License. For details see the LICENSE file
 
 
 

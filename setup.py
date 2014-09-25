@@ -33,12 +33,12 @@ m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 version = vre.findall(m)[0]
 
 classifiers = [
-		"Development Status :: 2 - Pre-Alpha",
+		"Development Status :: 3 - Alpha",
 		"Intended Audience :: Science/Research",
 		"Operating System :: OS Independent",
 		"Programming Language :: Python",
 		"Programming Language :: C",
-		"License :: Public Domain"
+		"License :: OSI approved:: MIT"
 	]
 
 external_sources = dict()
@@ -107,7 +107,7 @@ for ext_module in external_sources.keys():
 	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
 
 #Data files on which the package depends on
-package_data = {name:[os.path.join(simulations_dir,"book","CFHTemu1.txt")]}
+package_data = {name:[os.path.join(simulations_dir,"book","CFHTemu1.txt")],"":["LICENSE"]}
 
 #Append numpy includes
 lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
@@ -121,7 +121,7 @@ setup(
 	package_data=package_data,
 	install_requires=["numpy","scipy","astropy"],
 	url=url,
-	license="?",
+	license="MIT",
 	description="Toolkit for Weak Gravitational Lensing analysis",
 	long_description=rd(os.path.join("docs","source","index.rst")),
 	classifiers=classifiers,
