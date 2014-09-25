@@ -65,13 +65,7 @@ License
 
 None so far
 
-API
----
 
-.. toctree::
-   :maxdepth: 2
-
-   code
 
 Gallery
 -------
@@ -88,6 +82,22 @@ Weak lensing simulations
    :maxdepth: 2
 
    simulations
+
+3D visualization with Mayavi
+----------------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   visualization
+
+API
+---
+
+.. toctree::
+   :maxdepth: 2
+
+   code
 
 Indices and tables
 ==================
