@@ -27,7 +27,7 @@ def test_visualize():
 
 	assert test_map.kappa.dtype == np.float
 
-	test_map.setAngularUnits(rad)
+	test_map.setAngularUnits(deg)
 	test_map.visualize()
 	test_map.savefig("map.png")
 	test_map.setAngularUnits(deg)
@@ -151,5 +151,15 @@ def test_cut():
 	cut_map = test_map.cutRegion(b)
 	cut_map.visualize()
 	cut_map.savefig("map_cut.png")
+
+
+def test_translate():
+
+	b = np.array([0.5,test_map.side_angle.value+0.5,0.0,test_map.side_angle.value]) * deg
+	translated_map = test_map.cutRegion(b)
+	translated_map.visualize()
+	translated_map.savefig("map_translated.png")
+
+
 
 
