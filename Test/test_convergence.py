@@ -134,3 +134,22 @@ def test_peaks():
 	ax.set_ylabel(r"$dN/d\nu$")
 
 	plt.savefig("peaks.png")
+
+
+def test_getValues():
+
+	b = np.linspace(0.0,test_map.side_angle.value,test_map.kappa.shape[0])
+	xx,yy = np.meshgrid(b,b) * deg
+
+	new_values = test_map.getValues(xx,yy)
+	assert (new_values==test_map.kappa).all
+
+
+def test_cut():
+
+	b = np.array([0.0,test_map.side_angle.value/2,0.0,test_map.side_angle.value/2]) * deg
+	cut_map = test_map.cutRegion(b)
+	cut_map.visualize()
+	cut_map.savefig("map_cut.png")
+
+
