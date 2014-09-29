@@ -774,7 +774,7 @@ class Gadget2Snapshot(object):
 
 	############################################################################################################################################################################
 
-	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,left_corner=None,plane_lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,tomography=False,kind="density"):
+	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,left_corner=None,plane_lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,tomography=False,kind="density",space="real"):
 
 		"""
 		Same as cutPlane(), except that this method will return a lens plane as seen from an observer at z=0; the spatial transverse units are converted in angular units as seen from the observer
@@ -811,6 +811,9 @@ class Gadget2Snapshot(object):
 
 		:param kind: decide if computing an angular density or lensing potential plane (this is computed solving the poisson equation)
 		:type kind: str. ("density" or "potential")
+
+		:param space: if "real" return the lens plane in real space, if "fourier" the Fourier transform is not inverted
+		:type space: str.
 
 		:returns: tuple(numpy 2D or 3D array with the (unsmoothed) particle angular number density,bin angular resolution); the constant spatial part of the density field is subtracted (we keep the fluctuation only)
 
@@ -982,11 +985,18 @@ class Gadget2Snapshot(object):
 			density_ft[0,0] = 0.0 
 
 			#Go back in real space
-			density = irfftn(density_ft)
+			if space=="real":
+				density = irfftn(density_ft)
+			elif space=="fourier":
+				density = density_ft
+			else:
+				raise ValueError("space must be real or fourier!")
 
 		else:
 
 			density -= density.sum() / reduce(mul,density.shape)
+			if space=="fourier":
+				density = rfftn(density)
 
 		#Return
 		return (density*cosmo_normalization*density_normalization).decompose().value,bin_resolution
