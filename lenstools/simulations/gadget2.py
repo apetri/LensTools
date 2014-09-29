@@ -929,8 +929,8 @@ class Gadget2Snapshot(object):
 
 		if tomography:
 
-			if kind=="potential":
-				raise ValueError("You selected kind=potential, but lensing potential tomography is not defined, the density fluctuation will be returned instead!")
+			if kind!="density":
+				raise ValueError("You selected kind={0}, but {0} tomography is not defined, the density fluctuation will be returned instead!".format(kind))
 
 			if smooth is not None:
 
