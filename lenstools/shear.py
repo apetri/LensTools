@@ -27,7 +27,7 @@ except ImportError:
 	from utils import rfftfreq
 
 #Units
-from astropy.units import deg,rad,arcsec
+from astropy.units import deg,rad,arcsec,quantity
 
 try:
 	import matplotlib.pyplot as plt
@@ -102,8 +102,52 @@ class Spin1(object):
 		assert unit.physical_type=="angle"
 		self.side_angle = self.side_angle.to(unit)
 
+
+	def getValues(self,x,y):
+
+		"""
+		Extract the map values at the requested (x,y) positions; this is implemented using the numpy fast indexing routines, so the formats of x and y must follow the numpy advanced indexing rules. Periodic boundary conditions are enforced
+
+		:param x: x coordinates at which to extract the map values (if unitless these are interpreted as radians)
+		:type x: numpy array or quantity 
+
+		:param y: y coordinates at which to extract the map values (if unitless these are interpreted as radians)
+		:type y: numpy array or quantity 
+
+		:returns: numpy array with the map values at the specified positions, with shape (N,shape x) where N is the number of components of the map field
+
+		:raises: IndexError if the formats of x and y are not the proper ones
+
+		"""
+
+		assert isinstance(x,np.ndarray) and isinstance(y,np.ndarray)
+
+		#x coordinates
+		if type(x)==quantity.Quantity:
+			
+			assert x.unit.physical_type=="angle"
+			j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[2])
+
+		else:
+
+			j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[2])	
+
+		#y coordinates
+		if type(y)==quantity.Quantity:
+			
+			assert y.unit.physical_type=="angle"
+			i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
+
+		else:
+
+			i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])
+
+		#Return the map values at the specified coordinates
+		return self.data[:,i,j]
+
+
 	
-	def visualize(self,fig=None,ax=None,**kwargs):
+	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),**kwargs):
 
 		"""
 		Visualize the shear map; the kwargs are passed to imshow 
@@ -130,10 +174,10 @@ class Spin1(object):
 		#Axes labels
 		self.ax[0].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
 		self.ax[0].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
-		self.ax[0].set_title(r"$\gamma_1$")
+		self.ax[0].set_title(component_labels[0])
 		self.ax[1].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
 		self.ax[1].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
-		self.ax[1].set_title(r"$\gamma_2$")
+		self.ax[1].set_title(component_labels[1])
 
 	
 	def savefig(self,filename):

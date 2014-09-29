@@ -193,3 +193,13 @@ def test_Bmode():
 	plt.clf()
 
 
+def test_getValues():
+
+	b = np.linspace(0.0,test_map.side_angle.value,test_map.data.shape[1])
+	xx,yy = np.meshgrid(b,b) * deg
+
+	new_values = test_map.getValues(xx,yy)
+	assert (new_values==test_map.data).all
+
+
+
