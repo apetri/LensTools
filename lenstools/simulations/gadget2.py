@@ -964,10 +964,6 @@ class Gadget2Snapshot(object):
 			lx,ly = np.meshgrid(fftfreq(density.shape[0]),rfftfreq(density.shape[1]),indexing="ij")
 			l_squared = lx**2 + ly**2
 
-			#Save memory
-			del(lx)
-			del(ly)
-
 			#Avoid dividing by 0
 			l_squared[0,0] = 1.0
 
