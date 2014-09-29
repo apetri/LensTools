@@ -1,6 +1,8 @@
 from ..convergence import Spin0
 from ..shear import Spin1
 
+import logging
+
 import numpy as np
 
 from astropy.cosmology import w0waCDM
@@ -167,5 +169,49 @@ class DeflectionPlane(Spin1):
 class RayTracer(object):
 
 	"""
-	Docstring
+	Class handler of ray tracing operations: it mainly computes the path corrections of light rays that travel through a set of gravitational lenses
+
 	"""
+
+	def __init__(self):
+
+		self.Nlenses = 0
+		self.lens = list()
+		self.distance = list()
+		self.redshift = list()
+
+
+	def addLens(self,lens_specification):
+
+		"""
+		Adds a gravitational lens to the ray tracer, either by putting in a lens plane, or by specifying the name of a file which contains the lens specifications
+
+		:param lens_specification: specifications of the lens to add, either in tuple(filename,distance,redshift) or as a PotentialPlane instance
+		:type lens specification: tuple or PotentialPlane instance
+
+		"""
+
+		#Sanity check
+		assert type(lens_specification) in [tuple,PotentialPlane]
+
+		#If specification is in tuple form, parse it
+		if type(lens_specification)==tuple:
+
+			filename,distance,redshift = lens_specification
+			
+			self.lens.append(filename)
+			self.distance.append(distance)
+			self.redshift.append(redshift)
+			self.Nlenses += 1
+
+		else:
+
+			#Otherwise get the info from the PotentialPlane class
+			self.lens.append(lens_specification)
+			self.distance.append(lens_specification.comoving_distance)
+			self.redshift.append(lens_specification.redshift)
+			self.Nlenses += 1
+
+		#If completed correctly, log info to the user
+		logging.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
+
