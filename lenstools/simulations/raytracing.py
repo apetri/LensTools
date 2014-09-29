@@ -121,6 +121,22 @@ class PotentialPlane(Spin0):
 		return DeflectionPlane(np.array([deflection_x,deflection_y])/self.resolution.to(self.unit**0.5).value,angle=self.side_angle,redshift=self.redshift,cosmology=self.cosmology,unit=self.unit**0.5)
 
 
+	def density(self):
+
+		"""
+		Computes the projected density fluctuation by taking the laplacian of the potential; useful to check if the potential is reasonable
+
+		:returns: Spin0 instance with the density fluctuation data 
+
+		"""
+
+		#Compute the laplacian
+		hessian_xx,hessian_yy,hessian_xy = self.hessian()
+
+		#The density is twice the trace of the hessian
+		return Spin0(2.0*(hessian_xx + hessian_yy)/(self.resolution**2).to(self.unit).value,angle=self.side_angle)
+
+
 
 
 #############################################################
