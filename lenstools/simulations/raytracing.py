@@ -107,7 +107,7 @@ class PotentialPlane(Spin0):
 
 
 	
-	def deflectionAngles():
+	def deflectionAngles(self):
 
 		"""
 		Computes the deflection angles for the given lensing potential by taking the gradient of the potential map
@@ -115,10 +115,10 @@ class PotentialPlane(Spin0):
 		"""
 
 		#Compute the gradient of the potential map
-		deflection_x,deflection_y = self.gradient() / self.resolution.to(self.unit**0.5).value
+		deflection_x,deflection_y = self.gradient()
 
 		#Return the DeflectionPlane instance
-		return DeflectionPlane(np.array(deflection_x,deflection_y),angle=self.angle,redshift=self.redshift,cosmology=self.cosmology,unit=self.unit**0.5)
+		return DeflectionPlane(np.array([deflection_x,deflection_y])/self.resolution.to(self.unit**0.5).value,angle=self.side_angle,redshift=self.redshift,cosmology=self.cosmology,unit=self.unit**0.5)
 
 
 
