@@ -25,7 +25,7 @@ thresholds_pk = np.arange(-1.0,5.0,0.2)
 
 def test_visualize():
 
-	assert test_map.kappa.dtype == np.float
+	assert test_map.data.dtype == np.float
 
 	test_map.setAngularUnits(deg)
 	test_map.visualize()
@@ -138,11 +138,11 @@ def test_peaks():
 
 def test_getValues():
 
-	b = np.linspace(0.0,test_map.side_angle.value,test_map.kappa.shape[0])
+	b = np.linspace(0.0,test_map.side_angle.value,test_map.data.shape[0])
 	xx,yy = np.meshgrid(b,b) * deg
 
 	new_values = test_map.getValues(xx,yy)
-	assert (new_values==test_map.kappa).all
+	assert (new_values==test_map.data).all
 
 
 def test_cut():

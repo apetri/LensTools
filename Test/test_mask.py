@@ -74,7 +74,7 @@ def test_boundaries():
 	assert hasattr(masked_map,"_mask")
 	assert masked_map._masked
 	assert masked_map.side_angle == conv_map.side_angle
-	assert masked_map.kappa.shape == conv_map.kappa.shape
+	assert masked_map.data.shape == conv_map.data.shape
 
 	#Compute boundaries
 	perimeter_area = masked_map.maskBoundaries()

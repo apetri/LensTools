@@ -40,14 +40,14 @@ except ImportError:
 
 class Spin0(object):
 
-	def __init__(self,kappa,angle,masked=False):
+	def __init__(self,data,angle,masked=False):
 
 		#Sanity check
 		assert angle.unit.physical_type=="angle"
 
-		self.kappa = kappa
+		self.data = data
 		self.side_angle = angle
-		self.resolution = self.side_angle.to(arcsec) / self.kappa.shape[0]
+		self.resolution = self.side_angle.to(arcsec) / self.data.shape[0]
 		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
 		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
 		self._masked = masked
@@ -60,7 +60,7 @@ class Spin0(object):
 
 		"""
 
-		print("Pixels on a side: {0}".format(self.kappa.shape[0]))
+		print("Pixels on a side: {0}".format(self.data.shape[0]))
 		print("Pixel size: {0}".format(self.resolution))
 		print("Total angular size: {0}".format(self.side_angle))
 		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
@@ -71,7 +71,7 @@ class Spin0(object):
 	def fromfilename(cls,*args,**kwargs):
 		
 		"""
-		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,kappa)
+		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,data)
 
 		:param args: The positional arguments that are to be passed to the loader (typically the file name)
 
@@ -82,8 +82,8 @@ class Spin0(object):
 		assert "loader" in kwargs.keys(),"You must specify a loader function!"
 		loader = kwargs["loader"]
 
-		angle,kappa = loader(*args)
-		return cls(kappa,angle)
+		angle,data = loader(*args)
+		return cls(data,angle)
 
 	def setAngularUnits(self,unit):
 
@@ -123,24 +123,24 @@ class Spin0(object):
 		if type(x)==quantity.Quantity:
 			
 			assert x.unit.physical_type=="angle"
-			j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.kappa.shape[1])
+			j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 		else:
 
-			j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.kappa.shape[1])	
+			j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
 
 		#y coordinates
 		if type(y)==quantity.Quantity:
 			
 			assert y.unit.physical_type=="angle"
-			i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.kappa.shape[0])
+			i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
 
 		else:
 
-			i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.kappa.shape[0])
+			i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
 
 		#Return the map values at the specified coordinates
-		return self.kappa[i,j]
+		return self.data[i,j]
 
 
 	def cutRegion(self,extent):
@@ -164,7 +164,7 @@ class Spin0(object):
 		#Initialize the meshgrid
 		xx,yy = np.meshgrid(x,y) * extent.unit
 
-		return self.__class__(kappa=self.getValues(xx,yy),angle=(self.resolution*xx.shape[0]).to(extent.unit))
+		return self.__class__(data=self.getValues(xx,yy),angle=(self.resolution*xx.shape[0]).to(extent.unit))
 
 
 
@@ -189,7 +189,7 @@ class Spin0(object):
 			self.ax = ax
 
 		#Plot the map
-		ax0 = self.ax.imshow(self.kappa,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
 
@@ -226,31 +226,31 @@ class Spin0(object):
 		if inplace:
 			new_map = self
 		else:
-			new_map = self.__class__(self.kappa.copy(),self.side_angle) 
+			new_map = self.__class__(self.data.copy(),self.side_angle) 
 
 		if isinstance(mask_profile,np.ndarray):
 
 			assert mask_profile.dtype == np.int8
 			assert len(mask_profile[mask_profile==0]) + len(mask_profile[mask_profile==1]) == reduce(mul,mask_profile.shape),"The mask must be made of 0 and 1 only!"
-			assert mask_profile.shape == self.kappa.shape
+			assert mask_profile.shape == self.data.shape
 
-			new_map.kappa[mask_profile==0] = np.nan
+			new_map.data[mask_profile==0] = np.nan
 
 		elif isinstance(mask_profile,self.__class__):
 
 			assert mask_profile.side_angle == self.side_angle
-			assert len(mask_profile.kappa[mask_profile.kappa==0]) + len(mask_profile.kappa[mask_profile.kappa==1]) == reduce(mul,mask_profile.kappa.shape),"The mask must be made of 0 and 1 only!"
-			assert mask_profile.kappa.shape == self.kappa.shape
+			assert len(mask_profile.data[mask_profile.data==0]) + len(mask_profile.data[mask_profile.data==1]) == reduce(mul,mask_profile.data.shape),"The mask must be made of 0 and 1 only!"
+			assert mask_profile.data.shape == self.data.shape
 
-			new_map.kappa[mask_profile.kappa==0] = np.nan
+			new_map.data[mask_profile.data==0] = np.nan
 
 		else: 
 
 			raise TypeError("Mask type not supported")
 
 		new_map._masked = True
-		new_map._mask = ~np.isnan(new_map.kappa)
-		new_map._masked_fraction = 1.0 - new_map._mask.sum() / reduce(mul,new_map.kappa.shape)
+		new_map._mask = ~np.isnan(new_map.data)
+		new_map._masked_fraction = 1.0 - new_map._mask.sum() / reduce(mul,new_map.data.shape)
 
 		#Recompute gradients
 		if (hasattr(new_map,"gradient_x") or hasattr(new_map,"gradient_y")):
@@ -345,7 +345,7 @@ class Spin0(object):
 		>>> gx,gy = test_map.gradient()
 
 		"""
-		self.gradient_x, self.gradient_y = _topology.gradient(self.kappa)
+		self.gradient_x, self.gradient_y = _topology.gradient(self.data)
 		return self.gradient_x,self.gradient_y
 
 	def hessian(self):
@@ -359,7 +359,7 @@ class Spin0(object):
 		>>> hxx,hyy,hxy = test_map.hessian()
 
 		"""
-		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.kappa)
+		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.data)
 		return self.hessian_xx,self.hessian_yy,self.hessian_xy
 
 	def pdf(self,thresholds,norm=False):
@@ -378,7 +378,7 @@ class Spin0(object):
 		:raises: AssertionError if thresholds array is not provided
 
 		>>> test_map = ConvergenceMap.fromfilename("map.fit")
-		>>> thresholds = np.arange(map.kappa.min(),map.kappa.max(),0.05)
+		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
 		>>> nu,p = test_map.pdf(thresholds)
 
 		"""
@@ -387,15 +387,15 @@ class Spin0(object):
 		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
 
 		if norm:
-			sigma = self.kappa.std()
+			sigma = self.data.std()
 		else:
 			sigma = 1.0
 
 		#Compute the histogram
 		if self._masked:
-			hist,bin_edges = np.histogram(self.kappa[self._mask],bins=thresholds*sigma,density=True)
+			hist,bin_edges = np.histogram(self.data[self._mask],bins=thresholds*sigma,density=True)
 		else:
-			hist,bin_edges = np.histogram(self.kappa,bins=thresholds*sigma,density=True)
+			hist,bin_edges = np.histogram(self.data,bins=thresholds*sigma,density=True)
 
 		#Return
 		return midpoints,hist*sigma
@@ -417,7 +417,7 @@ class Spin0(object):
 		:raises: AssertionError if thresholds array is not provided
 
 		>>> test_map = ConvergenceMap.fromfilename("map.fit")
-		>>> thresholds = np.arange(map.kappa.min(),map.kappa.max(),0.05)
+		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
 		>>> nu,peaks = test_map.peakCount(thresholds)
 
 		"""
@@ -441,14 +441,14 @@ class Spin0(object):
 		if norm:
 			
 			if self._masked:
-				sigma = self.kappa[self._full_mask].std()
+				sigma = self.data[self._full_mask].std()
 			else:
-				sigma = self.kappa.std()
+				sigma = self.data.std()
 
 		else:
 			sigma = 1.0
 
-		return midpoints,_topology.peakCount(self.kappa,mask_profile,thresholds,sigma)
+		return midpoints,_topology.peakCount(self.data,mask_profile,thresholds,sigma)
 
 	def minkowskiFunctionals(self,thresholds,norm=False):
 
@@ -490,9 +490,9 @@ class Spin0(object):
 		if norm:
 
 			if self._masked:
-				sigma = self.kappa[self._full_mask].std()
+				sigma = self.data[self._full_mask].std()
 			else:
-				sigma = self.kappa.std()
+				sigma = self.data.std()
 		
 		else:
 			sigma = 1.0
@@ -505,7 +505,7 @@ class Spin0(object):
 			self.hessian()
 
 		#Compute the Minkowski functionals and return them as tuple
-		v0,v1,v2 = _topology.minkowski(self.kappa,mask_profile,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
+		v0,v1,v2 = _topology.minkowski(self.data,mask_profile,self.gradient_x,self.gradient_y,self.hessian_xx,self.hessian_yy,self.hessian_xy,thresholds,sigma)
 
 		return midpoints,v0,v1,v2
 
@@ -542,7 +542,7 @@ class Spin0(object):
 			if not hasattr(self,"_full_mask"):
 				self.maskBoundaries()
 			
-			kappa = self.kappa[self._full_mask]
+			data = self.data[self._full_mask]
 			gradient_x = self.gradient_x[self._full_mask]
 			gradient_y = self.gradient_y[self._full_mask]
 			hessian_xx = self.hessian_xx[self._full_mask]
@@ -551,7 +551,7 @@ class Spin0(object):
 
 		else:
 
-			kappa = self.kappa
+			data = self.data
 			gradient_x = self.gradient_x
 			gradient_y = self.gradient_y
 			hessian_xx = self.hessian_xx
@@ -560,18 +560,18 @@ class Spin0(object):
 
 		
 		#Quadratic moments
-		sigma0 = kappa.std()
+		sigma0 = data.std()
 		sigma1 = np.sqrt((gradient_x**2 + gradient_y**2).mean())
 
 		#Cubic moments
-		S0 = (kappa**3).mean()
-		S1 = ((kappa**2)*(hessian_xx + hessian_yy)).mean()
+		S0 = (data**3).mean()
+		S1 = ((data**2)*(hessian_xx + hessian_yy)).mean()
 		S2 = ((gradient_x**2 + gradient_y**2)*(hessian_xx + hessian_yy)).mean()
 
 		#Quartic moments
-		K0 = (kappa**4).mean()
-		K1 = ((kappa**3) * (hessian_xx + hessian_yy)).mean()
-		K2 = ((kappa) * (gradient_x**2 + gradient_y**2) * (hessian_xx + hessian_yy)).mean()
+		K0 = (data**4).mean()
+		K1 = ((data**3) * (hessian_xx + hessian_yy)).mean()
+		K2 = ((data) * (gradient_x**2 + gradient_y**2) * (hessian_xx + hessian_yy)).mean()
 		K3 = ((gradient_x**2 + gradient_y**2)**2).mean()
 
 		#Compute connected moments (only quartic affected)
@@ -623,7 +623,7 @@ class Spin0(object):
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
 		#Calculate the Fourier transform of the map with numpy FFT
-		ft_map = rfft2(self.kappa)
+		ft_map = rfft2(self.data)
 
 		#Compute the power spectrum with the C backend implementation
 		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle.to(deg).value,l_edges)
@@ -661,11 +661,11 @@ class Spin0(object):
 
 		assert isinstance(other,self.__class__)
 		assert self.side_angle == other.side_angle
-		assert self.kappa.shape == other.kappa.shape
+		assert self.data.shape == other.data.shape
 
 		#Calculate the Fourier transform of the maps with numpy FFTs
-		ft_map1 = rfft2(self.kappa)
-		ft_map2 = rfft2(other.kappa)
+		ft_map1 = rfft2(self.data)
+		ft_map2 = rfft2(other.data)
 
 		#Compute the cross power spectrum with the C backend implementation
 		cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(deg).value,l_edges)
@@ -697,15 +697,15 @@ class Spin0(object):
 		assert scale_angle.unit.physical_type=="angle"
 
 		#Compute the smoothing scale in pixel units
-		smoothing_scale_pixel = (scale_angle * self.kappa.shape[0] / (self.side_angle)).decompose().value
+		smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value
 
 		#Perform the smoothing
-		smoothed_kappa = filters.gaussian_filter(self.kappa,smoothing_scale_pixel)
+		smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel)
 
 		#Return the result
 		if inplace:
 			
-			self.kappa = smoothed_kappa
+			self.data = smoothed_data
 			
 			#If gradient attributes are present, recompute them
 			if (hasattr(self,"gradient_x") or hasattr(self,"gradient_y")):
@@ -717,7 +717,7 @@ class Spin0(object):
 			return None
 
 		else:
-			return self.__class__(smoothed_kappa,self.side_angle)
+			return self.__class__(smoothed_data,self.side_angle)
 
 
 	def __add__(self,rhs):
@@ -734,24 +734,24 @@ class Spin0(object):
 		if isinstance(rhs,self.__class__):
 
 			assert self.side_angle == rhs.side_angle
-			assert self.kappa.shape == rhs.kappa.shape
+			assert self.data.shape == rhs.data.shape
 
-			new_kappa = self.kappa + rhs.kappa
+			new_data = self.data + rhs.data
 
 		elif type(rhs) == np.float:
 
-			new_kappa = self.kappa + rhs
+			new_data = self.data + rhs
 
 		elif type(rhs) == np.ndarray:
 
-			assert rhs.shape == self.kappa.shape
-			new_kappa = self.kappa + rhs
+			assert rhs.shape == self.data.shape
+			new_data = self.data + rhs
 
 		else:
 
 			raise TypeError("The right hand side cannot be added!!")
 
-		return self.__class__(new_kappa,self.side_angle)
+		return self.__class__(new_data,self.side_angle)
 
 
 	def __mul__(self,rhs):
@@ -768,24 +768,24 @@ class Spin0(object):
 		if isinstance(rhs,self.__class__):
 
 			assert self.side_angle == rhs.side_angle
-			assert self.kappa.shape == rhs.kappa.shape
+			assert self.data.shape == rhs.data.shape
 
-			new_kappa = self.kappa * rhs.kappa
+			new_data = self.data * rhs.data
 
 		elif type(rhs) == np.float:
 
-			new_kappa = self.kappa * rhs
+			new_data = self.data * rhs
 
 		elif type(rhs) == np.ndarray:
 
-			assert rhs.shape == self.kappa.shape
-			new_kappa = self.kappa * rhs
+			assert rhs.shape == self.data.shape
+			new_data = self.data * rhs
 
 		else:
 
 			raise TypeError("Cannot multiply by the right hand side!!")
 
-		return self.__class__(new_kappa,self.side_angle)
+		return self.__class__(new_data,self.side_angle)
 
 
 ###############################################
@@ -801,7 +801,7 @@ class ConvergenceMap(Spin0):
 	>>> from lenstools.defaults import load_fits_default_convergence
 
 	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default_convergence)
-	>>> imshow(test_map.kappa)
+	>>> imshow(test_map.data)
 
 	"""
 
@@ -817,11 +817,11 @@ class Mask(ConvergenceMap):
 
 	"""
 
-	def __init__(self,kappa,angle,masked=False):
+	def __init__(self,data,angle,masked=False):
 
-		super(Mask,self).__init__(kappa,angle,masked)
-		assert len(self.kappa[self.kappa==0]) + len(self.kappa[self.kappa==1]) == reduce(mul,self.kappa.shape),"The mask must be made of 0 and 1 only!"
-		self._masked_fraction = len(self.kappa[self.kappa==0]) / reduce(mul,self.kappa.shape)
+		super(Mask,self).__init__(data,angle,masked)
+		assert len(self.data[self.data==0]) + len(self.data[self.data==1]) == reduce(mul,self.data.shape),"The mask must be made of 0 and 1 only!"
+		self._masked_fraction = len(self.data[self.data==0]) / reduce(mul,self.data.shape)
 
 	@property
 	def maskedFraction(self):

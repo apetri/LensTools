@@ -40,9 +40,9 @@ l_edges = np.arange(200.0,50000.0,200.0)
 
 def test_visualize1():
 
-	assert hasattr(test_map,"gamma")
+	assert hasattr(test_map,"data")
 	assert hasattr(test_map,"side_angle")
-	assert test_map.gamma.shape[0] == 2
+	assert test_map.data.shape[0] == 2
 
 	test_map.setAngularUnits(arcsec)
 	test_map.visualize()
@@ -107,13 +107,13 @@ def test_reconstruct():
 
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
 	
-	ax0=ax[0].imshow(test_map_conv.kappa,origin="lower",interpolation="nearest",extent=[0.0,test_map_conv.side_angle.value,0.0,test_map_conv.side_angle.value])
+	ax0=ax[0].imshow(test_map_conv.data,origin="lower",interpolation="nearest",extent=[0.0,test_map_conv.side_angle.value,0.0,test_map_conv.side_angle.value])
 	ax[0].set_title("Original")
 	plt.colorbar(ax0,ax=ax[0])
 	ax[0].set_xlabel(r"$x$(deg)")
 	ax[0].set_ylabel(r"$y$(deg)")
 
-	ax1=ax[1].imshow(conv_reconstructed.kappa,origin="lower",interpolation="nearest",extent=[0.0,conv_reconstructed.side_angle.value,0.0,conv_reconstructed.side_angle.value])
+	ax1=ax[1].imshow(conv_reconstructed.data,origin="lower",interpolation="nearest",extent=[0.0,conv_reconstructed.side_angle.value,0.0,conv_reconstructed.side_angle.value])
 	ax[1].set_title("Reconstructed from shear")
 	plt.colorbar(ax1,ax=ax[1])
 	ax[1].set_xlabel(r"$x$(deg)")
@@ -136,8 +136,8 @@ def test_Emode():
 	new_shear_map = ShearMap.fromEBmodes(pure_E,pure_B,angle=1.95*deg)
 
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
-	ax1 = ax[1].imshow(new_shear_map.gamma[0],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
-	ax2 = ax[2].imshow(new_shear_map.gamma[1],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
+	ax1 = ax[1].imshow(new_shear_map.data[0],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
+	ax2 = ax[2].imshow(new_shear_map.data[1],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
 	plt.colorbar(ax1,ax=ax[1])
 	plt.colorbar(ax2,ax=ax[2])
 	new_shear_map.sticks(ax[0],pixel_step=10,multiplier=1.5)
@@ -170,8 +170,8 @@ def test_Bmode():
 	new_shear_map = ShearMap.fromEBmodes(pure_E,pure_B,angle=1.95*deg)
 
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
-	ax1 = ax[1].imshow(new_shear_map.gamma[0],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
-	ax2 = ax[2].imshow(new_shear_map.gamma[1],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
+	ax1 = ax[1].imshow(new_shear_map.data[0],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
+	ax2 = ax[2].imshow(new_shear_map.data[1],origin="lower",cmap=plt.cm.PRGn,extent=[0,new_shear_map.side_angle.value,0,new_shear_map.side_angle.value])
 	plt.colorbar(ax1,ax=ax[1])
 	plt.colorbar(ax2,ax=ax[2])
 	new_shear_map.sticks(ax[0],pixel_step=10,multiplier=1.5)

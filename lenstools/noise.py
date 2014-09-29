@@ -65,7 +65,7 @@ class GaussianNoiseGenerator(object):
 
 		assert isinstance(conv_map,ConvergenceMap)
 
-		return cls(conv_map.kappa.shape,conv_map.side_angle,label="convergence")
+		return cls(conv_map.data.shape,conv_map.side_angle,label="convergence")
 
 	def getShapeNoise(self,z=1.0,ngal=15.0*arcmin**-2,seed=0):
 

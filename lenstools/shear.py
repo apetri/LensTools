@@ -43,14 +43,14 @@ except ImportError:
 class Spin2(object):
 
 
-	def __init__(self,gamma,angle):
+	def __init__(self,data,angle):
 
 		#Sanity check
 		assert angle.unit.physical_type=="angle"
 
-		self.gamma = gamma
+		self.data = data
 		self.side_angle = angle
-		self.resolution = self.side_angle.to(arcsec) / self.gamma.shape[1]
+		self.resolution = self.side_angle.to(arcsec) / self.data.shape[1]
 		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
 		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
 
@@ -62,7 +62,7 @@ class Spin2(object):
 
 		"""
 
-		print("Pixels on a side: {0}".format(self.gamma.shape[1]))
+		print("Pixels on a side: {0}".format(self.data.shape[1]))
 		print("Pixel size: {0}".format(self.resolution))
 		print("Total angular size: {0}".format(self.side_angle))
 		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
@@ -72,7 +72,7 @@ class Spin2(object):
 	def fromfilename(cls,*args,**kwargs):
 		
 		"""
-		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,gamma)
+		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,data)
 
 		:param args: The positional arguments that are to be passed to the loader (typically the file name)
 
@@ -83,8 +83,8 @@ class Spin2(object):
 		assert "loader" in kwargs.keys(),"You must specify a loader function!"
 		loader = kwargs["loader"]
 
-		angle,gamma = loader(*args)
-		return cls(gamma,angle)
+		angle,data = loader(*args)
+		return cls(data,angle)
 
 	@classmethod
 	def fromEBmodes(cls,fourier_E,fourier_B,angle=3.14*deg):
@@ -131,15 +131,15 @@ class Spin2(object):
 		cos_2_phi[0,0] = 0.0
 
 		#Invert E/B modes and find the components of the shear
-		ft_gamma1 = cos_2_phi * fourier_E - sin_2_phi * fourier_B
-		ft_gamma2 = sin_2_phi * fourier_E + cos_2_phi * fourier_B
+		ft_data1 = cos_2_phi * fourier_E - sin_2_phi * fourier_B
+		ft_data2 = sin_2_phi * fourier_E + cos_2_phi * fourier_B
 
 		#Invert Fourier transforms
-		gamma1 = irfft2(ft_gamma1)
-		gamma2 = irfft2(ft_gamma2)
+		data1 = irfft2(ft_data1)
+		data2 = irfft2(ft_data2)
 
 		#Instantiate new shear map class
-		new = cls(np.array([gamma1,gamma2]),angle)
+		new = cls(np.array([data1,data2]),angle)
 		setattr(new,"fourier_E",fourier_E)
 		setattr(new,"fourier_B",fourier_B)
 
@@ -181,8 +181,8 @@ class Spin2(object):
 			self.ax = ax
 
 		#Plot the map
-		self.ax[0].imshow(self.gamma[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
-		self.ax[1].imshow(self.gamma[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		self.ax[0].imshow(self.data[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		self.ax[1].imshow(self.data[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
 
 		#Axes labels
 		self.ax[0].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
@@ -239,11 +239,11 @@ class Spin2(object):
 			self.fig = fig
 			self.ax = ax
 
-		x,y = np.meshgrid(np.arange(0,self.gamma.shape[2],pixel_step),np.arange(0,self.gamma.shape[1],pixel_step))
+		x,y = np.meshgrid(np.arange(0,self.data.shape[2],pixel_step),np.arange(0,self.data.shape[1],pixel_step))
 
 		#Translate shear components into sines and cosines
-		cos_2_phi = self.gamma[0] / np.sqrt(self.gamma[0]**2 + self.gamma[1]**2)
-		sin_2_phi = self.gamma[1] / np.sqrt(self.gamma[0]**2 + self.gamma[1]**2)
+		cos_2_phi = self.data[0] / np.sqrt(self.data[0]**2 + self.data[1]**2)
+		sin_2_phi = self.data[1] / np.sqrt(self.data[0]**2 + self.data[1]**2)
 
 		#Compute stick directions
 		cos_phi = np.sqrt(0.5*(1.0 + cos_2_phi)) * np.sign(sin_2_phi)
@@ -253,7 +253,7 @@ class Spin2(object):
 		cos_phi[sin_2_phi==0] = np.sqrt(0.5*(1.0 + cos_2_phi[sin_2_phi==0]))
 
 		#Draw map using matplotlib quiver
-		self.ax.quiver(x*self.side_angle.value/self.gamma.shape[2],y*self.side_angle.value/self.gamma.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
+		self.ax.quiver(x*self.side_angle.value/self.data.shape[2],y*self.side_angle.value/self.data.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
 
 		#Axes labels
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
@@ -281,16 +281,16 @@ class Spin2(object):
 		"""
 
 		#Perform Fourier transforms
-		ft_gamma1 = rfft2(self.gamma[0])
-		ft_gamma2 = rfft2(self.gamma[1])
+		ft_data1 = rfft2(self.data[0])
+		ft_data2 = rfft2(self.data[1])
 
 		#Compute frequencies
-		lx = rfftfreq(ft_gamma1.shape[0])
-		ly = fftfreq(ft_gamma1.shape[0])
+		lx = rfftfreq(ft_data1.shape[0])
+		ly = fftfreq(ft_data1.shape[0])
 
 		#Safety check
-		assert len(lx)==ft_gamma1.shape[1]
-		assert len(ly)==ft_gamma1.shape[0]
+		assert len(lx)==ft_data1.shape[1]
+		assert len(ly)==ft_data1.shape[0]
 
 		#Compute sines and cosines of rotation angles
 		l_squared = lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2
@@ -300,14 +300,14 @@ class Spin2(object):
 		cos_2_phi = (lx[np.newaxis,:]**2 - ly[:,np.newaxis]**2) / l_squared
 
 		#Compute E and B components
-		ft_E = cos_2_phi * ft_gamma1 + sin_2_phi * ft_gamma2
-		ft_B = -1.0 * sin_2_phi * ft_gamma1 + cos_2_phi * ft_gamma2
+		ft_E = cos_2_phi * ft_data1 + sin_2_phi * ft_data2
+		ft_B = -1.0 * sin_2_phi * ft_data1 + cos_2_phi * ft_data2
 
 		ft_E[0,0] = 0.0
 		ft_B[0,0] = 0.0
 
 		assert ft_E.shape == ft_B.shape
-		assert ft_E.shape == ft_gamma1.shape
+		assert ft_E.shape == ft_data1.shape
 
 		#Compute and return power spectra
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
@@ -425,7 +425,7 @@ class ShearMap(Spin2):
 	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.defaults.load_fits_default_shear)
 	>>> test.side_angle
 	1.95
-	>>> test.gamma
+	>>> test.data
 	#The actual map values
 
 	"""

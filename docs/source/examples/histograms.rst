@@ -137,7 +137,7 @@ Histograms of convergence maps
 		
 			ax[i].set_xlabel(r"$\kappa$")
 			ax[i].set_ylabel(r"$P(\kappa)$")
-			ax[i].set_title(r"${0:.1f}^\prime={1:.1f}$pix".format(smoothing_scales[i].value,(smoothing_scales[i] * sample_map.kappa.shape[0]/(sample_map.side_angle)).decompose().value))
+			ax[i].set_title(r"${0:.1f}^\prime={1:.1f}$pix".format(smoothing_scales[i].value,(smoothing_scales[i] * sample_map.data.shape[0]/(sample_map.side_angle)).decompose().value))
 		
 		
 		fig.tight_layout()
