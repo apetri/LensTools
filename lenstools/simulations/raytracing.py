@@ -2,6 +2,8 @@ from ..convergence import Spin0
 from ..shear import Spin1
 
 import numpy as np
+
+from astropy.cosmology import w0waCDM
 from astropy.units import km,s,Mpc,rad,deg
 from astropy.io import fits
 
@@ -30,27 +32,78 @@ class PotentialPlane(Spin0):
 		"""
 		Saves the potential plane to an external file, of which the format can be specified (only fits implemented so far)
 
+		:param filename: name of the file on which to save the plane
+		:type filename: str.
+
+		:param format: format of the file, only FITS implemented so far
+		:type format: str.
+
 		"""
 
-		#Create the hdu
-		hdu = fits.PrimaryHDU(self.data)
+		if format=="fits":
+		
+			#Create the hdu
+			hdu = fits.PrimaryHDU(self.data)
 
-		#Generate a header
-		hdu.header["H0"] = self.cosmology.H0.to(km/(s*Mpc)).value
-		hdu.header["h"] = self.cosmology.h
-		hdu.header["OMEGA_M"] = self.cosmology.Om0
-		hdu.header["OMEGA_L"] = self.cosmology.Ode0
-		hdu.header["W0"] = self.cosmology.w0
-		hdu.header["WA"] = self.cosmology.wa
+			#Generate a header
+			hdu.header["H0"] = (self.cosmology.H0.to(km/(s*Mpc)).value,"Hubble constant in km/s*Mpc")
+			hdu.header["h"] = (self.cosmology.h,"Dimensionless Hubble constant")
+			hdu.header["OMEGA_M"] = (self.cosmology.Om0,"Dark Matter density")
+			hdu.header["OMEGA_L"] = (self.cosmology.Ode0,"Dark Energy density")
+			hdu.header["W0"] = (self.cosmology.w0,"Dark Energy equation of state")
+			hdu.header["WA"] = (self.cosmology.wa,"Dark Energy running equation of state")
 
-		hdu.header["Z"] = (self.redshift,"Redshift of the lens plane")
-		hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
+			hdu.header["Z"] = (self.redshift,"Redshift of the lens plane")
+			hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
 
-		hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
+			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
 
-		#Save the plane
-		hdulist = fits.HDUList([hdu])
-		hdulist.writeto(filename,clobber=True)
+			#Save the plane
+			hdulist = fits.HDUList([hdu])
+			hdulist.writeto(filename,clobber=True)
+
+		else:
+			raise ValueError("Format {0} not implemented yet!!".format(format))
+
+
+	@classmethod
+	def load(cls,filename,format="fits"):
+
+		"""
+		Loads the potential plane from an external file, of which the format can be specified (only fits implemented so far)
+
+		:param filename: name of the file from which to load the plane
+		:type filename: str.
+
+		:param format: format of the file, only FITS implemented so far
+		:type format: str.
+
+		:returns: PotentialPlane instance that wraps the data contained in the file
+
+		"""
+
+		if format=="fits":
+
+			#Read the FITS file with the plane information
+			hdu = fits.open(filename)
+
+			#Retrieve the info from the header
+			hubble = hdu[0].header["H0"] * (km/(s*Mpc))
+			Om0 = hdu[0].header["OMEGA_M"]
+			Ode0 = hdu[0].header["OMEGA_L"]
+			w0 = hdu[0].header["W0"]
+			wa = hdu[0].header["WA"]
+			redshift = hdu[0].header["Z"]
+			angle = hdu[0].header["ANGLE"] * deg
+
+			#Build the cosmology object
+			cosmology = w0waCDM(H0=hubble,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
+
+			#Instantiate the new PotentialPlane instance
+			return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
+
+		else:
+			raise ValueError("Format {0} not implemented yet!!".format(format))
 
 
 	
