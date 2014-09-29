@@ -43,8 +43,10 @@ class PotentialPlane(Spin0):
 		hdu.header["W0"] = self.cosmology.w0
 		hdu.header["WA"] = self.cosmology.wa
 
-		hdu.header["REDSHIFT"] = self.redshift
-		hdu.header["COMOVING_DISTANCE"] = hdu.header["h"] * self.comoving_distance.to(Mpc).value
+		hdu.header["Z"] = (self.redshift,"Redshift of the lens plane")
+		hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
+
+		hdu.header["ANGLE"] = (self.angle.to(deg).value,"Side angle in degrees")
 
 		#Save the plane
 		hdulist = fits.HDUList([hdu])
