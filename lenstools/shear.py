@@ -36,11 +36,12 @@ try:
 except ImportError:
 	matplotlib = False
 
+
 ##########################################
-########Spin2 class#######################
+########Spin1 class#######################
 ##########################################
 
-class Spin2(object):
+class Spin1(object):
 
 
 	def __init__(self,data,angle):
@@ -86,64 +87,6 @@ class Spin2(object):
 		angle,data = loader(*args)
 		return cls(data,angle)
 
-	@classmethod
-	def fromEBmodes(cls,fourier_E,fourier_B,angle=3.14*deg):
-
-		"""
-		This class method allows to build a shear map specifying its E and B mode components
-
-		:param fourier_E: E mode of the shear map in fourier space
-		:type fourier_E: numpy 2D array, must be of type np.complex128 and must have a shape that is appropriate for a real fourier transform, i.e. (N,N/2 + 1); N should be a power of 2
-
-		:param fourier_B: B mode of the shear map in fourier space
-		:type fourier_B: numpy 2D array, must be of type np.complex128 and must have a shape that is appropriate for a real fourier transform, i.e. (N,N/2 + 1); N should be a power of 2
-
-		:param angle: Side angle of the real space map in degrees
-		:type angle: float.
-
-		:returns: the corresponding ShearMap instance
-
-		:raises: AssertionErrors for inappropriate inputs
-
-		"""
-
-		assert fourier_E.dtype == np.complex128 and fourier_B.dtype == np.complex128
-		assert fourier_E.shape[1] == fourier_E.shape[0]/2 + 1
-		assert fourier_B.shape[1] == fourier_B.shape[0]/2 + 1
-		assert fourier_E.shape == fourier_B.shape
-
-		#Compute frequencies
-		lx = rfftfreq(fourier_E.shape[0])
-		ly = fftfreq(fourier_E.shape[0])
-
-		#Safety check
-		assert len(lx)==fourier_E.shape[1]
-		assert len(ly)==fourier_E.shape[0]
-
-		#Compute sines and cosines of rotation angles
-		l_squared = lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2
-		l_squared[0,0] = 1.0
-
-		sin_2_phi = 2.0 * lx[np.newaxis,:] * ly[:,np.newaxis] / l_squared
-		cos_2_phi = (lx[np.newaxis,:]**2 - ly[:,np.newaxis]**2) / l_squared
-
-		sin_2_phi[0,0] = 0.0
-		cos_2_phi[0,0] = 0.0
-
-		#Invert E/B modes and find the components of the shear
-		ft_data1 = cos_2_phi * fourier_E - sin_2_phi * fourier_B
-		ft_data2 = sin_2_phi * fourier_E + cos_2_phi * fourier_B
-
-		#Invert Fourier transforms
-		data1 = irfft2(ft_data1)
-		data2 = irfft2(ft_data2)
-
-		#Instantiate new shear map class
-		new = cls(np.array([data1,data2]),angle)
-		setattr(new,"fourier_E",fourier_E)
-		setattr(new,"fourier_B",fourier_B)
-
-		return new
 
 	def setAngularUnits(self,unit):
 
@@ -204,6 +147,73 @@ class Spin2(object):
 		"""
 
 		self.fig.savefig(filename)
+
+
+
+##########################################
+########Spin2 class#######################
+##########################################
+
+class Spin2(Spin1):
+
+	@classmethod
+	def fromEBmodes(cls,fourier_E,fourier_B,angle=3.14*deg):
+
+		"""
+		This class method allows to build a shear map specifying its E and B mode components
+
+		:param fourier_E: E mode of the shear map in fourier space
+		:type fourier_E: numpy 2D array, must be of type np.complex128 and must have a shape that is appropriate for a real fourier transform, i.e. (N,N/2 + 1); N should be a power of 2
+
+		:param fourier_B: B mode of the shear map in fourier space
+		:type fourier_B: numpy 2D array, must be of type np.complex128 and must have a shape that is appropriate for a real fourier transform, i.e. (N,N/2 + 1); N should be a power of 2
+
+		:param angle: Side angle of the real space map in degrees
+		:type angle: float.
+
+		:returns: the corresponding ShearMap instance
+
+		:raises: AssertionErrors for inappropriate inputs
+
+		"""
+
+		assert fourier_E.dtype == np.complex128 and fourier_B.dtype == np.complex128
+		assert fourier_E.shape[1] == fourier_E.shape[0]/2 + 1
+		assert fourier_B.shape[1] == fourier_B.shape[0]/2 + 1
+		assert fourier_E.shape == fourier_B.shape
+
+		#Compute frequencies
+		lx = rfftfreq(fourier_E.shape[0])
+		ly = fftfreq(fourier_E.shape[0])
+
+		#Safety check
+		assert len(lx)==fourier_E.shape[1]
+		assert len(ly)==fourier_E.shape[0]
+
+		#Compute sines and cosines of rotation angles
+		l_squared = lx[np.newaxis,:]**2 + ly[:,np.newaxis]**2
+		l_squared[0,0] = 1.0
+
+		sin_2_phi = 2.0 * lx[np.newaxis,:] * ly[:,np.newaxis] / l_squared
+		cos_2_phi = (lx[np.newaxis,:]**2 - ly[:,np.newaxis]**2) / l_squared
+
+		sin_2_phi[0,0] = 0.0
+		cos_2_phi[0,0] = 0.0
+
+		#Invert E/B modes and find the components of the shear
+		ft_data1 = cos_2_phi * fourier_E - sin_2_phi * fourier_B
+		ft_data2 = sin_2_phi * fourier_E + cos_2_phi * fourier_B
+
+		#Invert Fourier transforms
+		data1 = irfft2(ft_data1)
+		data2 = irfft2(ft_data2)
+
+		#Instantiate new shear map class
+		new = cls(np.array([data1,data2]),angle)
+		setattr(new,"fourier_E",fourier_E)
+		setattr(new,"fourier_B",fourier_B)
+
+		return new
 
 
 	def sticks(self,fig=None,ax=None,pixel_step=10,multiplier=1.0):
