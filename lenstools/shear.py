@@ -147,7 +147,7 @@ class Spin1(object):
 
 
 	
-	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),**kwargs):
+	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),colorbar=False,**kwargs):
 
 		"""
 		Visualize the shear map; the kwargs are passed to imshow 
@@ -168,8 +168,12 @@ class Spin1(object):
 			self.ax = ax
 
 		#Plot the map
-		self.ax[0].imshow(self.data[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
-		self.ax[1].imshow(self.data[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		if colorbar:
+			plt.colorbar(self.ax[0].imshow(self.data[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs),ax=self.ax[0])
+			plt.colorbar(self.ax[1].imshow(self.data[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs),ax=self.ax[1])
+		else:
+			self.ax[0].imshow(self.data[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+			self.ax[1].imshow(self.data[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
 
 		#Axes labels
 		self.ax[0].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
