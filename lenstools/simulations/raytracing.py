@@ -5,6 +5,14 @@ import logging
 
 import numpy as np
 
+#FFT engines
+from numpy.fft import fftfreq,rfft2,irfft2
+
+try:
+	from numpy.fft import rfftfreq
+except ImportError:
+	from ..utils import rfftfreq
+
 from astropy.cosmology import w0waCDM
 from astropy.units import km,s,Mpc,rad,deg
 from astropy.io import fits
@@ -20,13 +28,14 @@ class PotentialPlane(Spin0):
 
 	"""
 
-	def __init__(self,data,angle,redshift,cosmology,unit=rad**2,masked=False):
+	def __init__(self,data,angle,redshift,cosmology,unit=rad**2,space="real",masked=False):
 
 		super(self.__class__,self).__init__(data,angle,masked)
 		self.redshift = redshift
 		self.comoving_distance = cosmology.comoving_distance(redshift)
 		self.cosmology = cosmology
 		self.unit = unit
+		self.space = space
 
 
 	def save(self,filename,format="fits"):
@@ -112,15 +121,56 @@ class PotentialPlane(Spin0):
 	def deflectionAngles(self):
 
 		"""
-		Computes the deflection angles for the given lensing potential by taking the gradient of the potential map
+		Computes the deflection angles for the given lensing potential by taking the gradient of the potential map; it is also possible to proceed with FFTs
 
 		"""
 
 		#Compute the gradient of the potential map
-		deflection_x,deflection_y = self.gradient()
+
+		if self.space=="real":
+			
+			deflection_x,deflection_y = self.gradient()
+		
+		elif self.space=="fourier":
+
+			#Compute deflections in fourier space
+			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			ft_deflection_x = 1.0j * self.data * lx 
+			ft_deflection_y = 1.0j * self.data * ly
+
+			#Go back in real space
+			deflection_x = irfft2(ft_deflection_x)
+			deflection_y = irfft2(ft_deflection_y)
+
+		else:
+			raise ValueError("space must be either real or fourier!")
 
 		#Return the DeflectionPlane instance
 		return DeflectionPlane(np.array([deflection_x,deflection_y])/self.resolution.to(self.unit**0.5).value,angle=self.side_angle,redshift=self.redshift,cosmology=self.cosmology,unit=self.unit**0.5)
+
+
+	def toReal(self):
+
+		"""
+		Switches to real space
+
+		"""
+
+		assert self.space=="fourier"
+		self.data = irfft2(self.data)
+		self.space = "real"
+
+	
+	def toFourier(self):
+
+		"""
+		Switches to Fourier space
+
+		"""
+
+		assert self.space=="real"
+		self.data = rfft2(self.data)
+		self.space="fourier"
 
 
 	def density(self):
@@ -131,6 +181,8 @@ class PotentialPlane(Spin0):
 		:returns: Spin0 instance with the density fluctuation data 
 
 		"""
+
+		assert self.space=="real","You really want to do this operation in fourier space?"
 
 		#Compute the laplacian
 		hessian_xx,hessian_yy,hessian_xy = self.hessian()
