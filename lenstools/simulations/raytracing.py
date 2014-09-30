@@ -304,7 +304,19 @@ class RayTracer(object):
 		logging.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
 
 
-	def shoot(self,initial_positions,z=2.0,precision="first",kind="positions"):
+	def reorderLenses(self):
+
+		"""
+		Reorders the lenses in the ray tracer according to their comoving distance from the observer
+
+		"""
+
+		self.lens.sort(key=self.distance)
+		self.redshift.sort(key=self.distance)
+		self.distance.sort()
+
+
+	def shoot(self,initial_positions,z=2.0,precision="first",kind="positions",save_intermediate=False):
 
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z, through the system of gravitational lenses, and computes the deflection statistics
@@ -320,6 +332,9 @@ class RayTracer(object):
 
 		:param kind: what deflection statistics to compute; "positions" will calculate the ray deflections after they crossed the last lens, "jacobian" will compute the lensing jacobian matrix after the last lens, "shear" and "convergence" will compute the omonimous weak lensing statistics  
 		:type kind: str.
+
+		:param save_intermediate: save the intermediate positions of the rays too
+		:type save_intermediate: bool.
 
 		"""
 
