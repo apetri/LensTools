@@ -28,14 +28,20 @@ class PotentialPlane(Spin0):
 
 	"""
 
-	def __init__(self,data,angle,redshift,cosmology,unit=rad**2,space="real",masked=False):
+	def __init__(self,data,angle,redshift,cosmology,unit=rad**2,masked=False):
 
 		super(self.__class__,self).__init__(data,angle,masked)
 		self.redshift = redshift
 		self.comoving_distance = cosmology.comoving_distance(redshift)
 		self.cosmology = cosmology
 		self.unit = unit
-		self.space = space
+
+		if data.dtype==np.float:
+			self.space = "real"
+		elif data.dtype==np.complex:
+			self.space = "fourier"
+		else:
+			raise TypeError("data type not supported!")
 
 
 	def save(self,filename,format="fits"):
@@ -54,7 +60,18 @@ class PotentialPlane(Spin0):
 		if format=="fits":
 		
 			#Create the hdu
-			hdu = fits.PrimaryHDU(self.data)
+			if self.space=="real":
+				
+				hdu = fits.PrimaryHDU(self.data)
+			
+			elif self.space=="fourier":
+				
+				hdu = fits.PrimaryHDU(self.data.real)
+				hdu1 = fits.ImageHDU(self.data.imag)
+			
+			else:
+				raise TypeError("data type not supported!")
+
 
 			#Generate a header
 			hdu.header["H0"] = (self.cosmology.H0.to(km/(s*Mpc)).value,"Hubble constant in km/s*Mpc")
@@ -70,7 +87,11 @@ class PotentialPlane(Spin0):
 			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
 
 			#Save the plane
-			hdulist = fits.HDUList([hdu])
+			if self.space=="real":
+				hdulist = fits.HDUList([hdu])
+			else:
+				hdulist = fits.HDUList([hdu,hdu1])
+
 			hdulist.writeto(filename,clobber=True)
 
 		else:
@@ -95,8 +116,10 @@ class PotentialPlane(Spin0):
 
 		if format=="fits":
 
-			#Read the FITS file with the plane information
+			#Read the FITS file with the plane information (if there are two HDU's the second one is the imaginary part)
 			hdu = fits.open(filename)
+			if len(hdu)>2:
+				raise ValueError("There are more than 2 HDUs, file format unknown")
 
 			#Retrieve the info from the header
 			hubble = hdu[0].header["H0"] * (km/(s*Mpc))
@@ -111,7 +134,10 @@ class PotentialPlane(Spin0):
 			cosmology = w0waCDM(H0=hubble,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
 
 			#Instantiate the new PotentialPlane instance
-			return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
+			if len(hdu)==1:
+				return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
+			else:
+				return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
 
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
@@ -156,7 +182,7 @@ class PotentialPlane(Spin0):
 
 		"""
 
-		assert self.space=="fourier"
+		assert self.space=="fourier","We are already in real space!!"
 		self.data = irfft2(self.data)
 		self.space = "real"
 
@@ -168,7 +194,7 @@ class PotentialPlane(Spin0):
 
 		"""
 
-		assert self.space=="real"
+		assert self.space=="real","We are already in fourier space!!"
 		self.data = rfft2(self.data)
 		self.space="fourier"
 
@@ -182,13 +208,23 @@ class PotentialPlane(Spin0):
 
 		"""
 
-		assert self.space=="real","You really want to do this operation in fourier space?"
-
 		#Compute the laplacian
-		hessian_xx,hessian_yy,hessian_xy = self.hessian()
+		if self.space=="real":			
+			
+			hessian_xx,hessian_yy,hessian_xy = self.hessian()
+			laplacian = hessian_xx + hessian_yy
+
+		elif self.space=="fourier":
+
+			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			ft_laplacian = -1.0 * (lx**2 + ly**2) * self.data
+			laplacian = irfft2(ft_laplacian) 			
+
+		else:
+			raise ValueError("space must be either real or fourier!")
 
 		#The density is twice the trace of the hessian
-		return Spin0(2.0*(hessian_xx + hessian_yy)/(self.resolution**2).to(self.unit).value,angle=self.side_angle)
+		return Spin0(2.0*laplacian/(self.resolution**2).to(self.unit).value,angle=self.side_angle)
 
 
 
