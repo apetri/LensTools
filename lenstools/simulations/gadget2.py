@@ -828,7 +828,7 @@ class Gadget2Snapshot(object):
 		assert type(plane_size)==quantity.Quantity and plane_size.unit.physical_type=="angle"
 
 		#First compute the overall normalization factor for the angular density
-		cosmo_normalization = 1.5 * (self._header["H0"]**2) * self._header["Om0"]  * self.cosmology.comoving_distance(self._header["redshift"]) / c**2
+		cosmo_normalization = 1.5 * (self._header["H0"]**2) * self._header["Om0"]  * self.cosmology.comoving_distance(self._header["redshift"]) * (1.0+self._header["redshift"]) / c**2
 
 		#Direction of the plane
 		plane_directions = range(3)
