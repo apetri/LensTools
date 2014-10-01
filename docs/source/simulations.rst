@@ -1,5 +1,5 @@
-Weak lensing simulations
-************************
+Weak lensing simulation suites
+******************************
 
 At the current stage of Weak gravitational lensing research, large numerical simulations are required for analyzing observations; the LensTools python package provides an API to interact with some already existing simulated datasets (mainly convergence and shear maps for different cosmological models), such as 
 

@@ -82,6 +82,7 @@ Weak lensing simulations
    :maxdepth: 2
 
    simulations
+   raytracing
 
 3D visualization with Mayavi
 ----------------------------

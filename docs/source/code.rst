@@ -64,8 +64,8 @@ Indexing
 
 .. autoclass:: lenstools.index.MinkowskiSingle
 
-Simulation sets
-===============
+Simulation suites
+=================
 
 .. automodule:: lenstools.simulations
 
@@ -89,6 +89,19 @@ Gadget2 snapshot handling
 
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
+
+Ray tracing simulations
+=======================
+
+.. autoclass:: lenstools.simulations.PotentialPlane
+	:members: save,load,randomRoll,deflectionAngles,toReal,toFourier,density
+
+.. autoclass:: lenstools.simulations.raytracing.DeflectionPlane
+	:members: jacobian,convergence,shear
+
+.. autoclass:: lenstools.simulations.RayTracer
+	:inherited-members:
+
 
 Observation sets
 ================
