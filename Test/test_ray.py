@@ -19,7 +19,7 @@ def test_ray_simple():
 	last_timestamp = start
 
 	#Add the lenses to the system
-	for i in range(2,47):
+	for i in range(11,57):
 		tracer.addLens(PotentialPlane.load("../lenstools/simulations/planes/snap{0}_potentialPlane0_normal0.fits".format(i)))
 
 	now = time.time()
