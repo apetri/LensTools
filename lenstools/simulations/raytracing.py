@@ -139,8 +139,28 @@ class PotentialPlane(Spin0):
 			else:
 				return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
 
+			#Close the FITS file
+			hdu.close()
+
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
+
+
+	def randomRoll(self,seed=None):
+
+		"""
+		Randomly shifts the plane along its axes, enforcing periodic boundary conditions
+
+		:param seed: random seed with which to initialize the generator
+		:type seed: int.
+
+		"""
+
+		if seed is not None:
+			np.random.seed(seed)
+
+		if(self.space=="real"):
+			self.data = np.roll(np.roll(self.data,np.random.randint(0,self.data.shape[0]),axis=0),np.random.randint(0,self.data.shape[1]),axis=1)
 
 
 	
@@ -303,6 +323,22 @@ class RayTracer(object):
 		#If completed correctly, log info to the user
 		logging.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
 
+	def randomRoll(self,seed=None):
+
+		"""
+		Randomly rolls all the lenses in the system along both axes
+
+		:param seed: random seed with which to initialize the generator
+		:type seed: int.
+
+		"""
+
+		if seed is not None:
+			np.random.seed(seed)
+
+		for lens in self.lens:
+			lens.randomRoll(seed=None)
+
 
 	def reorderLenses(self):
 
@@ -311,8 +347,8 @@ class RayTracer(object):
 
 		"""
 
-		self.lens.sort(key=self.distance)
-		self.redshift.sort(key=self.distance)
+		self.lens = [ lens for (redshift,lens) in sorted(zip(self.redshift,self.lens)) ]
+		self.redshift.sort()
 		self.distance.sort()
 
 
@@ -338,5 +374,60 @@ class RayTracer(object):
 
 		"""
 
-		return None
+		#Sanity check
+		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
+
+		#Allocate arrays for the intermediate light ray positions
+		current_positions = initial_positions.copy()
+		current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
+
+		#Decide which is the last lens the light rays should cross
+		last_lens = np.abs(np.array(self.redshift) - z).argmin()
+		if save_intermediate:
+			all_positions = np.zeros((last_lens,) + initial_positions.shape) * initial_positions.unit
+
+		#Allocate a new array of dimensionless distances
+		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
+
+		#The light rays positions at the k+1 th step are computed according to Xk+1 = Xk + Dk, where Dk is the deflection
+		#To be numerically stable we compute the deflections as Dk+1 = (Ak-1)Dk + pk where pk is the deflection due to the potential
+
+		#This is the main loop that goes through all the lenses
+		for k in range(last_lens):
+
+			#Load in the lens
+			if type(self.lens[k])==PotentialPlane:
+				current_lens = self.lens[k]
+			else:
+				current_lens = PotentialPlane.load(self.lens[k])
+
+			#Log
+			logging.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
+
+			#Compute the deflection angles
+			deflections = current_lens.deflectionAngles()
+
+			#Compute geometrical weight factors
+			Ak = (distance[k+1] / distance[k+2]) * (1.0 + (distance[k+2] - distance[k+1])/(distance[k+1] - distance[k]))
+			Ck = -1.0 * (distance[k+2] - distance[k+1]) / distance[k+2]
+
+			#Compute the position on the next lens
+			current_deflection *= (Ak-1) 
+			current_deflection += Ck * deflections.getValues(current_positions[0],current_positions[1]) * deflections.unit
+			current_positions += current_deflection
+
+			#Save the intermediate positions if option was specified
+			if save_intermediate:
+				all_positions[k] = current_positions.copy()
+
+		#Return the final positions of the light rays
+		if save_intermediate:
+			return all_positions
+		else:
+			return current_positions
+
+
+
+
+		
 
