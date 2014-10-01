@@ -14,7 +14,7 @@ except ImportError:
 	from ..utils import rfftfreq
 
 from astropy.cosmology import w0waCDM
-from astropy.units import km,s,Mpc,rad,deg
+from astropy.units import km,s,Mpc,rad,deg,quantity
 from astropy.io import fits
 
 ###########################################################
@@ -376,6 +376,7 @@ class RayTracer(object):
 
 		#Sanity check
 		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
+		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
 
 		#Allocate arrays for the intermediate light ray positions
 		current_positions = initial_positions.copy()
@@ -390,7 +391,7 @@ class RayTracer(object):
 		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
 
 		#The light rays positions at the k+1 th step are computed according to Xk+1 = Xk + Dk, where Dk is the deflection
-		#To be numerically stable we compute the deflections as Dk+1 = (Ak-1)Dk + pk where pk is the deflection due to the potential
+		#To stabilize the solution numerically we compute the deflections as Dk+1 = (Ak-1)Dk + Ck*pk where pk is the deflection due to the potential gradient
 
 		#This is the main loop that goes through all the lenses
 		for k in range(last_lens):
@@ -398,8 +399,10 @@ class RayTracer(object):
 			#Load in the lens
 			if type(self.lens[k])==PotentialPlane:
 				current_lens = self.lens[k]
-			else:
+			elif type(self.lens[k])==str:
 				current_lens = PotentialPlane.load(self.lens[k])
+			else:
+				raise TypeError("Lens format not recognized!")
 
 			#Log
 			logging.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
