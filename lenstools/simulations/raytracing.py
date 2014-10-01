@@ -1,5 +1,5 @@
-from ..convergence import Spin0
-from ..shear import Spin1
+from ..convergence import Spin0,ConvergenceMap
+from ..shear import Spin1,ShearMap
 
 import logging
 
@@ -267,6 +267,59 @@ class DeflectionPlane(Spin1):
 		self.comoving_distance = cosmology.comoving_distance(redshift)
 		self.cosmology = cosmology
 		self.unit = unit
+
+
+	def jacobian(self):
+
+		"""
+		Computes the jacobian of the deflection angles, useful to compute shear and convergence; units are handled properly
+
+		:returns: the jacobian of the deflection field in array form, of shape (4,:,:) where the four components are, respectively, xx,xy,yx,yy
+
+		"""
+
+		return self.gradient() / self.resolution.to(self.unit).value
+
+
+	def convergence(self,precision="first"):
+
+		"""
+		Computes the convergence from the deflection angles by taking the appropriate components of the jacobian
+
+		:param precision: if "first" computes the convergence at first order in the lensing potential (only one implemented so far)
+		:type precision: str.
+
+		:returns: ConvergenceMap instance with the computed convergence values
+
+		"""
+
+		#Compute the jacobian and the convergence by tracing it
+		jacobian = self.jacobian()
+		convergence = -0.5*(jacobian[0]+jacobian[3])
+
+		#Instantiate the convergence map
+		return ConvergenceMap(convergence,angle=self.side_angle)
+
+
+	def shear(self,precision="first"):
+
+		"""
+		Computes the shear from the deflection angles by taking the appropriate components of the jacobian
+
+		:param precision: if "first" computes the shear at first order in the lensing potential (only one implemented so far)
+		:type precision: str. 
+
+		:returns: ShearMap instance with the computed convergence values
+
+		"""
+
+		#Compute the jacobian and the shear
+		jacobian = self.jacobian()
+		shear = np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])])
+
+		#Instantiate the shear map
+		return ShearMap(shear,angle=self.side_angle)
+
 
 
 
