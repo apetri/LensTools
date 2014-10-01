@@ -103,6 +103,21 @@ class Spin1(object):
 		self.side_angle = self.side_angle.to(unit)
 
 
+	def gradient(self):
+
+		"""
+		Computes the gradient of the components of the spin1 field at each point
+
+		:returns: the gradient of the spin1 field in array form, of shape (4,:,:) where the four components are, respectively, 1x,1y,2x,2y; the units for the finite difference are pixels
+
+		"""
+
+		grad1x,grad1y = _topology.gradient(self.data[0])
+		grad2x,grad2y = _topology.gradient(self.data[1])
+
+		return np.array([grad1x,grad1y,grad2x,grad2y])
+
+
 	def getValues(self,x,y):
 
 		"""

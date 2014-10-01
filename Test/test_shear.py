@@ -45,9 +45,32 @@ def test_visualize1():
 	assert test_map.data.shape[0] == 2
 
 	test_map.setAngularUnits(arcsec)
-	test_map.visualize()
+	test_map.visualize(colorbar=True)
+	test_map.fig.tight_layout()
 	test_map.savefig("shear.png")
 	test_map.setAngularUnits(deg)
+
+def test_gradient():
+
+	grad = test_map.gradient()
+	fig,ax = plt.subplots(2,2,figsize=(16,16))
+
+	#Plot the components
+	for i in range(2):
+		for j in range(2):
+			plt.colorbar(ax[i,j].imshow(grad[2*i + j],origin="lower",interpolation="nearest",extent=[0,test_map.side_angle.value,0,test_map.side_angle.value]),ax=ax[i,j])
+			ax[i,j].set_xlabel(r"$x$(deg)")
+			ax[i,j].set_ylabel(r"$y$(deg)")
+
+	#Titles
+	ax[0,0].set_title(r"$\gamma_{1,x}$")
+	ax[0,1].set_title(r"$\gamma_{1,y}$")
+	ax[1,0].set_title(r"$\gamma_{2,x}$")
+	ax[1,1].set_title(r"$\gamma_{2,y}$")
+
+	#Save
+	fig.tight_layout()
+	fig.savefig("vector_gradient.png")
 
 def test_EB_decompose():
 
