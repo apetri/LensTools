@@ -36,9 +36,12 @@ def test_ray_simple():
 	#Compute shear and convergence
 	conv = dfl.convergence()
 	shear = dfl.shear()
+	omega = dfl.omega()
 
 	#Finally visualize the result
 	conv.visualize(colorbar=True)
 	conv.savefig("raytraced_convergence.png")
+	omega.visualize(colorbar=True)
+	omega.savefig("raytraced_omega.png")
 	shear.visualize(colorbar=True)
 	shear.savefig("raytraced_shear.png")

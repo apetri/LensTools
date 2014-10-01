@@ -301,6 +301,26 @@ class DeflectionPlane(Spin1):
 		return ConvergenceMap(convergence,angle=self.side_angle)
 
 
+	def omega(self,precision="first"):
+
+		"""
+		Computes the omega field (i.e. the real space B mode) from the deflection angles by taking the appropriate components of the jacobian
+
+		:param precision: if "first" computes omega at first order in the lensing potential (only one implemented so far)
+		:type precision: str.
+
+		:returns: Spin0 instance with the computed omega values
+
+		"""
+
+		#Compute the jacobian and the convergence by tracing it
+		jacobian = self.jacobian()
+		omega = -0.5*(jacobian[2]-jacobian[1])
+
+		#Instantiate the convergence map
+		return Spin0(omega,angle=self.side_angle)
+
+
 	def shear(self,precision="first"):
 
 		"""

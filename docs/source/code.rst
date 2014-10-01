@@ -97,7 +97,7 @@ Ray tracing simulations
 	:members: save,load,randomRoll,deflectionAngles,toReal,toFourier,density
 
 .. autoclass:: lenstools.simulations.raytracing.DeflectionPlane
-	:members: jacobian,convergence,shear
+	:members: jacobian,convergence,shear,omega
 
 .. autoclass:: lenstools.simulations.RayTracer
 	:inherited-members:
