@@ -191,10 +191,6 @@ class PotentialPlane(Spin0):
 		else:
 			raise ValueError("space must be either real or fourier!")
 
-
-
-
-
 	
 	def deflectionAngles(self):
 
@@ -455,6 +451,11 @@ class RayTracer(object):
 		self.lens = [ lens for (redshift,lens) in sorted(zip(self.redshift,self.lens)) ]
 		self.redshift.sort()
 		self.distance.sort()
+
+
+	##################################################################################################################################
+	#####################This method solves the nonlinear lensing ODE#################################################################
+	##################################################################################################################################
 
 
 	def shoot(self,initial_positions,z=2.0,precision="first",kind="positions",save_intermediate=False):
