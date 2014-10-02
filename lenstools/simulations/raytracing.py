@@ -177,8 +177,22 @@ class PotentialPlane(Spin0):
 		if seed is not None:
 			np.random.seed(seed)
 
-		if(self.space=="real"):
-			self.data = np.roll(np.roll(self.data,np.random.randint(0,self.data.shape[0]),axis=0),np.random.randint(0,self.data.shape[1]),axis=1)
+		if self.space=="real":
+
+			#Roll in real space
+			self.data = np.roll(np.roll(self.data,np.random.randint(0,self.data.shape[0]),axis=0),np.random.randint(0,self.data.shape[1]),axis=1)	
+		
+		elif self.space=="fourier":
+
+			#Rolling in Fourier space is just multiplying by phases
+			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			self.data *= np.exp(2.0j*np.pi*(lx*np.random.randint(0,self.data.shape[0]) + ly*np.random.randint(0,self.data.shape[0])))
+
+		else:
+			raise ValueError("space must be either real or fourier!")
+
+
+
 
 
 	
