@@ -28,13 +28,24 @@ class PotentialPlane(Spin0):
 
 	"""
 
-	def __init__(self,data,angle,redshift,cosmology,unit=rad**2,masked=False):
+	def __init__(self,data,angle,redshift,cosmology=None,comoving_distance=None,unit=rad**2,masked=False):
+
+		#Sanity check
+		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both none!!"
 
 		super(self.__class__,self).__init__(data,angle,masked)
 		self.redshift = redshift
-		self.comoving_distance = cosmology.comoving_distance(redshift)
 		self.cosmology = cosmology
 		self.unit = unit
+
+		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
+		if comoving_distance is not None:		
+			
+			assert comoving_distance.unit.physical_type=="length"
+			self.comoving_distance = comoving_distance
+		
+		else:
+			self.comoving_distance = cosmology.comoving_distance(redshift)
 
 		if data.dtype==np.float:
 			self.space = "real"
@@ -58,6 +69,9 @@ class PotentialPlane(Spin0):
 		"""
 
 		if format=="fits":
+
+			#A cosmology instance should be available in order to save in FITS format
+			assert self.cosmology is not None
 		
 			#Create the hdu
 			if self.space=="real":
@@ -121,14 +135,18 @@ class PotentialPlane(Spin0):
 			if len(hdu)>2:
 				raise ValueError("There are more than 2 HDUs, file format unknown")
 
+			header = hdu[0].header
+
 			#Retrieve the info from the header
-			hubble = hdu[0].header["H0"] * (km/(s*Mpc))
-			Om0 = hdu[0].header["OMEGA_M"]
-			Ode0 = hdu[0].header["OMEGA_L"]
-			w0 = hdu[0].header["W0"]
-			wa = hdu[0].header["WA"]
-			redshift = hdu[0].header["Z"]
-			angle = hdu[0].header["ANGLE"] * deg
+			hubble = header["H0"] * (km/(s*Mpc))
+			h = header["h"]
+			Om0 = header["OMEGA_M"]
+			Ode0 = header["OMEGA_L"]
+			w0 = header["W0"]
+			wa = header["WA"]
+			redshift = header["Z"]
+			angle = header["ANGLE"] * deg
+			comoving_distance = (header["CHI"] / h) * Mpc
 
 			#Build the cosmology object
 			cosmology = w0waCDM(H0=hubble,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
@@ -137,7 +155,7 @@ class PotentialPlane(Spin0):
 			if len(hdu)==1:
 				return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
 			else:
-				return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
+				return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
 
 			#Close the FITS file
 			hdu.close()
