@@ -483,6 +483,7 @@ class RayTracer(object):
 		#Sanity check
 		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
 		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
+		assert kind in ["positions","jacobians","shear","convergence"],"kind must be one in [positions,jacobians,shear,convergence]!"
 
 		#Allocate arrays for the intermediate light ray positions
 		current_positions = initial_positions.copy()
@@ -495,11 +496,11 @@ class RayTracer(object):
 			assert z.shape==initial_positions.shape[1:]
 
 			#Compute the number of lenses that each ray should cross
-			last_lens_ray = np.abs(np.array(self.redshift).reshape((len(self.redshift),)+(1,)*len(z.shape)) - z[None]).argmin(0)
+			last_lens_ray = (z[None] > np.array(self.redshift).reshape((len(self.redshift),)+(1,)*len(z.shape))).argmin(0) - 1
 			last_lens = last_lens_ray.max()
 		
 		else:
-			last_lens = np.abs(np.array(self.redshift) - z).argmin()
+			last_lens = (z>np.array(self.redshift)).argmin() - 1
 		
 		if save_intermediate:
 			all_positions = np.zeros((last_lens,) + initial_positions.shape) * initial_positions.unit
