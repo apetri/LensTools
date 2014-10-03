@@ -466,8 +466,8 @@ class RayTracer(object):
 		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_posiions[0] is x, initial_positions[1] is y
 		:type initial_positions: numpy array or quantity
 
-		:param z: redshift of the sources
-		:type z: float.
+		:param z: redshift of the sources; if an array is passes, a redshift must be specified for each ray, i.e. z.shape==initial_positions.shape[1:]
+		:type z: float. or array
 
 		:param precision: precision at which to compute weak lensing quantities, must be "first" for first order in the lensing potential, or "second" for added precision
 		:type precision: str.
@@ -489,7 +489,18 @@ class RayTracer(object):
 		current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
 
 		#Decide which is the last lens the light rays should cross
-		last_lens = np.abs(np.array(self.redshift) - z).argmin()
+		if type(z)==np.ndarray:
+			
+			#Check that shapes correspond
+			assert z.shape==initial_positions.shape[1:]
+
+			#Compute the number of lenses that each ray should cross
+			last_lens_ray = np.abs(np.array(self.redshift).reshape((len(self.redshift),)+(1,)*len(z.shape)) - z[None]).argmin(0)
+			last_lens = last_lens_ray.max()
+		
+		else:
+			last_lens = np.abs(np.array(self.redshift) - z).argmin()
+		
 		if save_intermediate:
 			all_positions = np.zeros((last_lens,) + initial_positions.shape) * initial_positions.unit
 
@@ -523,7 +534,11 @@ class RayTracer(object):
 			#Compute the position on the next lens
 			current_deflection *= (Ak-1) 
 			current_deflection += Ck * deflections.getValues(current_positions[0],current_positions[1]) * deflections.unit
-			current_positions += current_deflection
+
+			if type(z)==np.ndarray:
+				current_positions[:,k<last_lens_ray] += current_deflection[:,k<last_lens_ray]
+			else:
+				current_positions += current_deflection
 
 			#Save the intermediate positions if option was specified
 			if save_intermediate:
