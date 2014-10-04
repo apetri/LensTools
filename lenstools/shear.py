@@ -112,6 +112,9 @@ class Spin1(object):
 
 		"""
 
+		if self.data.shape[0] > 2:
+			raise ValueError("Gradients are nor defined yet for spin>1 fields!!")
+
 		grad1x,grad1y = _topology.gradient(self.data[0])
 		grad2x,grad2y = _topology.gradient(self.data[1])
 
@@ -184,19 +187,21 @@ class Spin1(object):
 
 		#Plot the map
 		if colorbar:
-			plt.colorbar(self.ax[0].imshow(self.data[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs),ax=self.ax[0])
-			plt.colorbar(self.ax[1].imshow(self.data[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs),ax=self.ax[1])
+
+			for i in range(self.data.shape[0]):
+				plt.colorbar(self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs),ax=self.ax[i])
+		
 		else:
-			self.ax[0].imshow(self.data[0],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
-			self.ax[1].imshow(self.data[1],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+
+			for i in range(self.data.shape[0]):
+				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
 
 		#Axes labels
-		self.ax[0].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
-		self.ax[0].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
-		self.ax[0].set_title(component_labels[0])
-		self.ax[1].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
-		self.ax[1].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
-		self.ax[1].set_title(component_labels[1])
+		for i in range(self.data.shape[0]):
+
+			self.ax[i].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
+			self.ax[i].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
+			self.ax[i].set_title(component_labels[i])
 
 	
 	def savefig(self,filename):

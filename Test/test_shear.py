@@ -1,6 +1,7 @@
 try:
 	
 	from lenstools import ConvergenceMap,ShearMap
+	from lenstools.shear import Spin2
 	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
 
 except ImportError:
@@ -8,6 +9,7 @@ except ImportError:
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap,ShearMap
+	from lenstools.shear import Spin2
 	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
 
 import numpy as np
@@ -52,21 +54,11 @@ def test_visualize1():
 
 def test_gradient():
 
-	grad = test_map.gradient()
+	grad = Spin2(test_map.gradient(),angle=test_map.side_angle)
 	fig,ax = plt.subplots(2,2,figsize=(16,16))
 
 	#Plot the components
-	for i in range(2):
-		for j in range(2):
-			plt.colorbar(ax[i,j].imshow(grad[2*i + j],origin="lower",interpolation="nearest",extent=[0,test_map.side_angle.value,0,test_map.side_angle.value]),ax=ax[i,j])
-			ax[i,j].set_xlabel(r"$x$(deg)")
-			ax[i,j].set_ylabel(r"$y$(deg)")
-
-	#Titles
-	ax[0,0].set_title(r"$\gamma_{1,x}$")
-	ax[0,1].set_title(r"$\gamma_{1,y}$")
-	ax[1,0].set_title(r"$\gamma_{2,x}$")
-	ax[1,1].set_title(r"$\gamma_{2,y}$")
+	grad.visualize(fig=fig,ax=ax.reshape(4),component_labels=(r"$\gamma_{1,x}$",r"$\gamma_{1,y}$",r"$\gamma_{2,x}$",r"$\gamma_{2,y}$"),colorbar=True)
 
 	#Save
 	fig.tight_layout()
