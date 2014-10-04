@@ -1,5 +1,5 @@
 from ..convergence import Spin0,ConvergenceMap
-from ..shear import Spin1,ShearMap
+from ..shear import Spin1,Spin2,rShearMap
 
 import logging
 
@@ -14,7 +14,7 @@ except ImportError:
 	from ..utils import rfftfreq
 
 from astropy.cosmology import w0waCDM
-from astropy.units import km,s,Mpc,rad,deg,quantity
+from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 from astropy.io import fits
 
 ###########################################################
@@ -205,10 +205,9 @@ class PotentialPlane(Spin0):
 
 		"""
 
-		#Compute the gradient of the potential map
-
 		if self.space=="real":
 			
+			#Compute the gradient of the potential map
 			deflection_x,deflection_y = self.gradient()
 		
 		elif self.space=="fourier":
@@ -227,6 +226,39 @@ class PotentialPlane(Spin0):
 
 		#Return the DeflectionPlane instance
 		return DeflectionPlane(np.array([deflection_x,deflection_y])/self.resolution.to(self.unit**0.5).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
+
+
+	def shearMatrix(self):
+
+		"""
+		Computes the shear matrix for the given lensing potential; it is also possible to proceed with FFTs
+
+		"""
+
+		if self.space=="real":
+			
+			#Compute the second derivatives
+			tensor_xx,tensor_yy,tensor_xy = self.hessian()
+
+		elif self.space=="fourier":
+
+			#Compute deflections in fourier space
+			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			ft_tensor_xx = -1.0j * self.data * lx**2
+			ft_tensor_xy = -1.0j * self.data * lx*ly
+			ft_tensor_yy = -1.0j * self.data * ly**2
+
+			#Go back in real space
+			tensor_xx = irfft2(ft_tensor_xx)
+			tensor_xy = irfft2(ft_tensor_xy)
+			tensor_yy = irfft2(ft_tensor_yy)
+
+		else:
+			raise ValueError("space must be either real or fourier!")
+
+
+		#Return the ShearTensorPlane instance
+		return ShearTensorPlane(np.array([tensor_xx,tensor_xy,tensor_yy])/self.resolution.to(self.unit**0.5).value**2,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
 
 
 	def toReal(self):
@@ -385,6 +417,35 @@ class DeflectionPlane(Spin1):
 		return ShearMap(shear,angle=self.side_angle)
 
 
+############################################################
+#############ShearTensorPlane class#########################
+############################################################
+
+class ShearTensorPlane(Spin2):
+
+	"""
+	Class handler of a plane of shear matrices, inherits from the parent Spin2 class and holds the 3 values of the symmetric shear matrix (2 diagonal + 1 off diagonal), for each pixel
+
+	"""
+
+	def __init__(self,data,angle,redshift=2.0,comoving_distance=None,cosmology=None,unit=dimensionless_unscaled):
+
+		#Sanity check
+		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both none!!"
+		assert data.shape[0]==3,"A symmetric 2x2 matrix has 3 independent components!!"
+
+		super(self.__class__,self).__init__(data,angle)
+		self.redshift = redshift
+		self.unit = unit
+
+		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
+		if comoving_distance is not None:		
+			
+			assert comoving_distance.unit.physical_type=="length"
+			self.comoving_distance = comoving_distance
+		
+		else:
+			self.comoving_distance = cosmology.comoving_distance(redshift)
 
 
 #######################################################
