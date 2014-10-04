@@ -334,10 +334,13 @@ class Spin0(object):
 		return self._hessian_boundary
 			
 
-	def gradient(self):
+	def gradient(self,save=True):
 		
 		"""
 		Computes the gradient of the map and sets the gradient_x,gradient_y attributes accordingly
+
+		:param save: if True saves the gradient as attrubutes
+		:type save: bool.
 
 		:returns: tuple -- (gradient_x,gradient_y)
 
@@ -345,13 +348,22 @@ class Spin0(object):
 		>>> gx,gy = test_map.gradient()
 
 		"""
-		self.gradient_x, self.gradient_y = _topology.gradient(self.data)
-		return self.gradient_x,self.gradient_y
+		
+		gradient_x,gradient_y = _topology.gradient(self.data)
+		
+		if save:
+			self.gradient_x = gradient_x
+			self.gradient_y = gradient_y
+		
+		return gradient_x,gradient_y
 
-	def hessian(self):
+	def hessian(self,save=True):
 		
 		"""
 		Computes the hessian of the map and sets the hessian_xx,hessian_yy,hessian_xy attributes accordingly
+
+		:param save: if True saves the gradient as attrubutes
+		:type save: bool.
 
 		:returns: tuple -- (hessian_xx,hessian_yy,hessian_xy)
 
@@ -359,8 +371,14 @@ class Spin0(object):
 		>>> hxx,hyy,hxy = test_map.hessian()
 
 		"""
-		self.hessian_xx,self.hessian_yy,self.hessian_xy = _topology.hessian(self.data)
-		return self.hessian_xx,self.hessian_yy,self.hessian_xy
+		hessian_xx,hessian_yy,hessian_xy = _topology.hessian(self.data)
+		
+		if save:
+			self.hessian_xx = hessian_xx
+			self.hessian_yy = hessian_yy
+			self.hessian_xy = hessian_xy
+
+		return hessian_xx,hessian_yy,hessian_xy
 
 	def pdf(self,thresholds,norm=False):
 
