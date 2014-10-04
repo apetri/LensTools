@@ -31,7 +31,7 @@ class PotentialPlane(Spin0):
 	def __init__(self,data,angle,redshift,cosmology=None,comoving_distance=None,unit=rad**2,masked=False):
 
 		#Sanity check
-		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both none!!"
+		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
 		super(self.__class__,self).__init__(data,angle,masked)
 		self.redshift = redshift
@@ -113,7 +113,7 @@ class PotentialPlane(Spin0):
 
 
 	@classmethod
-	def load(cls,filename,format="fits"):
+	def load(cls,filename,format="fits",init_cosmology=True):
 
 		"""
 		Loads the potential plane from an external file, of which the format can be specified (only fits implemented so far)
@@ -123,6 +123,9 @@ class PotentialPlane(Spin0):
 
 		:param format: format of the file, only FITS implemented so far
 		:type format: str.
+
+		:param init_cosmology: if True, instantiates the cosmology attribute of the PotentialPlane
+		:type init_cosmology: bool.
 
 		:returns: PotentialPlane instance that wraps the data contained in the file
 
@@ -148,12 +151,15 @@ class PotentialPlane(Spin0):
 			angle = header["ANGLE"] * deg
 			comoving_distance = (header["CHI"] / h) * Mpc
 
-			#Build the cosmology object
-			cosmology = w0waCDM(H0=hubble,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
+			#Build the cosmology object if options directs
+			if init_cosmology:
+				cosmology = w0waCDM(H0=hubble,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
+			else:
+				cosmology = None
 
 			#Instantiate the new PotentialPlane instance
 			if len(hdu)==1:
-				return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,cosmology=cosmology,unit=rad**2)
+				return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
 			else:
 				return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
 
@@ -220,7 +226,7 @@ class PotentialPlane(Spin0):
 			raise ValueError("space must be either real or fourier!")
 
 		#Return the DeflectionPlane instance
-		return DeflectionPlane(np.array([deflection_x,deflection_y])/self.resolution.to(self.unit**0.5).value,angle=self.side_angle,redshift=self.redshift,cosmology=self.cosmology,unit=self.unit**0.5)
+		return DeflectionPlane(np.array([deflection_x,deflection_y])/self.resolution.to(self.unit**0.5).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
 
 
 	def toReal(self):
@@ -288,13 +294,23 @@ class DeflectionPlane(Spin1):
 
 	"""
 
-	def __init__(self,data,angle,redshift,cosmology,unit=rad):
+	def __init__(self,data,angle,redshift=2.0,comoving_distance=None,cosmology=None,unit=rad):
+
+		#Sanity check
+		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both none!!"
 
 		super(self.__class__,self).__init__(data,angle)
 		self.redshift = redshift
-		self.comoving_distance = cosmology.comoving_distance(redshift)
-		self.cosmology = cosmology
 		self.unit = unit
+
+		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
+		if comoving_distance is not None:		
+			
+			assert comoving_distance.unit.physical_type=="length"
+			self.comoving_distance = comoving_distance
+		
+		else:
+			self.comoving_distance = cosmology.comoving_distance(redshift)
 
 
 	def jacobian(self):
