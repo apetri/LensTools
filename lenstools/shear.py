@@ -178,7 +178,7 @@ class Spin1(object):
 		#Instantiate figure
 		if (fig is None) or (ax is None):
 			
-			self.fig,self.ax = plt.subplots(1,2,figsize=(16,8))
+			self.fig,self.ax = plt.subplots(1,self.data.shape[0],figsize=(16,8))
 
 		else:
 
