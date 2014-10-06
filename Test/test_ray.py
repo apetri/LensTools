@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 def test_ray_simple():
 
 	#Instantiate the RayTracer
-	tracer = RayTracer()
+	tracer = RayTracer(lens_mesh_size=512)
 
 	start = time.time()
 	last_timestamp = start

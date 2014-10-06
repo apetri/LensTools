@@ -171,13 +171,16 @@ class PotentialPlane(Spin0):
 			raise ValueError("Format {0} not implemented yet!!".format(format))
 
 
-	def randomRoll(self,seed=None):
+	def randomRoll(self,seed=None,lmesh=None):
 
 		"""
 		Randomly shifts the plane along its axes, enforcing periodic boundary conditions
 
 		:param seed: random seed with which to initialize the generator
 		:type seed: int.
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
 
 		"""
 
@@ -195,7 +198,11 @@ class PotentialPlane(Spin0):
 		elif self.space=="fourier":
 
 			#Rolling in Fourier space is just multiplying by phases
-			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			if lmesh is None:
+				ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			else:
+				lx = lmesh[0]
+				ly = lmesh[1]
 
 			#Timestamp
 			now = time.time()
@@ -214,10 +221,13 @@ class PotentialPlane(Spin0):
 			raise ValueError("space must be either real or fourier!")
 
 	
-	def deflectionAngles(self):
+	def deflectionAngles(self,lmesh=None):
 
 		"""
 		Computes the deflection angles for the given lensing potential by taking the gradient of the potential map; it is also possible to proceed with FFTs
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
 
 		"""
 
@@ -233,7 +243,10 @@ class PotentialPlane(Spin0):
 		elif self.space=="fourier":
 
 			#Compute deflections in fourier space
-			l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+			if lmesh is None:
+				l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+			else:
+				l = lmesh
 
 			#Timestamp
 			now = time.time()
@@ -496,12 +509,18 @@ class RayTracer(object):
 
 	"""
 
-	def __init__(self):
+	def __init__(self,lens_mesh_size=None):
 
 		self.Nlenses = 0
 		self.lens = list()
 		self.distance = list()
 		self.redshift = list()
+
+		#If we know the size of the lens planes already we can compute, once and for all, the FFT meshgrid
+		if lens_mesh_size is not None:
+			self.lmesh = np.array(np.meshgrid(rfftfreq(lens_mesh_size),fftfreq(lens_mesh_size)))
+		else:
+			self.lmesh = None
 
 
 	def addLens(self,lens_specification):
@@ -552,7 +571,7 @@ class RayTracer(object):
 			np.random.seed(seed)
 
 		for lens in self.lens:
-			lens.randomRoll(seed=None)
+			lens.randomRoll(seed=None,lmesh=self.lmesh)
 
 
 	def reorderLenses(self):
@@ -642,7 +661,7 @@ class RayTracer(object):
 			last_timestamp = start
 
 			#Compute the deflection angles and log timestamp
-			deflections = current_lens.deflectionAngles()
+			deflections = current_lens.deflectionAngles(lmesh=self.lmesh)
 			now = time.time()
 			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
