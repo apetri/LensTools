@@ -16,7 +16,14 @@ except ImportError:
 
 from astropy.cosmology import w0waCDM
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
-from astropy.io import fits
+
+#Try to import the FITSIO library for optimal FITS images reading
+try:
+	from fitsio import FITS as fits
+	fitsio = fits
+except ImportError:
+	from astropy.io import fits
+	fitsio = None
 
 ###########################################################
 ###############PotentialPlane class########################
@@ -135,11 +142,18 @@ class PotentialPlane(Spin0):
 		if format=="fits":
 
 			#Read the FITS file with the plane information (if there are two HDU's the second one is the imaginary part)
-			hdu = fits.open(filename)
+			if fitsio is not None:
+				hdu = fits(filename)
+			else:
+				hdu = fits.open(filename)
+			
 			if len(hdu)>2:
 				raise ValueError("There are more than 2 HDUs, file format unknown")
 
-			header = hdu[0].header
+			if fitsio is not None:
+				header = hdu[0].read_header()
+			else:
+				header = hdu[0].header
 
 			#Retrieve the info from the header
 			hubble = header["H0"] * (km/(s*Mpc))
@@ -159,10 +173,19 @@ class PotentialPlane(Spin0):
 				cosmology = None
 
 			#Instantiate the new PotentialPlane instance
-			if len(hdu)==1:
-				return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
+			if fitsio is not None:
+
+				if len(hdu)==1:
+					return cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
+				else:
+					return cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
+
 			else:
-				return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
+			
+				if len(hdu)==1:
+					return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
+				else:
+					return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2)
 
 			#Close the FITS file
 			hdu.close()
