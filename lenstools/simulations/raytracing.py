@@ -1,6 +1,7 @@
 from ..convergence import Spin0,ConvergenceMap
 from ..shear import Spin1,Spin2,ShearMap
 
+import time
 import logging
 
 import numpy as np
@@ -601,6 +602,8 @@ class RayTracer(object):
 
 			#Log
 			logging.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
+			start = time.time()
+			last_timestamp = start
 
 			#Compute the deflection angles
 			deflections = current_lens.deflectionAngles()
@@ -609,18 +612,35 @@ class RayTracer(object):
 			Ak = (distance[k+1] / distance[k+2]) * (1.0 + (distance[k+2] - distance[k+1])/(distance[k+1] - distance[k]))
 			Ck = -1.0 * (distance[k+2] - distance[k+1]) / distance[k+2]
 
-			#Compute the position on the next lens
+			#Compute the position on the next lens and log timestamp
 			current_deflection *= (Ak-1) 
+			now = time.time()
+			logging.debug("Geometrical weight factors calculations and deflection scaling completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
+			#Add deflections and log timestamp
 			current_deflection += Ck * deflections.getValues(current_positions[0],current_positions[1]) * deflections.unit
+			now = time.time()
+			logging.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
 
 			if type(z)==np.ndarray:
 				current_positions[:,k<last_lens_ray] += current_deflection[:,k<last_lens_ray]
 			else:
 				current_positions += current_deflection
 
+			now = time.time()
+			logging.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
 			#Save the intermediate positions if option was specified
 			if save_intermediate:
 				all_positions[k] = current_positions.copy()
+
+			#Log timestamp to cross lens
+			now = time.time()
+			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
 
 		#Return the final positions of the light rays
 		if save_intermediate:
