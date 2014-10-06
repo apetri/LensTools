@@ -1,5 +1,5 @@
 from ..convergence import Spin0,ConvergenceMap
-from ..shear import Spin1,Spin2,rShearMap
+from ..shear import Spin1,Spin2,ShearMap
 
 import logging
 
