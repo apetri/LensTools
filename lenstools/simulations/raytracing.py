@@ -605,8 +605,11 @@ class RayTracer(object):
 			start = time.time()
 			last_timestamp = start
 
-			#Compute the deflection angles
+			#Compute the deflection angles and log timestamp
 			deflections = current_lens.deflectionAngles()
+			now = time.time()
+			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
 
 			#Compute geometrical weight factors
 			Ak = (distance[k+1] / distance[k+2]) * (1.0 + (distance[k+2] - distance[k+1])/(distance[k+1] - distance[k]))
