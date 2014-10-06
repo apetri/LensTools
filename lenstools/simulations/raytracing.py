@@ -214,8 +214,8 @@ class PotentialPlane(Spin0):
 
 			#Compute deflections in fourier space
 			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
-			ft_deflection_x = 1.0j * self.data * lx 
-			ft_deflection_y = 1.0j * self.data * ly
+			ft_deflection_x = 2.0*np.pi*1.0j * self.data * lx 
+			ft_deflection_y = 2.0*np.pi*1.0j * self.data * ly
 
 			#Go back in real space
 			deflection_x = irfft2(ft_deflection_x)
@@ -244,9 +244,9 @@ class PotentialPlane(Spin0):
 
 			#Compute deflections in fourier space
 			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
-			ft_tensor_xx = -1.0j * self.data * lx**2
-			ft_tensor_xy = -1.0j * self.data * lx*ly
-			ft_tensor_yy = -1.0j * self.data * ly**2
+			ft_tensor_xx = -(2.0*np.pi)**2 * self.data * (lx**2)
+			ft_tensor_xy = -(2.0*np.pi)**2 * self.data * (lx*ly)
+			ft_tensor_yy = -(2.0*np.pi)**2 * self.data * (ly**2)
 
 			#Go back in real space
 			tensor_xx = irfft2(ft_tensor_xx)
@@ -258,7 +258,7 @@ class PotentialPlane(Spin0):
 
 
 		#Return the ShearTensorPlane instance
-		return ShearTensorPlane(np.array([tensor_xx,tensor_xy,tensor_yy])/self.resolution.to(self.unit**0.5).value**2,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
+		return ShearTensorPlane(np.array([tensor_xx,tensor_yy,tensor_xy])/self.resolution.to(self.unit**0.5).value**2,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
 
 
 	def toReal(self):
@@ -303,7 +303,7 @@ class PotentialPlane(Spin0):
 		elif self.space=="fourier":
 
 			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
-			ft_laplacian = -1.0 * (lx**2 + ly**2) * self.data
+			ft_laplacian = -1.0 * (2.0*np.pi)**2 * (lx**2 + ly**2) * self.data
 			laplacian = irfft2(ft_laplacian) 			
 
 		else:
