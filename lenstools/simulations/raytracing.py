@@ -228,19 +228,19 @@ class PotentialPlane(Spin0):
 			
 			#Compute the gradient of the potential map
 			deflection_x,deflection_y = self.gradient()
+			deflection = np.array([deflection_x,deflection_y])
 		
 		elif self.space=="fourier":
 
 			#Compute deflections in fourier space
-			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
 
 			#Timestamp
 			now = time.time()
 			logging.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
-			ft_deflection_x = 2.0*np.pi*1.0j * self.data * lx 
-			ft_deflection_y = 2.0*np.pi*1.0j * self.data * ly
+			ft_deflection = 2.0*np.pi*1.0j * l * self.data
 
 			#Timestamp
 			now = time.time()
@@ -248,8 +248,7 @@ class PotentialPlane(Spin0):
 			last_timestamp = now 
 
 			#Go back in real space
-			deflection_x = irfft2(ft_deflection_x)
-			deflection_y = irfft2(ft_deflection_y)
+			deflection = irfft2(ft_deflection)
 
 			#Timestamp
 			now = time.time()
@@ -259,8 +258,11 @@ class PotentialPlane(Spin0):
 		else:
 			raise ValueError("space must be either real or fourier!")
 
+		#Scale to units
+		deflection /= self.resolution.to(self.unit**0.5).value
+
 		#Return the DeflectionPlane instance
-		return DeflectionPlane(np.array([deflection_x,deflection_y])/self.resolution.to(self.unit**0.5).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
+		return DeflectionPlane(deflection,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
 
 
 	def shearMatrix(self):

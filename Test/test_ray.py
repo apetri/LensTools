@@ -21,6 +21,7 @@ def test_ray_simple():
 	#Add the lenses to the system
 	for i in range(11,57):
 		tracer.addLens(PotentialPlane.load("../lenstools/simulations/planes/snap{0}_potentialPlane0_normal0.fits".format(i)))
+		tracer.lens[-1].toFourier()
 
 	now = time.time()
 	logging.info("Plane loading completed in {0:.3f}s".format(now-last_timestamp))
