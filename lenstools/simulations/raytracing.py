@@ -221,6 +221,9 @@ class PotentialPlane(Spin0):
 
 		"""
 
+		now = time.time()
+		last_timestamp = now
+
 		if self.space=="real":
 			
 			#Compute the gradient of the potential map
@@ -230,12 +233,28 @@ class PotentialPlane(Spin0):
 
 			#Compute deflections in fourier space
 			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+
+			#Timestamp
+			now = time.time()
+			logging.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now 
+
 			ft_deflection_x = 2.0*np.pi*1.0j * self.data * lx 
 			ft_deflection_y = 2.0*np.pi*1.0j * self.data * ly
+
+			#Timestamp
+			now = time.time()
+			logging.debug("Phase multiplications completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now 
 
 			#Go back in real space
 			deflection_x = irfft2(ft_deflection_x)
 			deflection_y = irfft2(ft_deflection_y)
+
+			#Timestamp
+			now = time.time()
+			logging.debug("Inverse FFTs completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now 
 
 		else:
 			raise ValueError("space must be either real or fourier!")
