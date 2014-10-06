@@ -222,17 +222,17 @@ class PotentialPlane(Spin0):
 
 			#Rolling in Fourier space is just multiplying by phases
 			if lmesh is None:
-				ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+				l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
 			else:
-				lx = lmesh[0]
-				ly = lmesh[1]
+				l = lmesh
 
 			#Timestamp
 			now = time.time()
 			logging.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
-			self.data *= np.exp(2.0j*np.pi*(lx*np.random.randint(0,self.data.shape[0]) + ly*np.random.randint(0,self.data.shape[0])))
+			random_shift = np.random.randint(0,self.data.shape[0],size=2)
+			self.data *= np.exp(2.0j*np.pi*np.tensordot(random_shift,l,axes=(0,0)))
 
 			#Timestamp
 			now = time.time()
