@@ -3,7 +3,13 @@
 
 int min_int(int,int);
 long min_long(long,long);
-long coordinate(long,long,long);
-long fourier_coordinate(long,long,long);
+
+static inline long coordinate(long x,long y,long map_size){
+	return ((y+map_size) % map_size)*map_size + ((x+map_size) % map_size);
+}
+
+static inline long fourier_coordinate(long x,long y,long map_size){
+	return ((map_size/2+1)*x + y);
+}
 
 #endif
