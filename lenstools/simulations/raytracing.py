@@ -244,13 +244,21 @@ class PotentialPlane(Spin0):
 			raise ValueError("space must be either real or fourier!")
 
 	
-	def deflectionAngles(self,lmesh=None):
+	def deflectionAngles(self,x=None,y=None,lmesh=None):
 
 		"""
 		Computes the deflection angles for the given lensing potential by taking the gradient of the potential map; it is also possible to proceed with FFTs
 
+		:param x: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type x: array with units
+
+		:param y: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type y: array with units
+
 		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
 		:type lmesh: array
+
+		:returns: DeflectionPlane instance, or array with deflections of rays hitting the lens at (x,y)
 
 		"""
 
@@ -260,10 +268,13 @@ class PotentialPlane(Spin0):
 		if self.space=="real":
 			
 			#Compute the gradient of the potential map
-			deflection_x,deflection_y = self.gradient()
+			deflection_x,deflection_y = self.gradient(x,y)
 			deflection = np.array([deflection_x,deflection_y])
 		
 		elif self.space=="fourier":
+
+			#It doesn't make sense to select (x,y) when we proceed with FFTs
+			assert (x is None) and (y is None),"It doesn't make sense to select (x,y) when we proceed with FFTs!"
 
 			#Compute deflections in fourier space
 			if lmesh is None:
@@ -297,8 +308,15 @@ class PotentialPlane(Spin0):
 		#Scale to units
 		deflection /= self.resolution.to(self.unit**0.5).value
 
-		#Return the DeflectionPlane instance
-		return DeflectionPlane(deflection,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
+		if (x is not None) and (y is not None):
+			
+			#If x and y are specified, return the deflections only at those particular points
+			return deflection
+
+		else:
+		
+			#Otherwise return the whole DeflectionPlane instance if we computed the entire mesh
+			return DeflectionPlane(deflection,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
 
 
 	def shearMatrix(self):
@@ -614,7 +632,7 @@ class RayTracer(object):
 	##################################################################################################################################
 
 
-	def shoot(self,initial_positions,z=2.0,precision="first",kind="positions",save_intermediate=False):
+	def shoot(self,initial_positions,z=2.0,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False):
 
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z, through the system of gravitational lenses, and computes the deflection statistics
@@ -633,6 +651,9 @@ class RayTracer(object):
 
 		:param save_intermediate: save the intermediate positions of the rays too
 		:type save_intermediate: bool.
+
+		:param compute_all_deflections: if True, computes the gradients of the lensing potential at every pixel (might be overkill if Nrays<<Npixels); must be True if the computation is done with FFTs
+		:type compute_all_deflections: bool.
 
 		"""
 
@@ -684,7 +705,11 @@ class RayTracer(object):
 			last_timestamp = start
 
 			#Compute the deflection angles and log timestamp
-			deflections = current_lens.deflectionAngles(lmesh=self.lmesh)
+			if compute_all_deflections:
+				deflections = current_lens.deflectionAngles(lmesh=self.lmesh).getValues(current_positions[0],current_positions[1])
+			else:
+				deflections = current_lens.deflectionAngles(current_positions[0],current_positions[1])
+			
 			now = time.time()
 			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
@@ -700,7 +725,7 @@ class RayTracer(object):
 			last_timestamp = now
 
 			#Add deflections and log timestamp
-			current_deflection += Ck * deflections.getValues(current_positions[0],current_positions[1]) * deflections.unit
+			current_deflection += Ck * deflections * current_lens.unit**0.5
 			now = time.time()
 			logging.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
