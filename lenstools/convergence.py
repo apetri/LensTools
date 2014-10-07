@@ -334,10 +334,16 @@ class Spin0(object):
 		return self._hessian_boundary
 			
 
-	def gradient(self,save=True):
+	def gradient(self,x=None,y=None,save=True):
 		
 		"""
 		Computes the gradient of the map and sets the gradient_x,gradient_y attributes accordingly
+
+		:param x: optional, x positions at which to evaluate the gradient
+		:type x: array with units
+
+		:param y: optional, y positions at which to evaluate the gradient
+		:type y: array with units
 
 		:param save: if True saves the gradient as attrubutes
 		:type save: bool.
@@ -348,14 +354,50 @@ class Spin0(object):
 		>>> gx,gy = test_map.gradient()
 
 		"""
+
+		if (x is not None) and (y is not None):
+
+			assert x.shape==y.shape,"x and y must have the same shape!"
+
+			#x coordinates
+			if type(x)==quantity.Quantity:
+			
+				assert x.unit.physical_type=="angle"
+				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
+
+			else:
+
+				j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
+
+			#y coordinates
+			if type(y)==quantity.Quantity:
+			
+				assert y.unit.physical_type=="angle"
+				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
+
+			else:
+
+				i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+
+		else:
+			i = None
+			j = None
 		
-		gradient_x,gradient_y = _topology.gradient(self.data)
+		#Call the C backend
+		gradient_x,gradient_y = _topology.gradient(self.data,j,i)
+
+		#Return the gradients
+		if (x is not None) and (y is not None):
+
+			return gradient_x.reshape(x.shape),gradient_y.reshape(y.shape)
+
+		else:
 		
-		if save:
-			self.gradient_x = gradient_x
-			self.gradient_y = gradient_y
+			if save:
+				self.gradient_x = gradient_x
+				self.gradient_y = gradient_y
 		
-		return gradient_x,gradient_y
+			return gradient_x,gradient_y
 
 	def hessian(self,save=True):
 		

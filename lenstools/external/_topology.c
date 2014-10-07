@@ -150,10 +150,12 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 //gradient() implementation
 static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 
-	PyObject *map_obj;
+	PyObject *map_obj,*x_obj,*y_obj;
+	PyObject *x_array,*y_array;
+	int Npoints, *x_data,*y_data;
 
 	/*Parse the input*/
-	if(!PyArg_ParseTuple(args,"O",&map_obj)){ 
+	if(!PyArg_ParseTuple(args,"OOO",&map_obj,&x_obj,&y_obj)){ 
 		return NULL;
 	}
 
@@ -163,13 +165,54 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 		return NULL;
 	}
 
+	/*If not None, interpret also x and y as numpy arrays*/
+	if(x_obj!=Py_None && y_obj!=Py_None){
+
+		x_array = PyArray_FROM_OTF(x_obj,NPY_INT32,NPY_IN_ARRAY);
+		y_array = PyArray_FROM_OTF(y_obj,NPY_INT32,NPY_IN_ARRAY);
+
+		if(x_array==NULL || y_array==NULL){
+			Py_XDECREF(x_array);
+			Py_XDECREF(y_array);
+			Py_DECREF(map_array);
+			return NULL;
+		}
+
+		Npoints = (int)PyArray_SIZE(x_array);
+
+		/*Get data pointers*/
+		x_data = (int *)PyArray_DATA(x_array);
+		y_data = (int *)PyArray_DATA(y_array);
+
+	} else{
+
+		x_array = NULL;
+		y_array = NULL;
+		Npoints = -1;
+		x_data = NULL;
+		y_data = NULL;
+	}
+
 	/*Get the size of the map (in pixels)*/
 	int Nside = (int)PyArray_DIM(map_array,0);
 
+	/*Interpret as numpy arrays*/
+	PyObject *gradient_x_array, *gradient_y_array;
+
 	/*Prepare the new array objects that will hold the gradients along x and y*/
-	npy_intp dims[] = {(npy_intp) Nside, (npy_intp) Nside};
-	PyObject *gradient_x_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
-	PyObject *gradient_y_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	if(Npoints<0){
+		
+		npy_intp dims[] = {(npy_intp) Nside, (npy_intp) Nside};
+		gradient_x_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+		gradient_y_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	}
+	else{
+
+		npy_intp dims[] = {(npy_intp) Npoints};
+		gradient_x_array = PyArray_SimpleNew(1,dims,NPY_DOUBLE);
+		gradient_y_array = PyArray_SimpleNew(1,dims,NPY_DOUBLE);
+
+	}
 
 	/*Throw exception if this failed*/
 	if(gradient_x_array==NULL || gradient_y_array==NULL){
@@ -181,7 +224,7 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 	}
 
 	/*Call the underlying C function that computes the gradient*/
-	gradient_xy((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(gradient_x_array),(double *)PyArray_DATA(gradient_y_array),Nside);
+	gradient_xy((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(gradient_x_array),(double *)PyArray_DATA(gradient_y_array),Nside,Npoints,x_data,y_data);
 
 	/*Prepare a tuple container for the output*/
 	PyObject *gradient_output = PyTuple_New(2);
@@ -189,6 +232,10 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 	if(PyTuple_SetItem(gradient_output,0,gradient_x_array)){
 
 		Py_DECREF(map_array);
+
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
 		Py_DECREF(gradient_x_array);
 		Py_DECREF(gradient_y_array);
 		Py_DECREF(gradient_output);
@@ -199,6 +246,10 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 	if(PyTuple_SetItem(gradient_output,1,gradient_y_array)){
 
 		Py_DECREF(map_array);
+		
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+		
 		Py_DECREF(gradient_x_array);
 		Py_DECREF(gradient_y_array);
 		Py_DECREF(gradient_output);
@@ -208,6 +259,9 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 
 	/*Clean up*/
 	Py_DECREF(map_array);
+	
+	if(x_array!=NULL) Py_DECREF(x_array);
+	if(y_array!=NULL) Py_DECREF(y_array);
 
 	/*Done, now return*/
 	return gradient_output;

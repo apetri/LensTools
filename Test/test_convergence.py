@@ -144,6 +144,17 @@ def test_getValues():
 	new_values = test_map.getValues(xx,yy)
 	assert (new_values==test_map.data).all
 
+def test_gradient_partial():
+
+	b = np.linspace(0.0,test_map.side_angle.value,test_map.data.shape[0])
+	xx,yy = np.meshgrid(b,b) * deg
+
+	gx,gy = test_map.gradient()
+	gxp,gyp = test_map.gradient(xx,yy)
+
+	assert (gx==gxp).all
+	assert (gy==gyp).all
+
 
 def test_cut():
 
