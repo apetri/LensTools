@@ -103,10 +103,16 @@ class Spin1(object):
 		self.side_angle = self.side_angle.to(unit)
 
 
-	def gradient(self):
+	def gradient(self,x=None,y=None):
 
 		"""
 		Computes the gradient of the components of the spin1 field at each point
+
+		:param x: optional, x positions at which to evaluate the gradient
+		:type x: array with units
+
+		:param y: optional, y positions at which to evaluate the gradient
+		:type y: array with units
 
 		:returns: the gradient of the spin1 field in array form, of shape (4,:,:) where the four components are, respectively, 1x,1y,2x,2y; the units for the finite difference are pixels
 
@@ -115,10 +121,43 @@ class Spin1(object):
 		if self.data.shape[0] > 2:
 			raise ValueError("Gradients are nor defined yet for spin>1 fields!!")
 
-		grad1x,grad1y = _topology.gradient(self.data[0])
-		grad2x,grad2y = _topology.gradient(self.data[1])
+		if (x is not None) and (y is not None):
 
-		return np.array([grad1x,grad1y,grad2x,grad2y])
+			assert x.shape==y.shape,"x and y must have the same shape!"
+
+			#x coordinates
+			if type(x)==quantity.Quantity:
+			
+				assert x.unit.physical_type=="angle"
+				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
+
+			else:
+
+				j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
+
+			#y coordinates
+			if type(y)==quantity.Quantity:
+			
+				assert y.unit.physical_type=="angle"
+				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
+
+			else:
+
+				i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+
+		else:
+			i = None
+			j = None
+
+		#Call the C backend
+		grad1x,grad1y = _topology.gradient(self.data[0],j,i)
+		grad2x,grad2y = _topology.gradient(self.data[1],j,i)
+
+		#Return
+		if (x is not None) and (y is not None):
+			return np.array([grad1x.reshape(x.shape),grad1y.reshape(y.shape),grad2x.reshape(x.shape),grad2y.reshape(y.shape)])
+		else:
+			return np.array([grad1x,grad1y,grad2x,grad2y])
 
 
 	def getValues(self,x,y):
