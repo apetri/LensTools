@@ -36,7 +36,7 @@ class PotentialPlane(Spin0):
 
 	"""
 
-	def __init__(self,data,angle,redshift,cosmology=None,comoving_distance=None,unit=rad**2,masked=False):
+	def __init__(self,data,angle,redshift,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
 
 		#Sanity check
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
@@ -45,6 +45,11 @@ class PotentialPlane(Spin0):
 		self.redshift = redshift
 		self.cosmology = cosmology
 		self.unit = unit
+
+		if num_particles is not None:
+			self.num_particles = num_particles
+		else:
+			self.num_particles = -1
 
 		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
 		if comoving_distance is not None:		
@@ -107,6 +112,7 @@ class PotentialPlane(Spin0):
 			hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
 
 			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
+			hdu.header["NPART"] = self.num_particles
 
 			#Save the plane
 			if self.space=="real":

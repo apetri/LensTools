@@ -815,7 +815,7 @@ class Gadget2Snapshot(object):
 		:param space: if "real" return the lens plane in real space, if "fourier" the Fourier transform is not inverted
 		:type space: str.
 
-		:returns: tuple(numpy 2D or 3D array with the (unsmoothed) particle angular number density,bin angular resolution); the constant spatial part of the density field is subtracted (we keep the fluctuation only)
+		:returns: tuple(numpy 2D or 3D array with the (unsmoothed) particle angular number density,bin angular resolution, total number of particles on the plane); the constant spatial part of the density field is subtracted (we keep the fluctuation only)
 
 		"""
 
@@ -913,6 +913,9 @@ class Gadget2Snapshot(object):
 			self.pool.closeWindow()
 
 
+		#Compute the total number of particles on the lens plane
+		NumPartTotal = density.sum()
+
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = [ (binning[0][1:]-binning[0][:-1]).mean() , (binning[1][1:]-binning[1][:-1]).mean() , (binning[2][1:]-binning[2][:-1]).mean() ]
 		
@@ -943,11 +946,11 @@ class Gadget2Snapshot(object):
 				density_ft[0,0] = 0.0
 				density = irfftn(density_ft)
 
-				return (density * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value, bin_resolution
+				return (density * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value, bin_resolution, NumPartTotal
 
 			else:
 
-				return ((density - density.sum()/reduce(mul,density.shape)) * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value, bin_resolution
+				return ((density - density.sum()/reduce(mul,density.shape)) * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value, bin_resolution, NumPartTotal
 
 		#############################################################################################################################################
 		######################################Ready to solve the lensing poisson equation via FFTs###################################################
@@ -999,7 +1002,7 @@ class Gadget2Snapshot(object):
 				density = rfftn(density)
 
 		#Return
-		return (density*cosmo_normalization*density_normalization).decompose().value,bin_resolution
+		return (density*cosmo_normalization*density_normalization).decompose().value,bin_resolution,NumPartTotal
 
 
 	#############################################################################################################################################
