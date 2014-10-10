@@ -220,6 +220,10 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 		Py_DECREF(map_array);
 		Py_XDECREF(gradient_x_array);
 		Py_XDECREF(gradient_y_array);
+		
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
 		return NULL;
 	}
 
@@ -271,10 +275,12 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 //hessian() implementation
 static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 
-	PyObject *map_obj;
+	PyObject *map_obj,*x_obj,*y_obj;
+	PyObject *x_array,*y_array;
+	int Npoints, *x_data,*y_data;
 
 	/*Parse the input*/
-	if(!PyArg_ParseTuple(args,"O",&map_obj)){ 
+	if(!PyArg_ParseTuple(args,"OOO",&map_obj,&x_obj,&y_obj)){ 
 		return NULL;
 	}
 
@@ -284,14 +290,55 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 		return NULL;
 	}
 
+	/*If not None, interpret also x and y as numpy arrays*/
+	if(x_obj!=Py_None && y_obj!=Py_None){
+
+		x_array = PyArray_FROM_OTF(x_obj,NPY_INT32,NPY_IN_ARRAY);
+		y_array = PyArray_FROM_OTF(y_obj,NPY_INT32,NPY_IN_ARRAY);
+
+		if(x_array==NULL || y_array==NULL){
+			Py_XDECREF(x_array);
+			Py_XDECREF(y_array);
+			Py_DECREF(map_array);
+			return NULL;
+		}
+
+		Npoints = (int)PyArray_SIZE(x_array);
+
+		/*Get data pointers*/
+		x_data = (int *)PyArray_DATA(x_array);
+		y_data = (int *)PyArray_DATA(y_array);
+
+	} else{
+
+		x_array = NULL;
+		y_array = NULL;
+		Npoints = -1;
+		x_data = NULL;
+		y_data = NULL;
+	}
+
 	/*Get the size of the map (in pixels)*/
 	int Nside = (int)PyArray_DIM(map_array,0);
 
+	/*Interpret as numpy arrays*/
+	PyObject *hessian_xx_array,*hessian_yy_array,*hessian_xy_array;
+
 	/*Prepare the new array objects that will hold the gradients along x and y*/
-	npy_intp dims[] = {(npy_intp) Nside, (npy_intp) Nside};
-	PyObject *hessian_xx_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
-	PyObject *hessian_yy_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
-	PyObject *hessian_xy_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	if(Npoints<0){
+	
+		npy_intp dims[] = {(npy_intp) Nside, (npy_intp) Nside};
+		hessian_xx_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+		hessian_yy_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+		hessian_xy_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	} else{
+
+		npy_intp dims[] = {(npy_intp) Npoints};
+		hessian_xx_array = PyArray_SimpleNew(1,dims,NPY_DOUBLE);
+		hessian_yy_array = PyArray_SimpleNew(1,dims,NPY_DOUBLE);
+		hessian_xy_array = PyArray_SimpleNew(1,dims,NPY_DOUBLE);
+
+	}
 
 	/*Throw exception if this failed*/
 	if(hessian_xx_array==NULL || hessian_yy_array==NULL || hessian_xy_array==NULL){
@@ -300,11 +347,15 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 		Py_XDECREF(hessian_xx_array);
 		Py_XDECREF(hessian_yy_array);
 		Py_XDECREF(hessian_xy_array);
+
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
 		return NULL;
 	}
 
 	/*Call the underlying C function that computes the hessian*/
-	hessian((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(hessian_xx_array),(double *)PyArray_DATA(hessian_yy_array),(double *)PyArray_DATA(hessian_xy_array),Nside);
+	hessian((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(hessian_xx_array),(double *)PyArray_DATA(hessian_yy_array),(double *)PyArray_DATA(hessian_xy_array),Nside,Npoints,x_data,y_data);
 
 	/*Prepare a tuple container for the output*/
 	PyObject *hessian_output = PyTuple_New(3);
@@ -316,6 +367,10 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 		Py_DECREF(hessian_yy_array);
 		Py_DECREF(hessian_xy_array);
 		Py_DECREF(hessian_output);
+
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
 		return NULL;
 
 	}
@@ -327,6 +382,10 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 		Py_DECREF(hessian_yy_array);
 		Py_DECREF(hessian_xy_array);
 		Py_DECREF(hessian_output);
+
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
 		return NULL;
 
 	}
@@ -338,12 +397,19 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 		Py_DECREF(hessian_yy_array);
 		Py_DECREF(hessian_xy_array);
 		Py_DECREF(hessian_output);
+
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
 		return NULL;
 
 	}
 
 	/*Clean up*/
 	Py_DECREF(map_array);
+
+	if(x_array!=NULL) Py_DECREF(x_array);
+	if(y_array!=NULL) Py_DECREF(y_array);
 
 	/*Done, now return*/
 	return hessian_output;

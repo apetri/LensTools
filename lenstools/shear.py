@@ -139,11 +139,11 @@ class Spin1(object):
 			if type(y)==quantity.Quantity:
 			
 				assert y.unit.physical_type=="angle"
-				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
+				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 			else:
 
-				i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+				i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])
 
 		else:
 			i = None

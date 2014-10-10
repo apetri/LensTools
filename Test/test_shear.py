@@ -214,7 +214,7 @@ def test_getValues():
 	xx,yy = np.meshgrid(b,b) * deg
 
 	new_values = test_map.getValues(xx,yy)
-	assert (new_values==test_map.data).all
+	assert (new_values==test_map.data)[:,:-1,:-1].all()
 
 def test_gradient_partial():
 
@@ -224,10 +224,10 @@ def test_gradient_partial():
 	gxx,gxy,gyx,gyy = test_map.gradient()
 	gxxp,gxyp,gyxp,gyyp = test_map.gradient(xx,yy)	
 
-	assert (gxx==gxxp).all
-	assert (gxy==gxyp).all
-	assert (gyx==gyxp).all
-	assert (gyy==gyyp).all
+	assert (gxx==gxxp)[:-1,:-1].all()
+	assert (gxy==gxyp)[:-1,:-1].all()
+	assert (gyx==gyxp)[:-1,:-1].all()
+	assert (gyy==gyyp)[:-1,:-1].all()
 
 
 

@@ -389,7 +389,7 @@ class Spin0(object):
 		#Return the gradients
 		if (x is not None) and (y is not None):
 
-			return gradient_x.reshape(x.shape),gradient_y.reshape(y.shape)
+			return gradient_x.reshape(x.shape),gradient_y.reshape(x.shape)
 
 		else:
 		
@@ -399,10 +399,16 @@ class Spin0(object):
 		
 			return gradient_x,gradient_y
 
-	def hessian(self,save=True):
+	def hessian(self,x=None,y=None,save=True):
 		
 		"""
 		Computes the hessian of the map and sets the hessian_xx,hessian_yy,hessian_xy attributes accordingly
+
+		:param x: optional, x positions at which to evaluate the hessian
+		:type x: array with units
+
+		:param y: optional, y positions at which to evaluate the hessian
+		:type y: array with units
 
 		:param save: if True saves the gradient as attrubutes
 		:type save: bool.
@@ -413,14 +419,51 @@ class Spin0(object):
 		>>> hxx,hyy,hxy = test_map.hessian()
 
 		"""
-		hessian_xx,hessian_yy,hessian_xy = _topology.hessian(self.data)
-		
-		if save:
-			self.hessian_xx = hessian_xx
-			self.hessian_yy = hessian_yy
-			self.hessian_xy = hessian_xy
 
-		return hessian_xx,hessian_yy,hessian_xy
+		if (x is not None) and (y is not None):
+
+			assert x.shape==y.shape,"x and y must have the same shape!"
+
+			#x coordinates
+			if type(x)==quantity.Quantity:
+			
+				assert x.unit.physical_type=="angle"
+				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
+
+			else:
+
+				j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
+
+			#y coordinates
+			if type(y)==quantity.Quantity:
+			
+				assert y.unit.physical_type=="angle"
+				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
+
+			else:
+
+				i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+
+		else:
+			i = None
+			j = None
+
+		#Call the C backend
+		hessian_xx,hessian_yy,hessian_xy = _topology.hessian(self.data,j,i)
+		
+		#Return the hessian
+		if (x is not None) and (y is not None):
+
+			return hessian_xx.reshape(x.shape),hessian_yy.reshape(x.shape),hessian_xy.reshape(x.shape)
+
+		else:
+
+			if save:
+				self.hessian_xx = hessian_xx
+				self.hessian_yy = hessian_yy
+				self.hessian_xy = hessian_xy
+
+			return hessian_xx,hessian_yy,hessian_xy
 
 	def pdf(self,thresholds,norm=False):
 

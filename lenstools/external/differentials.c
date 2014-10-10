@@ -42,22 +42,44 @@ void gradient_xy(double *map,double *grad_map_x,double *grad_map_y,long map_size
 	}
 }
 
-void hessian(double *map,double *hess_xx_map,double *hess_yy_map,double *hess_xy_map,long map_size){
+void hessian(double *map,double *hess_xx_map,double *hess_yy_map,double *hess_xy_map,long map_size,int Npoints, int *x_points,int *y_points){
 	
 	long i,j;
 	double hessian_xx,hessian_yy,hessian_xy;
 	
-	for(i=0;i<map_size;i++){
-		for(j=0;j<map_size;j++){
+
+	if(Npoints<0){
+
+		for(i=0;i<map_size;i++){
+			for(j=0;j<map_size;j++){
 			
-			hessian_xx=(map[coordinate(i+2,j,map_size)]+map[coordinate(i-2,j,map_size)]-2*map[coordinate(i,j,map_size)])/4.0;
-			hessian_yy=(map[coordinate(i,j+2,map_size)]+map[coordinate(i,j-2,map_size)]-2*map[coordinate(i,j,map_size)])/4.0;
-			hessian_xy=(map[coordinate(i+1,j+1,map_size)]+map[coordinate(i-1,j-1,map_size)]-map[coordinate(i-1,j+1,map_size)]-map[coordinate(i+1,j-1,map_size)])/4.0;
+				hessian_xx=(map[coordinate(i+2,j,map_size)]+map[coordinate(i-2,j,map_size)]-2*map[coordinate(i,j,map_size)])/4.0;
+				hessian_yy=(map[coordinate(i,j+2,map_size)]+map[coordinate(i,j-2,map_size)]-2*map[coordinate(i,j,map_size)])/4.0;
+				hessian_xy=(map[coordinate(i+1,j+1,map_size)]+map[coordinate(i-1,j-1,map_size)]-map[coordinate(i-1,j+1,map_size)]-map[coordinate(i+1,j-1,map_size)])/4.0;
 			
-			hess_xx_map[coordinate(i,j,map_size)]=hessian_xx;
-			hess_yy_map[coordinate(i,j,map_size)]=hessian_yy;
-			hess_xy_map[coordinate(i,j,map_size)]=hessian_xy;
+				hess_xx_map[coordinate(i,j,map_size)]=hessian_xx;
+				hess_yy_map[coordinate(i,j,map_size)]=hessian_yy;
+				hess_xy_map[coordinate(i,j,map_size)]=hessian_xy;
 			
+			}
 		}
+
+	} else{
+
+
+			for(i=0;i<Npoints;i++){
+				
+				hessian_xx=(map[coordinate(x_points[i]+2,y_points[i],map_size)]+map[coordinate(x_points[i]-2,y_points[i],map_size)]-2*map[coordinate(x_points[i],y_points[i],map_size)])/4.0;
+				hessian_yy=(map[coordinate(x_points[i],y_points[i]+2,map_size)]+map[coordinate(x_points[i],y_points[i]-2,map_size)]-2*map[coordinate(x_points[i],y_points[i],map_size)])/4.0;
+				hessian_xy=(map[coordinate(x_points[i]+1,y_points[i]+1,map_size)]+map[coordinate(x_points[i]-1,y_points[i]-1,map_size)]-map[coordinate(x_points[i]-1,y_points[i]+1,map_size)]-map[coordinate(x_points[i]+1,y_points[i]-1,map_size)])/4.0;
+			
+				hess_xx_map[i]=hessian_xx;
+				hess_yy_map[i]=hessian_yy;
+				hess_xy_map[i]=hessian_xy;
+			
+			}
+
 	}
+
+
 }
