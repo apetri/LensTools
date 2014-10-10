@@ -319,22 +319,44 @@ class PotentialPlane(Spin0):
 			return DeflectionPlane(deflection,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
 
 
-	def shearMatrix(self):
+	def shearMatrix(self,x=None,y=None,lmesh=None):
 
 		"""
 		Computes the shear matrix for the given lensing potential; it is also possible to proceed with FFTs
 
+		:param x: optional; if not None, compute the shear matrix only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type x: array with units
+
+		:param y: optional; if not None, compute the shear matrix only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type y: array with units
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
+
+		:returns: ShearTensorPlane instance, or array with deflections of rays hitting the lens at (x,y)
+
 		"""
+
+		now = time.time()
+		last_timestamp = now
 
 		if self.space=="real":
 			
 			#Compute the second derivatives
-			tensor_xx,tensor_yy,tensor_xy = self.hessian()
+			tensor = np.array(self.hessian(x,y))
 
 		elif self.space=="fourier":
 
+			#It doesn't make sense to select (x,y) when we proceed with FFTs
+			assert (x is None) and (y is None),"It doesn't make sense to select (x,y) when we proceed with FFTs!"
+
 			#Compute deflections in fourier space
-			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			if lmesh is None:
+				lx,ly = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+			else:
+				lx,ly = lmesh
+
+			#Compute deflections in fourier space
 			ft_tensor_xx = -(2.0*np.pi)**2 * self.data * (lx**2)
 			ft_tensor_xy = -(2.0*np.pi)**2 * self.data * (lx*ly)
 			ft_tensor_yy = -(2.0*np.pi)**2 * self.data * (ly**2)
@@ -344,12 +366,22 @@ class PotentialPlane(Spin0):
 			tensor_xy = irfft2(ft_tensor_xy)
 			tensor_yy = irfft2(ft_tensor_yy)
 
+			tensor = np.array([tensor_xx,tensor_yy,tensor_xy])
+
 		else:
 			raise ValueError("space must be either real or fourier!")
 
 
+		#Scale units
+		tensor /= self.resolution.to(self.unit**0.5).value**2
+
 		#Return the ShearTensorPlane instance
-		return ShearTensorPlane(np.array([tensor_xx,tensor_yy,tensor_xy])/self.resolution.to(self.unit**0.5).value**2,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
+		if (x is not None) and (y is not None):
+
+			return tensor
+
+		else:
+			return ShearTensorPlane(tensor,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
 
 
 	def toReal(self):
