@@ -19,8 +19,10 @@ from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
 #Try to import the FITSIO library for optimal FITS images reading
 try:
-	from fitsio import FITS as fits
-	fitsio = fits
+	from fitsio import FITS as fitsio
+	fitsio = fitsio
+	from astropy.io import fits
+
 except ImportError:
 	from astropy.io import fits
 	fitsio = None
@@ -149,7 +151,7 @@ class PotentialPlane(Spin0):
 
 			#Read the FITS file with the plane information (if there are two HDU's the second one is the imaginary part)
 			if fitsio is not None:
-				hdu = fits(filename)
+				hdu = fitsio(filename)
 			else:
 				hdu = fits.open(filename)
 			
