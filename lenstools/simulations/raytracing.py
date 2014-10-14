@@ -114,7 +114,7 @@ class PotentialPlane(Spin0):
 			hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
 
 			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
-			hdu.header["NPART"] = ("{0:.1e}".format(self.num_particles),"Number of particles on the plane")
+			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane") 
 
 			#Save the plane
 			if self.space=="real":
