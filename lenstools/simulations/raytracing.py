@@ -761,9 +761,15 @@ class RayTracer(object):
 			else:
 				deflections = current_lens.deflectionAngles(current_positions[0],current_positions[1])
 
+			now = time.time()
+			logging.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
 			#If we are tracing jacobians we need to retrieve the shear matrices too
 			if kind in ["jacobians","convergence","shear"]:
-				pass
+				now = time.time()
+				logging.debug("Shear matrices retrieved in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
 			
 			#####################################################################################
 
@@ -785,12 +791,15 @@ class RayTracer(object):
 			#Add deflections and log timestamp
 			current_deflection += Ck * deflections * current_lens.unit**0.5
 			now = time.time()
-			logging.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
+			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#If we are tracing jacobians we need to compute the matrix product with the shear matrix
 			if kind in ["jacobians","convergence","shear"]:
-				pass
+				
+				now = time.time()
+				logging.debug("Shear matrix products computed in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
 
 			###########################################################################################
 
