@@ -89,6 +89,8 @@ class MPIWhirlPool(MPIPool):
 
 		read_buffer = np.zeros(self.memory.shape,dtype=self.memory.dtype)
 
+		self.win.Fence()
+
 		if self.is_master():
 			self.win.Get(read_buffer,process)
 
@@ -108,6 +110,8 @@ class MPIWhirlPool(MPIPool):
 
 		for n in range(1,self.size+1):
 
+			self.win.Fence()
+
 			if(self.rank==n):
 				self.win.Accumulate(self.memory,0,op=op)
 
@@ -120,5 +124,5 @@ class MPIWhirlPool(MPIPool):
 		Closes a previously opened RMA window
 
 		"""
-
+		self.win.Fence()
 		self.win.Free()
