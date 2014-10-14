@@ -706,6 +706,17 @@ class RayTracer(object):
 		current_positions = initial_positions.copy()
 		current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
 
+		#If we want to trace jacobians, allocate also space for the jacobians
+		if kind in ["jacobians","shear","convergence"]:
+
+			#Initial condition for the jacobian is the identity
+			current_jacobian = np.outer(np.array([1.0,0.0,0.0,1.0]),np.ones(initial_positions.shape)).reshape((4,)+initial_positions.shape)
+			current_jacobian_deflection = np.zeros(current_jacobian.shape)
+
+			#Useful to compute the product of the jacobian (2x2 matrix) with the shear matrix (2x2 symmetric matrix)
+			dotter = np.zeros((4,3,4))
+			dotter[(0,0,1,1,2,2,3,3),(0,2,0,2,2,1,2,1),(0,2,1,3,0,2,1,3)] = 1
+
 		#Decide which is the last lens the light rays should cross
 		if type(z)==np.ndarray:
 			
@@ -719,7 +730,7 @@ class RayTracer(object):
 		else:
 			last_lens = (z>np.array(self.redshift)).argmin() - 1
 		
-		if save_intermediate:
+		if kind=="positions" and save_intermediate:
 			all_positions = np.zeros((last_lens,) + initial_positions.shape) * initial_positions.unit
 
 		#Allocate a new array of dimensionless distances
@@ -749,7 +760,14 @@ class RayTracer(object):
 				deflections = current_lens.deflectionAngles(lmesh=self.lmesh).getValues(current_positions[0],current_positions[1])
 			else:
 				deflections = current_lens.deflectionAngles(current_positions[0],current_positions[1])
+
+			#If we are tracing jacobians we need to retrieve the shear matrices too
+			if kind in ["jacobians","convergence","shear"]:
+				pass
 			
+			#####################################################################################
+
+
 			now = time.time()
 			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
@@ -770,29 +788,51 @@ class RayTracer(object):
 			logging.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
+			#If we are tracing jacobians we need to compute the matrix product with the shear matrix
+			if kind in ["jacobians","convergence","shear"]:
+				pass
+
+			###########################################################################################
 
 			if type(z)==np.ndarray:
+				
 				current_positions[:,k<last_lens_ray] += current_deflection[:,k<last_lens_ray]
+
+				#We need to add the distortions to the jacobians too
+				if kind in ["jacobians","convergence","shear"]:
+					pass
+
 			else:
+				
 				current_positions += current_deflection
+
+				#We need to add the distortions to the jacobians too
+				if kind in ["jacobians","convergence","shear"]:
+					pass
 
 			now = time.time()
 			logging.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Save the intermediate positions if option was specified
-			if save_intermediate:
+			if kind=="positions" and save_intermediate:
 				all_positions[k] = current_positions.copy()
 
 			#Log timestamp to cross lens
 			now = time.time()
 			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
 
-		#Return the final positions of the light rays
-		if save_intermediate:
-			return all_positions
+		#Return the final positions of the light rays (or jacobians)
+		if kind=="positions":
+			
+			if save_intermediate:
+				return all_positions
+			else:
+				return current_positions
+
 		else:
-			return current_positions
+
+			return current_jacobian
 
 
 
