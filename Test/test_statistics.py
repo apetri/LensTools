@@ -184,3 +184,28 @@ def test_cut():
 	plt.savefig("power_ensemble_cut.png")
 	plt.clf()
 
+
+def test_subset():
+
+	conv_subset = conv_ensemble.subset(range(2))
+	assert conv_subset.num_realizations==2
+
+	fig,ax = plt.subplots()
+	ax.plot(l,l*(l+1)*conv_subset[0]/(2.0*np.pi),label="1")
+	ax.plot(l,l*(l+1)*conv_subset[1]/(2.0*np.pi),label="2")
+
+	conv_subset = conv_ensemble.subset(range(2,4))
+	assert conv_subset.num_realizations==2
+
+	ax.plot(l,l*(l+1)*conv_subset[0]/(2.0*np.pi),label="3")
+	ax.plot(l,l*(l+1)*conv_subset[1]/(2.0*np.pi),label="4")
+
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+	ax.legend(loc="upper left")
+
+	fig.savefig("power_ensemble_subset.png")
+
+

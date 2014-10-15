@@ -288,6 +288,24 @@ class Ensemble(object):
 			return min_idx,max_idx
 
 
+
+	def subset(self,realizations):
+
+		"""
+		Returns a new ensemble that contains only the selected realizations
+
+		:param realizations: realizations to keep in the subset Ensemble, must be compatible with numpy array indexing syntax
+		:type realizations: int. or array of int.
+
+		:returns: new Ensemble instance that contains only the selected realizations 
+
+		"""
+
+		data = self.data[realizations]
+		
+		return self.__class__(data=data,num_realizations=data.shape[0])
+
+
 	def covariance(self):
 
 		"""
