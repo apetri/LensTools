@@ -14,6 +14,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 def test_ray_simple():
 
+	z_final = 2.0
+
 	#Instantiate the RayTracer
 	tracer = RayTracer(lens_mesh_size=512)
 
@@ -42,7 +44,7 @@ def test_ray_simple():
 	pos = np.array([xx,yy]) * deg
 
 	#Trace the rays
-	fin = tracer.shoot(pos,z=2.0)
+	fin = tracer.shoot(pos,z=z_final)
 
 	now = time.time()
 	logging.info("Ray tracing completed in {0:.3f}s".format(now-last_timestamp))
@@ -82,7 +84,7 @@ def test_ray_simple():
 	axEB.plot(l,l*(l+1)*np.abs(EBl)/(2.0*np.pi),label="EB From ray positions",color="blue")
 
 	#Now compute the shear and convergence raytracing the actual jacobians (more expensive computationally cause it computes the jacobian at every step)
-	finJ = tracer.shoot(pos,z=2.0,kind="jacobians")
+	finJ = tracer.shoot(pos,z=z_final,kind="jacobians")
 	conv = ConvergenceMap(data=1.0-0.5*(finJ[0]+finJ[3]),angle=conv.side_angle)
 	shear = ShearMap(data=np.array([0.5*(finJ[3]-finJ[0]),-0.5*(finJ[1]+finJ[2])]),angle=shear.side_angle)
 
