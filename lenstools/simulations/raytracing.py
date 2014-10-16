@@ -710,7 +710,7 @@ class RayTracer(object):
 		if kind in ["jacobians","shear","convergence"]:
 
 			#Initial condition for the jacobian is the identity
-			current_jacobian = np.outer(np.array([1.0,0.0,0.0,1.0]),np.ones(initial_positions.shape)).reshape((4,)+initial_positions.shape)
+			current_jacobian = np.outer(np.array([1.0,0.0,0.0,1.0]),np.ones(initial_positions.shape[1:])).reshape((4,)+initial_positions.shape[1:])
 			current_jacobian_deflection = np.zeros(current_jacobian.shape)
 
 			#Useful to compute the product of the jacobian (2x2 matrix) with the shear matrix (2x2 symmetric matrix)
@@ -767,16 +767,17 @@ class RayTracer(object):
 
 			#If we are tracing jacobians we need to retrieve the shear matrices too
 			if kind in ["jacobians","convergence","shear"]:
+
+				if compute_all_deflections:
+					shear_tensors = current_lens.shearMatrix(lmesh=self.lmesh).getValues(current_positions[0],current_positions[1])
+				else:
+					shear_tensors = current_lens.shearMatrix(current_positions[0],current_positions[1])
+
 				now = time.time()
 				logging.debug("Shear matrices retrieved in {0:.3f}s".format(now-last_timestamp))
 				last_timestamp = now
 			
 			#####################################################################################
-
-
-			now = time.time()
-			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
-			last_timestamp = now
 
 			#Compute geometrical weight factors
 			Ak = (distance[k+1] / distance[k+2]) * (1.0 + (distance[k+2] - distance[k+1])/(distance[k+1] - distance[k]))
@@ -796,6 +797,11 @@ class RayTracer(object):
 
 			#If we are tracing jacobians we need to compute the matrix product with the shear matrix
 			if kind in ["jacobians","convergence","shear"]:
+
+				current_jacobian_deflection *= (Ak-1)
+
+				#This is the part in which the products with the shear matrix are computed
+				current_jacobian_deflection += Ck * (np.tensordot(dotter,current_jacobian,axes=([2],[0])) * shear_tensors).sum(1)
 				
 				now = time.time()
 				logging.debug("Shear matrix products computed in {0:.3f}s".format(now-last_timestamp))
@@ -809,7 +815,7 @@ class RayTracer(object):
 
 				#We need to add the distortions to the jacobians too
 				if kind in ["jacobians","convergence","shear"]:
-					pass
+					current_jacobian[:,k<last_lens_ray] += current_jacobian_deflection[:,k<last_lens_ray]
 
 			else:
 				
@@ -817,7 +823,7 @@ class RayTracer(object):
 
 				#We need to add the distortions to the jacobians too
 				if kind in ["jacobians","convergence","shear"]:
-					pass
+					current_jacobian += current_jacobian_deflection
 
 			now = time.time()
 			logging.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
@@ -841,7 +847,16 @@ class RayTracer(object):
 
 		else:
 
-			return current_jacobian
+			#Different return types according to option (can compute convergence and shear directly)
+
+			if kind=="convergence":
+				return 1.0 - 0.5*(current_jacobian[0]+current_jacobian[3]) 
+			
+			elif kind=="shear":
+				return np.array([0.5*(current_jacobian[3] - current_jacobian[0]),-0.5*(current_jacobian[1]+current_jacobian[2])])
+
+			else:
+				return current_jacobian
 
 
 
