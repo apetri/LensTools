@@ -180,6 +180,21 @@ class Analysis(object):
 
 			print("No models to delete or indices are out of bounds!")
 
+
+	def reparametrize(self,formatter,*args,**kwargs):
+
+		"""
+		Reparametrize the parameter set of the analysis by calling the formatter handle on the current parameter set (can be used to enlarge/shrink/relabel the parameter set)
+
+		:param formatter: formatter function called on the current parameter_set (args and kwargs are passed to it)
+		:type formatter: callable
+
+		"""
+
+		self.parameter_set = formatter(self.parameter_set,*args,**kwargs)
+		assert self.parameter_set.shape[0]==self.training_set.shape[0],"The reparametrization messed up the number of points in parameter space!!"
+
+
 	def find(self,parameters,rtol=1.0e-05):
 
 		"""
@@ -481,6 +496,17 @@ class LikelihoodAnalysis(Analysis):
 			self._interpolator.append(_interpolate_wrapper(Rbf,args=(tuple(used_parameters) + (flattened_training_set[:,n],)),kwargs=kwargs))
 
 		return None
+
+
+	def reparametrize(self,formatter,*args,**kwargs):
+
+		#Call the parent method
+		super(LikelihoodAnalysis,self).reparametrize(formatter,*args,**kwargs)
+
+		#If the emulator was trained, retrain with the new reparametrization
+		if hasattr(self,"_interpolator"):
+			self.train()
+
 
 	def predict(self,parameters):
 

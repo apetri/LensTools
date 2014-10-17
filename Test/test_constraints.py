@@ -273,6 +273,29 @@ def test_emulator():
 	fig.savefig("emulated_power.png")
 
 
+def test_reparametrize():
+
+	#Unpickle the emulator
+	emulator = Emulator.load("analysis.p")
+
+	#Get the old parametrizations
+	Om = emulator.parameter_set[:,0]
+	w = emulator.parameter_set[:,1]
+	si8 = emulator.parameter_set[:,2]
+
+	#Define the reparametrizer ( (Om,si8) -> (si8 x Om^0.5))
+	def formatter(data,n):
+		print("Omega_m exponent={0:.1f}".format(n))
+		return np.array([data[:,1],data[:,2]*(data[:,0]**n)]).transpose()
+
+	#Reparametrize the parameter space
+	emulator.reparametrize(formatter,0.5)
+
+	#Check that everything worked
+	assert (emulator.parameter_set[:,0]==w).all()
+	assert (emulator.parameter_set[:,1]==(si8*(Om**0.5))).all()
+
+
 
 
 
