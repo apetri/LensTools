@@ -62,7 +62,7 @@ class PotentialPlane(Spin0):
 		else:
 			self.comoving_distance = cosmology.comoving_distance(redshift)
 
-		if data.dtype==np.float:
+		if data.dtype in [np.float,np.float32]:
 			self.space = "real"
 		elif data.dtype==np.complex:
 			self.space = "fourier"
@@ -163,16 +163,31 @@ class PotentialPlane(Spin0):
 			else:
 				header = hdu[0].header
 
-			#Retrieve the info from the header
-			hubble = header["H0"] * (km/(s*Mpc))
-			h = header["h"]
+			#Retrieve the info from the header (handle old FITS header format too)
+			try:
+				hubble = header["H0"] * (km/(s*Mpc))
+				h = header["h"]
+			except:
+				hubble = header["H_0"] * (km/(s*Mpc))
+				h = hubble.value / 100
+
 			Om0 = header["OMEGA_M"]
 			Ode0 = header["OMEGA_L"]
-			w0 = header["W0"]
-			wa = header["WA"]
+
+			try:
+				w0 = header["W0"]
+				wa = header["WA"]
+			except:
+				w0 = header["W_0"]
+				wa = header["W_A"]
+			
 			redshift = header["Z"]
-			angle = header["ANGLE"] * deg
 			comoving_distance = (header["CHI"] / h) * Mpc
+
+			try:
+				angle = header["ANGLE"] * deg
+			except:
+				angle = ((header["RES_X"] * header["NAXIS1"] / header["CHI"]) * rad).to(deg)
 
 			#Build the cosmology object if options directs
 			if init_cosmology:
