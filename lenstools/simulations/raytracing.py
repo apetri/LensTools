@@ -27,6 +27,51 @@ except ImportError:
 	from astropy.io import fits
 	fitsio = None
 
+
+###########################################################
+#################DensityPlane##############################
+###########################################################
+
+class DensityPlane(Spin0):
+
+	"""
+	Class handler of a lens potential plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+
+	"""
+
+	def __init__(self,data,angle,redshift,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
+
+		#Sanity check
+		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
+
+		super(self.__class__,self).__init__(data,angle,masked)
+		self.redshift = redshift
+		self.cosmology = cosmology
+		self.unit = unit
+
+		if num_particles is not None:
+			self.num_particles = num_particles
+		else:
+			self.num_particles = -1
+
+		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
+		if comoving_distance is not None:		
+			
+			assert comoving_distance.unit.physical_type=="length"
+			self.comoving_distance = comoving_distance
+		
+		else:
+			self.comoving_distance = cosmology.comoving_distance(redshift)
+
+		if data.dtype in [np.float,np.float32]:
+			self.space = "real"
+		elif data.dtype==np.complex:
+			self.space = "fourier"
+		else:
+			raise TypeError("data type not supported!")
+
+
+
 ###########################################################
 ###############PotentialPlane class########################
 ###########################################################
@@ -456,7 +501,7 @@ class PotentialPlane(Spin0):
 			raise ValueError("space must be either real or fourier!")
 
 		#The density is twice the trace of the hessian
-		return Spin0(2.0*laplacian/(self.resolution**2).to(self.unit).value,angle=self.side_angle)
+		return DensityPlane(2.0*laplacian/(self.resolution**2).to(self.unit).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles)
 
 
 
