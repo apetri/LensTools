@@ -4,7 +4,11 @@ from ..shear import Spin1,Spin2,ShearMap
 import time
 import logging
 
+from operator import mul
+from functools import reduce
+
 import numpy as np
+import matplotlib.pyplot as plt
 
 #FFT engines
 from numpy.fft import fftfreq,rfft2,irfft2
@@ -737,7 +741,7 @@ class RayTracer(object):
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z, through the system of gravitational lenses, and computes the deflection statistics
 
-		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_posiions[0] is x, initial_positions[1] is y
+		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
 		:type initial_positions: numpy array or quantity
 
 		:param z: redshift of the sources; if an array is passes, a redshift must be specified for each ray, i.e. z.shape==initial_positions.shape[1:]
@@ -917,6 +921,61 @@ class RayTracer(object):
 
 			else:
 				return current_jacobian
+
+
+	def displayRays(self,initial_positions,z=2.0,projection="2d",fig=None,ax=None):
+
+		"""
+		Uses matplotlib to display a visual of the lens system and of the deflection that the light rays which traverse it undergo
+
+		param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
+		:type initial_positions: numpy array or quantity
+
+		:param z: redshift of the sources; if an array is passes, a redshift must be specified for each ray, i.e. z.shape==initial_positions.shape[1:]
+		:type z: float. or array
+
+		:param projection: can be "2d" for the projections of the ray positions along x and y or "3d" for the full 3d view
+		:type projection: str.
+
+		:param fig: figure object that owns the plot
+		:type fig: matplotlib figure
+
+		"""
+
+		#Instantiate axes
+		if (fig is None) or (ax is None):
+			self.fig,self.ax = plt.subplots(1,2,figsize=(16,8))
+		else:
+			self.fig = fig
+			self.ax = ax
+
+		#Construct an array with the comoving distance of the lenses
+		distance = np.array([d.to(Mpc).value for d in [0.0 * Mpc] + self.distance]) * Mpc
+
+		#Compute the positions of the light rays across the lens system
+		pos = self.shoot(initial_positions.reshape((2,)+(reduce(mul,initial_positions.shape[1:]),)),z,save_intermediate=True)
+
+		#Add a 0 position corresponding to the observer
+		pos = np.concatenate((np.zeros((1,) + pos.shape[1:]),pos.value)) * pos.unit
+
+		#Plot the x,y positions
+		for nray in range(pos.shape[2]):
+
+			self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="black")
+			self.ax[0].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
+			self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
+			self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="black")
+			self.ax[1].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
+			self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
+
+		#Plot the lenses too
+		for d in distance:
+			for i in range(2):
+				min = distance[-1]*pos.to(rad).value.min()
+				max = distance[-1]*pos.to(rad).value.max()
+				self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+
+
 
 
 
