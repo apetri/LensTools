@@ -736,7 +736,7 @@ class RayTracer(object):
 	##################################################################################################################################
 
 
-	def shoot(self,initial_positions,z=2.0,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False):
+	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False):
 
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z, through the system of gravitational lenses, and computes the deflection statistics
@@ -746,6 +746,9 @@ class RayTracer(object):
 
 		:param z: redshift of the sources; if an array is passes, a redshift must be specified for each ray, i.e. z.shape==initial_positions.shape[1:]
 		:type z: float. or array
+
+		:param initial_deflection: if not None, this is the initial deflection light rays undergo with respect to the line of sight (equivalent to specifying the first derivative IC on the lensing ODE); must have the same shape as initial_positions
+		:type initial_deflection: numpy array or quantity
 
 		:param precision: precision at which to compute weak lensing quantities, must be "first" for first order in the lensing potential, or "second" for added precision
 		:type precision: str.
@@ -768,7 +771,12 @@ class RayTracer(object):
 
 		#Allocate arrays for the intermediate light ray positions
 		current_positions = initial_positions.copy()
-		current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
+
+		if initial_deflection is None:
+			current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
+		else:
+			assert initial_deflection.shape==initial_positions.shape
+			current_deflection = initial_deflection.copy()
 
 		#If we want to trace jacobians, allocate also space for the jacobians
 		if kind in ["jacobians","shear","convergence"]:
