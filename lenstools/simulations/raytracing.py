@@ -8,7 +8,12 @@ from operator import mul
 from functools import reduce
 
 import numpy as np
-import matplotlib.pyplot as plt
+
+try:
+	import matplotlib.pyplot as plt
+	matplotlib = plt
+except ImportError:
+	matplotlib = None
 
 #FFT engines
 from numpy.fft import fftfreq,rfft2,irfft2
@@ -744,7 +749,7 @@ class RayTracer(object):
 		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
 		:type initial_positions: numpy array or quantity
 
-		:param z: redshift of the sources; if an array is passes, a redshift must be specified for each ray, i.e. z.shape==initial_positions.shape[1:]
+		:param z: redshift of the sources; if an array is passed, a redshift must be specified for each ray, i.e. z.shape==initial_positions.shape[1:]
 		:type z: float. or array
 
 		:param initial_deflection: if not None, this is the initial deflection light rays undergo with respect to the line of sight (equivalent to specifying the first derivative IC on the lensing ODE); must have the same shape as initial_positions
@@ -950,9 +955,19 @@ class RayTracer(object):
 
 		"""
 
+		if matplotlib is None:
+			raise ValueError("matplotlib not found!")
+
 		#Instantiate axes
 		if (fig is None) or (ax is None):
-			self.fig,self.ax = plt.subplots(1,2,figsize=(16,8))
+
+			if projection=="2d":
+				self.fig,self.ax = plt.subplots(1,2,figsize=(16,8))
+			elif projection=="3d":
+				pass
+			else:
+				raise ValueError("projection must be either 2d or 3d!")
+
 		else:
 			self.fig = fig
 			self.ax = ax
@@ -966,22 +981,27 @@ class RayTracer(object):
 		#Add a 0 position corresponding to the observer
 		pos = np.concatenate((np.zeros((1,) + pos.shape[1:]),pos.value)) * pos.unit
 
-		#Plot the x,y positions
-		for nray in range(pos.shape[2]):
+		if projection=="2d":
 
-			self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="black")
-			self.ax[0].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
-			self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
-			self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="black")
-			self.ax[1].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
-			self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
+			#Plot the x,y positions
+			for nray in range(pos.shape[2]):
 
-		#Plot the lenses too
-		for d in distance:
-			for i in range(2):
-				min = distance[-1]*pos.to(rad).value.min()
-				max = distance[-1]*pos.to(rad).value.max()
-				self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+				self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="black")
+				self.ax[0].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
+				self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
+				self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="black")
+				self.ax[1].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
+				self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
+
+			#Plot the lenses too
+			for d in distance:
+				for i in range(2):
+					min = distance[-1]*pos.to(rad).value.min()
+					max = distance[-1]*pos.to(rad).value.max()
+					self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+
+		else:
+			pass
 
 
 
