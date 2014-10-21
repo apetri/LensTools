@@ -38,7 +38,7 @@ except ImportError:
 
 
 ###########################################################
-#################DensityPlane##############################
+#################DensityPlane class########################
 ###########################################################
 
 class DensityPlane(Spin0):
@@ -774,14 +774,15 @@ class RayTracer(object):
 		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
 		assert kind in ["positions","jacobians","shear","convergence"],"kind must be one in [positions,jacobians,shear,convergence]!"
 
-		#Allocate arrays for the intermediate light ray positions
-		current_positions = initial_positions.copy()
+		#Allocate arrays for the intermediate light ray positions and deflections
 
 		if initial_deflection is None:
+			current_positions = initial_positions.copy()
 			current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
 		else:
 			assert initial_deflection.shape==initial_positions.shape
 			current_deflection = initial_deflection.copy()
+			current_positions = initial_positions + initial_deflection
 
 		#If we want to trace jacobians, allocate also space for the jacobians
 		if kind in ["jacobians","shear","convergence"]:
@@ -810,20 +811,21 @@ class RayTracer(object):
 		if kind=="positions" and save_intermediate:
 			all_positions = np.zeros((last_lens,) + initial_positions.shape) * initial_positions.unit
 
-		#Allocate a new array of dimensionless distances
-		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
-
 		#The light rays positions at the k+1 th step are computed according to Xk+1 = Xk + Dk, where Dk is the deflection
 		#To stabilize the solution numerically we compute the deflections as Dk+1 = (Ak-1)Dk + Ck*pk where pk is the deflection due to the potential gradient
+
+		#Ordered references to the lenses
+		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
+		lens = self.lens
 
 		#This is the main loop that goes through all the lenses
 		for k in range(last_lens):
 
 			#Load in the lens
-			if type(self.lens[k])==PotentialPlane:
-				current_lens = self.lens[k]
-			elif type(self.lens[k])==str:
-				current_lens = PotentialPlane.load(self.lens[k])
+			if type(lens[k])==PotentialPlane:
+				current_lens = lens[k]
+			elif type(lens[k])==str:
+				current_lens = PotentialPlane.load(lens[k])
 			else:
 				raise TypeError("Lens format not recognized!")
 
