@@ -8,6 +8,7 @@ from operator import mul
 from functools import reduce
 
 import numpy as np
+from scipy.spatial import KDTree
 
 try:
 	import matplotlib.pyplot as plt
@@ -937,6 +938,68 @@ class RayTracer(object):
 			else:
 				return current_jacobian
 
+
+	#########################################################
+	############Forward ray tracing##########################
+	#########################################################
+
+	def shootForward(self,source_positions,z=2.0,grid_resolution=512):
+
+		"""
+		Shoots a bucket of light rays from the source at redshift z to the observer at redshift 0 and computes the according deflections using backward ray tracing plus a suitable interpolation scheme (KD Tree based)
+
+		:param source_positions: angular positions of the unlensed sources
+		:type source_positions: numpy array or quantity
+
+		:param z: redshift of the sources
+		:type z: float.
+
+		:param grid_resolution: the number of points on a side of the interpolation grid (must be choosen big enough according to the number of sources to resolve)
+		:type grid_resolution: int. 
+
+		:returns: apparent positions of the sources as seen from the observer
+
+		"""
+
+		#First allocate the regular grid to use (must be fine enough to resolve the single ray distortions, since we use nearest neighbors interpolation for now)
+		corner = source_positions.max(axis=tuple(range(1,len(source_positions.shape))))
+		initial_grid = np.array(np.meshgrid(np.linspace(0.0,corner[0].value,grid_resolution),np.linspace(0.0,corner[1].value,grid_resolution))) * corner.unit
+		initial_grid = initial_grid.reshape((2,)+(reduce(mul,initial_grid.shape[1:]),))
+
+		now = time.time()
+		last_timestamp = now
+		
+		#Perform the backwards ray tracing
+		final_grid = self.shoot(initial_grid,z=z)
+
+		now = time.time()
+		logging.debug("Ray tracing in {0:.3f}s".format(now-last_timestamp))
+		last_timestamp = now
+
+		#Next build the KD tree for nearest neighbors interpolation
+		tree = KDTree(final_grid.transpose())
+
+		now = time.time()
+		logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
+		last_timestamp = now
+
+		#Query the tree and retrieve the apparent positions
+		distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
+
+		now = time.time()
+		logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
+		last_timestamp = now
+
+		apparent_positions = initial_grid[:,apparent_position_index].reshape(source_positions.shape)
+
+		#Return the measured apparent distances
+		return apparent_positions
+
+
+
+	#########################################################
+	#######################Graphics##########################
+	#########################################################
 
 	def displayRays(self,initial_positions,z=2.0,projection="2d",fig=None,ax=None):
 

@@ -5,38 +5,41 @@ from lenstools.simulations.raytracing import RayTracer,PotentialPlane,Deflection
 from lenstools import ConvergenceMap,ShearMap
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy.units import deg,rad
+from astropy.units import deg,rad,arcmin
 
 import logging
 import time
 
 logging.basicConfig(level=logging.DEBUG)
 
+#Instantiate the RayTracer
+tracer = RayTracer(lens_mesh_size=512)
+
+now = time.time()
+last_timestamp = now
+
+#Add the lenses to the system
+for i in range(11,57):
+	tracer.addLens(PotentialPlane.load("../lenstools/simulations/planes/snap{0}_potentialPlane0_normal0.fits".format(i)))
+
+now = time.time()
+logging.info("Plane loading completed in {0:.3f}s".format(now-last_timestamp))
+last_timestamp = now
+
+#Rearrange the lenses according to redshift and roll them randomly along the axes
+tracer.reorderLenses()
+tracer.randomRoll()
+
+now = time.time()
+logging.info("Reordering and rolling completed in {0:.3f}s".format(now-last_timestamp))
+last_timestamp = now
+
 def test_ray_simple():
 
 	z_final = 2.0
 
-	#Instantiate the RayTracer
-	tracer = RayTracer(lens_mesh_size=512)
-
 	start = time.time()
 	last_timestamp = start
-
-	#Add the lenses to the system
-	for i in range(11,57):
-		tracer.addLens(PotentialPlane.load("../lenstools/simulations/planes/snap{0}_potentialPlane0_normal0.fits".format(i)))
-
-	now = time.time()
-	logging.info("Plane loading completed in {0:.3f}s".format(now-last_timestamp))
-	last_timestamp = now
-
-	#Rearrange the lenses according to redshift and roll them randomly along the axes
-	tracer.reorderLenses()
-	tracer.randomRoll()
-
-	now = time.time()
-	logging.info("Reordering and rolling completed in {0:.3f}s".format(now-last_timestamp))
-	last_timestamp = now
 
 	#Start a bucket of light rays from these positions
 	b = np.linspace(0.0,2.9,512)
@@ -121,3 +124,35 @@ def test_ray_simple():
 
 	now = time.time()
 	logging.info("Total runtime {0:.3f}s".format(now-start))
+
+
+
+def test_distortion():
+
+	#Figures
+	fig,ax = plt.subplots(1,2,figsize=(16,8))
+
+	#load unlensed image from png file
+	image_unlensed = plt.imread("Data/lensing/lens.png")[:,:,0]
+	pos_original = (np.array(np.where(image_unlensed>0)) * 2.0/image_unlensed.shape[0]) * deg
+	pos_original = np.roll(pos_original,1,axis=0)
+	pos_original[1] *= -1
+	pos_original[1] += 2.0*deg
+	
+	#Plot the original image
+	ax[0].scatter(pos_original[0],pos_original[1])
+	ax[0].set_xlabel(r"$x$({0})".format(pos_original.unit.to_string()))
+	ax[0].set_ylabel(r"$y$({0})".format(pos_original.unit.to_string()))
+	ax[0].set_title("Original")
+
+	#Perform forward ray tracing with grid interpolation to compute the image distortion
+	pos_apparent = tracer.shootForward(pos_original,z=2.0)
+
+	#Plot the distorted image
+	ax[1].scatter(pos_apparent[0],pos_apparent[1])
+	ax[1].set_xlabel(r"$x$({0})".format(pos_original.unit.to_string()))
+	ax[1].set_ylabel(r"$y$({0})".format(pos_original.unit.to_string()))
+	ax[1].set_title("Lensed")
+
+	fig.savefig("lens_distortion.png")
+
