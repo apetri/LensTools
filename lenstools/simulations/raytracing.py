@@ -943,7 +943,7 @@ class RayTracer(object):
 	############Forward ray tracing##########################
 	#########################################################
 
-	def shootForward(self,source_positions,z=2.0,grid_resolution=512):
+	def shootForward(self,source_positions,z=2.0,save_intermediate=False,grid_resolution=512,interpolation="nearest"):
 
 		"""
 		Shoots a bucket of light rays from the source at redshift z to the observer at redshift 0 and computes the according deflections using backward ray tracing plus a suitable interpolation scheme (KD Tree based)
@@ -954,8 +954,14 @@ class RayTracer(object):
 		:param z: redshift of the sources
 		:type z: float.
 
+		:param save_intermediate: if True computes and saves the apparent image distortions after each lens is crossed (can be computationally expensive) 
+		:type save_intermediate: bool.
+
 		:param grid_resolution: the number of points on a side of the interpolation grid (must be choosen big enough according to the number of sources to resolve)
 		:type grid_resolution: int. 
+
+		:param interpolation: only "nearest" implemented so far
+		:type interpolation: str.
 
 		:returns: apparent positions of the sources as seen from the observer
 
@@ -970,27 +976,55 @@ class RayTracer(object):
 		last_timestamp = now
 		
 		#Perform the backwards ray tracing
-		final_grid = self.shoot(initial_grid,z=z)
+		final_grid = self.shoot(initial_grid,z=z,save_intermediate=save_intermediate)
 
 		now = time.time()
 		logging.debug("Ray tracing in {0:.3f}s".format(now-last_timestamp))
 		last_timestamp = now
 
-		#Next build the KD tree for nearest neighbors interpolation
-		tree = KDTree(final_grid.transpose())
+		if save_intermediate:
 
-		now = time.time()
-		logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
-		last_timestamp = now
+			#If this option is enabled the full evolution of the distortions (after each lens is crossed) is computed
 
-		#Query the tree and retrieve the apparent positions
-		distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
+			#Allocate space for the apparent positions
+			apparent_positions = np.zeros((final_grid.shape[0],) + source_positions.shape) * corner.unit
 
-		now = time.time()
-		logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
-		last_timestamp = now
+			for n in range(final_grid.shape[0]):
 
-		apparent_positions = initial_grid[:,apparent_position_index].reshape(source_positions.shape)
+				#Next build the KD tree for nearest neighbors interpolation
+				tree = KDTree(final_grid[n].transpose())
+
+				now = time.time()
+				logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
+
+				#Query the tree and retrieve the apparent positions
+				distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
+
+				now = time.time()
+				logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
+
+				apparent_positions[n] = initial_grid[:,apparent_position_index].reshape(source_positions.shape).copy()
+
+
+		else:
+
+			#Next build the KD tree for nearest neighbors interpolation
+			tree = KDTree(final_grid.transpose())
+
+			now = time.time()
+			logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
+			#Query the tree and retrieve the apparent positions
+			distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
+
+			now = time.time()
+			logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
+			apparent_positions = initial_grid[:,apparent_position_index].reshape(source_positions.shape)
 
 		#Return the measured apparent distances
 		return apparent_positions

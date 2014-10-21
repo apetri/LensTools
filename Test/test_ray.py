@@ -156,3 +156,29 @@ def test_distortion():
 
 	fig.savefig("lens_distortion.png")
 
+
+def test_continuous_distortion():
+
+	#load unlensed image from png file
+	image_unlensed = plt.imread("Data/lensing/lens.png")[:,:,0]
+	pos_original = (np.array(np.where(image_unlensed>0)) * 2.0/image_unlensed.shape[0]) * deg
+	pos_original = np.roll(pos_original,1,axis=0)
+	pos_original[1] *= -1
+	pos_original[1] += 2.0*deg
+
+	#Perform forward ray tracing with grid interpolation to compute the image distortion
+	pos_apparent = tracer.shootForward(pos_original,z=2.0,save_intermediate=True)
+
+	#Plot some of the distorted images
+	fig,ax = plt.subplots(2,5,figsize=(40,16))
+	for i in range(2):
+		for j in range(5):
+			ax[i,j].scatter(pos_apparent[(5*i + j)*4,0],pos_apparent[(5*i + j)*4,1]) 
+			ax[i,j].set_xlabel(r"$x$({0})".format(pos_original.unit.to_string()))
+			ax[i,j].set_ylabel(r"$y$({0})".format(pos_original.unit.to_string()))
+			ax[i,j].set_title("z={0:.2f}".format(tracer.redshift[(5*i + j)*4]))
+
+	#Save the figure
+	fig.tight_layout()
+	fig.savefig("lens_distortion_continuous.png")
+
