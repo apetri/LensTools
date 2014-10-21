@@ -182,3 +182,14 @@ def test_continuous_distortion():
 	fig.tight_layout()
 	fig.savefig("lens_distortion_continuous.png")
 
+	#Plot each single frame
+	fig,ax = plt.subplots()
+	scatterplot = ax.scatter(pos_original[0],pos_original[1])
+	ax.set_xlabel(r"$x$({0})".format(pos_original.unit.to_string()))
+	ax.set_ylabel(r"$y$({0})".format(pos_original.unit.to_string()))
+	
+	for n in range(pos_apparent.shape[0]):
+		scatterplot.set_offsets(pos_apparent[n].transpose())
+		ax.set_title("z={:.2f}".format(tracer.redshift[n]))	
+		fig.savefig("distortion{0}.png".format(n))	 
+
