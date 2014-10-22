@@ -20,7 +20,7 @@ last_timestamp = now
 
 #Add the lenses to the system
 for i in range(11,57):
-	tracer.addLens(PotentialPlane.load("../lenstools/simulations/planes/snap{0}_potentialPlane0_normal0.fits".format(i)))
+	tracer.addLens(PotentialPlane.load("Data/lensing/planes/snap{0}_potentialPlane0_normal0.fits".format(i)))
 
 now = time.time()
 logging.info("Plane loading completed in {0:.3f}s".format(now-last_timestamp))
