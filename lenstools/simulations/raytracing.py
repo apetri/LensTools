@@ -1087,10 +1087,10 @@ class RayTracer(object):
 			for nray in range(pos.shape[2]):
 
 				self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="black")
-				self.ax[0].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
+				self.ax[0].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
 				self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
 				self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="black")
-				self.ax[1].set_xlabel(r"$d$({0})".format(distance.unit.to_string()))
+				self.ax[1].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
 				self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
 
 			#Plot the lenses too
