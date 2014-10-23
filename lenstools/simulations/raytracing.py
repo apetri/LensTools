@@ -45,7 +45,7 @@ except ImportError:
 class DensityPlane(Spin0):
 
 	"""
-	Class handler of a lens potential plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+	Class handler of a lens density plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
 
 	"""
 
@@ -746,7 +746,7 @@ class RayTracer(object):
 	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False):
 
 		"""
-		Shots a bucket of light rays from the observer to the sources at redshift z, through the system of gravitational lenses, and computes the deflection statistics
+		Shots a bucket of light rays from the observer to the sources at redshift z (backward ray tracing), through the system of gravitational lenses, and computes the deflection statistics
 
 		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
 		:type initial_positions: numpy array or quantity
@@ -757,7 +757,7 @@ class RayTracer(object):
 		:param initial_deflection: if not None, this is the initial deflection light rays undergo with respect to the line of sight (equivalent to specifying the first derivative IC on the lensing ODE); must have the same shape as initial_positions
 		:type initial_deflection: numpy array or quantity
 
-		:param precision: precision at which to compute weak lensing quantities, must be "first" for first order in the lensing potential, or "second" for added precision
+		:param precision: precision at which to compute weak lensing quantities, must be "first" for first order in the lensing potential, or "second" for added precision (not functional yet)
 		:type precision: str.
 
 		:param kind: what deflection statistics to compute; "positions" will calculate the ray deflections after they crossed the last lens, "jacobian" will compute the lensing jacobian matrix after the last lens, "shear" and "convergence" will compute the omonimous weak lensing statistics  
@@ -766,8 +766,10 @@ class RayTracer(object):
 		:param save_intermediate: save the intermediate positions of the rays too
 		:type save_intermediate: bool.
 
-		:param compute_all_deflections: if True, computes the gradients of the lensing potential at every pixel (might be overkill if Nrays<<Npixels); must be True if the computation is done with FFTs
+		:param compute_all_deflections: if True, computes the gradients of the lensing potential at every pixel on the lens(might be overkill if Nrays<<Npixels); must be True if the computation is done with FFTs
 		:type compute_all_deflections: bool.
+
+		:returns: angular positions (or jacobians) of the light rays after the last lens crossing
 
 		"""
 
@@ -947,7 +949,7 @@ class RayTracer(object):
 	def shootForward(self,source_positions,z=2.0,save_intermediate=False,grid_resolution=512,interpolation="nearest"):
 
 		"""
-		Shoots a bucket of light rays from the source at redshift z to the observer at redshift 0 and computes the according deflections using backward ray tracing plus a suitable interpolation scheme (KD Tree based)
+		Shoots a bucket of light rays from the source at redshift z to the observer at redshift 0 (forward ray tracing) and computes the according deflections using backward ray tracing plus a suitable interpolation scheme (KD Tree based)
 
 		:param source_positions: angular positions of the unlensed sources
 		:type source_positions: numpy array or quantity

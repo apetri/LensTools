@@ -93,11 +93,15 @@ Gadget2 snapshot handling
 Ray tracing simulations
 =======================
 
+.. autoclass:: lenstools.simulations.raytracing.DensityPlane
+
 .. autoclass:: lenstools.simulations.PotentialPlane
 	:members: save,load,randomRoll,deflectionAngles,toReal,toFourier,density
 
 .. autoclass:: lenstools.simulations.raytracing.DeflectionPlane
 	:members: jacobian,convergence,shear,omega
+
+.. autoclass:: lenstools.simulations.raytracing.ShearTensorPlane
 
 .. autoclass:: lenstools.simulations.RayTracer
 	:inherited-members:

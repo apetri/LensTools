@@ -10,3 +10,6 @@ This is the capability of the tracer right now, here's how a :math:`512\times 51
 .. figure:: ../../examples/raytraced_convergence.png
 
 .. figure:: ../../examples/raytraced_shear.png 
+
+
+For a more hands-on demo of the current capabilities of the ray tracer, please look at this `notebook <http://nbviewer.ipython.org/github/apetri/Notebooks/blob/master/gravitational_lensing.ipynb>`_
