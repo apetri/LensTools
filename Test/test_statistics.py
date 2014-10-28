@@ -3,13 +3,15 @@ import sys
 try:
 	
 	from lenstools import Ensemble
-	from lenstools.defaults import default_callback_loader,peaks_loader
+	from lenstools.defaults import default_callback_loader,peaks_loader,convergence_measure_all
+	from lenstools.index import Indexer,MinkowskiAll
 
 except ImportError:
 
 	sys.path.append("..")
 	from lenstools import Ensemble
-	from lenstools.defaults import default_callback_loader,peaks_loader
+	from lenstools.defaults import default_callback_loader,peaks_loader,convergence_measure_all
+	from lenstools.index import Indexer,MinkowskiAll
 
 try:
 
@@ -207,5 +209,29 @@ def test_subset():
 	ax.legend(loc="upper left")
 
 	fig.savefig("power_ensemble_subset.png")
+
+def test_differentiate():
+
+	thresholds = np.arange(-0.04,0.12,0.001)
+	midpoints = 0.5*(thresholds[:-1] + thresholds[1:])
+
+	index = Indexer.stack([MinkowskiAll(thresholds)])
+	index_separate = Indexer(MinkowskiAll(thresholds).separate())
+	
+	diff_ensemble = Ensemble.fromfilelist(map_list)
+	diff_ensemble.load(callback_loader=convergence_measure_all,index=index)
+
+	ensemble_0 = diff_ensemble.split(index_separate)[0]
+	ensemble_pdf = ensemble_0.differentiate(step=thresholds[0]-thresholds[1])
+
+	fig,ax = plt.subplots()
+	for i in range(ensemble_0.num_realizations):
+		ax.plot(0.5*(midpoints[:-1]+midpoints[1:]),ensemble_pdf[i])
+		
+	ax.set_xlabel(r"$\kappa$")
+	ax.set_ylabel(r"$P(\kappa)$")
+
+	fig.savefig("ensemble_differentiate.png")
+
 
 

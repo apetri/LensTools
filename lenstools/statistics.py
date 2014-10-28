@@ -244,6 +244,30 @@ class Ensemble(object):
 		if hasattr(self,"_mean"):
 			self.mean()
 
+
+	def differentiate(self,step=None,order=1):
+
+		"""
+		Compute a new ensemble, in which the feature is differentiated with respect to its label (e.g. the differentiation of the first minkowski functional is the PDF)
+
+		:param step: measure unit on the feature label axis 
+		:type step: float or array
+
+		:returns: new Ensemble instance with the differentiated feature 
+
+		"""
+
+		#differentiate
+		diff_data = np.diff(self.data,n=order,axis=1)
+
+		#Optionally scale the measure units
+		if step is not None:
+			diff_data /= step
+
+		#return the new ensemble
+		return self.__class__(data=diff_data,num_realizations=diff_data.shape[0])
+
+
 	def cut(self,min,max,feature_label=None):
 
 		"""
