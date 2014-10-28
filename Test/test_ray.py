@@ -42,7 +42,7 @@ def test_ray_simple():
 	last_timestamp = start
 
 	#Start a bucket of light rays from these positions
-	b = np.linspace(0.0,2.9,512)
+	b = np.linspace(0.0,tracer.lens[0].side_angle.to(deg).value,512)
 	xx,yy = np.meshgrid(b,b)
 	pos = np.array([xx,yy]) * deg
 
