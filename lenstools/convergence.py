@@ -44,6 +44,7 @@ class Spin0(object):
 
 		#Sanity check
 		assert angle.unit.physical_type=="angle"
+		assert data.shape[0]==data.shape[1],"The map must be a square!!"
 
 		self.data = data
 		self.side_angle = angle
