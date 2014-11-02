@@ -40,7 +40,7 @@ except ImportError:
 
 class Spin0(object):
 
-	def __init__(self,data,angle,masked=False):
+	def __init__(self,data,angle,masked=False,**kwargs):
 
 		#Sanity check
 		assert angle.unit.physical_type=="angle"
@@ -52,6 +52,9 @@ class Spin0(object):
 		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
 		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
 		self._masked = masked
+
+		#Extra keyword arguments
+		self._extra_attributes = kwargs.keys()
 
 	@property
 	def info(self):
@@ -821,7 +824,13 @@ class Spin0(object):
 			return None
 
 		else:
-			return self.__class__(smoothed_data,self.side_angle)
+			
+			#Copy the extra attributes as well
+			kwargs = dict()
+			for attribute in self._extra_attributes:
+				kwargs[attribute] = getattr(self,attribute)
+
+			return self.__class__(smoothed_data,self.side_angle,masked=self._masked,**kwargs)
 
 
 	def __add__(self,rhs):
@@ -855,7 +864,13 @@ class Spin0(object):
 
 			raise TypeError("The right hand side cannot be added!!")
 
-		return self.__class__(new_data,self.side_angle)
+
+		#Copy the extra attributes as well
+		kwargs = dict()
+		for attribute in self._extra_attributes:
+			kwargs[attribute] = getattr(self,attribute)
+
+		return self.__class__(new_data,self.side_angle,masked=self._masked,**kwargs)
 
 
 	def __mul__(self,rhs):
@@ -889,7 +904,12 @@ class Spin0(object):
 
 			raise TypeError("Cannot multiply by the right hand side!!")
 
-		return self.__class__(new_data,self.side_angle)
+		#Copy the extra attributes as well
+		kwargs = dict()
+		for attribute in self._extra_attributes:
+			kwargs[attribute] = getattr(self,attribute)
+
+		return self.__class__(new_data,self.side_angle,masked=self._masked,**kwargs)
 
 
 ###############################################

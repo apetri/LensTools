@@ -49,12 +49,12 @@ class DensityPlane(Spin0):
 
 	"""
 
-	def __init__(self,data,angle,redshift,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
+	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
 
 		#Sanity check
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
-		super(self.__class__,self).__init__(data,angle,masked)
+		super(self.__class__,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
 		self.redshift = redshift
 		self.cosmology = cosmology
 		self.unit = unit
@@ -93,12 +93,12 @@ class PotentialPlane(Spin0):
 
 	"""
 
-	def __init__(self,data,angle,redshift,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
+	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
 
 		#Sanity check
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
-		super(self.__class__,self).__init__(data,angle,masked)
+		super(self.__class__,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
 		self.redshift = redshift
 		self.cosmology = cosmology
 		self.unit = unit
