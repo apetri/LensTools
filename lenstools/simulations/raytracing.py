@@ -1044,6 +1044,11 @@ class RayTracer(object):
 	#######################Graphics##########################
 	#########################################################
 
+	def reset(self):
+
+		self._x_pos = list()
+		self._y_pos = list()
+
 	def displayRays(self,initial_positions,z=2.0,projection="2d",fig=None,ax=None):
 
 		"""
@@ -1091,22 +1096,37 @@ class RayTracer(object):
 
 		if projection=="2d":
 
-			#Plot the x,y positions
-			for nray in range(pos.shape[2]):
+			if not (hasattr(self,"_x_pos") and hasattr(self,"_y_pos")):
+				self.reset()
 
-				self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="black")
+			#Plot the x,y positions
+			if len(self._x_pos)==0 and len(self._y_pos)==0:
+			
+				for nray in range(pos.shape[2]):
+
+					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="black")[0])
+					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="black")[0])
+				
 				self.ax[0].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
 				self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
-				self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="black")
 				self.ax[1].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
 				self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
 
-			#Plot the lenses too
-			for d in distance:
-				for i in range(2):
-					min = distance[-1]*pos.to(rad).value.min()
-					max = distance[-1]*pos.to(rad).value.max()
-					self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+				#Plot the lenses too
+				for d in distance:
+					for i in range(2):
+						min = distance[-1]*pos.to(rad).value.min()
+						max = distance[-1]*pos.to(rad).value.max()
+						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+
+
+			else:
+
+				for nray in range(pos.shape[2]):
+					self._x_pos[nray].set_xdata(distance[:pos.shape[0]])
+					self._y_pos[nray].set_xdata(distance[:pos.shape[0]])
+					self._x_pos[nray].set_ydata(distance[:pos.shape[0]]*pos[:,0,nray].to(rad))
+					self._y_pos[nray].set_ydata(distance[:pos.shape[0]]*pos[:,1,nray].to(rad))
 
 		else:
 			pass
