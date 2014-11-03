@@ -1046,6 +1046,10 @@ class RayTracer(object):
 
 	def reset(self):
 
+		"""
+		Resets the RayTracer plotting engine
+		"""
+
 		self._x_pos = list()
 		self._y_pos = list()
 
@@ -1075,7 +1079,7 @@ class RayTracer(object):
 		if (fig is None) or (ax is None):
 
 			if projection=="2d":
-				self.fig,self.ax = plt.subplots(1,2,figsize=(16,8))
+				self.fig,self.ax = plt.subplots(1,2,figsize=(16,8),subplot_kw={"axisbg":"black"})
 			elif projection=="3d":
 				pass
 			else:
@@ -1104,8 +1108,8 @@ class RayTracer(object):
 			
 				for nray in range(pos.shape[2]):
 
-					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="black")[0])
-					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="black")[0])
+					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="yellow")[0])
+					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="yellow")[0])
 				
 				self.ax[0].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
 				self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
