@@ -39,66 +39,18 @@ except ImportError:
 
 
 ###########################################################
-#################DensityPlane class########################
+#################Plane class###############################
 ###########################################################
 
-class DensityPlane(Spin0):
+class Plane(Spin0):
 
-	"""
-	Class handler of a lens density plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
-
-	"""
 
 	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
 
 		#Sanity check
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
-		super(self.__class__,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
-		self.redshift = redshift
-		self.cosmology = cosmology
-		self.unit = unit
-
-		if num_particles is not None:
-			self.num_particles = num_particles
-		else:
-			self.num_particles = -1
-
-		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
-		if comoving_distance is not None:		
-			
-			assert comoving_distance.unit.physical_type=="length"
-			self.comoving_distance = comoving_distance
-		
-		else:
-			self.comoving_distance = cosmology.comoving_distance(redshift)
-
-		if data.dtype in [np.float,np.float32]:
-			self.space = "real"
-		elif data.dtype==np.complex:
-			self.space = "fourier"
-		else:
-			raise TypeError("data type not supported!")
-
-
-
-###########################################################
-###############PotentialPlane class########################
-###########################################################
-
-class PotentialPlane(Spin0):
-
-	"""
-	Class handler of a lens potential plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
-
-	"""
-
-	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
-
-		#Sanity check
-		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
-
-		super(self.__class__,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
+		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
 		self.redshift = redshift
 		self.cosmology = cosmology
 		self.unit = unit
@@ -128,7 +80,7 @@ class PotentialPlane(Spin0):
 	def save(self,filename,format="fits"):
 
 		"""
-		Saves the potential plane to an external file, of which the format can be specified (only fits implemented so far)
+		Saves the Plane to an external file, of which the format can be specified (only fits implemented so far)
 
 		:param filename: name of the file on which to save the plane
 		:type filename: str.
@@ -187,7 +139,7 @@ class PotentialPlane(Spin0):
 	def load(cls,filename,format="fits",init_cosmology=True):
 
 		"""
-		Loads the potential plane from an external file, of which the format can be specified (only fits implemented so far)
+		Loads the Plane from an external file, of which the format can be specified (only fits implemented so far)
 
 		:param filename: name of the file from which to load the plane
 		:type filename: str.
@@ -326,6 +278,55 @@ class PotentialPlane(Spin0):
 
 		else:
 			raise ValueError("space must be either real or fourier!")
+
+
+	def toReal(self):
+
+		"""
+		Switches to real space
+
+		"""
+
+		assert self.space=="fourier","We are already in real space!!"
+		self.data = irfft2(self.data)
+		self.space = "real"
+
+	
+	def toFourier(self):
+
+		"""
+		Switches to Fourier space
+
+		"""
+
+		assert self.space=="real","We are already in fourier space!!"
+		self.data = rfft2(self.data)
+		self.space="fourier"
+
+
+
+
+###########################################################
+#################DensityPlane class########################
+###########################################################
+
+class DensityPlane(Plane):
+
+	"""
+	Class handler of a lens density plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+
+	"""
+
+###########################################################
+###############PotentialPlane class########################
+###########################################################
+
+class PotentialPlane(Plane):
+
+	"""
+	Class handler of a lens potential plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+
+	"""
 
 	
 	def deflectionAngles(self,x=None,y=None,lmesh=None):
@@ -468,30 +469,6 @@ class PotentialPlane(Spin0):
 			return ShearTensorPlane(tensor,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
 
 
-	def toReal(self):
-
-		"""
-		Switches to real space
-
-		"""
-
-		assert self.space=="fourier","We are already in real space!!"
-		self.data = irfft2(self.data)
-		self.space = "real"
-
-	
-	def toFourier(self):
-
-		"""
-		Switches to Fourier space
-
-		"""
-
-		assert self.space=="real","We are already in fourier space!!"
-		self.data = rfft2(self.data)
-		self.space="fourier"
-
-
 	def density(self):
 
 		"""
@@ -518,8 +495,6 @@ class PotentialPlane(Spin0):
 
 		#The density is twice the trace of the hessian
 		return DensityPlane(2.0*laplacian/(self.resolution**2).to(self.unit).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles)
-
-
 
 
 #############################################################
