@@ -51,6 +51,47 @@ class Design(object):
 		else:
 			return "This design has {0} points distributed in a {1}-dimensional parameter space".format(self.npoints,self.ndim)
 
+
+	@classmethod
+	def load(cls,filename,labels):
+
+		"""
+		Load a pre-computed design from a file, only numpy format supported so far
+
+		:param filename: name of the file from which to load the design
+		:type filename: str.
+
+		:param labels: labels of the cosmological parameters included in the design
+		:type labels: list.
+
+		:returns: new Design instance
+
+		"""
+
+		#Load the parameters from the file
+		points = np.load(filename)
+
+		#Make sure there are enough labels 
+		assert len(labels)==points.shape[1],"There must be exactly one label per parameter!"
+
+		#Build the Design instance
+		design = cls()
+		design.npoints,design.ndim = points.shape
+		design.parameters = labels
+
+		for n,label in enumerate(labels):
+			
+			design.min[label] = points[:,n].min()
+			design.max[label] = points[:,n].max()
+			design.label[label] = label
+			design.axis[label] = n
+
+		design.points = points
+
+		#Return the newly created instance
+		return design
+
+
 	def add_parameter(self,parameter_name,min,max,label):
 
 		"""

@@ -107,7 +107,7 @@ for ext_module in external_sources.keys():
 	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
 
 #Data files on which the package depends on
-package_data = {name:[os.path.join(simulations_dir,"book","CFHTemu1.txt")],"":["LICENSE"]}
+package_data = {name:[os.path.join(simulations_dir,"book","CFHTemu1.txt"),os.path.join(simulations_dir,"book","CFHTemu1_array.npy")]," ":["LICENSE"]}
 
 #Append numpy includes
 lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
