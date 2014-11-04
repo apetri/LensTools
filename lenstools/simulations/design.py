@@ -6,7 +6,6 @@ try:
 except AttributeError:
 	_design = None
 
-import sys
 import numpy as np
 from astropy.table import Table
 
@@ -125,10 +124,8 @@ class Design(object):
 			design_table[colname].format = column_format
 
 		#Write the table
-		if filename is None:
-			filename = sys.stdout
-
-		design_table.write(filename,format=format)
+		if filename is not None:
+			design_table.write(filename,format=format)
 
 		return design_table
 		
