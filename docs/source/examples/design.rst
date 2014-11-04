@@ -20,7 +20,7 @@ We use a rough approximation of the simulated annealing algorithm to perform thi
 
 This design of course is far from optimal, but we can improve it by shuffling the particles coordinates for each dimension independently, this will greatly improve the cost of the design. What we can do next is exchange the single coordinates of particle pairs and see if this leads to a cost improvement or not: we can iterate this procedure many times to fine tune to the optimum. In detail the algorithm that we use consists in the following steps:
 
-#. Start from the diagonal design :math:`\mathcal{D}_0`: `x_i^d\equiv i/(N-1)`
+#. Start from the diagonal design :math:`\mathcal{D}_0 : x_i^d \equiv i/(N-1)`
 #. Shuffle the coordinates of the particles in each dimension independently :math:`x_i^d = \mathcal{P}_d\left(\frac{1}{N-1},\frac{2}{N-1},...,1\right)` where :math:`\mathcal{P}_1,...,\mathcal{P}_D` are random independent permutations of :math:`(1,2,...,N)`
 #. Pick a random particle pair :math:`(i,j)` and a random coordinate :math:`d\in\{1,...,D\}` and swap :math:`x_i^d\leftrightarrow x_j^d`
 #. Compute the new cost function, if this is less than the previous step, keep the exchange, otherwise revert the coordinate swap
