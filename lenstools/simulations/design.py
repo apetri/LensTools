@@ -6,7 +6,9 @@ try:
 except AttributeError:
 	_design = None
 
+import sys
 import numpy as np
+from astropy.table import Table
 
 try:
 	import matplotlib.pyplot as plt
@@ -90,6 +92,46 @@ class Design(object):
 
 		#Return the newly created instance
 		return design
+
+
+	def write(self,filename=None,format="latex",column_format="{0:.3f}"):
+
+		"""
+		Outputs the points that make up the design in a nicely formatted table
+
+		:param filename: name of the file to which the table will be saved; if None the contents will be printed
+		:type filename: str. or file descriptor
+
+		:param format: passed to the Table.write astropy method
+		:type format: str.
+
+		:param column_format: format specifier for the numerical values in the Table
+		:type column_format: str.
+
+		:returns: the Table instance with the design parameters
+
+		"""
+
+		#Check that there is something to save
+		assert hasattr(self,"points"),"There are no points in your design yet!"
+			
+		#Construct the columns
+		columns = self.points
+		names = [ self.label[p] for p in self.parameters ]
+
+		#Build the table
+		design_table = Table(columns,names=names)
+		for colname in design_table.colnames:
+			design_table[colname].format = column_format
+
+		#Write the table
+		if filename is None:
+			filename = sys.stdout
+
+		design_table.write(filename,format=format)
+
+		return design_table
+		
 
 
 	def add_parameter(self,parameter_name,min,max,label):
