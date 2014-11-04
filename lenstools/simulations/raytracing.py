@@ -494,7 +494,7 @@ class PotentialPlane(Plane):
 			raise ValueError("space must be either real or fourier!")
 
 		#The density is twice the trace of the hessian
-		return DensityPlane(2.0*laplacian/(self.resolution**2).to(self.unit).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles)
+		return DensityPlane(0.5*laplacian/(self.resolution**2).to(self.unit).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles)
 
 
 #############################################################

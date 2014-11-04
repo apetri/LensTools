@@ -982,7 +982,7 @@ class Gadget2Snapshot(object):
 
 			#If kind is potential, solve the poisson equation
 			if kind=="potential":
-				density_ft *= -2.0 * ((bin_resolution[0].to(rad).value)**2) / l_squared
+				density_ft *= -2.0 * ((bin_resolution[0].to(rad).value)**2) / (l_squared * ((2.0*np.pi)**2))
 				
 			#Return only the density fluctuation, dropping the zeroth frequency (i.e. uniform part)
 			density_ft[0,0] = 0.0 
