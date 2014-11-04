@@ -781,7 +781,7 @@ class Spin0(object):
 		return l,cross_power_spectrum
 
 
-	def smooth(self,scale_angle,kind="gaussian",inplace=False):
+	def smooth(self,scale_angle,kind="gaussian",inplace=False,**kwargs):
 
 		"""
 		Performs a smoothing operation on the convergence map
@@ -795,6 +795,9 @@ class Spin0(object):
 		:param inplace: if set to True performs the smoothing in place overwriting the old convergence map
 		:type inplace: bool.
 
+		:param kwargs: the keyword arguments are passed to the filter function
+		:type kwargs: dict.
+
 		:returns: ConvergenceMap instance (or None if inplace is True)
 
 		"""
@@ -807,7 +810,7 @@ class Spin0(object):
 		smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value
 
 		#Perform the smoothing
-		smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel)
+		smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
 
 		#Return the result
 		if inplace:
