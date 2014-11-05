@@ -77,6 +77,28 @@ class Plane(Spin0):
 			raise TypeError("data type not supported!")
 
 
+	def angular(self,length_scale):
+
+		"""
+		Given a comoving spatial length scale, this method computes the corresponding angular length scale on the plane in both physical and pixel units
+
+		:param length_scale: comoving length scale to be converted into angular units
+		:type length_scale: float with units
+
+		:returns: tuple(length_scale in degrees,length_scale in pixels)
+
+		"""
+
+		#Length scale must have units of length
+		assert length_scale.unit.physical_type=="length"
+
+		angle_scale = (length_scale/self.comoving_distance).decompose().value * rad
+		pixel_scale = (angle_scale / self.resolution).decompose().value
+
+		#return
+		return angle_scale.to(deg),pixel_scale
+
+
 	def save(self,filename,format="fits"):
 
 		"""
