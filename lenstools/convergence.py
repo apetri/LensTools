@@ -46,7 +46,12 @@ class Spin0(object):
 		assert angle.unit.physical_type=="angle"
 		assert data.shape[0]==data.shape[1],"The map must be a square!!"
 
-		self.data = data
+		#Convert to double precision for calculation accuracy
+		if data.dtype==np.float:
+			self.data = data
+		else:
+			self.data = data.astype(np.float)
+			
 		self.side_angle = angle
 		self.resolution = self.side_angle.to(arcsec) / self.data.shape[0]
 		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
