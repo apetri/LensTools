@@ -311,7 +311,7 @@ class Plane(Spin0):
 class DensityPlane(Plane):
 
 	"""
-	Class handler of a lens density plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+	Class handler of a lens density plane, inherits from the parent Plane class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
 
 	"""
 
@@ -361,7 +361,7 @@ class DensityPlane(Plane):
 class PotentialPlane(Plane):
 
 	"""
-	Class handler of a lens potential plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+	Class handler of a lens potential plane, inherits from the parent Plane class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
 
 	"""
 
