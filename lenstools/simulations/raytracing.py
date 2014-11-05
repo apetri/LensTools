@@ -304,8 +304,6 @@ class Plane(Spin0):
 		self.space="fourier"
 
 
-
-
 ###########################################################
 #################DensityPlane class########################
 ###########################################################
@@ -316,6 +314,45 @@ class DensityPlane(Plane):
 	Class handler of a lens density plane, inherits from the parent Spin0 class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
 
 	"""
+
+	def potential(self,lmesh=None):
+
+		"""
+		Computes the lensing potential from the density plane solving the Poisson equation via FFTs
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
+
+		:returns: PotentialPlane instance with the computed lensing potential
+
+		"""
+
+		#Initialize l meshgrid
+		if lmesh is None:
+			l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+		else:
+			l = lmesh
+
+		#Compute the magnitude squared of the wavenumber
+		l_squared = l[0]**2 + l[1]**2
+		l_squared[0,0] = 1.0
+
+		#Go with the FFTs
+		if self.space=="real":
+			density_ft = rfft2(self.data)
+		elif self.space=="fourier":
+			density_ft = self.data.copy()
+		else:
+			raise ValueError("space must be either real or fourier!")
+
+
+		#Invert the laplacian
+		density_ft *= -2.0*((self.resolution.to(rad).value)**2) / (l_squared * ((2.0*np.pi)**2))
+		density_ft[0,0] = 0.0
+
+		#Instantiate the new PotentialPlane
+		return PotentialPlane(data=irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
+
 
 ###########################################################
 ###############PotentialPlane class########################
