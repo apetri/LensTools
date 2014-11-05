@@ -133,12 +133,12 @@ class GaussianNoiseGenerator(object):
 
 		assert Pl[Pl>=0.0].size == Pl.size
 
-		#Generate amplitudes and phases
-		amplitudes = np.sqrt(Pl) * np.random.normal(loc=0.0,scale=1.0,size=l.shape) * lpix/(2.0*np.pi)
-		phases = np.random.uniform(low=0.0,high=2.0*np.pi,size=l.shape)
+		#Generate real and imaginary parts
+		real_part = np.sqrt(0.5*Pl) * np.random.normal(loc=0.0,scale=1.0,size=l.shape) * lpix/(2.0*np.pi)
+		imaginary_part = np.sqrt(0.5*Pl) * np.random.normal(loc=0.0,scale=1.0,size=l.shape) * lpix/(2.0*np.pi)
 
 		#Get map in real space and return
-		ft_map = amplitudes * np.exp(-1.0j*phases) * l.shape[0]**2
+		ft_map = (real_part + imaginary_part*1.0j) * l.shape[0]**2
 		ft_map[0,0] = 0.0
 
 		return ft_map
