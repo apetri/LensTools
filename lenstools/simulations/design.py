@@ -7,7 +7,7 @@ except AttributeError:
 	_design = None
 
 import numpy as np
-from astropy.table import Table,hstack
+from astropy.table import Table,Column,hstack
 
 try:
 	import matplotlib.pyplot as plt
@@ -126,6 +126,9 @@ class Design(object):
 			#Build the table
 			design_table = Table(columns,names=names)
 
+			#Add the number column to the left
+			design_table.add_column(Column(data=range(1,self.npoints+1),name=r"$N$"),index=0)
+
 		else:
 
 			#Figure out the splitting
@@ -144,16 +147,22 @@ class Design(object):
 				#Build the sub-table
 				design_table.append(Table(columns,names=names))
 
+				#Add the number column to the left
+				design_table[-1].add_column(Column(data=range(n*max_rows+1,(n+1)*max_rows+1),name=r"$N$"),index=0)
+
 			#Create the last sub-table
 			columns = self.points[(num_chunks-1)*max_rows:]
 			design_table.append(Table(columns,names=names))
+			design_table[-1].add_column(Column(data=range((num_chunks-1)*max_rows+1,self.npoints+1),name=r"$N$"),index=0)
 
 			#hstack in a single table
 			design_table = hstack(design_table)
 
 
+		#Tune the format
 		for colname in design_table.colnames:
-			design_table[colname].format = column_format
+			if not design_table.dtype[colname]==np.int:
+				design_table[colname].format = column_format
 
 		#Write the table or return it
 		if filename is not None:
