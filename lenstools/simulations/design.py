@@ -93,7 +93,7 @@ class Design(object):
 		return design
 
 
-	def write(self,filename=None,max_rows=None,format="latex",column_format="{0:.3f}"):
+	def write(self,filename=None,max_rows=None,format="ascii.latex",column_format="{0:.3f}"):
 
 		"""
 		Outputs the points that make up the design in a nicely formatted table
