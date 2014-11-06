@@ -99,7 +99,7 @@ class Plane(Spin0):
 		return angle_scale.to(deg),pixel_scale
 
 
-	def save(self,filename,format="fits"):
+	def save(self,filename,format="fits",double_precision=False):
 
 		"""
 		Saves the Plane to an external file, of which the format can be specified (only fits implemented so far)
@@ -109,6 +109,9 @@ class Plane(Spin0):
 
 		:param format: format of the file, only FITS implemented so far
 		:type format: str.
+
+		:param double_precision: if True saves the Plane in double precision
+		:type double_precision: bool.
 
 		"""
 
@@ -120,7 +123,10 @@ class Plane(Spin0):
 			#Create the hdu
 			if self.space=="real":
 				
-				hdu = fits.PrimaryHDU(self.data)
+				if double_precision:
+					hdu = fits.PrimaryHDU(self.data)
+				else:
+					hdu = fits.PrimaryHDU(self.data.astype(np.float32))
 			
 			elif self.space=="fourier":
 				
