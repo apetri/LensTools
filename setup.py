@@ -1,4 +1,4 @@
-import os,sys,re
+import os,sys,glob,re
 
 name = "lenstools"
 me = "Andrea Petri"
@@ -112,6 +112,9 @@ package_data = {name:[os.path.join("data","CFHTemu1.txt"),os.path.join("data","C
 #Append numpy includes
 lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
 
+#package scripts
+scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
+
 setup(
 	name=name,
 	version=version,
@@ -124,6 +127,7 @@ setup(
 	license="MIT",
 	description="Toolkit for Weak Gravitational Lensing analysis",
 	long_description=rd(os.path.join("docs","source","index.rst")),
+	scripts=scripts,
 	classifiers=classifiers,
 	ext_package=os.path.join(name,external_dir),
 	ext_modules=ext,
