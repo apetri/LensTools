@@ -29,7 +29,7 @@ def measure_from_IGS1(filename):
 
 	#Read in the map
 	logging.debug("Processing IGS1 map {0}".format(filename))
-	conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+	conv_map = ConvergenceMap.load(filename)
 
 	#Smooth 1 arcmin
 	conv_map.smooth(1.0*arcmin,inplace=True)

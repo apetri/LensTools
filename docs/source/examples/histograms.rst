@@ -41,7 +41,7 @@ Histograms of convergence maps
 		map_name = simulation_set.getNames(z=z,realizations=[map_id])[0]
 	
 		#Load the convergence map
-		convergence_map = ConvergenceMap.fromfilename(map_name,loader=load_fits_default_convergence)
+		convergence_map = ConvergenceMap.load(map_name)
 	
 		#Generate the shape noise map
 		noise_map = generator.getShapeNoise(z=z,ngal=15.0*arcmin**-2,seed=map_id)
@@ -108,7 +108,7 @@ Histograms of convergence maps
 		simulation_set = IGS1(root_path=root_path)
 		
 		#Look at a sample map
-		sample_map = ConvergenceMap.fromfilename(simulation_set.getNames(z=1.0,realizations=[1])[0],loader=load_fits_default_convergence)
+		sample_map = ConvergenceMap.load(simulation_set.getNames(z=1.0,realizations=[1])[0])
 		
 		#Initialize Gaussian shape noise generator
 		generator = GaussianNoiseGenerator.forMap(sample_map)
