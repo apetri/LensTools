@@ -32,6 +32,9 @@ def test_visualize():
 	test_map.savefig("map.png")
 	test_map.setAngularUnits(deg)
 
+def test_save():
+	test_map.save("conv_save.fits")
+
 def test_power():
 
 	#Compute

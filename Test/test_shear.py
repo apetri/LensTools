@@ -52,6 +52,9 @@ def test_visualize1():
 	test_map.savefig("shear.png")
 	test_map.setAngularUnits(deg)
 
+def test_save():
+	test_map.save("shear_save.fits") 
+
 def test_gradient():
 
 	grad = Spin2(test_map.gradient(),angle=test_map.side_angle)

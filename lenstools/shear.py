@@ -29,6 +29,9 @@ except ImportError:
 #Units
 from astropy.units import deg,rad,arcsec,quantity
 
+#FITS
+from astropy.io import fits
+
 try:
 	import matplotlib.pyplot as plt
 	from matplotlib.colors import LogNorm
@@ -87,6 +90,37 @@ class Spin1(object):
 
 		angle,data = loader(*args)
 		return cls(data,angle)
+
+
+	def save(self,filename,format="fits",double_precision=False):
+
+		"""
+		Saves the map to an external file, of which the format can be specified (only fits implemented so far)
+
+		:param filename: name of the file on which to save the plane
+		:type filename: str.
+
+		:param format: format of the file, only FITS implemented so far
+		:type format: str.
+
+		:param double_precision: if True saves the Plane in double precision
+		:type double_precision: bool.
+
+		"""
+
+		if format=="fits":
+
+			if double_precision:
+				hdu = fits.PrimaryHDU(self.data)
+			else:
+				hdu = fits.PrimaryHDU(self.data.astype(np.float32))
+
+			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"angle of the map in degrees")
+			hdulist = fits.HDUList([hdu])
+			hdulist.writeto(filename,clobber=True)
+
+		else:
+			raise ValueError("Format {0} not implemented yet!!".format(format))
 
 
 	def setAngularUnits(self,unit):
