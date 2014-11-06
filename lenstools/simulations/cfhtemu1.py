@@ -1,6 +1,7 @@
 from __future__ import division,print_function,with_statement
 
 import os,re
+from pkg_resources import resource_filename
 
 import numpy as np
 from astropy.io import fits
@@ -52,8 +53,7 @@ class CFHTemu1(IGS1):
 		"""
 
 		#Build the complete filename
-		dict_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)),"book")
-		dict_filename = os.path.join(dict_filename,"CFHTemu1.txt")
+		dict_filename = resource_filename("lenstools",os.path.join("data","CFHTemu1.txt"))
 
 		#Read in the dictionary file
 		with open(dict_filename,"r") as dictfile:
