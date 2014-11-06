@@ -240,19 +240,20 @@ class Plane(Spin0):
 			if fitsio is not None:
 
 				if len(hdu)==1:
-					return cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
 				else:
-					return cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
 
 			else:
 			
 				if len(hdu)==1:
-					return cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
 				else:
-					return cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
 
-			#Close the FITS file
+			#Close the FITS file and return
 			hdu.close()
+			return new_plane
 
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
