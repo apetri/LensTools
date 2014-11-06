@@ -2,7 +2,7 @@ from __future__ import division
 from operator import mul
 from functools import reduce
 
-from .. import external as ext
+from .. import extern as ext
 
 import numpy as np
 from scipy.stats import rankdata

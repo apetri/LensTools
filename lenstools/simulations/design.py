@@ -1,7 +1,7 @@
 from __future__ import division,print_function,with_statement
 
 try:
-	from .. import external as ext
+	from .. import extern as ext
 	_design = ext._design
 except AttributeError:
 	_design = None

@@ -42,7 +42,7 @@ classifiers = [
 	]
 
 external_sources = dict()
-external_dir = "external"
+external_dir = "extern"
 simulations_dir = "simulations"
 observations_dir = "observations"
 

@@ -15,7 +15,7 @@ from __future__ import division
 from operator import mul
 from functools import reduce
 
-from external import _topology
+from extern import _topology
 
 import numpy as np
 
