@@ -7,7 +7,7 @@ except AttributeError:
 	_design = None
 
 import numpy as np
-from astropy.table import Table
+from astropy.table import Table,hstack
 
 try:
 	import matplotlib.pyplot as plt
@@ -93,13 +93,16 @@ class Design(object):
 		return design
 
 
-	def write(self,filename=None,format="latex",column_format="{0:.3f}"):
+	def write(self,filename=None,max_rows=None,format="latex",column_format="{0:.3f}"):
 
 		"""
 		Outputs the points that make up the design in a nicely formatted table
 
 		:param filename: name of the file to which the table will be saved; if None the contents will be printed
 		:type filename: str. or file descriptor
+
+		:param max_rows: maximum number of rows in the table, if smaller than the number of points the different chunks are hstacked (useful if there are too many rows for display)
+		:type max_rows: int.
 
 		:param format: passed to the Table.write astropy method
 		:type format: str.
@@ -113,21 +116,51 @@ class Design(object):
 
 		#Check that there is something to save
 		assert hasattr(self,"points"),"There are no points in your design yet!"
-			
-		#Construct the columns
-		columns = self.points
 		names = [ self.label[p] for p in self.parameters ]
+		
+		if (max_rows is None) or (max_rows>=self.npoints):
+			
+			#Construct the columns
+			columns = self.points
 
-		#Build the table
-		design_table = Table(columns,names=names)
+			#Build the table
+			design_table = Table(columns,names=names)
+
+		else:
+
+			#Figure out the splitting
+			num_chunks = self.npoints // max_rows
+			if self.npoints%max_rows!=0:
+				num_chunks+=1
+
+			#Construct the list of tables to hstack
+			design_table = list()
+
+			#Cycle through the chunks and create the sub-tables
+			for n in range(num_chunks-1):
+
+				columns = self.points[n*max_rows:(n+1)*max_rows]
+
+				#Build the sub-table
+				design_table.append(Table(columns,names=names))
+
+			#Create the last sub-table
+			columns = self.points[(num_chunks-1)*max_rows:]
+			design_table.append(Table(columns,names=names))
+
+			#hstack in a single table
+			design_table = hstack(design_table)
+
+
 		for colname in design_table.colnames:
 			design_table[colname].format = column_format
 
-		#Write the table
+		#Write the table or return it
 		if filename is not None:
 			design_table.write(filename,format=format)
-
-		return design_table
+			return None
+		else:
+			return design_table
 		
 
 
