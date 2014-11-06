@@ -2,7 +2,6 @@ try:
 	
 	from lenstools import ConvergenceMap,ShearMap
 	from lenstools.shear import Spin2
-	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
 
 except ImportError:
 	
@@ -10,7 +9,6 @@ except ImportError:
 	sys.path.append("..")
 	from lenstools import ConvergenceMap,ShearMap
 	from lenstools.shear import Spin2
-	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,8 +33,8 @@ def two_file_loader(filename1,filename2):
 
 
 
-test_map = ShearMap.fromfilename("Data/shear1.fit","Data/shear2.fit",loader=two_file_loader)
-test_map_conv = ConvergenceMap.fromfilename("Data/conv.fit",loader=load_fits_default_convergence)
+test_map = ShearMap.load("Data/shear1.fit",filename2="Data/shear2.fit",format=two_file_loader)
+test_map_conv = ConvergenceMap.load("Data/conv.fit")
 
 l_edges = np.arange(200.0,50000.0,200.0)
 

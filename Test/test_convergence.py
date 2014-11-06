@@ -1,14 +1,12 @@
 try:
 	
 	from lenstools import ConvergenceMap
-	from lenstools.defaults import load_fits_default_convergence
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap
-	from lenstools.defaults import load_fits_default_convergence
 
 import numpy as np
 from astropy.units import deg,rad
@@ -16,7 +14,7 @@ from astropy.units import deg,rad
 import matplotlib.pyplot as plt
 
 
-test_map = ConvergenceMap.fromfilename("Data/conv.fit",loader=load_fits_default_convergence)
+test_map = ConvergenceMap.load("Data/conv.fit")
 
 #Set bin edges
 l_edges = np.arange(200.0,50000.0,200.0)
@@ -56,8 +54,8 @@ def test_power():
 def test_cross():
 
 	#Load
-	conv1 = ConvergenceMap.fromfilename("Data/conv1.fit",loader=load_fits_default_convergence)
-	conv2 = ConvergenceMap.fromfilename("Data/conv2.fit",loader=load_fits_default_convergence)
+	conv1 = ConvergenceMap.load("Data/conv1.fit")
+	conv2 = ConvergenceMap.load("Data/conv2.fit")
 
 	#Cross
 	l,Pl = conv1.cross(conv2,l_edges)

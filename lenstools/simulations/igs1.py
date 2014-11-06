@@ -210,7 +210,7 @@ class IGS1(FlatwCDM):
 		"""
 
 		filename = self.getNames(realization,**kwargs)
-		return ConvergenceMap.fromfilename(filename,loader=self._data_loader) 
+		return ConvergenceMap.load(filename,format=self._data_loader) 
 
 
 

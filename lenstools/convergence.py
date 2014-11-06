@@ -77,24 +77,35 @@ class Spin0(object):
 		print("Total angular size: {0}".format(self.side_angle))
 		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
 
-
-
 	@classmethod
-	def fromfilename(cls,*args,**kwargs):
+	def load(cls,filename,format="fits",**kwargs):
 		
 		"""
-		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,data)
+		This class method allows to read the map from a data file, in various formats
 
-		:param args: The positional arguments that are to be passed to the loader (typically the file name)
+		:param filename: name of the file in which the map is saved
+		:type filename: str. 
+		
+		:param format: the format of the file in which the map is saved (can be a callable too)
+		:type format: str. or callable
 
-		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (a template is defaults.load_fits_default_convergence)
+		:param kwargs: the keyword arguments are passed to the format (if callable)
+		:type kwargs: dict.
+
+		:returns: Spin0 instance with the loaded map
 
 		"""
 
-		assert "loader" in kwargs.keys(),"You must specify a loader function!"
-		loader = kwargs["loader"]
+		if format=="fits":
 
-		angle,data = loader(*args)
+			hdu = fits.open(filename)
+			data = hdu[0].data
+			angle = hdu[0].header["ANGLE"] * deg
+			hdu.close()
+
+		else:
+			angle,data = format(filename,**kwargs)
+		
 		return cls(data,angle)
 
 
@@ -394,7 +405,7 @@ class Spin0(object):
 
 		:returns: tuple -- (gradient_x,gradient_y)
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> gx,gy = test_map.gradient()
 
 		"""
@@ -459,7 +470,7 @@ class Spin0(object):
 
 		:returns: tuple -- (hessian_xx,hessian_yy,hessian_xy)
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> hxx,hyy,hxy = test_map.hessian()
 
 		"""
@@ -524,7 +535,7 @@ class Spin0(object):
 
 		:raises: AssertionError if thresholds array is not provided
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
 		>>> nu,p = test_map.pdf(thresholds)
 
@@ -563,7 +574,7 @@ class Spin0(object):
 
 		:raises: AssertionError if thresholds array is not provided
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
 		>>> nu,peaks = test_map.peakCount(thresholds)
 
@@ -612,7 +623,7 @@ class Spin0(object):
 
 		:raises: AssertionError if thresholds array is not provided
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> thresholds = np.arange(-2.0,2.0,0.2)
 		>>> nu,V0,V1,V2 = test_map.minkowskiFunctionals(thresholds,norm=True)
 
@@ -669,7 +680,7 @@ class Spin0(object):
 
 		:returns: array -- (sigma0,sigma1,S0,S1,S2,K0,K1,K2,K3)
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> var0,var1,sk0,sk1,sk2,kur0,kur1,kur2,kur3 = test_map.moments()
 		>>> sk0,sk1,sk2 = test_map.moments(dimensionless=True)[2:5]
 		>>> kur0,kur1,kur2,kur3 = test_map.moments(connected=True,dimensionless=True)[5:]
@@ -758,7 +769,7 @@ class Spin0(object):
 
 		:raises: AssertionError if l_edges are not provided
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit")
+		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> l_edges = np.arange(200.0,5000.0,200.0)
 		>>> l,Pl = test_map.powerSpectrum(l_edges)
 
@@ -793,8 +804,8 @@ class Spin0(object):
 
 		:raises: AssertionError if l_edges are not provided or the other map has not the same shape as the input one
 
-		>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default_convergence)
-		>>> other_map = ConvergenceMap.fromfilename("map2.fit",loader=load_fits_default_convergence)
+		>>> test_map = ConvergenceMap.load("map.fit",format=load_fits_default_convergence)
+		>>> other_map = ConvergenceMap.load("map2.fit",format=load_fits_default_convergence)
 		
 		>>> l_edges = np.arange(200.0,5000.0,200.0)
 		>>> l,Pl = test_map.cross(other_map,l_edges)
@@ -967,7 +978,7 @@ class ConvergenceMap(Spin0):
 	>>> from lenstools import ConvergenceMap 
 	>>> from lenstools.defaults import load_fits_default_convergence
 
-	>>> test_map = ConvergenceMap.fromfilename("map.fit",loader=load_fits_default_convergence)
+	>>> test_map = ConvergenceMap.load("map.fit",format=load_fits_default_convergence)
 	>>> imshow(test_map.data)
 
 	"""

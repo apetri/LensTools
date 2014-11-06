@@ -74,21 +74,36 @@ class Spin1(object):
 	
 
 	@classmethod
-	def fromfilename(cls,*args,**kwargs):
+	def load(cls,filename,format="fits",**kwargs):
 		
 		"""
-		This class method allows to read the map from a data file; the details of the loading are performed by the loader function. The only restriction to this function is that it must return a tuple (angle,data)
+		
+		This class method allows to read the map from a data file, in various formats
 
-		:param args: The positional arguments that are to be passed to the loader (typically the file name)
+		:param filename: name of the file in which the map is saved
+		:type filename: str. 
+		
+		:param format: the format of the file in which the map is saved (can be a callable too)
+		:type format: str. or callable
 
-		:param kwargs: Only one keyword is accepted "loader" is a pointer to the previously defined loader method (a template is defaults.load_fits_default_shear above)
+		:param kwargs: the keyword arguments are passed to the format (if callable)
+		:type kwargs: dict.
+
+		:returns: Spin1 instance with the loaded map
 		
 		"""
 
-		assert "loader" in kwargs.keys(),"You must specify a loader function!"
-		loader = kwargs["loader"]
+		if format=="fits":
 
-		angle,data = loader(*args)
+			hdu = fits.open(filename)
+			data = hdu[0].data
+			angle = hdu[0].header["ANGLE"] * deg
+			hdu.close()
+
+		else:
+
+			angle,data = format(filename,**kwargs)
+
 		return cls(data,angle)
 
 
@@ -375,7 +390,7 @@ class Spin2(Spin1):
 		:returns: ax -- the matplotlib ax object on which the stick field was drawn
 
 		>>> import matplotlib.pyplot as plt
-		>>> test = ShearMap.fromfilename("shear.fit",loader=load_fits_default_shear)
+		>>> test = ShearMap.load("shear.fit",loader=load_fits_default_shear)
 		>>> fig,ax = plt.subplots()
 		>>> test.sticks(ax,pixel_step=50)
 
@@ -426,7 +441,7 @@ class Spin2(Spin1):
 
 		:returns: :returns: tuple -- (l -- array,P_EE,P_BB,P_EB -- arrays) = (multipole moments, EE,BB power spectra and EB cross power)
 
-		>>> test_map = ShearMap.fromfilename("shear.fit",loader=load_fits_default_shear)
+		>>> test_map = ShearMap.load("shear.fit",format=load_fits_default_shear)
 		>>> l_edges = np.arange(300.0,5000.0,200.0)
 		>>> l,EE,BB,EB = test_map.decompose(l_edges)
 
@@ -574,7 +589,7 @@ class ShearMap(Spin2):
 
 	>>> from lenstools import ShearMap
 	
-	>>> test = ShearMap.fromfilename("shear.fit",loader=lenstools.defaults.load_fits_default_shear)
+	>>> test = ShearMap.load("shear.fit",format=lenstools.defaults.load_fits_default_shear)
 	>>> test.side_angle
 	1.95
 	>>> test.data

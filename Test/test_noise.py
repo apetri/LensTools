@@ -1,21 +1,21 @@
 try:
 	
 	from lenstools import ConvergenceMap,ShearMap,GaussianNoiseGenerator
-	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear,sample_power_shape
+	from lenstools.defaults import sample_power_shape
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap,ShearMap,GaussianNoiseGenerator
-	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear,sample_power_shape
+	from lenstools.defaults import sample_power_shape
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.units import deg,arcmin
 
-test_map_conv = ConvergenceMap.fromfilename("Data/conv.fit",loader=load_fits_default_convergence)
+test_map_conv = ConvergenceMap.load("Data/conv.fit")
 
 shape_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
 corr_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)

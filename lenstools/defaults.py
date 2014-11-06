@@ -101,14 +101,14 @@ def default_callback_loader(filename,l_edges):
 
 	logging.debug("Processing {0} power".format(filename))
 
-	conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+	conv_map = ConvergenceMap.load(filename,format=load_fits_default_convergence)
 	l,Pl = conv_map.powerSpectrum(l_edges)
 	return Pl
 
 def peaks_loader(filename,thresholds):
 
 	logging.debug("Processing {0} peaks".format(filename))
-	conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+	conv_map = ConvergenceMap.load(filename,format=load_fits_default_convergence)
 
 	v,pk = conv_map.peakCount(thresholds,norm=True)
 	return v
@@ -124,9 +124,9 @@ def convergence_measure_all(filename,index,fits_loader=None):
 
 	#Load the map
 	if fits_loader is not None:
-		conv_map = ConvergenceMap.fromfilename(filename,loader=fits_loader)
+		conv_map = ConvergenceMap.load(filename,format=fits_loader)
 	else: 
-		conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+		conv_map = ConvergenceMap.load(filename,format=load_fits_default_convergence)
 
 	#Allocate memory for observables
 	descriptors = index
