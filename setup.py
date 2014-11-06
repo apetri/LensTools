@@ -114,13 +114,14 @@ lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
 
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
+scripts_dir = "scripts"
 
 setup(
 	name=name,
 	version=version,
 	author=me,
 	author_email=email,
-	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir),"{0}.{1}".format(name,observations_dir)],
+	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir),"{0}.{1}".format(name,observations_dir),"{0}.{1}".format(name,scripts_dir)],
 	package_data=package_data,
 	install_requires=["numpy","scipy","astropy"],
 	url=url,
