@@ -93,7 +93,7 @@ class Design(object):
 		return design
 
 
-	def write(self,filename=None,max_rows=None,format="ascii.latex",column_format="{0:.3f}"):
+	def write(self,filename=None,max_rows=None,format="ascii.latex",column_format="{0:.3f}",**kwargs):
 
 		"""
 		Outputs the points that make up the design in a nicely formatted table
@@ -109,6 +109,9 @@ class Design(object):
 
 		:param column_format: format specifier for the numerical values in the Table
 		:type column_format: str.
+
+		:param kwargs: the keyword arguments are passed to astropy.Table.write method
+		:type kwargs: dict.
 
 		:returns: the Table instance with the design parameters
 
@@ -166,7 +169,7 @@ class Design(object):
 
 		#Write the table or return it
 		if filename is not None:
-			design_table.write(filename,format=format)
+			design_table.write(filename,format=format,**kwargs)
 			return None
 		else:
 			return design_table
