@@ -58,7 +58,7 @@ The core features require `numpy <http://www.numpy.org>`_, `scipy <http://www.sc
 Test
 ----
 
-To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install `pytest <http://pytest.org/latest/>`_, then you need to download some data files (mainly FITS images) that the test suite depends on (you can find these data files `here <http://danishlaundromat.com/apetri/data.tar.gz>`_, the file is approximately 160MB). Once you downloaded it into the Test directory unpack it::
+To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install `pytest <http://pytest.org/latest/>`_, then you need to download some data files (mainly FITS images) that the test suite depends on (you can find these data files `here <http://danishlaundromat.com/apetri/data.tar.gz>`_, the file is approximately 250MB). Once you downloaded it into the Test directory unpack it::
 
    tar -xvf data.tar.gz
 
