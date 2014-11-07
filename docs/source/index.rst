@@ -15,7 +15,20 @@ This python package collects together a suite of widely used analysis tools in W
 Summary
 -------
 
-This python add-on will handle basically every operation you will need to perform on Weak Lensing survey data; the distribution includes a range of tools in image analysis, statistical processing and numerical theory predictions and supports multiprocessing using the `mpi4py <http://mpi4py.scipy.org>`_ module. 
+This python add-on will handle basically every operation you will need to perform on Weak Lensing survey data; the distribution includes a range of tools in image analysis, statistical processing and numerical theory predictions and supports multiprocessing using the `mpi4py <http://mpi4py.scipy.org>`_ module. This package includes many useful features, including:
+
+- Measure units handling through astropy
+- Complete flexibility and easy customization of input/output formats
+- Efficient measurements of power spectrum, PDF, Minkowski functionals and peak counts of convergence maps
+- Survey masks
+- Efficient :math:`E` and :math:`B` mode decompositions of shear maps
+- Artificial noise generation engines
+- Easy to compute parameter statistical inferences
+- Easy input/output from :math:`N`-body simulation snapshots in the Gadget2 binary format
+- Interfaces with existing simulation sets
+- Ray Tracing simulations (in development...)
+- CPU vectorization of expensive computations via numpy
+- Easy multiprocessing and cluster deployment via the mpi4py module 
 
 Installation
 ------------
