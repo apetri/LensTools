@@ -123,7 +123,7 @@ setup(
 	author_email=email,
 	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir),"{0}.{1}".format(name,observations_dir),"{0}.{1}".format(name,scripts_dir)],
 	package_data=package_data,
-	install_requires=["numpy","scipy","astropy"],
+	install_requires=["numpy","scipy","astropy","emcee"],
 	url=url,
 	license="MIT",
 	description="Toolkit for Weak Gravitational Lensing analysis",
