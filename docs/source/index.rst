@@ -28,7 +28,8 @@ This python add-on will handle basically every operation you will need to perfor
 - Interfaces with existing simulation sets
 - Ray Tracing simulations (in development...)
 - CPU vectorization of expensive computations via numpy
-- Easy multiprocessing and cluster deployment via the mpi4py module 
+- Easy multiprocessing and cluster deployment via the mpi4py module
+- *Future prospect*: taking advantage of numpy offload capabilities to Intel Xeon Phi coprocessors to boost performance (planned) 
 
 Installation
 ------------
@@ -53,7 +54,7 @@ If you want to test the build before installing to your system, look to the inst
 Dependencies
 ------------
 
-The core features require `numpy <http://www.numpy.org>`_, `scipy <http://www.scipy.org>`_ and `astropy <http://www.astropy.org>`_ (mainly for the cosmology and measure units support)  to run, and the Test suite requires additionally the `matplotlib <http://matplotlib.org>`_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to run the calculations in parallel on a computer cluster you will need to install `mpi4py <http://mpi4py.scipy.org>`_ (a python wrapper for the MPI library) and `emcee <http://dan.iel.fm/emcee/current/>`_ (from which LensTools borrows the MPI Pool utility). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway)
+The core features require the standard `numpy <http://www.numpy.org>`_, `scipy <http://www.scipy.org>`_ and the more unusual `astropy <http://www.astropy.org>`_ (mainly for the cosmology and measure units support) and `emcee <http://dan.iel.fm/emcee/current/>`_ (from which LensTools borrows the MPI Pool utility), and the Test suite requires additionally the `matplotlib <http://matplotlib.org>`_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to run the calculations in parallel on a computer cluster you will need to install `mpi4py <http://mpi4py.scipy.org>`_ (a python wrapper for the MPI library). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway). One of the lenstools features, namely the Design class, requires that you have a working version of `GSL <http://www.gnu.org/software/gsl/>`_ to link to; if you don't have one, just hit *enter* during the installation process and the package will work correctly without this additional feature. 
 
 Test
 ----
