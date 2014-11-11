@@ -1195,6 +1195,19 @@ class RayTracer(object):
 					self._x_pos[nray].set_ydata(distance[:pos.shape[0]]*pos[:,0,nray].to(rad))
 					self._y_pos[nray].set_ydata(distance[:pos.shape[0]]*pos[:,1,nray].to(rad))
 
+
+				#Plot the lenses too
+				for d in distance_lenses:
+					for i in range(2):
+						min = distance[-1]*pos.to(rad).value.min()
+						max = distance[-1]*pos.to(rad).value.max()
+						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+
+
+			#Adjust the x,y axis range
+			self.ax[0].set_xlim(0,self.distance[-1].value)
+			self.ax[1].set_xlim(0,self.distance[-1].value)
+
 		else:
 			pass
 
