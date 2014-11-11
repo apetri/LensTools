@@ -852,25 +852,32 @@ class RayTracer(object):
 			#Check that shapes correspond
 			assert z.shape==initial_positions.shape[1:]
 
+			#Check that redshift is not too high given the current lenses
+			assert z.max()<self.redshift[-1],"Given the current lenses you can trace up to redshift {0:.2f}!".format(self.redshift[-1])
+
 			#Compute the number of lenses that each ray should cross
 			last_lens_ray = (z[None] > np.array(self.redshift).reshape((len(self.redshift),)+(1,)*len(z.shape))).argmin(0) - 1
 			last_lens = last_lens_ray.max()
 		
 		else:
+			
+			#Check that redshift is not too high given the current lenses
+			assert z<self.redshift[-1],"Given the current lenses you can trace up to redshift {0:.2f}!".format(self.redshift[-1])
 			last_lens = (z>np.array(self.redshift)).argmin() - 1
 		
 		if kind=="positions" and save_intermediate:
-			all_positions = np.zeros((last_lens,) + initial_positions.shape) * initial_positions.unit
+			all_positions = np.zeros((last_lens+1,) + initial_positions.shape) * initial_positions.unit
 
 		#The light rays positions at the k+1 th step are computed according to Xk+1 = Xk + Dk, where Dk is the deflection
 		#To stabilize the solution numerically we compute the deflections as Dk+1 = (Ak-1)Dk + Ck*pk where pk is the deflection due to the potential gradient
 
 		#Ordered references to the lenses
 		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
+		redshift = np.array([0.0] + self.redshift)
 		lens = self.lens
 
 		#This is the main loop that goes through all the lenses
-		for k in range(last_lens):
+		for k in range(last_lens+1):
 
 			#Load in the lens
 			if type(lens[k])==PotentialPlane:
@@ -942,18 +949,27 @@ class RayTracer(object):
 			if type(z)==np.ndarray:
 				
 				current_positions[:,k<last_lens_ray] += current_deflection[:,k<last_lens_ray]
+				current_positions[:,k==last_lens_ray] += current_deflection[:,k==last_lens_ray] * (z[None,k==last_lens_ray] - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 				#We need to add the distortions to the jacobians too
 				if kind in ["jacobians","convergence","shear"]:
 					current_jacobian[:,k<last_lens_ray] += current_jacobian_deflection[:,k<last_lens_ray]
+					current_jacobian[:,k==last_lens_ray] += current_jacobian_deflection[:,k==last_lens_ray] * (z[None,k==last_lens_ray] - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 			else:
 				
-				current_positions += current_deflection
+				if k<last_lens:
+					current_positions += current_deflection
+				else:
+					current_positions += current_deflection * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 				#We need to add the distortions to the jacobians too
 				if kind in ["jacobians","convergence","shear"]:
-					current_jacobian += current_jacobian_deflection
+
+					if k<last_lens:
+						current_jacobian += current_jacobian_deflection
+					else:
+						current_jacobian += current_jacobian_deflection * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 			now = time.time()
 			logging.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
@@ -1130,14 +1146,20 @@ class RayTracer(object):
 			self.fig = fig
 			self.ax = ax
 
-		#Construct an array with the comoving distance of the lenses
-		distance = np.array([d.to(Mpc).value for d in [0.0 * Mpc] + self.distance]) * Mpc
-
 		#Compute the positions of the light rays across the lens system
-		pos = self.shoot(initial_positions.reshape((2,)+(reduce(mul,initial_positions.shape[1:]),)),z,save_intermediate=True)
+		initial_positions = initial_positions.reshape((2,)+(reduce(mul,initial_positions.shape[1:]),))
+		pos = self.shoot(initial_positions,z,save_intermediate=True)
 
-		#Add a 0 position corresponding to the observer
-		pos = np.concatenate((np.zeros((1,) + pos.shape[1:]),pos.value)) * pos.unit
+		#Add a 0 position corresponding to the observer, and the initial positions too
+		pos = np.concatenate((np.zeros((1,) + pos.shape[1:]),initial_positions[None,:].value,pos.value)) * pos.unit
+
+		#Construct an array with the comoving distance of the lenses
+		distance_lenses = np.array([ d.to(Mpc).value for d in [0.0 * Mpc] + self.distance[:pos.shape[0]] ]) * Mpc
+		distance = distance_lenses.copy()
+		redshift = np.array([0.0]+self.redshift[:pos.shape[0]])
+
+		#Correct the last position if the last redshift falls between two lenses
+		distance[-1] = distance[-2] + (distance[-1] - distance[-2]) * (z - redshift[-2]) / (redshift[-1] - redshift[-2])
 
 		if projection=="2d":
 
@@ -1158,7 +1180,7 @@ class RayTracer(object):
 				self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
 
 				#Plot the lenses too
-				for d in distance:
+				for d in distance_lenses:
 					for i in range(2):
 						min = distance[-1]*pos.to(rad).value.min()
 						max = distance[-1]*pos.to(rad).value.max()
