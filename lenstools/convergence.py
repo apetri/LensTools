@@ -656,8 +656,10 @@ class Spin0(object):
 		else:
 			sigma = 1.0
 
-		#Return the result of the C backend call
-		return _topology.peakLocations(self.data,mask_profile,thresholds,sigma)
+		#Return the result of the C backend call, scaled to the proper units
+		peak_values,peak_locations = _topology.peakLocations(self.data,mask_profile,thresholds,sigma)
+
+		return peak_values,(peak_locations*self.resolution).to(self.side_angle.unit)
 
 
 	def minkowskiFunctionals(self,thresholds,norm=False):

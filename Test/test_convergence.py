@@ -137,6 +137,27 @@ def test_peaks():
 	plt.savefig("peaks.png")
 
 
+def test_peak_locations():
+
+	#Thresholds for high peaks
+	high_thresholds = np.arange(0.3,0.6,0.01)
+
+	#Find the peak locations
+	values,locations = test_map.locatePeaks(high_thresholds)
+
+	#Visualize the result
+	fig,ax = plt.subplots(1,2,figsize=(16,8))
+	test_map.visualize(fig=fig,ax=ax[0],colorbar=True)
+	test_map.visualize(fig=fig,ax=ax[1])
+	ax[1].scatter(locations[:,0].value,locations[:,1].value,color="black")
+	ax[1].set_xlim(0.0,test_map.side_angle.value)
+	ax[1].set_ylim(0.0,test_map.side_angle.value)
+
+	#And save it
+	fig.tight_layout()
+	fig.savefig("peak_locations.png")
+
+
 def test_getValues():
 
 	b = np.linspace(0.0,test_map.side_angle.value,test_map.data.shape[0])

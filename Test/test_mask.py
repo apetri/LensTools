@@ -158,6 +158,34 @@ def test_peaks():
 	plt.savefig("masked_peaks.png")
 	plt.clf()
 
+#Locate the peaks on the map
+def test_peak_locations():
+
+	th_peaks = np.arange(0.24,0.5,0.01)
+
+	conv_map = ConvergenceMap.load("Data/unmasked.fit")
+	mask_profile = Mask.load("Data/mask.fit")
+
+	masked_map = conv_map.mask(mask_profile)
+
+	#Locate the peaks on the map
+	values,location = masked_map.locatePeaks(th_peaks)
+
+	#Visualize the map and the peak locations
+	fig,ax = plt.subplots(1,2,figsize=(16,8))
+	masked_map.visualize(fig=fig,ax=ax[0],colorbar=True)
+	masked_map.visualize(fig=fig,ax=ax[1])
+
+	ax[1].scatter(location[:,0].value,location[:,1].value,color="black")
+	ax[1].set_xlim(0.0,masked_map.side_angle.value)
+	ax[1].set_ylim(0.0,masked_map.side_angle.value)
+
+	#Save the figure
+	fig.tight_layout()
+	fig.savefig("masked_peak_locations.png")
+
+
+
 #Check the differences in minkowski functionals with and without masking
 def test_minkowski():
 
