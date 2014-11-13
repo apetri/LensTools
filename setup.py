@@ -112,6 +112,9 @@ package_data = {name:[os.path.join("data","CFHTemu1.txt"),os.path.join("data","C
 #Append numpy includes
 lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
 
+#Append system includes
+lenstools_includes += ["/usr/local/include","/usr/include"]
+
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
 scripts_dir = "scripts"
