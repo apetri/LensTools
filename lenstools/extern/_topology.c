@@ -155,12 +155,17 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 static PyObject *_topology_peakLocations(PyObject *self,PyObject *args){
 
 	PyObject *map_obj,*mask_obj,*thresholds_obj; 
-	int n;
+	int n,relevant_pixels;
 	double sigma;
 
 	/*Parse the input tuple*/
-	if(!PyArg_ParseTuple(args,"OOOd",&map_obj,&mask_obj,&thresholds_obj,&sigma)){ 
+	if(!PyArg_ParseTuple(args,"OOOdi",&map_obj,&mask_obj,&thresholds_obj,&sigma,&relevant_pixels)){ 
 		return NULL;
+	}
+
+	/*Check that relevant_pixels is positive*/
+	if(relevant_pixels<=0){
+		relevant_pixels=1;
 	}
 
 	/*Interpret the inputs as a numpy arrays*/
@@ -206,9 +211,9 @@ static PyObject *_topology_peakLocations(PyObject *self,PyObject *args){
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/*Allocate intermediate arrays that will hold the peak locations; to be safe these are as big as the map itself (sub-optimal, maybe change in the future)*/
-	double *peak_values = (double *) malloc(sizeof(double)*Nside*Nside);
-	int *locations_x = (int *) malloc(sizeof(int)*Nside*Nside);
-	int *locations_y = (int *) malloc(sizeof(int)*Nside*Nside);
+	double *peak_values = (double *) malloc(sizeof(double)*relevant_pixels);
+	int *locations_x = (int *) malloc(sizeof(int)*relevant_pixels);
+	int *locations_y = (int *) malloc(sizeof(int)*relevant_pixels);
 
 	/*Failsafe check*/
 	if(peak_values==NULL || locations_x==NULL || locations_y==NULL){

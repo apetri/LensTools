@@ -656,8 +656,11 @@ class Spin0(object):
 		else:
 			sigma = 1.0
 
+		#Count the number of pixels between the selected thresholds
+		relevant_pixels = ((self.data>=thresholds[0]*sigma) * (self.data<=thresholds[-1]*sigma)).sum()
+
 		#Return the result of the C backend call, scaled to the proper units
-		peak_values,peak_locations = _topology.peakLocations(self.data,mask_profile,thresholds,sigma)
+		peak_values,peak_locations = _topology.peakLocations(self.data,mask_profile,thresholds,sigma,relevant_pixels)
 
 		return peak_values,(peak_locations*self.resolution).to(self.side_angle.unit)
 
