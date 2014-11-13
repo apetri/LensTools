@@ -13,7 +13,7 @@ except ImportError:
 	
 	MPI=None
 	default_op=None
-	print("Warning! mpy4py installation not found or broken!")
+	print("Warning! mpi4py installation not found or broken!")
 
 #####################################################################################
 #######Supplying to the lack of rfftfreq implementation in numpy<1.8#################

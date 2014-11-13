@@ -6,6 +6,7 @@ The module is called _topology and it defines the methods below (see docstrings)
 */
 
 #include <complex.h>
+#include <stdlib.h>
 
 #include <Python.h>
 #include <numpy/arrayobject.h>
@@ -18,6 +19,7 @@ The module is called _topology and it defines the methods below (see docstrings)
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for counting peaks in a 2D map";
 static char peakCount_docstring[] = "Calculate the peak counts in a 2D map";
+static char peakLocations_docstring[] = "Find the peak locations in a 2D map";
 static char gradient_docstring[] = "Compute the gradient of a 2D image";
 static char hessian_docstring[] = "Compute the hessian of a 2D image"; 
 static char minkowski_docstring[] = "Measure the three Minkowski functionals of a 2D image";
@@ -26,6 +28,7 @@ static char rfft3_azimuthal_docstring[] = "Measure azimuthal average of Fourier 
 
 //method declarations
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
+static PyObject *_topology_peakLocations(PyObject *self,PyObject *args);
 static PyObject *_topology_gradient(PyObject *self,PyObject *args);
 static PyObject *_topology_hessian(PyObject *self,PyObject *args);
 static PyObject *_topology_minkowski(PyObject *self,PyObject *args);
@@ -37,6 +40,7 @@ static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args);
 static PyMethodDef module_methods[] = {
 
 	{"peakCount",_topology_peakCount,METH_VARARGS,peakCount_docstring},
+	{"peakLocations",_topology_peakLocations,METH_VARARGS,peakLocations_docstring},
 	{"gradient",_topology_gradient,METH_VARARGS,gradient_docstring},
 	{"hessian",_topology_hessian,METH_VARARGS,hessian_docstring},
 	{"minkowski",_topology_minkowski,METH_VARARGS,minkowski_docstring},
@@ -144,6 +148,185 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 	}
 
 	return peaks_array;
+
+}
+
+//peakLocations() implementation
+static PyObject *_topology_peakLocations(PyObject *self,PyObject *args){
+
+	PyObject *map_obj,*mask_obj,*thresholds_obj; 
+	int n;
+	double sigma;
+
+	/*Parse the input tuple*/
+	if(!PyArg_ParseTuple(args,"OOOd",&map_obj,&mask_obj,&thresholds_obj,&sigma)){ 
+		return NULL;
+	}
+
+	/*Interpret the inputs as a numpy arrays*/
+	PyObject *map_array = PyArray_FROM_OTF(map_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *thresholds_array = PyArray_FROM_OTF(thresholds_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *mask_array;
+
+	if(map_array==NULL || thresholds_array==NULL){
+		
+		Py_XDECREF(map_array);
+		Py_XDECREF(thresholds_array);
+
+		return NULL;
+
+	}
+
+	if(mask_obj != Py_None){
+
+		mask_array = PyArray_FROM_OTF(mask_obj,NPY_BOOL,NPY_IN_ARRAY);
+
+		if(mask_array==NULL){
+			
+			Py_DECREF(map_array);
+			Py_DECREF(thresholds_array);
+			
+			return NULL;
+		}
+
+	}
+	else{
+
+		mask_array = NULL;
+
+	}
+
+	/*Get the size of the map (in pixels)*/
+	int Nside = (int)PyArray_DIM(map_array,0);
+	/*Get the number of thresholds to output*/
+	int Nthreshold = (int)PyArray_DIM(thresholds_array,0);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*Up to here the implementation is the same as peakCounts, now it starts to differentiate: we are interested in the peak locations*/
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/*Allocate intermediate arrays that will hold the peak locations; to be safe these are as big as the map itself (sub-optimal, maybe change in the future)*/
+	double *peak_values = (double *) malloc(sizeof(double)*Nside*Nside);
+	int *locations_x = (int *) malloc(sizeof(int)*Nside*Nside);
+	int *locations_y = (int *) malloc(sizeof(int)*Nside*Nside);
+
+	/*Failsafe check*/
+	if(peak_values==NULL || locations_x==NULL || locations_y==NULL){
+		
+		free(peak_values);
+		free(locations_x);
+		free(locations_y);
+
+		Py_DECREF(map_array);
+		Py_DECREF(thresholds_array);
+
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
+		return NULL;
+	}
+
+	/*Decide if mask profile is not NULL*/
+	unsigned char *mask_profile;
+	if(mask_array){
+		mask_profile = (unsigned char *)PyArray_DATA(mask_array);
+	}
+	else{
+		mask_profile = NULL;
+	}
+
+	/*Call the underlying C function that finds the locations of the peaks*/
+	int Npeaks = peak_locations((double *)PyArray_DATA(map_array),mask_profile,Nside,sigma,Nthreshold,(double *)PyArray_DATA(thresholds_array),peak_values,locations_x,locations_y);
+
+	/*Prepare new array objects that will hold the peak locations and values*/
+	npy_intp value_dims[] = {(npy_intp) Npeaks};
+	npy_intp loc_dims[] = {(npy_intp) Npeaks, (npy_intp) 2};
+
+	PyObject *values_array = PyArray_ZEROS(1,value_dims,NPY_DOUBLE,0);
+	PyObject *locations_array = PyArray_ZEROS(2,loc_dims,NPY_INT32,0);
+
+	/*Throw exception if this failed*/
+	if(values_array==NULL || locations_array==NULL){
+		
+		Py_DECREF(map_array);
+		Py_DECREF(thresholds_array);
+
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
+		Py_XDECREF(values_array);
+		Py_XDECREF(locations_array);
+
+		free(peak_values);
+		free(locations_x);
+		free(locations_y);
+
+		return NULL;
+	}
+
+	//get data pointers to fill in the numpy arrays
+	double *values_data = (double *)PyArray_DATA(values_array);
+	int *locations_data = (int *)PyArray_DATA(locations_array);
+
+	//fill in the numpy arrays
+	for(n=0;n<Npeaks;n++){
+		values_data[n] = peak_values[n];
+		locations_data[2*n] = locations_x[n];
+		locations_data[2*n+1] = locations_y[n];
+	}
+
+	//release temporary resources
+	free(peak_values);
+	free(locations_x);
+	free(locations_y);
+	
+	//Build the output tuple
+	PyObject *output = PyTuple_New(2);
+	
+	if(PyTuple_SetItem(output,0,values_array)){
+		
+		Py_DECREF(map_array);
+		Py_DECREF(thresholds_array);
+
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
+		Py_DECREF(values_array);
+		Py_DECREF(locations_array);
+
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(output,1,locations_array)){
+		
+		Py_DECREF(map_array);
+		Py_DECREF(thresholds_array);
+
+		if(mask_array){
+			Py_DECREF(mask_array);
+		}
+
+		Py_DECREF(values_array);
+		Py_DECREF(locations_array);
+
+		return NULL;
+
+	}
+
+
+	/*Clean up and return*/
+	Py_DECREF(map_array);
+	Py_DECREF(thresholds_array);
+
+	if(mask_array){
+		Py_DECREF(mask_array);
+	}
+
+	return output;
 
 }
 

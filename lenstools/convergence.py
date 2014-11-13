@@ -595,7 +595,7 @@ class Spin0(object):
 
 			mask_profile = None 
 
-		#Decide if normalizin thresholds
+		#Decide if normalizing thresholds
 		if norm:
 			
 			if self._masked:
@@ -607,6 +607,58 @@ class Spin0(object):
 			sigma = 1.0
 
 		return midpoints,_topology.peakCount(self.data,mask_profile,thresholds,sigma)
+
+
+	def locatePeaks(self,thresholds,norm=False):
+
+		"""
+		Locate the peaks in the map
+
+		:param thresholds: thresholds extremes that define the binning of the peak histogram
+		:type thresholds: array
+
+		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
+		:type norm: bool.
+
+		:returns: tuple -- (peak height -- array, peak locations -- array with units)
+
+		:raises: AssertionError if thresholds array is not provided
+
+		>>> test_map = ConvergenceMap.load("map.fit")
+		>>> thresholds = np.arange(map.data.min(),map.data.max(),0.05)
+		>>> height,positions = test_map.locatePeaks(thresholds)
+
+		"""
+
+		assert thresholds is not None
+		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
+
+		#Check if the map is masked
+		if self._masked:
+
+			if not hasattr(self,"_full_mask"):
+				self.maskBoundaries()
+
+			mask_profile = self._full_mask
+
+		else:
+
+			mask_profile = None 
+
+		#Decide if normalizing thresholds
+		if norm:
+			
+			if self._masked:
+				sigma = self.data[self._full_mask].std()
+			else:
+				sigma = self.data.std()
+
+		else:
+			sigma = 1.0
+
+		#Return the result of the C backend call
+		return _topology.peakLocations(self.data,mask_profile,thresholds,sigma)
+
 
 	def minkowskiFunctionals(self,thresholds,norm=False):
 
