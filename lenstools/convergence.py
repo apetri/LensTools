@@ -846,47 +846,58 @@ class Spin0(object):
 		#Output the power spectrum
 		return l,power_spectrum
 
-	def cross(self,other,l_edges):
+	def cross(self,other,statistic="power_spectrum",**kwargs):
 
 		"""
-		Measures the cross power spectrum between two convergence maps at the multipole moments specified in the input
+		Measures a cross statistic between maps
 
 		:param other: The other convergence map
 		:type other: ConvergenceMap instance
 
-		:param l_edges: Multipole bin edges
-		:type l_edges: array
+		:param statistic: the cross statistic to measure (default is 'power_spectrum')
+		:type statistic: string or callable
 
-		:returns: tuple -- (l -- array,Pl -- array) = (multipole moments, cross power spectrum at multipole moments)
+		:param kwargs: the keyword arguments are passed to the statistic (when callable)
+		:type kwargs: dict.
 
-		:raises: AssertionError if l_edges are not provided or the other map has not the same shape as the input one
+		:returns: tuple -- (l -- array,Pl -- array) = (multipole moments, cross power spectrum at multipole moments) if the statistic is the power spectrum, otherwise whatever statistic() returns on call
+
+		:raises: AssertionError if the other map has not the same shape as the input one
 
 		>>> test_map = ConvergenceMap.load("map.fit",format=load_fits_default_convergence)
 		>>> other_map = ConvergenceMap.load("map2.fit",format=load_fits_default_convergence)
 		
 		>>> l_edges = np.arange(200.0,5000.0,200.0)
-		>>> l,Pl = test_map.cross(other_map,l_edges)
+		>>> l,Pl = test_map.cross(other_map,l_edges=l_edges)
 
 		"""
+		if statistic=="power_spectrum":
+			
+			assert not (self._masked or other._masked),"Power spectrum calculation for masked maps is not allowed yet!"
 
-		assert not (self._masked or other._masked),"Power spectrum calculation for masked maps is not allowed yet!"
+			assert "l_edges" in kwargs.keys()
+			l_edges = kwargs["l_edges"]
 
-		assert l_edges is not None
-		l = 0.5*(l_edges[:-1] + l_edges[1:])
+			assert l_edges is not None
+			l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-		assert isinstance(other,self.__class__)
-		assert self.side_angle == other.side_angle
-		assert self.data.shape == other.data.shape
+			assert isinstance(other,self.__class__)
+			assert self.side_angle == other.side_angle
+			assert self.data.shape == other.data.shape
 
-		#Calculate the Fourier transform of the maps with numpy FFTs
-		ft_map1 = rfft2(self.data)
-		ft_map2 = rfft2(other.data)
+			#Calculate the Fourier transform of the maps with numpy FFTs
+			ft_map1 = rfft2(self.data)
+			ft_map2 = rfft2(other.data)
 
-		#Compute the cross power spectrum with the C backend implementation
-		cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(deg).value,l_edges)
+			#Compute the cross power spectrum with the C backend implementation
+			cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(deg).value,l_edges)
 
-		#Output the cross power spectrum
-		return l,cross_power_spectrum
+			#Output the cross power spectrum
+			return l,cross_power_spectrum
+
+		else:
+
+			return statistic(self,other,**kwargs) 
 
 
 	def smooth(self,scale_angle,kind="gaussian",inplace=False,**kwargs):

@@ -58,7 +58,7 @@ def test_cross():
 	conv2 = ConvergenceMap.load("Data/conv2.fit")
 
 	#Cross
-	l,Pl = conv1.cross(conv2,l_edges)
+	l,Pl = conv1.cross(conv2,l_edges=l_edges)
 
 	#Visualize
 	fig,ax = plt.subplots()
