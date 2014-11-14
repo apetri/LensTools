@@ -6,12 +6,16 @@ def main(args=None):
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("filename",nargs="+",help="path to one or more Gadget2 snapshots to display")
+	parser.add_argument("-e","--enable-mpi",dest="enable_mpi",action="store_true",default=False,help="enables the import of mpi4py (can cause problems on some systems)")
 
 	args = parser.parse_args(args)
 	
 	if args.filename is None:
 		parser.print_help()
 		sys.exit(0)
+
+	if not args.enable_mpi:
+		sys.modules["mpi4py"]=None
 
 	try:
 		
