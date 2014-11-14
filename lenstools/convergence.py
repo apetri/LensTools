@@ -871,6 +871,9 @@ class Spin0(object):
 		>>> l,Pl = test_map.cross(other_map,l_edges=l_edges)
 
 		"""
+		#The other map must be of the same type as this one
+		assert isinstance(other,self.__class__)
+
 		if statistic=="power_spectrum":
 			
 			assert not (self._masked or other._masked),"Power spectrum calculation for masked maps is not allowed yet!"
@@ -881,7 +884,6 @@ class Spin0(object):
 			assert l_edges is not None
 			l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-			assert isinstance(other,self.__class__)
 			assert self.side_angle == other.side_angle
 			assert self.data.shape == other.data.shape
 
