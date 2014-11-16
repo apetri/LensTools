@@ -81,6 +81,25 @@ class Ensemble(object):
 
 		return cls(num_realizations=npy_data.shape[0],data=npy_data)
 
+
+	@classmethod
+	def read(cls,filename):
+
+		"""
+		Reads a numpy file into an Ensemble
+
+		:param filename: name of the file to read
+		:type filename: str.
+
+		:returns: Ensemble instance read from the file
+
+		"""
+
+		new_ensemble = cls.fromfilelist([filename])
+		new_ensemble.load(from_old=True)
+		return new_ensemble
+
+
 	def load(self,callback_loader=None,pool=None,from_old=False,**kwargs):
 		"""
 		Loads the ensemble into memory, can spread the calculations on multiple processors using a MPI pool
@@ -355,7 +374,7 @@ class Ensemble(object):
 
 		"""
 
-		assert isinstance(rhs,Ensemble)
+		assert isinstance(rhs,self.__class__)
 		assert self.metric == rhs.metric,"The two ensemble instances must have the same metric!!"
 
 		if self.metric=="chi2":
@@ -379,7 +398,7 @@ class Ensemble(object):
 		"""
 
 		#Safety checks
-		assert isinstance(rhs,Ensemble)
+		assert isinstance(rhs,self.__class__)
 		assert self.metric == rhs.metric,"The two ensemble instances must have the same metric!!"
 
 		try:
@@ -394,7 +413,7 @@ class Ensemble(object):
 			print("The data of these two ensembles cannot be vstacked!")
 			return None
 
-		return Ensemble(file_list=self.file_list+rhs.file_list,data=new_data,num_realizations=self.num_realizations+rhs.num_realizations,metric=self.metric)
+		return self.__class__(file_list=self.file_list+rhs.file_list,data=new_data,num_realizations=self.num_realizations+rhs.num_realizations,metric=self.metric)
 
 
 	def __mul__(self,rhs):
@@ -405,7 +424,7 @@ class Ensemble(object):
 		"""
 
 		#Safety checks
-		assert isinstance(rhs,Ensemble)
+		assert isinstance(rhs,self.__class__)
 		assert self.metric == rhs.metric
 		assert self.num_realizations == rhs.num_realizations
 
@@ -418,7 +437,7 @@ class Ensemble(object):
 			print("The data of these two ensembles cannot be hstacked!")
 			return None
 
-		return Ensemble(file_list=list(set(self.file_list + rhs.file_list)),data=new_data,num_realizations=self.num_realizations,metric=self.metric)
+		return self.__class__(file_list=list(set(self.file_list + rhs.file_list)),data=new_data,num_realizations=self.num_realizations,metric=self.metric)
 
 	def __getitem__(self,n):
 
@@ -452,7 +471,7 @@ class Ensemble(object):
 		
 		for n in range(index.num_descriptors):
 
-			splitted.append(Ensemble(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
+			splitted.append(self.__class__(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
 
 		return splitted
 
