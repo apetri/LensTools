@@ -122,10 +122,8 @@ def test_multiply():
 def test_save_and_load():
 
 	conv_ensemble.save("ensemble_saved.npy")
-	conv_ensemble.savemat("ensemble_saved",appendmat=True)
-	conv_ensemble_new = Ensemble.fromfilelist(["ensemble_saved.npy"])
-
-	conv_ensemble_new.load(from_old=True)
+	conv_ensemble.save("ensemble_saved",format="matlab",appendmat=True)
+	conv_ensemble_new = Ensemble.read("ensemble_saved.npy")
 
 	assert conv_ensemble_new.num_realizations == conv_ensemble.num_realizations
 	assert conv_ensemble_new.data.shape == conv_ensemble.data.shape

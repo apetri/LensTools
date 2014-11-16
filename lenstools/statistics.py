@@ -152,33 +152,28 @@ class Ensemble(object):
 		self.num_realizations = full_data.shape[0]
 		self.data = full_data
 
-	def save(self,file_name):
+	def save(self,file_name,format="numpy",**kwargs):
+		
 		"""
-		Save ensemble data in an external file (in numpy format)
+		Save ensemble data in an external file (in arbitrary format)
 
 		:param file_name: file name of the external file
 		:type file_name: str.
 
-		"""
+		:format: format in which to save the ensemble
+		:type format: str.or callable
 
-		np.save(file_name,self.data)
-
-	def savemat(self,file_name,matlab_data_variable="data",**kwargs):
-		"""
-		Save ensemble data in an external file (in matlab readable format)
-
-		:param file_name: file name of the external file
-		:type file_name: str.
-
-		:param matlab_data_variable: name of the matlab variable through which you access the ensemble data
-		:type matlab_data_variable: str.
-
-		:param kwargs: the keyword arguments are passed directly to scipy.io.savemat 
+		:param kwargs: the keyword arguments are passed to the saver (or to format if callable)
+		:type kwargs: dict.
 
 		"""
 
-		sio.savemat(file_name,{matlab_data_variable: self.data},**kwargs)
-
+		if format=="numpy":
+			np.save(file_name,self.data)
+		elif format=="matlab":
+			sio.savemat(file_name,{"data": self.data},**kwargs)
+		else:
+			format(self,file_name,**kwargs)
 	
 	def mean(self):
 
