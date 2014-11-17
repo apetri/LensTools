@@ -99,7 +99,7 @@ class Plane(Spin0):
 		return angle_scale.to(deg),pixel_scale
 
 
-	def save(self,filename,format="fits",double_precision=False):
+	def save(self,filename,format=None,double_precision=False):
 
 		"""
 		Saves the Plane to an external file, of which the format can be specified (only fits implemented so far)
@@ -107,13 +107,22 @@ class Plane(Spin0):
 		:param filename: name of the file on which to save the plane
 		:type filename: str.
 
-		:param format: format of the file, only FITS implemented so far
+		:param format: format of the file, only FITS implemented so far; if None, it's detected automatically from the filename
 		:type format: str.
 
 		:param double_precision: if True saves the Plane in double precision
 		:type double_precision: bool.
 
 		"""
+
+		if format is None:
+			
+			extension = filename.split(".")[-1]
+			if extension in ["fit","fits"]:
+				format="fits"
+			else:
+				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
+
 
 		if format=="fits":
 
@@ -164,7 +173,7 @@ class Plane(Spin0):
 
 
 	@classmethod
-	def load(cls,filename,format="fits",init_cosmology=True):
+	def load(cls,filename,format=None,init_cosmology=True):
 
 		"""
 		Loads the Plane from an external file, of which the format can be specified (only fits implemented so far)
@@ -172,7 +181,7 @@ class Plane(Spin0):
 		:param filename: name of the file from which to load the plane
 		:type filename: str.
 
-		:param format: format of the file, only FITS implemented so far
+		:param format: format of the file, only FITS implemented so far; if None, it's detected automatically from the filename
 		:type format: str.
 
 		:param init_cosmology: if True, instantiates the cosmology attribute of the PotentialPlane
@@ -181,6 +190,15 @@ class Plane(Spin0):
 		:returns: PotentialPlane instance that wraps the data contained in the file
 
 		"""
+
+		if format is None:
+			
+			extension = filename.split(".")[-1]
+			if extension in ["fit","fits"]:
+				format="fits"
+			else:
+				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
+
 
 		if format=="fits":
 

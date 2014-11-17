@@ -78,7 +78,7 @@ class Spin0(object):
 		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
 
 	@classmethod
-	def load(cls,filename,format="fits",**kwargs):
+	def load(cls,filename,format=None,**kwargs):
 		
 		"""
 		This class method allows to read the map from a data file, in various formats
@@ -86,7 +86,7 @@ class Spin0(object):
 		:param filename: name of the file in which the map is saved
 		:type filename: str. 
 		
-		:param format: the format of the file in which the map is saved (can be a callable too)
+		:param format: the format of the file in which the map is saved (can be a callable too); if None, it's detected automatically from the filename
 		:type format: str. or callable
 
 		:param kwargs: the keyword arguments are passed to the format (if callable)
@@ -95,6 +95,14 @@ class Spin0(object):
 		:returns: Spin0 instance with the loaded map
 
 		"""
+
+		if format is None:
+			
+			extension = filename.split(".")[-1]
+			if extension in ["fit","fits"]:
+				format="fits"
+			else:
+				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
 		if format=="fits":
 
@@ -109,7 +117,7 @@ class Spin0(object):
 		return cls(data,angle)
 
 
-	def save(self,filename,format="fits",double_precision=False):
+	def save(self,filename,format=None,double_precision=False):
 
 		"""
 		Saves the map to an external file, of which the format can be specified (only fits implemented so far)
@@ -117,7 +125,7 @@ class Spin0(object):
 		:param filename: name of the file on which to save the plane
 		:type filename: str.
 
-		:param format: format of the file, only FITS implemented so far
+		:param format: format of the file, only FITS implemented so far; if None, it's detected automatically from the filename
 		:type format: str.
 
 		:param double_precision: if True saves the Plane in double precision
@@ -125,6 +133,15 @@ class Spin0(object):
 
 		"""
 
+		if format is None:
+			
+			extension = filename.split(".")[-1]
+			if extension in ["fit","fits"]:
+				format="fits"
+			else:
+				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
+
+		
 		if format=="fits":
 
 			if double_precision:
