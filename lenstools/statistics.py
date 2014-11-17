@@ -368,7 +368,7 @@ class Ensemble(object):
 		subtracted = self.data - self._mean[np.newaxis,:]
 		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
 
-	def compare(self,rhs):
+	def compare(self,rhs,**kwargs):
 
 		"""
 		A comparison operation between ensembles: computes a chi2-style difference between two different ensembles to assert how different they are
@@ -381,7 +381,12 @@ class Ensemble(object):
 		if self.metric=="chi2":
 
 			mean1 = self.mean()
-			covariance = self.covariance()
+			
+			if "covariance" in kwargs.keys():
+				covariance = kwargs["covariance"]
+			else:
+				covariance = self.covariance()
+			
 			mean2 = rhs.mean()
 
 			return np.dot(mean1 - mean2,np.dot(np.linalg.inv(covariance),mean1 - mean2))
