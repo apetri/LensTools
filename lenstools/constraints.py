@@ -24,7 +24,8 @@ from numpy.linalg import solve,inv
 from scipy.interpolate import interp1d,Rbf
 
 from emcee.ensemble import _function_wrapper
-from utils import _interpolate_wrapper
+from .utils import _interpolate_wrapper
+from .utils import pcaHandler as PCA
 
 #########################################################
 #############Default Gaussian data likelihood############
@@ -193,6 +194,20 @@ class Analysis(object):
 
 		self.parameter_set = formatter(self.parameter_set,*args,**kwargs)
 		assert self.parameter_set.shape[0]==self.training_set.shape[0],"The reparametrization messed up the number of points in parameter space!!"
+
+
+	def principalComponents(self):
+
+		"""
+		Computes the principal components of the training_set
+
+		:returns: pcaHandler instance
+
+		"""
+
+		pca = PCA()
+		pca.fit(self.training_set)
+		return pca
 
 
 	def find(self,parameters,rtol=1.0e-05):

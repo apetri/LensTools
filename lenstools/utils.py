@@ -77,6 +77,10 @@ class pcaHandler(object):
 		self.components_ = right
 		self.explained_variance_ = eigenvalues**2 
 
+	@property
+	def eigenvalues(self):
+		return self.explained_variance_
+
 	def transform(self,X):
 
 		#Cast X to the right dimensions
