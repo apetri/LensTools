@@ -196,6 +196,23 @@ class Analysis(object):
 		assert self.parameter_set.shape[0]==self.training_set.shape[0],"The reparametrization messed up the number of points in parameter space!!"
 
 
+	def transform(self,transformation,**kwargs):
+
+		"""
+		Allows a general transformation on the training_set of the analysis by calling an arbitrary transformation function
+
+		:param transformation: callback function called on the training_set
+		:type transformation: callable 
+
+		:param kwargs: the keyword arguments are passed to the transformation callable
+		:type kwargs: dict.
+
+		"""
+
+		self.training_set = transformation(self.training_set,**kwargs)
+		assert self.parameter_set.shape[0]==self.training_set.shape[0],"The reparametrization messed up the number of training features!!"
+
+
 	def principalComponents(self):
 
 		"""
