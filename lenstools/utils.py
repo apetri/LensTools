@@ -87,11 +87,46 @@ class pcaHandler(object):
 
 		#Subtract mean and scale by variance
 		X_copy -= self._pca_mean[None]
-		X_copy /= self._pca_std[None]
+		X_copy /= (self._pca_std[None]*np.sqrt(self._data_scaled.shape[0] - 1))
 
 		#Compute the projection via dot product
-		return X_copy.dot(self.components_.transpose())
+		components = X_copy.dot(self.components_.transpose())
+		if components.shape[0]==1:
+			return components[0]
+		else:
+			return components
 
+	def inverse_transform(self,X,n_components=None):
+
+		#Cast X to the right dimensions
+		if len(X.shape)==1:
+			X_copy = X.copy()[None]
+		else:
+			X_copy = X.copy()
+
+		#Use the PCA basis vectors to project back to the original space
+		if n_components is not None:
+			basis_vectors = self.components_[:n_components]
+			X_copy = X_copy[:,:n_components]
+		else:
+			basis_vectors = self.components_
+
+		#Original space
+		original_components = X_copy.dot(basis_vectors)
+
+		#De-whitening
+		original_components *= (self._pca_std[None]*np.sqrt(self._data_scaled.shape[0] - 1))
+		original_components += self._pca_mean[None]  
+
+		if original_components.shape[0]==1:
+			return original_components[0]
+		else:
+			return original_components
+
+	def select_components(self,X,n_components):
+
+		all_components = self.transform(X)
+		return self.inverse_transform(all_components,n_components=n_components) 
 
 
 #################################################################################################
