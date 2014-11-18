@@ -10,6 +10,7 @@ from astropy.units import deg,rad,arcmin
 import logging
 import time
 
+np.random.seed(1)
 logging.basicConfig(level=logging.DEBUG)
 
 #Instantiate the RayTracer
@@ -125,6 +126,23 @@ def test_ray_simple():
 	now = time.time()
 	logging.info("Total runtime {0:.3f}s".format(now-start))
 
+
+def test_convergence_direct():
+
+	z_final = 2.0
+
+	#Start a bucket of light rays from these positions
+	b = np.linspace(0.0,tracer.lens[0].side_angle.to(deg).value,512)
+	xx,yy = np.meshgrid(b,b)
+	pos = np.array([xx,yy]) * deg
+
+	#Compute the convergence
+	conv = tracer.convergenceDirect(pos,z=z_final)
+
+	#Wrap into a ConvergenceMap and visualize
+	conv_map = ConvergenceMap(data=conv,angle=tracer.lens[0].side_angle)
+	conv_map.visualize(colorbar=True)
+	conv_map.savefig("convergence_direct.png")
 
 
 def test_distortion():

@@ -1022,6 +1022,76 @@ class RayTracer(object):
 			else:
 				return current_jacobian
 
+	#########################################################
+	###########Direct calculation of the convergence#########
+	#########################################################
+
+	def convergenceDirect(self,initial_positions,z=2.0,save_intermediate=False):
+
+		"""
+		Computes the convergence directly integrating the lensing density along the unperturbed line of sight
+
+		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
+		:type initial_positions: numpy array or quantity
+
+		:param z: redshift of the sources
+		:type z: float.
+
+		:param save_intermediate: save the intermediate values of the convergence as successive lenses are crossed
+		:type save_intermediate: bool.
+
+		:returns: convergence values at each of the initial positions
+
+		"""
+
+		#Sanity check
+		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
+		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
+
+		#Check that redshift is not too high given the current lenses
+		assert z<self.redshift[-1],"Given the current lenses you can trace up to redshift {0:.2f}!".format(self.redshift[-1])
+		last_lens = (z>np.array(self.redshift)).argmin() - 1
+
+		if save_intermediate:
+			all_convergence = np.zeros((last_lens+1,) + initial_positions.shape[1:])
+
+		#Ordered references to the lenses
+		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
+		redshift = np.array([0.0] + self.redshift)
+		lens = self.lens
+
+		#Loop that goes through the lenses
+		current_convergence = np.zeros(initial_positions.shape[1:])
+		for k in range(last_lens+1):
+
+			#Load in the lens
+			if type(lens[k])==PotentialPlane:
+				current_lens = lens[k]
+			elif type(lens[k])==str:
+				current_lens = PotentialPlane.load(lens[k])
+			else:
+				raise TypeError("Lens format not recognized!")
+
+			#Extract the density at the ray positions
+			density = current_lens.density().getValues(initial_positions[0],initial_positions[1])
+
+			#Cumulate on the convergence
+			if k<last_lens:
+				current_convergence += 0.5 * density
+			else:
+				current_convergence += 0.5 * density * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+
+			#Save the intermediate convergence values if option is enabled
+			if save_intermediate:
+				all_convergence[k] = current_convergence.copy()
+
+
+		#Return to the user
+		if save_intermediate:
+			return all_convergence
+		else:
+			return current_convergence
+
 
 	#########################################################
 	############Forward ray tracing##########################
