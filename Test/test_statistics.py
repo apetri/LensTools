@@ -93,6 +93,22 @@ def test_chi2():
 
 	print("chi2 difference = {0}".format(conv_ensemble.compare(conv_ensemble1)))
 
+def test_pca():
+
+	pca_ensemble = Ensemble.read("Data/ensemble_pca.npy")
+	pca = pca_ensemble.principalComponents()
+	assert len(pca.explained_variance_)==pca_ensemble.data.shape[1]
+	
+	fig,ax = plt.subplots(1,2,figsize=(16,8))
+	ax[0].plot(pca.explained_variance_)
+	ax[1].plot(pca.explained_variance_.cumsum())
+	ax[0].set_xlabel(r"$n$")
+	ax[1].set_xlabel(r"$n$")
+	ax[0].set_ylabel(r"$\lambda_n$")
+	ax[1].set_ylabel(r"$\sum^n\lambda_n$")
+
+	fig.savefig("pca.png")
+
 def test_add():
 
 	conv_ensemble1 = Ensemble.fromfilelist(map_list[0:2])

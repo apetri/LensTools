@@ -15,7 +15,8 @@ from __future__ import division
 from operator import add
 from functools import reduce
 
-from lenstools.index import Indexer
+from .index import Indexer
+from .utils import pcaHandler as PCA
 
 import numpy as np
 import scipy.io as sio
@@ -400,6 +401,20 @@ class Ensemble(object):
 
 		subtracted = self.data - self._mean[np.newaxis,:]
 		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
+
+
+	def principalComponents(self):
+
+		"""
+		Computes the principal components of the Ensemble
+
+		:returns: pcaHandler instance
+
+		"""
+
+		pca = PCA()
+		pca.fit(self.data)
+		return pca
 
 	
 
