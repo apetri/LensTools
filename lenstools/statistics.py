@@ -401,6 +401,8 @@ class Ensemble(object):
 		subtracted = self.data - self._mean[np.newaxis,:]
 		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
 
+	
+
 	def compare(self,rhs,**kwargs):
 
 		"""

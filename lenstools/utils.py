@@ -49,6 +49,50 @@ class _interpolate_wrapper(object):
 			traceback.print_exc()
 			raise
 
+#################################################################################################
+#############################Principal Component Analysis handler################################
+#################################################################################################
+
+class pcaHandler(object):
+
+	"""
+	Handles principal component analysis
+
+	"""
+
+	def fit(self,data):
+
+		#Scale the data to zero mean and unit variance
+		self._pca_mean = data.mean(0)
+		self._pca_std = data.std(0)
+		self._data_scaled = data.copy()
+		self._data_scaled -= self._pca_mean[None]
+		self._data_scaled /= self._pca_std[None]
+		self._data_scaled /= np.sqrt(self._data_scaled.shape[0] - 1)
+
+		#Perform singular value decomposition
+		left,eigenvalues,right = np.linalg.svd(self._data_scaled)
+
+		#Assign eigenvalues and eigenvectors as attributes
+		self.components_ = right
+		self.explained_variance_ = eigenvalues**2 
+
+	def transform(self,X):
+
+		#Cast X to the right dimensions
+		if len(X.shape)==1:
+			X_copy = X.copy()[None]
+		else:
+			X_copy = X.copy()
+
+		#Subtract mean and scale by variance
+		X_copy -= self._pca_mean[None]
+		X_copy /= self._pca_std[None]
+
+		#Compute the projection via dot product
+		return X_copy.dot(self.components_.transpose())
+
+
 
 #################################################################################################
 ###################MPIWhirlPool: should handle one sided communications too######################
