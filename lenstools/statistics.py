@@ -350,6 +350,39 @@ class Ensemble(object):
 		return self.__class__(data=data,num_realizations=data.shape[0])
 
 
+	def transform(self,transformation,inplace=False,**kwargs):
+
+		"""
+		Allows a general transformation on the Ensemble by calling a function on its data
+
+		:param transformation: callback function called on the ensemble data
+		:type transformation: callable 
+
+		:param inplace: if True the transformation is performed in place, otherwise a new Ensemble is created
+		:type inplace: bool.
+
+		:param kwargs: the keyword arguments are passed to the transformation callable
+		:type kwargs: dict.
+
+		:returns: new Ensemble instance if the transformation is nor performed in place
+
+		"""
+
+		#Apply the transformation
+		transformed_data = transformation(self.data,**kwargs)
+
+		#Return the new Ensemble 
+		if inplace:
+			
+			self.data = transformed_data
+			self.num_realizations = transformed_data.shape[0]
+			if hasattr(self,"_mean"):
+				self.mean()
+
+		else:
+			return self.__class__.fromdata(transformed_data)
+
+
 	def covariance(self):
 
 		"""
