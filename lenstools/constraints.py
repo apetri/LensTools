@@ -115,9 +115,24 @@ class Analysis(object):
 	def __repr__(self):
 
 		try:
-			return "{0} type analysis, based on {1} models spanning a {2}-dimensional parameter space".format(self._analysis_type,self.parameter_set.shape[0],self.parameter_set.shape[1])
+			return "{0} type analysis, based on {1} models spanning a {2}-dimensional parameter space ({3} bins)".format(self._analysis_type,self.parameter_set.shape[0],self.parameter_set.shape[1],self.training_set.shape[1])
 		except AttributeError:
 			return "{0} type analysis, no models in it yet!".format(self._analysis_type)
+
+
+	def __mul__(self,other):
+
+		assert isinstance(other,self.__class__)
+		assert (self.parameter_set==other.parameter_set).all()
+
+		try:
+			new_analysis = self.__class__(parameter_set=self.parameter_set.copy(),training_set=np.hstack((self.training_set,other.training_set)))
+		except ValueError:
+			print("The training sets of these two analyses cannot be hstacked!")
+			return None
+
+		return new_analysis
+
 
 	def add_feature_label(self,feature_label):
 
