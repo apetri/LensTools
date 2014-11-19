@@ -196,7 +196,7 @@ class Analysis(object):
 		assert self.parameter_set.shape[0]==self.training_set.shape[0],"The reparametrization messed up the number of points in parameter space!!"
 
 
-	def transform(self,transformation,**kwargs):
+	def transform(self,transformation,inplace=False,**kwargs):
 
 		"""
 		Allows a general transformation on the training_set of the analysis by calling an arbitrary transformation function
@@ -204,13 +204,21 @@ class Analysis(object):
 		:param transformation: callback function called on the training_set
 		:type transformation: callable 
 
+		:param inplace: if True the transformation is performed in place, otherwise a new Analysis instance is created
+		:type inplace: bool.
+
 		:param kwargs: the keyword arguments are passed to the transformation callable
 		:type kwargs: dict.
 
 		"""
 
-		self.training_set = transformation(self.training_set,**kwargs)
-		assert self.parameter_set.shape[0]==self.training_set.shape[0],"The reparametrization messed up the number of training features!!"
+		transformed_training_set = transformation(self.training_set,**kwargs)
+		assert self.parameter_set.shape[0]==transformed_training_set.shape[0],"The reparametrization messed up the number of training features!!"
+
+		if inplace:
+			self.training_set = transformed_training_set
+		else:
+			return self.__class__(parameter_set=self.parameter_set.copy(),training_set=transformed_training_set)
 
 
 	def principalComponents(self):
@@ -538,6 +546,18 @@ class LikelihoodAnalysis(Analysis):
 		#If the emulator was trained, retrain with the new reparametrization
 		if hasattr(self,"_interpolator"):
 			self.train()
+
+
+	def transform(self,transformation,inplace=False,**kwargs):
+
+		#Call the parent method
+		new_instance = super(LikelihoodAnalysis,self).transform(transformation,inplace=inplace,**kwargs)
+
+		#If the emulator was trained, retrain with the new transformation
+		if inplace and hasattr(self,"_interpolator"):
+			self.train()
+
+		return new_instance
 
 
 	def predict(self,parameters):
