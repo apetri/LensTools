@@ -53,6 +53,10 @@ class _interpolate_wrapper(object):
 #############################Principal Component Analysis handler################################
 #################################################################################################
 
+def pca_transform(data,pca,n_components):
+	assert n_components<=pca.components_.shape[0]
+	return pca.transform(data)[:,:n_components]
+
 class pcaHandler(object):
 
 	"""
