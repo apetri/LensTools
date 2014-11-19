@@ -99,7 +99,7 @@ class pcaHandler(object):
 
 		#Compute the projection via dot product
 		components = X_copy.dot(self.components_.transpose())
-		if components.shape[0]==1:
+		if len(X.shape)==1:
 			return components[0]
 		else:
 			return components
