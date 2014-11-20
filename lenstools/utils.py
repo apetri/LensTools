@@ -75,7 +75,7 @@ class pcaHandler(object):
 		self._data_scaled /= np.sqrt(self._data_scaled.shape[0] - 1)
 
 		#Perform singular value decomposition
-		left,eigenvalues,right = np.linalg.svd(self._data_scaled)
+		left,eigenvalues,right = np.linalg.svd(self._data_scaled,full_matrices=False)
 
 		#Assign eigenvalues and eigenvectors as attributes
 		self.components_ = right
@@ -84,6 +84,11 @@ class pcaHandler(object):
 	@property
 	def eigenvalues(self):
 		return self.explained_variance_
+
+	@property
+	def eigenvectors(self):
+
+		return self.components_*np.sqrt(self._data_scaled.shape[0] - 1)*self._pca_std[None] + self._pca_mean[None]
 
 	def transform(self,X):
 
