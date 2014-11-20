@@ -55,7 +55,7 @@ class _interpolate_wrapper(object):
 
 def pca_transform(data,pca,n_components):
 	assert n_components<=pca.components_.shape[0]
-	return pca.transform(data)[:,:n_components]
+	return pca.transform(data).T[:n_components].T
 
 class pcaHandler(object):
 
