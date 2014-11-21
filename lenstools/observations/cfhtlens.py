@@ -64,7 +64,6 @@ class CFHTLens(object):
 		return full_name
 
 
-	@classmethod
 	def load(self,**kwargs):
 
 		"""
