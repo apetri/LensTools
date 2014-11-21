@@ -124,12 +124,8 @@ class Analysis(object):
 
 		assert isinstance(other,self.__class__)
 		assert (self.parameter_set==other.parameter_set).all()
-
-		try:
-			new_analysis = self.__class__(parameter_set=self.parameter_set.copy(),training_set=np.hstack((self.training_set,other.training_set)))
-		except ValueError:
-			print("The training sets of these two analyses cannot be hstacked!")
-			return None
+		
+		new_analysis = self.__class__(parameter_set=self.parameter_set.copy(),training_set=np.hstack((self.training_set,other.training_set)))
 
 		return new_analysis
 

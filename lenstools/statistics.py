@@ -456,18 +456,11 @@ class Ensemble(object):
 		#Safety checks
 		assert isinstance(rhs,self.__class__)
 		assert self.metric == rhs.metric,"The two ensemble instances must have the same metric!!"
-
-		try:
 			
-			if self.data is not None:
-				new_data = np.vstack((self.data,rhs.data))
-			else:
-				new_data = rhs.data
-		
-		except ValueError:
-			
-			print("The data of these two ensembles cannot be vstacked!")
-			return None
+		if self.data is not None:
+			new_data = np.vstack((self.data,rhs.data))
+		else:
+			new_data = rhs.data
 
 		return self.__class__(file_list=self.file_list+rhs.file_list,data=new_data,num_realizations=self.num_realizations+rhs.num_realizations,metric=self.metric)
 
@@ -484,17 +477,11 @@ class Ensemble(object):
 		assert self.metric == rhs.metric
 		assert self.num_realizations == rhs.num_realizations
 
-		try:
-
-			new_data = np.hstack((self.data,rhs.data))
-
-		except ValueError:
-
-			print("The data of these two ensembles cannot be hstacked!")
-			return None
+		new_data = np.hstack((self.data,rhs.data))
 
 		return self.__class__(file_list=list(set(self.file_list + rhs.file_list)),data=new_data,num_realizations=self.num_realizations,metric=self.metric)
 
+	
 	def __getitem__(self,n):
 
 		"""
