@@ -127,6 +127,21 @@ def test_ray_simple():
 	logging.info("Total runtime {0:.3f}s".format(now-start))
 
 
+def test_callback():
+
+	z_final = 1.5
+	b = np.linspace(0.0,tracer.lens[0].side_angle.to(deg).value,512)
+	xx,yy = np.meshgrid(b,b)
+	pos = np.array([xx,yy]) * deg
+
+	def save_callback(positions,tracer,k,pos):
+		dfl = DeflectionPlane(positions.value-pos.value,angle=tracer.lens[0].side_angle,redshift=tracer.redshift[k+1],cosmology=tracer.lens[0].cosmology,unit=pos.unit)
+		dfl.convergence().save("convergence_z{0}.fit".format(int(tracer.redshift[k+1]*100)))
+
+	fin = tracer.shoot(pos,z=z_final,callback=save_callback,pos=pos)
+
+
+
 def test_convergence_direct():
 
 	z_final = 2.0

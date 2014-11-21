@@ -808,7 +808,7 @@ class RayTracer(object):
 	##################################################################################################################################
 
 
-	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False):
+	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False,callback=None,**kwargs):
 
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z (backward ray tracing), through the system of gravitational lenses, and computes the deflection statistics
@@ -833,6 +833,12 @@ class RayTracer(object):
 
 		:param compute_all_deflections: if True, computes the gradients of the lensing potential at every pixel on the lens(might be overkill if Nrays<<Npixels); must be True if the computation is done with FFTs
 		:type compute_all_deflections: bool.
+
+		:param callback: if not None, this callback function is called on the current ray positions array at each step in the ray tracing; the current raytracing instance and the step number are passed as additional arguments, hence callback must match this signature
+		:type callback: callable
+
+		:param kwargs: the keyword arguments are passed to the callback if not None
+		:type kwargs: dict.
 
 		:returns: angular positions (or jacobians) of the light rays after the last lens crossing
 
@@ -996,6 +1002,10 @@ class RayTracer(object):
 			#Save the intermediate positions if option was specified
 			if kind=="positions" and save_intermediate:
 				all_positions[k] = current_positions.copy()
+
+			#Optionally, call the callback function on the current positions
+			if callback is not None:
+				callback(current_positions,self,k,**kwargs)
 
 			#Log timestamp to cross lens
 			now = time.time()
