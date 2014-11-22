@@ -61,6 +61,11 @@ def check_gsl(conf):
 
 	return gsl_location
 
+
+############################################################
+#####################Execution##############################
+############################################################
+
 #Read system dependent configuration file
 conf = config.ConfigParser()
 this = os.getenv("THIS")
