@@ -1,11 +1,12 @@
 import os,sys,glob,re
 import platform
+from distutils import config
 
 name = "lenstools"
 me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
 url = "http://www.columbia.edu/~ap3020/LensTools/html"
-default_gsl = "/usr/local"
+default_cfg = "setup.cfg"
 
 try:
 	import numpy.distutils.misc_util 
@@ -27,6 +28,50 @@ def rd(filename):
 
 	return r
 
+
+#Check GSL installation, necessary for using the Design feature
+def check_gsl(conf):
+	
+	gsl_location = conf.get("gsl","installation_path")
+	gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h","gsl_matrix.h"]
+	gsl_required_links = ["libgsl.a","libgslcblas.a"]
+
+	#Check for required GSL includes and links
+	for include in gsl_required_includes:
+	
+		include_filename = os.path.join(gsl_location,"include","gsl",include)
+		sys.stderr.write("Checking if {0} exists... ".format(include_filename))
+
+		if os.path.isfile(include_filename):
+			sys.stderr.write("[OK]\n")
+		else:
+			sys.stderr.write("[FAIL]\n")
+			return None
+
+	for lib in gsl_required_links:
+
+		lib_filename = os.path.join(gsl_location,"lib",lib)
+		sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
+
+		if os.path.isfile(lib_filename):
+			sys.stderr.write("[OK]\n")
+		else:
+			sys.stderr.write("[FAIL]\n")
+			return None
+
+	return gsl_location
+
+#Read system dependent configuration file
+conf = config.ConfigParser()
+this = os.getenv("THIS")
+
+if (this is not None) and (os.path.isfile(default_cfg+"."+this)):
+	cfg_file = default_cfg+"."+this
+else:
+	cfg_file = default_cfg
+
+print("Reading system dependent configuration from {0}".format(cfg_file))
+conf.read([cfg_file])
 
 vre = re.compile("__version__ = \"(.*?)\"")
 m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -51,42 +96,12 @@ observations_dir = "observations"
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
 external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c","grid.c"]
 
-#Check for GSL installation, necessary for using the Design feature
-gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h","gsl_matrix.h"]
-gsl_required_links = ["libgsl.a","libgslcblas.a"]
-gsl_location = raw_input("Enter the location of your GSL installation (default '{0}'): ".format(default_gsl))
-gsl_ok = True
-
-if gsl_location == "":
-	gsl_location = default_gsl
-
-#Check for required GSL includes and links
-for include in gsl_required_includes:
-	
-	include_filename = os.path.join(gsl_location,"include","gsl",include)
-	sys.stderr.write("Checking if {0} exists... ".format(include_filename))
-
-	if os.path.isfile(include_filename):
-		sys.stderr.write("[OK]\n")
-	else:
-		sys.stderr.write("[FAIL]\n")
-		gsl_ok = False
-		break
-
-for lib in gsl_required_links:
-
-	lib_filename = os.path.join(gsl_location,"lib",lib)
-	sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
-
-	if os.path.isfile(lib_filename):
-		sys.stderr.write("[OK]\n")
-	else:
-		sys.stderr.write("[FAIL]\n")
-		gsl_ok = False
-		break
+######################################################################################################################################
 
 #Decide if we can install the Design feature, if not throw a warning
-if gsl_ok:
+gsl_location = check_gsl(conf)
+
+if gsl_location is not None:
 	print("[OK] Checked GSL installation, the Design feature will be installed")
 	lenstools_includes = [ os.path.join(gsl_location,"include") ]
 	lenstools_link = ["-lm","-L {0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
@@ -95,6 +110,10 @@ else:
 	raw_input("[FAIL] GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
 	lenstools_includes = list()
 	lenstools_link = ["-lm"]
+
+#################################################################################################
+#############################Extensions##########################################################
+#################################################################################################
 
 #Extension objects
 ext = list()
@@ -107,8 +126,16 @@ for ext_module in external_sources.keys():
 
 	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
 
+#################################################################################################
+#############################Package data########################################################
+#################################################################################################
+
 #Data files on which the package depends on
 package_data = {name:[os.path.join("data","CFHTemu1.txt"),os.path.join("data","CFHTemu1_array.npy")],"licenses":[os.path.join("licenses","LICENSE.rst")]}
+
+#################################################################################################
+#############################Additional includes#################################################
+#################################################################################################
 
 #Append numpy includes
 lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
@@ -117,9 +144,17 @@ lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
 if platform.system() in ["Darwin","darwin"]:
 	lenstools_includes += ["/usr/local/include","/usr/include"]
 
+#################################################################################################
+#############################Scripts#############################################################
+#################################################################################################
+
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
 scripts_dir = "scripts"
+
+#################################################################################################
+#############################Setup###############################################################
+#################################################################################################
 
 setup(
 	name=name,
