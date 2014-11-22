@@ -44,10 +44,13 @@ int main(){
 	error *myerr=NULL,**err;
 	err=&myerr;
 
+	char stringerr[4192];
+
 	model=init_parameters_lens(Om,Ode,w0,w1,poly_W,NPoly,H100,Omegab,Omeganu,Neff,si8,ns,nzbins,Nnz,nofz,par_nz,computation_type,transfer_function,growth,dark_energy,norm_mode,tomo_all,sreduced,Q_MAG_SIZE,err);
 	printf("%le\n",Pshear(model,10000.0,0,0,err));
 	if(isError(*err)){
-		printError(stderr,*err);
+		stringError(stringerr,*err);
+		fprintf(stderr,"%s\n",stringerr);
 		exit(getErrorValue(*err));
 	}
 	
