@@ -4,6 +4,8 @@
  * linear power spectrum.					*
  * ============================================================ */
 
+#ifndef __CONSTANTS_H
+#define __CONSTANTS_H
 
 #define m    37
 #define neta 6000
@@ -11,11 +13,13 @@
 #define peta 5
 #define rs   6
 
-const double kemu[1000];
-const double mean[neta];
-const double K[neta][peta];
-const double x[m][p], xmin[p], xrange[p], aemu[rs];
-const double lamws[peta], lamz[peta];
-const double beta[peta][p];
-const double w_coyote[peta][m];
-const double KrigBasis[peta][m];
+extern const double kemu[1000];
+extern const double mean[neta];
+extern const double K[neta][peta];
+extern const double x[m][p], xmin[p], xrange[p], aemu[rs];
+extern const double lamws[peta], lamz[peta];
+extern const double beta[peta][p];
+extern const double w_coyote[peta][m];
+extern const double KrigBasis[peta][m];
+
+#endif

@@ -22,6 +22,8 @@
 
 #include "hod.h"
 
+double FFTLog_TMP;
+#define FFTLog_SWAP(a,b) {FFTLog_TMP = (a); (a) = (b); (b) = FFTLog_TMP;}
 
 /*----------------------------------------------------------------*
  *Add by Melody Wolk 18/07/2011                                   *

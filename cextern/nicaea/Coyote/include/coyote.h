@@ -35,7 +35,7 @@
 #define sd 1.4613227729637035e-01
 
 /* Constants which are used also outide of Coyote (e.g. in cosmo.c) */
-const double ksim[nsim];
+extern const double ksim[nsim];
 
 
 /* Functions from hubble.c and emu.c */

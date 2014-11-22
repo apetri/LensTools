@@ -3,11 +3,7 @@
 #include <getopt.h>
 
 #include "errorlist.h"
-#include "io.h"
-#include "maths.h"
 #include "cosmo.h"
-#include "coyote.h"
-#include "cmb_bao.h"
 #include "lensing.h"
 #include "nofz.h"
 

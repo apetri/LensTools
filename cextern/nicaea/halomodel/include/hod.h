@@ -104,7 +104,7 @@ typedef struct {
  *Global variables and functions                                  *
  *----------------------------------------------------------------*/
 
-double FFTLog_TMP;
+
 
 
 #define ODD 0
@@ -112,7 +112,6 @@ double FFTLog_TMP;
 
 #define ABS(a) ((a) < 0 ? -(a) : (a))
 #define PARITY(a) (a)%2 ? ODD : EVEN
-#define FFTLog_SWAP(a,b) {FFTLog_TMP = (a); (a) = (b); (b) = FFTLog_TMP;}
 
 
 #define CHANGE(fct) int change_##fct(cosmo_hm*, cosmo_hm*)

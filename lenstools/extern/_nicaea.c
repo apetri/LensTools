@@ -10,11 +10,7 @@ The module is called _nicaea and it defines the methods below (see docstrings)
 #include <numpy/arrayobject.h>
 
 #include "errorlist.h"
-#include "io.h"
-#include "maths.h"
 #include "cosmo.h"
-#include "coyote.h"
-#include "cmb_bao.h"
 #include "lensing.h"
 #include "nofz.h"
 
@@ -34,7 +30,7 @@ static PyMethodDef module_methods[] = {
 } ;
 
 //_nicaea constructor
-PyMODINIT_FUNC init_design(void){
+PyMODINIT_FUNC init_nicaea(void){
 
 	PyObject *m = Py_InitModule3("_nicaea",module_methods,module_docstring);
 	if(m==NULL) return;
