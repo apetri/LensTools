@@ -15,9 +15,24 @@ int main(){
 
 
 	cosmo_lens *model;
-	int Nnz[] = {2};
-	const nofz_t nofz[] = {single};
-	double par_nz[] = {2.0,2.0};
+	
+	double Om=0.26;
+	double Ode=0.74;
+	double w0=-1.0;
+	double w1=0.0;
+	double *poly_W=NULL;
+	int NPoly=0;
+	double H100=0.7;
+	double Omegab=0.046;
+	double Omeganu=0.0;
+	double Neff=0.0;
+	double si8=0.8;
+	double ns=0.960;
+	double nzbins=1;
+
+	int Nnz[] = {3};
+	const nofz_t nofz[] = {hist};
+	double par_nz[] = {2.0,2.01,10};
 	nonlinear_t computation_type=smith03;
 	transfer_t transfer_function=eisenhu;
 	growth_t growth=growth_de;
@@ -29,9 +44,12 @@ int main(){
 	error *myerr=NULL,**err;
 	err=&myerr;
 
-	model=init_parameters_lens(0.26,0.74,-1.0,0.0,NULL,0,0.7,0.046,0.0,0.0,1.0,0.96,1,Nnz,nofz,par_nz,computation_type,transfer_function,growth,dark_energy,norm_mode,tomo_all,sreduced,Q_MAG_SIZE,err);
+	model=init_parameters_lens(Om,Ode,w0,w1,poly_W,NPoly,H100,Omegab,Omeganu,Neff,si8,ns,nzbins,Nnz,nofz,par_nz,computation_type,transfer_function,growth,dark_energy,norm_mode,tomo_all,sreduced,Q_MAG_SIZE,err);
 	printf("%le\n",Pshear(model,10000.0,0,0,err));
-	quitOnError(*err,__LINE__,stderr);
+	if(isError(*err)){
+		printError(stderr,*err);
+		exit(getErrorValue(*err));
+	}
 	
 	free_parameters_lens(&model);
 
