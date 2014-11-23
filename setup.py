@@ -2,11 +2,17 @@ import os,sys,glob,re
 import platform
 from distutils import config
 
+
+#Names
 name = "lenstools"
 me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
 url = "http://www.columbia.edu/~ap3020/LensTools/html"
 default_cfg = "setup.cfg"
+external_dir = "extern"
+external_support_dir = "cextern"
+simulations_dir = "simulations"
+observations_dir = "observations"
 
 try:
 	import numpy.distutils.misc_util 
@@ -98,7 +104,7 @@ def check_fftw3(conf):
 #Retrieve all the filenames of all the source code in the NICAEA distribution
 def list_nicaea():
 
-	nicaea_root = os.path.join("cextern","nicaea")
+	nicaea_root = os.path.join(external_support_dir,"nicaea")
 	nicaea_source_dirs = ["Cosmo","Coyote","halomodel","tools"]
 
 	#These are the includes
@@ -143,9 +149,7 @@ classifiers = [
 	]
 
 external_sources = dict()
-external_dir = "extern"
-simulations_dir = "simulations"
-observations_dir = "observations"
+external_support = dict()
 
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
@@ -184,11 +188,11 @@ if (gsl_location is not None) and (fftw3_location is not None):
 	lenstools_includes += nicaea_includes
 
 	#Specify the NICAEA extension
-	nicaea_ext = Extension("_nicaea",[os.path.join(name,external_dir,"_nicaea.c")]+nicaea_sources,extra_link_args=lenstools_link)
+	external_sources["_nicaea"] = ["_nicaea.c"]
+	external_support["_nicaea"] = nicaea_sources
 
 else:
 	raw_input("[FAIL] GSL and/or FFTW3 installations not found, NICAEA bindings will not be installed, please press a key to continue: ")
-	nicaea_ext = None
 
 
 #################################################################################################
@@ -204,10 +208,11 @@ for ext_module in external_sources.keys():
 	for source in external_sources[ext_module]:
 		sources.append(os.path.join(name,external_dir,source))
 
-	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
+	#Append external support sources too
+	if ext_module in external_support.keys():
+		sources += external_support[ext_module]
 
-if nicaea_ext is not None:
-	ext.append(nicaea_ext)
+	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
 
 #################################################################################################
 #############################Package data########################################################
