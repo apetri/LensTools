@@ -34,7 +34,55 @@ class NicaeaSettings(dict):
 
 	@classmethod
 	def default(cls):
+
+		"""
+		Generate default settings
+
+		:returns: NicaeaSettings defaults instance
+
+		"""
+
 		return cls()
+
+	@property
+	def knobs(self):
+
+		"""
+		Lists available settings to tune
+
+		"""
+
+		return self.keys()
+
+	def available(self,knob):
+
+		"""
+		Given a settings, lists all the possible values
+		
+		"""
+		
+		#Available settings
+		if knob=="snonlinear":
+			return [ "linear", "pd96", "smith03", "smith03_de", "coyote10", "halodm" ]
+		elif knob=="stransfer":
+			return [ "bbks", "eisenhu", "eisenhu_osc", "camb_vinschter", "camb", "be84" ]
+		elif knob=="sgrowth":
+			return [ "heath", "growth_de", "camb_vinschter_gr" ]
+		elif knob=="sde_param":
+			return [ "jassal", "linder", "earlyDE", "poly_DE" ]
+		elif knob=="normmode":
+			return [ "norm_s8" , "norm_as" ]
+		elif knob=="stomo":
+			return [ "tomo_all", "tomo_auto_only", "tomo_cross_only" ]
+		elif knob=="sreduced":
+			return ["none", "reduced_K10"]
+		elif knob=="q_mag_size":
+			print("Positive float")
+			return None
+		else:
+			raise ValueError("{0} is not a tunable setting!".format(knob)) 
+
+
 
 
 ##########################################
