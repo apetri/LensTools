@@ -1,3 +1,4 @@
+import numpy as np
 from astropy.cosmology import w0waCDM
 
 try:
@@ -102,3 +103,14 @@ class Nicaea(w0waCDM):
 
 		#Instantiate
 		return cls(H0=H0,Om0=Om0,Ode0=Ode0,Ob0=Ob0,w0=w0,wa=wa,sigma8=sigma8,ns=ns)
+
+
+	def PowerSpectrum(self,ell,z,distribution=None,tomography=False,settings=NicaeaSettings.default()):
+
+		nzbins=1;
+		Nnz = np.array([3],dtype=np.int32)
+		nofz = ["hist"]
+		par_nz = np.array([2.0,2.01,10.0])
+		_nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings)
+
+
