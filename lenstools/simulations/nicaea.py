@@ -58,7 +58,7 @@ class NicaeaSettings(dict):
 
 		"""
 		Given a settings, lists all the possible values
-		
+
 		"""
 		
 		#Available settings
@@ -197,6 +197,6 @@ class Nicaea(w0waCDM):
 			raise TypeError("Redshift format not recognized!")
 		
 		
-		return _nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings)
+		return _nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings,None)
 
 

@@ -62,10 +62,10 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	char found=0,*distr_type,error_buf[256];
 
 	//Multipoles/angles, redshift distribution and other settings
-	PyObject *spec_obj,*Nnz_obj,*nofz_obj,*par_nz_obj,*settings_dict;
+	PyObject *spec_obj,*Nnz_obj,*nofz_obj,*par_nz_obj,*settings_dict,*extra_obj;
 
 	//Parse the input tuple
-	if(!PyArg_ParseTuple(args,"ddddddddddiOOOOO",&Om,&Ode,&w0,&w1,&H100,&Omegab,&Omeganu,&Neff,&si8,&ns,&nzbins,&spec_obj,&Nnz_obj,&nofz_obj,&par_nz_obj,&settings_dict)){
+	if(!PyArg_ParseTuple(args,"ddddddddddiOOOOOO",&Om,&Ode,&w0,&w1,&H100,&Omegab,&Omeganu,&Neff,&si8,&ns,&nzbins,&spec_obj,&Nnz_obj,&nofz_obj,&par_nz_obj,&settings_dict,&extra_obj)){
 		fprintf(stderr,"Input tuple format doesn't match signature!");
 		return NULL;
 	}
