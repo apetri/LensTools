@@ -74,6 +74,11 @@ class Nicaea(w0waCDM):
 		"""
 		Builds a Nicaea instance from one of astropy.cosmology objects, from which it inherits all the cosmological parameter values
 
+		:param cosmo: one of astropy cosmology instances
+		:type cosmo: astropy FLRW
+
+		:returns: Nicaea instance with the cosmological parameters inherited from cosmo 
+
 		"""
 
 		#Get the cosmological parameter values out of the cosmo object
@@ -105,12 +110,45 @@ class Nicaea(w0waCDM):
 		return cls(H0=H0,Om0=Om0,Ode0=Ode0,Ob0=Ob0,w0=w0,wa=wa,sigma8=sigma8,ns=ns)
 
 
-	def PowerSpectrum(self,ell,z,distribution=None,tomography=False,settings=NicaeaSettings.default()):
+	def convergencePowerSpectrum(self,ell,z=2.0,distribution=None,settings=None):
 
-		nzbins=1;
-		Nnz = np.array([3],dtype=np.int32)
-		nofz = ["hist"]
-		par_nz = np.array([2.0,2.01,10.0])
-		_nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings)
+		"""
+		Computes the convergence power spectrum for the given cosmological parameters and redshift distribution using NICAEA
+
+		:param ell: multipole moments at which to compute the power spectrum
+		:type ell: array.
+
+		:param z: redshift bins for the sources; if a single float is passed, single redshift is assumed
+		:type z: float.
+
+		:param distribution: redshift distribution of the sources (normalization not necessary)
+		:type distribution: None or callable
+
+		:param settings: NICAEA code settings
+		:type settings: NicaeaSettings instance
+
+		:returns: (array) computed power spectrum at the selected multipoles
+
+		"""
+
+		#If no settings provided, use the default ones
+		if settings is None:
+			settings=NicaeaSettings.default()
+
+		#Parse redshift distribution from input
+		if type(z)==np.float:
+			
+			nzbins = 1
+			Nnz = np.array([2],dtype=np.int32)
+			nofz = ["single"]
+			par_nz = np.array([z,z])
+
+		elif type(z)==np.ndarray:
+			raise TypeError("Not implemented yet!")
+		else:
+			raise TypeError("Redshift format not recognized!")
+		
+		
+		return _nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings)
 
 

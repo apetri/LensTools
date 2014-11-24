@@ -51,11 +51,15 @@ PyMODINIT_FUNC init_nicaea(void){
 
 static cosmo_lens *parse_model(PyObject *args, error **err){
 
+	//Type translators
+	char *distribution_strings[5] = {"ludo","jonben","ymmk","hist","single"};
+	const nofz_t distribution_types[5] = {ludo,jonben,ymmk,hist,single};
+
 	//Cosmological parameters
 	double Om,Ode,w0,w1,H100,Omegab,Omeganu,Neff,si8,ns;
 	int nzbins;
-	int i;
-	char *distr_type;
+	int i,j;
+	char found=0,*distr_type,error_buf[256];
 
 	//Multipoles/angles, redshift distribution and other settings
 	PyObject *spec_obj,*Nnz_obj,*nofz_obj,*par_nz_obj,*settings_dict;
@@ -91,29 +95,29 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	for(i=0;i<nzbins;i++){
 
 		PyArg_Parse(PyList_GetItem(nofz_obj,i),"s",&distr_type);
-		fprintf(stderr,"%d=%s\n",i,distr_type);
+		for(j=0;j<5;j++){
+			
+			if(strcmp(distr_type,distribution_strings[j])==0){
+				nofz[i]=distribution_types[j];
+				found=1;
+				break;
+			}
 		
-		if(strcmp(distr_type,"ludo")==0){
-			nofz[i]=ludo;
-		} else if(strcmp(distr_type,"jonben")==0){
-			nofz[i]=jonben;
-		} else if(strcmp(distr_type,"ymmk")==0){
-			nofz[i]=ymmk;
-		} else if(strcmp(distr_type,"hist")==0){
-			nofz[i]=hist;
-		} else if(strcmp(distr_type,"single")==0){
-			nofz[i]=single;
-		} else{
-			fprintf(stderr,"Distribution %s not implemented",distr_type);
+		}
+
+		if(!found){
+			sprintf(error_buf,"Distribution %s not implemented",distr_type);
+			PyErr_SetString(PyExc_ValueError,error_buf);
 			Py_DECREF(Nnz_array);
 			Py_DECREF(par_nz_array);
 			return NULL;
 		}
 
-
 	}
 
 	//Set these to default for the moment
+	/*TODO parse from settings dictionary*/
+
 	nonlinear_t nonlinear_type=smith03;
 	transfer_t transfer_function=eisenhu;
 	growth_t growth=growth_de;
@@ -124,8 +128,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	double Q_MAG_SIZE=1.0;
 
 	//cosmo model object
-	cosmo_lens *model=init_parameters_lens(Om,Ode,w0,w1,NULL,0,H100,Omegab,Omeganu,Neff,si8,ns,nzbins,Nnz,nofz,par_nz,nonlinear_type,transfer_function,growth,dark_energy,norm_mode,tomography,sreduced,Q_MAG_SIZE,err); 
-
+	cosmo_lens *model=init_parameters_lens(Om,Ode,w0,w1,NULL,0,H100,Omegab,Omeganu,Neff,si8,ns,nzbins,Nnz,nofz,par_nz,nonlinear_type,transfer_function,growth,dark_energy,norm_mode,tomography,sreduced,Q_MAG_SIZE,err);
 
 	//cleanup
 	Py_DECREF(Nnz_array);
@@ -142,51 +145,66 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 //shearPowerSpectrum() implementation
 static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 
+	//counters
+	int l;
+
+	//cosmological model handler
 	cosmo_lens *model;
 	
-	double Om=0.26;
-	double Ode=0.74;
-	double w0=-1.0;
-	double w1=0.0;
-	double *poly_W=NULL;
-	int NPoly=0;
-	double H100=0.7;
-	double Omegab=0.046;
-	double Omeganu=0.0;
-	double Neff=0.0;
-	double si8=0.8;
-	double ns=0.960;
-	double nzbins=1;
+	//multipoles and power spectrum
+	PyObject *ell_array,*power_spectrum_array;
 
-	int Nnz[] = {3};
-	const nofz_t nofz[] = {hist};
-	double par_nz[] = {2.0,2.01,10};
-	nonlinear_t computation_type=smith03;
-	transfer_t transfer_function=eisenhu;
-	growth_t growth=growth_de;
-	de_param_t dark_energy=linder;
-	norm_t norm_mode=norm_s8;
-	tomo_t tomography=tomo_all;
-	reduced_t sreduced=reduced_none;
-	double Q_MAG_SIZE=1.0;
+	//NICAEA error handlers
 	error *myerr=NULL,**err;
 	err=&myerr;
 
-	char stringerr[4192];
+	//Convert NICAEA errors to string
+	char stringerr[4096];
 
+	//Build a cosmo_lens instance parsing the input tuple
 	model=parse_model(args,err);
-	
-	printf("%le\n",Pshear(model,10000.0,0,0,err));
-	if(isError(*err)){
-		stringError(stringerr,*err);
-		PyErr_SetString(PyExc_ValueError,stringerr);
+	if(model==NULL){
+		return NULL;
+	}
+
+	//Read in the multipoles
+	ell_array=PyArray_FROM_OTF(PyTuple_GetItem(args,11),NPY_DOUBLE,NPY_IN_ARRAY);
+	if(ell_array==NULL){
 		free_parameters_lens(&model);
 		return NULL;
 	}
 
-	
-	free_parameters_lens(&model);
+	int Nl=(int)PyArray_DIM(ell_array,0);
+	double *ell=(double *)PyArray_DATA(ell_array);
 
-	Py_RETURN_NONE;
+	//Allocate numpy array for the power spectrum
+	npy_intp ell_dims[] = {(npy_intp)Nl};
+	power_spectrum_array = PyArray_ZEROS(1,ell_dims,NPY_DOUBLE,0);
+	if(power_spectrum_array==NULL){
+		Py_DECREF(ell_array);
+		free_parameters_lens(&model);
+		return NULL;
+	}
+
+	//Call NICAEA to measure the power spectrum
+	double *power_spectrum=(double *)PyArray_DATA(power_spectrum_array);
+	for(l=0;l<Nl;l++){
+		
+		power_spectrum[l]=Pshear(model,ell[l],0,0,err);
+		
+		if(isError(*err)){
+			stringError(stringerr,*err);
+			PyErr_SetString(PyExc_RuntimeError,stringerr);
+			free_parameters_lens(&model);
+			Py_DECREF(ell_array);
+			Py_DECREF(power_spectrum_array);
+			return NULL;
+		}
+
+	}
+	
+	//Computation succeeded, cleanup and return
+	Py_DECREF(ell_array);
+	return power_spectrum_array;
 
 }
