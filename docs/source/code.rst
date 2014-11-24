@@ -84,6 +84,16 @@ Simulation design
 .. autoclass:: lenstools.simulations.Design
 	:inherited-members:
 
+
+Nicaea bindings
+===============
+
+.. autoclass:: lenstools.simulations.NicaeaSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.simulations.Nicaea
+	:members: fromCosmology,convergencePowerSpectrum
+
 Gadget2 snapshot handling
 ==========================
 
