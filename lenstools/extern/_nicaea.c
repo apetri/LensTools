@@ -3,6 +3,7 @@
 The module is called _nicaea and it defines the methods below (see docstrings)
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <assert.h>
@@ -20,8 +21,9 @@ The module is called _nicaea and it defines the methods below (see docstrings)
 static char module_docstring[] = "This module provides a python interface to the NICAEA computations";
 static char shearPowerSpectrum_docstring[] = "Compute the shear power spectrum";
 
-//Useful method for parsing Nicaea class attributes into cosmo_lens structs
+//Useful methods for parsing Nicaea class attributes into cosmo_lens structs
 static cosmo_lens *parse_model(PyObject *args, error **err);
+static int translate(int Nobjects, char *string_dictionary[],char *string);
 
 //Method declarations
 static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args);
@@ -46,6 +48,25 @@ PyMODINIT_FUNC init_nicaea(void){
 }
 
 /////////////////////////////////
+/*Implementation of translate*///
+/////////////////////////////////
+
+static int translate(int Nobjects,char *string_dictionary[],char *string){
+
+	int i;
+	char error_buf[256];
+
+	for(i=0;i<Nobjects;i++){
+		if(strcmp(string_dictionary[i],string)==0) return i;
+	}
+
+	sprintf(error_buf,"Setting %s not implemented",string);
+	PyErr_SetString(PyExc_ValueError,error_buf);
+	return -1;
+
+}
+
+/////////////////////////////////
 /*Implementation of parse_model*/
 /////////////////////////////////
 
@@ -59,7 +80,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	double Om,Ode,w0,w1,H100,Omegab,Omeganu,Neff,si8,ns;
 	int nzbins;
 	int i,j;
-	char found=0,*distr_type,error_buf[256];
+	char *distr_type,error_buf[256];
 
 	//Multipoles/angles, redshift distribution and other settings
 	PyObject *spec_obj,*Nnz_obj,*nofz_obj,*par_nz_obj,*settings_dict,*extra_obj;
@@ -95,22 +116,17 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	for(i=0;i<nzbins;i++){
 
 		PyArg_Parse(PyList_GetItem(nofz_obj,i),"s",&distr_type);
-		for(j=0;j<5;j++){
-			
-			if(strcmp(distr_type,distribution_strings[j])==0){
-				nofz[i]=distribution_types[j];
-				found=1;
-				break;
-			}
 		
-		}
-
-		if(!found){
-			sprintf(error_buf,"Distribution %s not implemented",distr_type);
-			PyErr_SetString(PyExc_ValueError,error_buf);
+		if((j=translate(5,distribution_strings,distr_type))==-1){
+			
 			Py_DECREF(Nnz_array);
 			Py_DECREF(par_nz_array);
 			return NULL;
+		
+		} else{
+
+			fprintf(stderr,"%d=distr_type[%d]\n",i,j);
+			nofz[i]=distribution_types[j];
 		}
 
 	}
