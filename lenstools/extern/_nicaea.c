@@ -22,8 +22,9 @@ static char module_docstring[] = "This module provides a python interface to the
 static char shearPowerSpectrum_docstring[] = "Compute the shear power spectrum";
 
 //Useful methods for parsing Nicaea class attributes into cosmo_lens structs
-static cosmo_lens *parse_model(PyObject *args, error **err);
 static int translate(int Nobjects, char *string_dictionary[],char *string);
+static cosmo_lens *parse_model(PyObject *args, error **err);
+static PyObject *alloc_output(PyObject *spec,cosmo_lens *model);
 
 //Method declarations
 static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args);
@@ -244,6 +245,54 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 
 }
 
+///////////////////////////////////
+/*Implementation of alloc_output*/
+//////////////////////////////////
+
+//Allocate the appropriate python object for the function output (typically a Nl x Nbins array)
+//spec is a numpy array with the multipoles/angles
+
+static PyObject *alloc_output(PyObject *spec,cosmo_lens *model){
+
+	int Ns = (int)PyArray_DIM(spec,0);
+	int Nbins = model->redshift->Nzbin;
+	tomo_t tomo = model->tomo;
+	int Nz;
+
+	//Number of redshift entries depends on tomography type (auto only, cross only or auto anc cross)
+	if(tomo==tomo_auto_only){
+		
+		Nz=Nbins;
+	
+	} else if(tomo==tomo_cross_only){
+		
+		Nz=Nbins*(Nbins-1)/2;
+		if(Nz==0){
+			PyErr_SetString(PyExc_ValueError,"There is nothing to compute, you selected tomo_cross_only with only one redshift bin!!");
+			return NULL;
+		}
+
+	} else if(tomo==tomo_all){
+
+		Nz=Nbins*(Nbins+1)/2;
+
+	} else return NULL;
+
+	//Once we have the number of redshift components, we can allocate the array
+	npy_intp output_dims[] = {(npy_intp)Ns,(npy_intp)Nz};
+	PyObject *output_array = PyArray_ZEROS(2,output_dims,NPY_DOUBLE,0);
+
+	//check if this succeeded
+	if(output_array==NULL){
+		return NULL;
+	} else{
+		return output_array;
+	}
+
+
+}
+
+
 //////////////////////////////////////////////////
 /*Function implementations using backend C code*/
 /////////////////////////////////////////////////
@@ -252,7 +301,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 
 	//counters
-	int l;
+	int l,i,j,b;
 
 	//cosmological model handler
 	cosmo_lens *model;
@@ -280,23 +329,67 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 		return NULL;
 	}
 
-	int Nl=(int)PyArray_DIM(ell_array,0);
-	double *ell=(double *)PyArray_DATA(ell_array);
-
-	//Allocate numpy array for the power spectrum
-	npy_intp ell_dims[] = {(npy_intp)Nl};
-	power_spectrum_array = PyArray_ZEROS(1,ell_dims,NPY_DOUBLE,0);
+	//allocate the numpy array which will hold the power spectrum
+	power_spectrum_array = alloc_output(ell_array,model);
 	if(power_spectrum_array==NULL){
 		Py_DECREF(ell_array);
 		free_parameters_lens(&model);
 		return NULL;
 	}
 
-	//Call NICAEA to measure the power spectrum
+	int Nl=(int)PyArray_DIM(power_spectrum_array,0);
+	int Nztot=(int)PyArray_DIM(power_spectrum_array,1);
+	int Nzbin=model->redshift->Nzbin;
+	tomo_t tomo=model->tomo;
+	
+	//Data pointer to the multipoles and power spectrum
+	double *ell=(double *)PyArray_DATA(ell_array);
 	double *power_spectrum=(double *)PyArray_DATA(power_spectrum_array);
+
+	//Call NICAEA to measure the power spectrum
+
+	//cycle over multipoles 
 	for(l=0;l<Nl;l++){
 		
-		power_spectrum[l]=Pshear(model,ell[l],0,0,err);
+		//cycle over redshift bins
+		if(tomo==tomo_auto_only){
+			
+			//diagonal only
+			for(i=0;i<Nzbin;i++){
+				power_spectrum[l*Nzbin+i]=Pshear(model,ell[l],i,i,err);
+				if(isError(*err)) break;
+			} 
+		} else if(tomo==tomo_cross_only){
+
+			b=0;
+			//cross (off diagonal)
+			for(i=0;i<Nzbin;i++){
+				for(j=i+1;j<Nzbin;j++){
+
+					power_spectrum[l*Nztot+b]=Pshear(model,ell[l],i,j,err);
+					b+=1;
+					if(isError(*err)) break;
+				}
+				if(isError(*err)) break;
+			}
+
+
+		} else{
+
+			b=0;
+			//all (off and on diagonal)
+			for(i=0;i<Nzbin;i++){
+				for(j=i;j<Nzbin;j++){
+
+					power_spectrum[l*Nztot+b]=Pshear(model,ell[l],i,j,err);
+					b+=1;
+					if(isError(*err)) break;
+				}
+				if(isError(*err)) break;
+			}
+
+		}
+		
 		
 		if(isError(*err)){
 			stringError(stringerr,*err);
