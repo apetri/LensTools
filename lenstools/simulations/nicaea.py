@@ -37,15 +37,39 @@ def _check_redshift(z,distribution,distribution_parameters,**kwargs):
 	elif type(distribution)==types.FunctionType:
 
 		assert type(z)==np.ndarray and z.ndim==1,"distribution is a callable, hence z must be a one dimensional array!"
-		nzbins = 1
-		nofz = ["hist"]
-		Nnz = np.array([2*len(z)-1],dtype=np.int32)
+		
+		if distribution_parameters is None:
+			distribution_parameters="one"
+		
+		assert distribution_parameters in ["one","all"],"distribution is a callable, hence distribution_parameters must be either 'one' or 'all'"
 
-		#Format paramaters accordingly
-		midpoints = 0.5*(z[1:]+z[:-1])
-		gal_in_bin = distribution(midpoints,**kwargs)
-		par_nz = np.concatenate((np.array([z[0],z[-1]]),z[1:-1],gal_in_bin))
-		assert len(par_nz)==Nnz[0]
+		if distribution_parameters=="one":
+			
+			nzbins = 1
+			nofz = ["hist"]
+			Nnz = np.array([2*len(z)-1],dtype=np.int32)
+
+			#Format paramaters accordingly
+			midpoints = 0.5*(z[1:]+z[:-1])
+			gal_in_bin = distribution(midpoints,**kwargs)
+			par_nz = np.concatenate((np.array([z[0],z[-1]]),z[1:-1],gal_in_bin))
+			assert len(par_nz)==Nnz[0]
+
+		else:
+
+			nzbins = len(z)-1
+			nofz = ["hist"]*nzbins
+			Nnz = np.ones(nzbins,dtype=np.int32)*3
+
+			#Format paramaters accordingly
+			midpoints = 0.5*(z[1:]+z[:-1])
+			gal_in_bin = distribution(midpoints,**kwargs)
+			par_nz = np.zeros(3*nzbins)
+
+			for n in range(nzbins):
+				par_nz[3*n] = z[n]
+				par_nz[3*n+1] = z[n+1]
+				par_nz[3*n+2] = gal_in_bin[n]
 
 	else:
 			
@@ -247,8 +271,8 @@ class Nicaea(w0waCDM):
 		:param distribution: redshift distribution of the sources (normalization not necessary); if None a single redshift is expected; if callable, z must be an array, and a single redshift bin is considered, with the galaxy distribution specified by the call of distribution(z); if a list is passed, each element must be a NICAEA type
 		:type distribution: None,callable or list
 
-		:param distribution_parameters: relevant only when distribution is a list, in which case each element in the list should be the tuple of parameters expected by the correspondent NICAEA distribution type
-		:type distribution_parameters: list.
+		:param distribution_parameters: relevant only when distribution is a list or callable. When distribution is callable, distribution_parameters has to be one between "one" and "all" to decide if one or multiple redshift bins have to be considered. If it is a list, each element in it should be the tuple of parameters expected by the correspondent NICAEA distribution type
+		:type distribution_parameters: str. or list.
 
 		:param settings: NICAEA code settings
 		:type settings: NicaeaSettings instance
