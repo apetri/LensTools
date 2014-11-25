@@ -256,7 +256,7 @@ class Nicaea(w0waCDM):
 		:param kwargs: the keyword arguments are passed to the distribution, if callable
 		:type kwargs: dict.
 
-		:returns: (array) computed power spectrum at the selected multipoles
+		:returns: ( NlxNz array ) computed power spectrum at the selected multipoles (when computing the cross components these are returned in row major C ordering)
 
 		"""
 
@@ -271,5 +271,8 @@ class Nicaea(w0waCDM):
 		power_spectrum_nicaea = _nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings,None)
 		
 		#Return
-		return power_spectrum_nicaea
+		if power_spectrum_nicaea.shape[1]==1:
+			return power_spectrum_nicaea[:,0]
+		else:
+			return power_spectrum_nicaea
 
