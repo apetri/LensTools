@@ -22,7 +22,7 @@
 
 
 /* Maximal length of a short string config entry */
-#define CSLENS 32
+#define CSLENS 1024
 
 
 typedef enum {c_i, c_d, c_s} config_element_t;

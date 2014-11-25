@@ -19,8 +19,10 @@
  * - Heath et al. 1997						*
  * - Wetterich 2004						*
  * - Percival 2005						*
- * - Linder & Jenkins 2005					*
+ * - Linder & Jenkins 2003					*
+ * - Linder 2003                                                *
  * - Jassal, Bagla & Padmanabhan 2005				*
+ * - Takahashi et al. 2012					*
  * ============================================================ */
 
 
@@ -36,22 +38,11 @@ cosmo* init_parameters(double OMEGAM, double OMEGADE, double W0_DE, double W1_DE
 		       double H100, double OMEGAB, double OMEGANUMASS,
 		       double NEFFNUMASS, double NORM, double NSPEC,
 		       nonlinear_t NONLINEAR, transfer_t TRANSFER, growth_t GROWTH,
-		       de_param_t DEPARAM, norm_t normmode, double AMIN, 
+		       de_param_t DEPARAM, norm_t normmode, double AMIN,
 		       error **err)
 {
    cosmo* res;
-
-   testErrorRetVA(H100<=0.0, ce_negative,
-		  "Negateive Hubble parameter h_100 = %g", *err, __LINE__, NULL, H100);
-   testErrorRetVA(OMEGAM<0.0, ce_negative,
-		  "Negative matter density parameter Omega_m = %g", *err, __LINE__, NULL, OMEGAM);
-   testErrorRetVA(OMEGAB<0.0, ce_negative,
-		  "Negative baryon density parameter Omega_b = %g", *err, __LINE__, NULL, OMEGAB);
-   testErrorRetVA(OMEGANUMASS<0.0, ce_negative,
-		  "Negative density parameter of massive neutrinos Omega_nu_mass = %g", *err,
-		  __LINE__, NULL, OMEGANUMASS);
-   testErrorRetVA(NORM<0.0, ce_negative,
-		  "Negative normalization = %g", *err, __LINE__, NULL, NORM);
+   int N_a_min;
 
    res = (cosmo*) malloc_err(sizeof(cosmo), err);   forwardError(*err, __LINE__, NULL);
 
@@ -88,12 +79,20 @@ cosmo* init_parameters(double OMEGAM, double OMEGADE, double W0_DE, double W1_DE
    else res->a_min = a_minmin;
 
    /* Reset pre-computed numbers and tables */
-   // MKDEBUG was _N_a*4 (??)
-   res->N_a                  = _N_a;
+
+   /* New 06/2014: Set N_a such that da >= 0.001 */
+   N_a_min = (int)((1.0 - res->a_min) / 0.001) + 1;
+   if ( N_a_min < _N_a) {
+      res->N_a = _N_a;
+   } else {
+      res->N_a = N_a_min;
+   }
+
+   //printf("N_a, da = %d %g\n", res->N_a, (1.0 - res->a_min) / (res->N_a - 1)); //, N_a_min);
+
    res->linearGrowth         = NULL;
    res->growth_delta0        = -1;
    res->transferFct          = NULL;
-   res->tsqr_vinschter       = NULL;
    res->transfer_alpha_Gamma = -1;
    res->transfer_s           = -1;
    res->transferBE           = NULL;
@@ -101,14 +100,40 @@ cosmo* init_parameters(double OMEGAM, double OMEGADE, double W0_DE, double W1_DE
    res->P_NL                 = NULL;
    res->slope                = NULL;
    res->w                    = NULL;
-   res->k_NL                 = NULL;
+   //res->k_NL                 = NULL;
+   res->ystar_allz           = NULL;
 
    //dump_param(res, stdout);
 
-   set_norm(res, err);
-   forwardError(*err, __LINE__, NULL);
+   set_norm(res, err);                    forwardError(*err, __LINE__, NULL);
+
+   // MKDEBUG NEW
+   consistency_parameters(res, err);      forwardError(*err, __LINE__, NULL);
 
    return res;
+}
+
+/* ============================================================ *
+ * Checks consistency of parameters. This function is called    *
+ * in init_parameters and updateFrom.				*
+ * ============================================================ */
+void consistency_parameters(const cosmo *self, error **err)
+{
+   testErrorRetVA(self->h_100 <= 0.0, ce_negative,
+		  "Negateive Hubble parameter h_100 = %g", *err, __LINE__,, self->h_100);
+   testErrorRetVA(self->Omega_m < 0.0, ce_negative,
+		  "Negative matter density parameter Omega_m = %g", *err, __LINE__,, self->Omega_m);
+   testErrorRetVA(self->Omega_b < 0.0, ce_negative,
+		  "Negative baryon density parameter Omega_b = %g", *err, __LINE__,, self->Omega_b);
+   testErrorRetVA(self->Omega_nu_mass<0.0, ce_negative,
+		  "Negative density parameter of massive neutrinos Omega_nu_mass = %g", *err,
+		  __LINE__,, self->Omega_nu_mass);
+   testErrorRetVA(self->normalization < 0.0, ce_negative,
+		  "Negative normalization = %g", *err, __LINE__,, self->normalization);
+
+   /* MKDEBUG: New. Without this test here, there are NaNs in Tsqr */
+   testErrorRetVA(self->Omega_m < self->Omega_b, ce_omega, "Omega_m (%g) < Omega_b (%g)", *err, __LINE__,,
+		  self->Omega_m, self->Omega_b);
 }
 
 cosmo* copy_parameters_only(cosmo* source, error **err)
@@ -143,16 +168,18 @@ cosmo* copy_parameters(cosmo* source, error **err)
    forwardError(*err,__LINE__,NULL);
    res->transferBE = copy_interTable(source->transferBE,err);
    forwardError(*err,__LINE__,NULL);
-   res->tsqr_vinschter = copy_interTable2Dneq(source->tsqr_vinschter, err);
-   forwardError(*err, __LINE__, NULL);
    res->P_NL = copy_interTable2D(source->P_NL,err);
    forwardError(*err,__LINE__,NULL);
    res->slope = copy_interTable(source->slope,err);
    forwardError(*err,__LINE__,NULL);
    res->w = copy_interTable(source->w,err);
    forwardError(*err,__LINE__,NULL);
-   res->k_NL = copy_interTable(source->k_NL, err);
-   forwardError(*err,__LINE__,NULL);
+
+   //res->k_NL = copy_interTable(source->k_NL, err);
+   //forwardError(*err,__LINE__,NULL);
+
+   //  DEBUGGING THIS doesn't work with halomodel 
+   //memcpy(res->ystar_allz, source->ystar_allz, fr_rs*fr_nsim);
 
    res->growth_delta0        = source->growth_delta0;
    res->cmp_sigma8           = source->cmp_sigma8;
@@ -258,11 +285,11 @@ void free_parameters(cosmo** self)
    del_interTable(&s->linearGrowth);
    del_interTable(&s->transferFct);
    del_interTable(&s->transferBE);
-   del_interTable2Dneq(&s->tsqr_vinschter);
    del_interTable2D(&s->P_NL);
    del_interTable(&s->slope);
    del_interTable(&s->w);
-   del_interTable(&s->k_NL);
+   //del_interTable(&s->k_NL);
+   //if (&s->ystar_allz != NULL) free(&s->ystar_allz);
 
    free(s);
    s = NULL;
@@ -309,8 +336,18 @@ void updateParameters(cosmo* model, double OMEGAM, double OMEGADE, double W0_DE,
    free_parameters(&prev);
 }
 
+/* ============================================================ *
+ * Deletes pre-calculated tables in cosmo structure apres       *
+ * if corresponding parameters are different compared to avant, *
+ * so tables will be re-calculated when needed.                 *
+ * To be used after parameters have been changed, e.g. with     *
+ * updateParameters, or manually.                               *
+ * ============================================================ */
+
 void updateFrom(cosmo* avant, cosmo* apres, error **err)
 {
+   consistency_parameters(apres, err);    forwardError(*err, __LINE__,);
+
    if (change_D_plus(avant,apres)) {
       del_interTable(&(apres->linearGrowth));
       apres->growth_delta0=-1;
@@ -322,7 +359,6 @@ void updateFrom(cosmo* avant, cosmo* apres, error **err)
       del_interTable(&(apres->transferFct));
       apres->transfer_alpha_Gamma = -1;
       apres->transfer_s = -1;
-      del_interTable2Dneq(&(apres->tsqr_vinschter));
    }
    if (change_sigma_8_sqr(avant,apres)) {
       apres->cmp_sigma8=-1;
@@ -330,6 +366,11 @@ void updateFrom(cosmo* avant, cosmo* apres, error **err)
    if (change_P_NL(avant,apres)) {
       del_interTable2D(&(apres->P_NL));
       del_interTable(&(apres->slope));
+
+      /* MKDEBUG: A bit of overkill; The coyote13 *
+       * power spectrum depends on                *
+       * fewer parameters than the general P_NL   */
+      if (apres->ystar_allz != NULL) free(apres->ystar_allz);
    }
    if (change_w(avant,apres)) {
       del_interTable(&(apres->w));
@@ -358,16 +399,8 @@ void set_norm(cosmo* self, error **err)
    return;
    
    
-   if (self->growth==camb_vinschter_gr) {
-     d0 = 1.0;
-   } else {
-     d0 = D_plus(self, 1.0, 0, err); forwardError(*err,__LINE__,);
-   }
-   if ((self->transfer==camb_vinschter)&&(self->tsqr_vinschter==NULL)) {
-     nrm = 1;
-   } else {
-     nrm = sigma_8_sqr(self, err); forwardError(*err,__LINE__,);
-   }
+   d0  = D_plus(self, 1.0, 0, err); forwardError(*err,__LINE__,);
+   nrm = sigma_8_sqr(self, err); forwardError(*err,__LINE__,);
 
    if (self->normmode==norm_s8) {
      self->sigma_8 = self->normalization;
@@ -404,14 +437,14 @@ void dump_param(cosmo* self, FILE *F)
 
    if (!F) F = stderr;
    fprintf(F, "#  O_m    O_de   w0_de  w1_de  h_100  O_b    O_nu   Neffnu sig_8  n_s "
-	   "nonlinear transfer growth de_param normmode\n");
+	   "nonlinear transfer growth de_param normmode N_a\n");
    fprintf(F, "# % .3f % .3f % .3f % .3f % .3f % .3f % .3f % .3f % .3f % .3f "
-	   "%s(%d) %s(%d) %s(%d) %s(%d) %d\n",
+	   "%s(%d) %s(%d) %s(%d) %s(%d) %d %d\n",
 	   self->Omega_m, self->Omega_de, self->w0_de, self->w1_de, self->h_100, self->Omega_b,
 	   self->Omega_nu_mass, self->Neff_nu_mass, self->sigma_8, self->n_spec,
 	   snonlinear_t(self->nonlinear), self->nonlinear, stransfer_t(self->transfer), self->transfer,
 	   sgrowth_t(self->growth), self->growth, sde_param_t(self->de_param), self->de_param,
-	   self->normmode);
+	   self->normmode, self->N_a);
 
    if (self->de_param == poly_DE) {
       fprintf(F, "# Npde wpde_i\n");
@@ -689,8 +722,6 @@ int change_D_plus(cosmo* avant, cosmo* apres)
       case growth_de :
          /* TODO: Neff_nu?? */
 	 if (change_w(avant,apres)) return 1;
-      case camb_vinschter_gr :
-	 return change_Tsqr_camb_vinschter(avant, apres);
    }
    return 0;
 }
@@ -757,11 +788,6 @@ double D_plus(cosmo* self, double a, int normalised, error **err)
 	    self->growth_delta0 = table[self->N_a-1];
 	    break;
 
-	 case camb_vinschter_gr :
-	    *err = addError(ce_unknown, "D+ called with growth_t=camb_vinschter_gr",*err,__LINE__);
-	    return 0.0;
-	    break;
-
 	 default : 
 	    *err = addError(ce_unknown,"Unknown growth",*err,__LINE__);
 	    return 0;
@@ -806,25 +832,17 @@ double g(cosmo* self, double a)
 int change_Tsqr(cosmo* avant, cosmo* apres)
 {
    if (NCOEQ(avant,apres,transfer))
-     return 1;
+      return 1;
    switch (apres->transfer) {
-      case bbks : case eisenhu : case eisenhu_osc : case camb : case be84 :
-	 if (NCOCLOSE(avant,apres,Omega_m) || NCOCLOSE(avant,apres,h_100) || NCOCLOSE(avant,apres,Omega_b)
-	     || NCOCLOSE(avant,apres,n_spec) || NCOCLOSE(avant,apres,Omega_nu_mass) || NCOCLOSE(avant,apres,Neff_nu_mass))
-	   return 1;
+      case bbks : case eisenhu : case eisenhu_osc : case be84 :
+         if (NCOCLOSE(avant,apres,Omega_m) || NCOCLOSE(avant,apres,h_100) || NCOCLOSE(avant,apres,Omega_b)
+               || NCOCLOSE(avant,apres,n_spec) || NCOCLOSE(avant,apres,Omega_nu_mass) || NCOCLOSE(avant,apres,Neff_nu_mass))
+            return 1;
+      default :
+            return 0;
          /* TODO: neutrinos, T_nu from BBKS */
 	 return 0;
-      case camb_vinschter :
-	 return change_Tsqr_camb_vinschter(avant, apres);
    }
-   return 0;
-}
-
-int change_Tsqr_camb_vinschter(cosmo *avant, cosmo *apres)
-{
-   if (NCOCLOSE(avant,apres,Omega_m) || NCOCLOSE(avant,apres,h_100) || NCOCLOSE(avant,apres,Omega_b)
-       || NCOCLOSE(avant,apres,n_spec) || change_w(avant,apres) || NCOCLOSE(avant,apres,Neff_nu_mass))
-     return 1;
    return 0;
 }
 
@@ -932,10 +950,6 @@ double Tsqr_one(cosmo *self, double k, double Gamma_eff, error **err)
 	 //Delta_L = Delta_L_BE2(self, k, err);   forwardError(*err, __LINE__, 0.0);
 	 //break;
 
-      case camb_vinschter : case camb :
-	 *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
-	 return 0;
-
       default :
 	 *err = addError(ce_unknown, "Unknown transfer function", *err, __LINE__);
 	 return 0; 
@@ -972,7 +986,7 @@ double int_for_r_sound(double a, void *intpar, error **err)
 
 }
 
-/* Comoving sound horizon [Mpc/h], K08, Per05 */
+/* Comoving sound horizon [Mpc/h], K08 */
 double r_sound_integral(cosmo *self, double a, error **err)
 {
    double rs;
@@ -1094,20 +1108,6 @@ double G_EH98(double y)
 }
 
 /* ============================================================ *
- * Returns |T(k)|, [k] = h/Mpc.				        *
- * ============================================================ */
-double Transfer_function(cosmo *self, double k, error **err)
-{
-   double T;
-
-   T  = Tsqr(self, k, err);    forwardError(*err, __LINE__, 0.0);
-   T /= pow(k, self->n_spec);
-   T  = sqrt(T);
-
-   return T;
-}
-
-/* ============================================================ *
  * Returns T^2(k) * k^n, [k] = h/Mpc.				*
  * ============================================================ */
 #define Nk 500
@@ -1178,12 +1178,7 @@ double Tsqr(cosmo* self, double k, error **err)
 	       table[i] = log(Tsqr_one(self, kk, -1.0, err));
 	       forwardError(*err, __LINE__, 0.0);
 	    }
-
 	    break;
-
-	 case camb_vinschter : case camb :
-	    *err = addErrorVA(ce_transfer, "Wrong transfer type %d", *err, __LINE__, self->transfer);
-	    return 0;
 
 	 case be84 :
 	    break;
@@ -1236,90 +1231,10 @@ double Tsqr(cosmo* self, double k, error **err)
 }
 #undef Nk
 
-interTable2Dspline *init_and_copy_Tsqr_vinschter_table(int m, int n, const double *x,  const double *y, const double ***z,
-						       error **err)
-{
-   interTable2Dspline *self;
-   int comp, j,im,jn;
-   
-   self = init_interTable2Dspline(m, n, err);
-   forwardError(*err, __LINE__,  NULL);
-   memcpy(self->x+1, x, m*sizeof(double));
-   memcpy(self->y+1, y, n*sizeof(double));
-   for (comp=0; comp<NCOMP; comp++) {
-     for(im=0;im<m;im++) {
-       for(jn=0;jn<n;jn++) {
-	 self->z[comp][im+1][jn+1]=z[comp][im][jn];
-       }
-     }
-     for (j=1; j<=m; j++) {
-       sm2_spline(self->y, self->z[comp][j], self->n, 1.0e30, 1.0e30, self->z2[comp][j], err);
-       forwardError(*err, __LINE__, NULL);
-     }
-   }
-
-   return self;
-}
-
-interTable2Dneq *init_and_copy_Tsqr_vinschter_table_neq(int m, int n, const double *x,  const double *y, const double ***z,
-							error **err)
-{
-   interTable2Dneq *self;
-   int comp, im, jn;
-   
-   self = init_interTable2Dneq(m, n, err);
-   forwardError(*err, __LINE__,  NULL);
-   memcpy(self->x+1, x, m*sizeof(double));
-   memcpy(self->y+1, y, n*sizeof(double));
-   for (comp=0; comp<NCOMP; comp++) {
-     for(im=0;im<m;im++) {
-       for(jn=0;jn<n;jn++) {
-	 self->z[comp][im+1][jn+1]=z[comp][im][jn];
-	 testErrorRet(!finite(z[comp][im][jn]), ce_overflow, "overflow", *err, __LINE__, NULL);
-       }
-     }
-   }
-
-   return self;
-}
-
-void set_vinschter(cosmo* self, int m, int n, const double *x,  const double *y, const double ***z, error **err)
-{
-   self->tsqr_vinschter = init_and_copy_Tsqr_vinschter_table_neq(m, n, x, y, z, err);
-   forwardError(*err,__LINE__,);
-   set_norm(self, err);
-   forwardError(*err,__LINE__,);
-}
-
-double Tsqr_vinschter(cosmo *self, comp_t comp, double k, double a, error **err)
-{
-   double res;
-
-   testErrorRet(comp!=comp_c&&comp!=comp_b&&comp!=comp_nu, ce_unknown, "unknown species", *err, __LINE__, 0);
-
-   if (self->transfer!=camb_vinschter) {
-      *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
-      return 0;
-   }
-   if (self->tsqr_vinschter==NULL) {
-      /* Initialization of the table has to be done external of smith2.c */
-      *err = addError(ce_no_init, "Transfer function array not initialized, CAMB output not read", *err, __LINE__);
-      return 0;
-   }
-
-   res = sm2_interpol2Dneq(self->tsqr_vinschter, comp, k, a, err);
-   forwardError(*err, __LINE__, 0);
-
-   testErrorRet(!finite(res), ce_overflow, "overflow", *err, __LINE__, 0);
-   testErrorRet(res<0.0, ce_negative, "negative", *err, __LINE__, 0);
-
-   return res;
-}
-
 /* ============================================================ *
  * dfridr.c                                                     *
  * NR page 188. Returns derivate of func at x, initial step is  *
- * h. Error estimate in err.                                *
+ * h. Error estimate in err.                                    *
  * Modified! func depends on two double! (like P_L)             *
  * ============================================================ */
 
@@ -1385,7 +1300,7 @@ double W_tophat(double x)
 
 double int_for_sigma_R(double logk, void *intpar, error **err)
 {
-   double res, k, x, R, tt, Omega_m_tot=0.0, f_b=0.0, f_c=0.0, f_nu=0.0, p_c=0.0, p_b=0.0, p_nu=0.0;
+   double res, k, x, R, tt;
    cosmoANDdouble *extra;
    cosmo *self;
    
@@ -1395,26 +1310,9 @@ double int_for_sigma_R(double logk, void *intpar, error **err)
    R     = extra->r;
    x     = W_tophat(k*R)/3.0;
 
-   switch (self->transfer) {
-      case bbks : case eisenhu : case eisenhu_osc :
-	 /* unnormalized power spectrum */
-	 tt = Tsqr(self,k,err);      forwardError(*err, __LINE__, 0);
-	 break;
-      case camb_vinschter :
-	 Omega_m_tot = self->Omega_m + self->Omega_nu_mass;
-	 f_b  = self->Omega_b/Omega_m_tot;
-	 f_c  = (self->Omega_m-self->Omega_b)/Omega_m_tot;
-	 f_nu = self->Omega_nu_mass/Omega_m_tot;
-	 p_b  = Tsqr_vinschter(self, comp_b, k, 1.0, err);    forwardError(*err, __LINE__, 0);
-	 p_c  = Tsqr_vinschter(self, comp_c, k, 1.0, err);    forwardError(*err, __LINE__, 0);
-	 p_nu = Tsqr_vinschter(self, comp_nu, k, 1.0, err);   forwardError(*err, __LINE__, 0);
-
-	 tt   = dsqr(f_b*sqrt(p_b) + f_c*sqrt(p_c) + f_nu*sqrt(p_nu));
-	 break;
-      default :
-	 *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
-	 return 0;
-   }
+   tt  = P_L_nonorm(self, 1.0, k, err);
+   forwardError(*err,__LINE__,0);
+   tt /= dsqr(self->sigma_8);   /* Undo sigma_8 from P_L_nonorm */
 
    res  = k*dsqr(k)*tt*x*x;
    return res;
@@ -1448,9 +1346,30 @@ double sigma_8_sqr(cosmo* self, error **err)
    return self->cmp_sigma8;
 }
 
+/* ============================================================ *
+ * Returns the linear power spectrum.				*
+ * ============================================================ */
 double P_L(cosmo* self, double a, double k, error **err)
 {
-   double d, t, s, ddtt, Omega_m_tot=0.0, f_b=0.0, f_c=0.0, p_c=0.0, p_b=0.0;
+   double pl, s;
+
+   pl = P_L_nonorm(self, a, k, err);
+   forwardError(*err,__LINE__,0.0);
+
+   s = sigma_8_sqr(self, err);
+   forwardError(*err,__LINE__,0.0);
+
+   return pl / s;
+}
+
+/* ============================================================ *
+ * Returns sigma_8^2 * D+^2(a) * k^n * T^2(k).			*
+ * The normalised linear power spectrum is obtained by dividing *
+ * by int dk k P_L_nonorm(k) FT[W_tophat](k 8 Mpc/h).           *
+ * ============================================================ */
+double P_L_nonorm(cosmo* self, double a, double k, error **err)
+{
+   double d, tt;
 
    if (k<0) {
       *err = addError(ce_negative,"k Negative !",*err,__LINE__);
@@ -1460,38 +1379,22 @@ double P_L(cosmo* self, double a, double k, error **err)
    switch (self->transfer) {
       case bbks : case eisenhu : case eisenhu_osc :
 	 d    = D_plus(self, a, 1, err);          forwardError(*err,__LINE__,0);
-	 t    = Tsqr(self, k, err);               forwardError(*err,__LINE__,0);
-	 ddtt = d*d*t;
-	 break;
-      case camb_vinschter :
-	 /* CDM+baryons */
-	 Omega_m_tot = self->Omega_m + self->Omega_nu_mass;
-	 f_b  = self->Omega_b/Omega_m_tot;
-	 f_c  = (self->Omega_m-self->Omega_b)/Omega_m_tot;
-	 /* Hannestad et al. 2006 (3.4, 3.5) */
-	 p_c  = Tsqr_vinschter(self, comp_c, k, a, err);  forwardError(*err, __LINE__, 0);
-	 p_b  = Tsqr_vinschter(self, comp_b, k, a, err);  forwardError(*err, __LINE__, 0);
-	 ddtt = 1.0/((f_b+f_c)*(f_b+f_c))*dsqr(f_b*sqrt(p_b) + f_c*sqrt(p_c));
+	 tt   = Tsqr(self, k, err);               forwardError(*err,__LINE__,0);
 	 break;
       default :
 	 *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
 	 return 0;
    }
 
-   s = sigma_8_sqr(self, err);           forwardError(*err,__LINE__,0);
-   return dsqr(self->sigma_8)*ddtt/s;
-}
+   /* MKDEBUG New: Moved to P_L (this function got renamed to P_L_nonorm */
+   //s = sigma_8_sqr(self, err);           forwardError(*err,__LINE__,0);
+   //return dsqr(self->sigma_8)*ddtt/s;
 
-double P_nu(cosmo *self, double a, double k, error **err)
-{
-   double tt_nu;
-   tt_nu = Tsqr_vinschter(self, comp_nu, k, a, err);          forwardError(*err, __LINE__, 0);
-   tt_nu = tt_nu*dsqr(self->sigma_8)/sigma_8_sqr(self, err);     forwardError(*err, __LINE__, 0);
-   return tt_nu;
+   return dsqr(self->sigma_8 * d) * tt;
 }
 
 /* PD 22 */
-double n_L(cosmo* self,double a, double k, error **err)
+double n_L(cosmo* self, double a, double k, error **err)
 {
    double diff, hh, errn, n;
 
@@ -1521,14 +1424,10 @@ double f_NL(cosmo* self, double x, double a, double k, error **err)
    V = 11.55/pow(c, 0.423);
 
    switch (self->transfer) {
-      case bbks : case eisenhu : case eisenhu_osc : case camb :
+      case bbks : case eisenhu : case eisenhu_osc :
 	 gg = D_plus(self, a, 0, err)/a;
 	 forwardError(*err,__LINE__,0);
 	 break;
-      case camb_vinschter :
-	 /* TODO: T(K,a), for CDM+b, should be independent of k */
-	 *err = addError(ce_transfer, "transfer=camb_vinschter not yet implemented with nonlinear=pd96", *err, __LINE__);
-	 return 0.0;
       default :
 	 *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
 	 return 0;
@@ -1547,17 +1446,15 @@ double f_NL(cosmo* self, double x, double a, double k, error **err)
    return f4;
 }
 
-double sm2_transfer(cosmo* self, double k, double a, error **err)
+double sm2_transfer(cosmo* self, double k, error **err)
 {
-   double t;
+   double tt;
 
    /* New: Don't use k_eff with Peacock Gamma any more (caused 2% bias on linear scales wrt CAMB */
-   t  = Tsqr(self, k, err);              forwardError(*err, __LINE__, 0.0);
-   t *= self->sigma_8 * self->sigma_8;
-   t /= sigma_8_sqr(self, err);           forwardError(*err, __LINE__, 0.0);;
-   t *= k * k * k / (2 * pi_sqr);
+   tt  = P_L(self, 1.0, k, err);            forwardError(*err, __LINE__, 0.0);
+   tt *= k * k * k / (2 * pi_sqr);
 
-   return t;
+   return tt;
 }
 
 /* ============================================================ *
@@ -1584,11 +1481,6 @@ double Delta_L_BE2(cosmo* self, double k, error **err)
    double klog, kk, res;
    int j;
    double* table; interTable *transferBE;
-
-   if (self->transfer==camb_vinschter || self->transfer==camb) {
-      *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
-      return 0;
-   }
 
    if (self->transferBE==NULL) {
       Gamma      = Gamma_Sugiyama(self);
@@ -1638,7 +1530,7 @@ double int_for_wint2_knl(double logk, void *intpar, error **err)
    r     = extra->r;
    k     = exp(logk);
    krsqr = dsqr(k*r);
-   r     = sm2_transfer(extra->self,k,1.0,err)*exp(-krsqr);
+   r     = sm2_transfer(extra->self, k, err) * exp(-krsqr);
    forwardError(*err,__LINE__,0);
 
    return r;
@@ -1653,7 +1545,7 @@ double int_for_wint2_neff(double logk, void *intpar, error **err)
    r     = extra->r; 
    k     = exp(logk);
    krsqr = dsqr(k*r);
-   r     = sm2_transfer(extra->self,k,1.0,err)*2.0*krsqr*exp(-krsqr);
+   r     = sm2_transfer(extra->self, k, err) * 2.0 * krsqr * exp(-krsqr);
    forwardError(*err,__LINE__,0);
    return r;
 }
@@ -1667,7 +1559,7 @@ double int_for_wint2_ncur(double logk, void *intpar,error **err)
    r     = extra->r;
    k     = exp(logk);
    krsqr = dsqr(k*r);
-   r     = sm2_transfer(extra->self,k,1.0,err)*4.0*krsqr*(1.0-krsqr)*exp(-krsqr);
+   r     = sm2_transfer(extra->self, k, err) * 4.0 * krsqr * (1.0-krsqr) * exp(-krsqr);
    forwardError(*err,__LINE__,0);
    return r;
 }
@@ -1688,19 +1580,16 @@ void wint2(cosmo* self, double r, double *sig, double *d1, double *d2, double a,
    logkmin = log(kmin);
    logkmax = log(kmax);
    intpar.r = r;
-   intpar.a = a;                 /* only needed for camb_vinschter */
+   intpar.a = a;                 /* parameter is not needed */
    intpar.self = self;
 
    switch (self->transfer) {
-      case bbks : case eisenhu : case eisenhu_osc : case camb :
-	 amp = D_plus(self, a, 1, err);   forwardError(*err,__LINE__,);
-	 break;
-      case camb_vinschter :
-	 amp = 1.0;    /* growth in sm2_transfer */
-	 break;
+      case bbks : case eisenhu : case eisenhu_osc :
+         amp = D_plus(self, a, 1, err);   forwardError(*err,__LINE__,);
+         break;
       default :
-	 *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
-	 return;
+         *err = addError(ce_transfer, "Wrong transfer type", *err, __LINE__);
+         return;
    }
 
    if (onlysig==1) {
@@ -1746,48 +1635,74 @@ void halofit(double k, double n, double ncur, double knl, double plin,
    double gam,a,b,c,xmu,xnu,alpha,beta,f1,f2,f3;
    double y, ysqr;
    double f1a,f2a,f3a,f1b,f2b,f3b,frac,pq,ph;
-   double nsqr;
+   double nsqr, w;
 
    nsqr  = n*n;
-   gam   = 0.86485 + 0.2989*n + 0.1631*ncur;
-   a     = 1.4861 + 1.83693*n + 1.67618*nsqr + 0.7940*n*nsqr
-           + 0.1670756*nsqr*nsqr - 0.620695*ncur;
-   a     = pow(10,a);
-   b     = pow(10,(0.9463+0.9466*n+0.3084*nsqr-0.940*ncur));
-   c     = pow(10,(-0.2807+0.6669*n+0.3214*nsqr-0.0793*ncur));
-   xmu   = pow(10,(-3.54419+0.19086*n));
-   xnu   = pow(10,(0.95897+1.2857*n));
-   alpha = 1.38848+0.3701*n-0.1452*nsqr;
-   beta  = 0.8291+0.9854*n+0.3400*nsqr;
+   f1b   = pow(om_m, -0.0307);
+   f2b   = pow(om_m, -0.0585);
+   f3b   = pow(om_m, 0.0743);
 
-   if(fabs(1-om_m)>0.01) {
-      f1a = pow(om_m,(-0.0732));
-      f2a = pow(om_m,(-0.1423));
-      f3a = pow(om_m,(0.0725));
-      f1b = pow(om_m,(-0.0307));
-      f2b = pow(om_m,(-0.0585));
-      f3b = pow(om_m,(0.0743));
+   if (nonlinear == smith03_revised) {
+      /* Takahashi et al. 2012 */
+      
+      w = w_de(self, aa, err);
+      forwardError(*err, __LINE__,);
+
+      a = 1.5222 + 2.8553*n + 2.3706*nsqr + 0.9903*n*nsqr
+         + 0.2250*nsqr*nsqr - 0.6038*ncur + 0.1749*om_v*(1.0 + w);
+      a = pow(10.0, a);
+      b = pow(10.0, -0.5642 + 0.5864*n + 0.5716*nsqr - 1.5474*ncur + 0.2279*om_v*(1.0 + w));
+      c = pow(10.0, 0.3698 + 2.0404*n + 0.8161*nsqr + 0.5869*ncur);
+      gam = 0.1971 - 0.0843*n + 0.8460*ncur;
+      alpha = fabs(6.0835 + 1.3373*n - 0.1959*nsqr - 5.5274*ncur);
+      beta  = 2.0379 - 0.7354*n + 0.3157*nsqr + 1.2490*n*nsqr + 0.3980*nsqr*nsqr - 0.1682*ncur;
+      xmu   = 0.0;
+      xnu   = pow(10.0, 5.2105 + 3.6902*n);
+
+      f1    = f1b;
+      f2    = f2b;
+      f3    = f3b;
+
+   } else {
+
+      gam   = 0.86485 + 0.2989*n + 0.1631*ncur;
+      a     = 1.4861 + 1.83693*n + 1.67618*nsqr + 0.7940*n*nsqr
+         + 0.1670756*nsqr*nsqr - 0.620695*ncur;
+      a     = pow(10,a);
+      b     = pow(10,(0.9463+0.9466*n+0.3084*nsqr-0.940*ncur));
+      c     = pow(10,(-0.2807+0.6669*n+0.3214*nsqr-0.0793*ncur));
+      xmu   = pow(10,(-3.54419+0.19086*n));
+      xnu   = pow(10,(0.95897+1.2857*n));
+      alpha = 1.38848+0.3701*n-0.1452*nsqr;
+      beta  = 0.8291+0.9854*n+0.3400*nsqr;
+
+      if(fabs(1-om_m)>0.01) {
+         f1a = pow(om_m,(-0.0732));
+         f2a = pow(om_m,(-0.1423));
+         f3a = pow(om_m,(0.0725));
   
-      /* Original halofit */
-      frac = om_v/(1.0-om_m);  
+         /* Original halofit */
+         frac = om_v/(1.0-om_m);
 
-      if (nonlinear==smith03_de) {
+         if (nonlinear==smith03_de) {
 
-	 /* icosmo.org 'Pfusch' */
-	 double we, wde;
-	 wde = w_de(self, aa, err);
-	 forwardError(*err, __LINE__,);
-	 /* Interpolate between this w and w=-1/3 (behaves like OCDM) */
-	 we   = frac*wde + (1.0-frac)*(-1.0/3.0);
-	 frac = -(3.0*we+1.0)/2.0;
+            /* icosmo.org 'Pfusch' */
+            double we, wde;
+            wde = w_de(self, aa, err);
+            forwardError(*err, __LINE__,);
+            /* Interpolate between this w and w=-1/3 (behaves like OCDM) */
+            we   = frac*wde + (1.0-frac)*(-1.0/3.0);
+            frac = -(3.0*we+1.0)/2.0;
 
+         }
+
+         f1 = frac*f1b + (1-frac)*f1a;
+         f2 = frac*f2b + (1-frac)*f2a;
+         f3 = frac*f3b + (1-frac)*f3a;
+      } else {      /* EdS Universe */
+         f1 = f2 = f3 = 1.0;
       }
 
-      f1 = frac*f1b + (1-frac)*f1a;
-      f2 = frac*f2b + (1-frac)*f2a;
-      f3 = frac*f3b + (1-frac)*f3a;
-   } else {      /* EdS Universe */
-      f1 = f2 = f3 = 1.0;
    }
 
    y = k/knl;
@@ -1799,10 +1714,10 @@ void halofit(double k, double n, double ncur, double knl, double plin,
 
    testErrorRet(!finite(*pnl), ce_overflow, "Power spectrum pnl not finite", *err, __LINE__,);
    testErrorRet(*pnl<0, ce_negative,
-		"Negative power spectrum pnl. This can happen if n_eff is very negative and plin large.",
-		*err, __LINE__,);
+         "Negative power spectrum pnl. This can happen if n_eff is very negative and plin large.",
+         *err, __LINE__,);
 }
- 
+
 double dlog(double x)
 {
    return log(x)/log(10.0);
@@ -1843,26 +1758,26 @@ double P_NL(cosmo *self, double a, double k, error **err)
    double p_cb;
 
    testErrorRet(self->nonlinear == pd96 && self->transfer == eisenhu_osc, ce_transfer,
-		"Nonlinear mode 'pd96' not possible with transfer function 'eisenhu_osc'\n"
-		"(Choose e.g. 'eisenhu' instead)",
-		*err, __LINE__, -1.0);
+         "Nonlinear mode 'pd96' not possible with transfer function 'eisenhu_osc'\n"
+         "(Choose e.g. 'eisenhu' instead)",
+         *err, __LINE__, -1.0);
 
    /* Matter power spectrum */
    switch (self->nonlinear) {
 
-      case linear : case pd96 : case smith03 : case smith03_de :
-	 p_cb = P_NL_fitting(self, a, k, err);
-	 forwardError(*err, __LINE__, -1.0);
-	 break;
+      case linear : case pd96 : case smith03 : case smith03_de : case smith03_revised :
+         p_cb = P_NL_fitting(self, a, k, err);
+         forwardError(*err, __LINE__, -1.0);
+         break;
 
-      case coyote10 :
-	 p_cb = P_NL_coyote(self, a, k, err);
-	 forwardError(*err, __LINE__, -1.0);
-	 break;
+      case coyote10 : case coyote13 :
+         p_cb = P_NL_coyote(self, a, k, err);
+         forwardError(*err, __LINE__, -1.0);
+         break;
 
       default :
-	 *err = addErrorVA(ce_unknown, "Unknown nonlinear flag %d", *err, __LINE__, self->nonlinear);
-	 return -1.0;
+         *err = addErrorVA(ce_unknown, "Unknown nonlinear flag %d", *err, __LINE__, self->nonlinear);
+         return -1.0;
 
    }
 
@@ -1871,14 +1786,15 @@ double P_NL(cosmo *self, double a, double k, error **err)
 
 /* ============================================================ *
  * Dark (+ baryonic) matter power spectrum, for			*
- * snonlinear = linear, pd96, smith03 and smith03_de.    	*
+ * snonlinear = linear, pd96, smith03,smith03_de, and           *
+ * smith03_revised.						*
  * For a general power spectrum, use cosmo.c:P_NL.       	*
  * ============================================================ */
 #define itermax       25
 #define logrmin       -6.0
 #define logrmax       5.0
 #define eps_a         1.0e-5
-#define epsi          1.0e-3
+#define epsi          1.0e-3 // 1e-5
 #define precision_min 1.0e-6
 #define precision_max 1.01e-11
 double P_NL_fitting(cosmo* self, double a, double k_NL, error **err)
@@ -1899,17 +1815,19 @@ double P_NL_fitting(cosmo* self, double a, double k_NL, error **err)
 
    testErrorRetVA(k_NL<=0, ce_negative, "Negative k=%g", *err, __LINE__, -1.0, k_NL);
    testErrorRetVA(a<self->a_min || a>1.0,
-		  ce_wrongValue, "a=%g out of range", *err, __LINE__, -1.0, a);
+         ce_wrongValue, "a=%g out of range", *err, __LINE__, -1.0, a);
 
 
    if (self->P_NL == NULL) {
       testErrorRetVA(!(self->nonlinear==linear || self->nonlinear==pd96 || self->nonlinear==smith03
-		       || self->nonlinear==smith03_de),
-		     ce_unknown, "Unknown nonlinear mode %d",
-		     *err, __LINE__, 0, self->nonlinear);
+               || self->nonlinear==smith03_de || self->nonlinear==smith03_revised),
+            ce_unknown, "Unknown nonlinear mode %d",
+            *err, __LINE__, 0, self->nonlinear);
 
       testErrorRet(self->nonlinear == coyote10, ce_wrongValue, "nonlinear mode 'coyote10' not valid in P_NL",
-		   *err, __LINE__, 0.0);
+            *err, __LINE__, 0.0);
+      testErrorRet(self->nonlinear == coyote13, ce_wrongValue, "nonlinear mode 'coyote13' not valid in P_NL",
+            *err, __LINE__, 0.0);
 
       /* upper = (dlnP/dlnk)_{k=kmax}, for splines & extrapolation */
       /* Note that the in the range considered here the linear power
@@ -1922,139 +1840,139 @@ double P_NL_fitting(cosmo* self, double a, double k_NL, error **err)
       logkmin = log(k_min);
       logkmax = log(k_max);
       dk = (logkmax - logkmin)/(N_k-1.0);
-		 
+
       if (self->nonlinear==linear) {
-	 upper = self->n_spec-4.0;
+         upper = self->n_spec-4.0;
       } else if (self->nonlinear==pd96) {
-	 upper = -2.5;
-      } else if (self->nonlinear==smith03 || self->nonlinear==smith03_de) {
-	 self->slope = init_interTable(self->N_a, self->a_min, 1.0, da, 1.0e31, 1.0e31, err);
-	 forwardError(*err,__LINE__,0);
-	 table_slope = self->slope->table;
+         upper = -2.5;
+      } else if (self->nonlinear==smith03 || self->nonlinear==smith03_de || self->nonlinear==smith03_revised) {
+         self->slope = init_interTable(self->N_a, self->a_min, 1.0, da, 1.0e31, 1.0e31, err);
+         forwardError(*err,__LINE__,0);
+         table_slope = self->slope->table;
       }
       lP_NL = init_interTable2D(self->N_a, self->a_min, 1.0, da, N_k, logkmin, logkmax, 
-				dk, self->n_spec, upper, err);
+            dk, self->n_spec, upper, err);
       forwardError(*err,__LINE__,0);
-		 
+
       for (i=0; i<self->N_a; i++,aa+=da) {
-			 
-	 if (self->nonlinear==smith03 || self->nonlinear==smith03_de) {
-	    /* Smith et al. (2003) */
-	    EE = Esqr(self, aa, 0, err);           forwardError(*err,__LINE__,0);
-	    omm = Omega_m_a(self, aa, EE, err);    forwardError(*err,__LINE__,0);
-	    omv = Omega_de_a(self, aa, EE, err);   forwardError(*err,__LINE__,0);
-	    golinear = 0;
-				 
-	    /* Find non-linear scale with iterative bisection */
-	 iter_start:
-	    logr1 = logrmin;
-	    logr2 = logrmax;
-	    iter = 0;
-	    do {
-					 
-	       logrmid = (logr2+logr1)/2.0;
-	       rmid    = pow(10,logrmid);
-	       wint2(self,rmid, &sig, NULL, NULL, aa, 1, err, precision);
-	       if (isError(*err))
-		 printError(stderr, *err);
-	       forwardError(*err, __LINE__, 0);
-	       diff = sig - 1.0;
-	       if(diff>epsi)
-		 logr1 = dlog(rmid);
-	       if(diff<-epsi)
-		 logr2 = dlog(rmid);
-	    } while (fabs(diff)>=epsi && ++iter<itermax);
-				 
-	    /* Non-linear scale not found */
-	    if (iter>=itermax) {
-	       /* Non-linear scale very very small, all scales basically
-		* linear: set flag golinear and continue
-		*/
-	       if (logrmid-logrmin<EPSILON) {
-		  /* Scale at low end */
-		  golinear = 1;
-		  upper    = table_slope[i] = self->n_spec-4.0;
-	       } else if (logrmax-logrmid<EPSILON) {
-		  /* scale at high end */
-		  *err = addError(ce_nonlin, "All scales are nonlinear. Something went wrong in P_NL",
-				  *err,__LINE__);
-		  return 0.0;
-	       } else {
-		  /* Somewhere in between */
-		  if (precision>precision_max) {
-		     precision /= 10.0;
-		     goto iter_start;
-		  } else {
-		     *err = addErrorVA(ce_noknl, "Nonlinear scale not found for a=%g, precision=%g", *err, __LINE__, aa, precision);
-		     return 0.0;
-		  }
-	       }
-	    } else {
-	       /* Spectral index & curvature at non-linear scale */
-	       wint2(self,rmid, &sig, &d1, &d2, aa, 0, err, precision_min);
-	       forwardError(*err,__LINE__,0);
-	       rknl  = 1.0/rmid;
-	       rneff = -3.0-d1;
-	       rncur = -d2;
-	       upper = table_slope[i] = slope_NL(rneff, rncur, omm, omv);
-	       forwardError(*err,__LINE__,0);
-	    }
-	 }
-	 klog = logkmin;
-	 for (j=0; j<N_k; j++, klog+=dk) {
-	    k_L = exp(klog);
-	    if (self->nonlinear==linear) {
 
-	       Delta_NL = P_L(self, aa, k_L, err)*k_L*k_L*k_L/(2.0*pi_sqr);
-	       forwardError(*err, __LINE__, 0);
-	       lnk_NL   = klog;
+         if (self->nonlinear==smith03 || self->nonlinear==smith03_de || self->nonlinear==smith03_revised) {
+            /* Smith et al. (2003) */
+            EE = Esqr(self, aa, 0, err);           forwardError(*err,__LINE__,0);
+            omm = Omega_m_a(self, aa, EE, err);    forwardError(*err,__LINE__,0);
+            omv = Omega_de_a(self, aa, EE, err);   forwardError(*err,__LINE__,0);
+            golinear = 0;
 
-	    } else if (self->nonlinear==pd96) {
+            /* Find non-linear scale with iterative bisection */
+iter_start:
+            logr1 = logrmin;
+            logr2 = logrmax;
+            iter = 0;
+            do {
 
-	       Delta_L  = P_L(self,aa,k_L,err)*k_L*k_L*k_L/(2.0*pi_sqr);
-	       forwardError(*err,__LINE__,0);
-	       Delta_NL = f_NL(self,Delta_L, aa, k_L, err);
-	       forwardError(*err,__LINE__,0);
-	       lnk_NL   = klog + 1.0/3.0*log(1.0 + Delta_NL);  /* PD (5) */
+               logrmid = (logr2+logr1)/2.0;
+               rmid    = pow(10,logrmid);
+               wint2(self,rmid, &sig, NULL, NULL, aa, 1, err, precision);
+               if (isError(*err))
+                  printError(stderr, *err);
+               forwardError(*err, __LINE__, 0);
+               diff = sig - 1.0;
+               if(diff>epsi)
+                  logr1 = dlog(rmid);
+               if(diff<-epsi)
+                  logr2 = dlog(rmid);
+            } while (fabs(diff)>=epsi && ++iter<itermax);
 
-	    } else if (self->nonlinear==smith03 || self->nonlinear==smith03_de) {
+            /* Non-linear scale not found */
+            if (iter>=itermax) {
+               /* Non-linear scale very very small, all scales basically
+                * linear: set flag golinear and continue
+                */
+               if (logrmid-logrmin<EPSILON) {
+                  /* Scale at low end */
+                  golinear = 1;
+                  upper    = table_slope[i] = self->n_spec-4.0;
+               } else if (logrmax-logrmid<EPSILON) {
+                  /* scale at high end */
+                  *err = addError(ce_nonlin, "All scales are nonlinear. Something went wrong in P_NL",
+                        *err,__LINE__);
+                  return 0.0;
+               } else {
+                  /* Somewhere in between */
+                  if (precision>precision_max) {
+                     precision /= 10.0;
+                     goto iter_start;
+                  } else {
+                     *err = addErrorVA(ce_noknl, "Nonlinear scale not found for a=%g, precision=%g", *err, __LINE__, aa, precision);
+                     return 0.0;
+                  }
+               }
+            } else {
+               /* Spectral index & curvature at non-linear scale */
+               wint2(self,rmid, &sig, &d1, &d2, aa, 0, err, precision_min);
+               forwardError(*err,__LINE__,0);
+               rknl  = 1.0/rmid;
+               rneff = -3.0-d1;
+               rncur = -d2;
+               upper = table_slope[i] = slope_NL(rneff, rncur, omm, omv);
+               forwardError(*err,__LINE__,0);
+            }
+         }
+         klog = logkmin;
+         for (j=0; j<N_k; j++, klog+=dk) {
+            k_L = exp(klog);
+            if (self->nonlinear==linear) {
 
-	       switch (self->transfer) {
-		  case bbks : case eisenhu : case eisenhu_osc : case camb :
-		     amp = D_plus(self, aa, 1, err);        forwardError(*err,__LINE__,0);
-		     break;
-		  case camb_vinschter :
-		     amp = 1.0;  /* growth in Tsqr_cambvinschter */
-		     break;
-		  default :
-		     *err = addError(ce_transfer, "wrong transfer type", *err, __LINE__);
-		     return 0;
-	       }
+               Delta_NL = P_L(self, aa, k_L, err)*k_L*k_L*k_L/(2.0*pi_sqr);
+               forwardError(*err, __LINE__, 0);
+               lnk_NL   = klog;
 
-	       Delta_L = amp*amp*sm2_transfer(self, k_L, aa, err);
-	       forwardError(*err, __LINE__, 0);
-	       if (golinear==0) {
-		  halofit(k_L, rneff, rncur, rknl, Delta_L, omm, omv, &Delta_NL, self->nonlinear, aa, self, err);
-		  forwardError(*err, __LINE__, 0);
-	       } else if (golinear==1) {
-		  Delta_NL = Delta_L;
-	       }
-	       lnk_NL = klog;
+            } else if (self->nonlinear==pd96) {
 
-	    }
-				 
-	    table_k[j] = lnk_NL;
-	    table_P[j] = log(2*pi_sqr*Delta_NL) - 3.0*lnk_NL; /* PD (3) */
+               Delta_L  = P_L(self,aa,k_L,err)*k_L*k_L*k_L/(2.0*pi_sqr);
+               forwardError(*err,__LINE__,0);
+               Delta_NL = f_NL(self,Delta_L, aa, k_L, err);
+               forwardError(*err,__LINE__,0);
+               lnk_NL   = klog + 1.0/3.0*log(1.0 + Delta_NL);  /* PD (5) */
 
-	 }
-	 sm2_spline(table_k-1, table_P-1, N_k, self->n_spec, upper, y2-1, err);
-	 forwardError(*err,__LINE__,0);
-	 klog = logkmin;
-	 for (j=0; j<N_k; j++, klog += dk) {
-	    sm2_splint(table_k-1, table_P-1, y2-1, N_k, klog, &val,err);
-	    forwardError(*err,__LINE__,0);
-	    lP_NL->table[i][j] = val;
-	 }
+            } else if (self->nonlinear==smith03 || self->nonlinear==smith03_de ||
+                  self->nonlinear==smith03_revised) {
+
+               switch (self->transfer) {
+                  case bbks : case eisenhu : case eisenhu_osc :
+                     amp = D_plus(self, aa, 1, err);        forwardError(*err,__LINE__,0);
+                     break;
+                  default :
+                     *err = addError(ce_transfer, "wrong transfer type", *err, __LINE__);
+                     return 0;
+               }
+
+               /* MKDEBUG NEW: Argument aa in sm2_transfer removed. This was ignored anyway. *
+                * D+(a) = amp, so probably ok */
+               Delta_L = amp*amp*sm2_transfer(self, k_L, err);
+               forwardError(*err, __LINE__, 0);
+               if (golinear==0) {
+                  halofit(k_L, rneff, rncur, rknl, Delta_L, omm, omv, &Delta_NL, self->nonlinear, aa, self, err);
+                  forwardError(*err, __LINE__, 0);
+               } else if (golinear==1) {
+                  Delta_NL = Delta_L;
+               }
+               lnk_NL = klog;
+
+            }
+
+            table_k[j] = lnk_NL;
+            table_P[j] = log(2*pi_sqr*Delta_NL) - 3.0*lnk_NL; /* PD (3) */
+
+         }
+         sm2_spline(table_k-1, table_P-1, N_k, self->n_spec, upper, y2-1, err);
+         forwardError(*err,__LINE__,0);
+         klog = logkmin;
+         for (j=0; j<N_k; j++, klog += dk) {
+            sm2_splint(table_k-1, table_P-1, y2-1, N_k, klog, &val,err);
+            forwardError(*err,__LINE__,0);
+            lP_NL->table[i][j] = val;
+         }
       }
       self->P_NL = lP_NL;
    }
@@ -2062,7 +1980,7 @@ double P_NL_fitting(cosmo* self, double a, double k_NL, error **err)
    klog = log(k_NL);
 
 #ifdef fastxi
-   if (self->nonlinear==smith03 || self->nonlinear==smith03_de) {
+   if (self->nonlinear==smith03 || self->nonlinear==smith03_de || self->nonlinear==smith03_revised) {
       upper = interpol_wr(self->slope,a,err);
       forwardError(*err, __LINE__, 0);
       self->P_NL->upper = upper;
@@ -2072,7 +1990,7 @@ double P_NL_fitting(cosmo* self, double a, double k_NL, error **err)
    i = (int)(r+0.5);                      /* Round to next integer */
    if (fabs(r-i)<eps_a) {
       val = sm2_interpol(self->P_NL->table[i], self->P_NL->n2, self->P_NL->a2, self->P_NL->b2,
-			 self->P_NL->dx2, klog, self->n_spec, self->P_NL->upper, err);
+            self->P_NL->dx2, klog, self->n_spec, self->P_NL->upper, err);
       forwardError(*err, __LINE__, 0);
       testErrorRet(!finite(val), ce_infnan, "Power spectrum P_NL not finite", *err, __LINE__, -1);
       val = exp(val);
@@ -2080,7 +1998,7 @@ double P_NL_fitting(cosmo* self, double a, double k_NL, error **err)
    }
    else
 #endif
-   val = interpol2D(self->P_NL, a, klog, err);
+      val = interpol2D(self->P_NL, a, klog, err);
    forwardError(*err, __LINE__, 0);
    val = exp(val);
    return val;
@@ -2119,51 +2037,99 @@ double P_NL_coyote(cosmo *self, double a, double k, error **err)
    K = self->Omega_m + self->Omega_nu_mass + self->Omega_de - 1.0;
    testErrorRetVA(fabs(K)>EPSILON, coyote_flat, "Universe is not flat (K=%g)", *err, __LINE__, -1.0, K);
    testErrorRetVA(fabs(self->w1_de)>EPSILON, ce_de, "Dark-energy equation of state not constant (w_1=%g)",
-		  *err, __LINE__, -1.0, self->w1_de);
+         *err, __LINE__, -1.0, self->w1_de);
    testErrorRet(self->de_param == poly_DE, ce_de, "Dark-energy mode not consistent (no constant w)",
-		*err, __LINE__, -1.0);
+         *err, __LINE__, -1.0);
 
    h2  = self->h_100 * self->h_100;
 
-   /* Check whether Hubble constant is consistent with CMB constraints */
-   h_100_WMAP7 = getH0fromCMB(self->Omega_m * h2, self->Omega_b * h2, self->w0_de, 1);
-   //h_100_WMAP7 = getH0fromCMB(self->Omega_m, self->Omega_b, self->w0_de, 0);
+   if (self->nonlinear == coyote10) {
 
-   /* Note: for some (numerical?) reasons, precision should be set lower than 1.0e-3 (in getH0fromCMB) */
-   testErrorRetVA(fabs(h_100_WMAP7 - self->h_100) > 0.005, coyote_h,
-		  "Input Hubble parameter %g not consistent with CMB constraints (h=%g)",
-   		  *err, __LINE__, -1.0, self->h_100, h_100_WMAP7);
+      /* Check whether Hubble constant is consistent with CMB constraints */
+      h_100_WMAP7 = getH0fromCMB(self->Omega_m * h2, self->Omega_b * h2, self->w0_de, 1);
+      //h_100_WMAP7 = getH0fromCMB(self->Omega_m, self->Omega_b, self->w0_de, 0);
 
-   i_max = nsim - 1;
+      /* Note: for some (numerical?) reasons, precision should be set lower than 1.0e-3 (in getH0fromCMB) */
+      testErrorRetVA(fabs(h_100_WMAP7 - self->h_100) > 0.005, coyote_h,
+            "Input Hubble parameter %g not consistent with CMB constraints (h=%g)",
+            *err, __LINE__, -1.0, self->h_100, h_100_WMAP7);
+
+      i_max = nsim - 1;
+
+   } else {
+
+      i_max = fr_nsim - 1;
+
+   }
 
    /* Tabulated Coyote k's are [1/Mpc] */
-   if (k < ksim[0] / self->h_100) {
-      val = P_L(self, a, k, err);   forwardError(*err, __LINE__, -1.0);
-   } else if (k > ksim[i_max] / self->h_100) {
-      val = 0;
-      // MKDEBUG: Glue Smith03 P(k) at large scales a la Eifler 2011
-      /*
-      static cosmo *tmp = NULL;
-      static double ratio;
-      if (tmp == NULL) {
-	 tmp = copy_parameters_only(self, err);   forwardError(*err, __LINE__, -1.0);
-	 tmp->nonlinear = smith03_de;
-	 updateFrom(self, tmp, err);              forwardError(*err, __LINE__, -1.0);
+   if (self->nonlinear == coyote10) {
 
-	 ratio  = P_NL_coyote5(self->Omega_m * h2, self->Omega_b * h2, self->n_spec, self->sigma_8,
-			       self->w0_de, self->h_100, a, ksim[i_max] / self->h_100, err);
-	 forwardError(*err, __LINE__, -1.0);
-	 ratio /= P_NL_fitting(tmp, a, ksim[i_max] / self->h_100, err);
-	 forwardError(*err, __LINE__, -1.0);
-	 printf("ratio = %g\n", ratio);
+      if (k < ksim[0] / self->h_100) {
+
+         /* Large scales -> linear power spectrum */
+         val = P_L(self, a, k, err);   forwardError(*err, __LINE__, -1.0);
+
+      } else if (k > ksim[i_max] / self->h_100) {
+
+         /* Small scales, option 1 -> Set power to zero */
+         val = 0;
+
+         /* Small scales, option 2-> Glue Smith03 P(k) a la Eifler 2011 */
+         /*
+            static cosmo *tmp = NULL;
+            static double ratio;
+            if (tmp == NULL) {
+            tmp = copy_parameters_only(self, err);   forwardError(*err, __LINE__, -1.0);
+            tmp->nonlinear = smith03_de;
+            updateFrom(self, tmp, err);              forwardError(*err, __LINE__, -1.0);
+
+            ratio  = P_NL_coyote5(self->Omega_m * h2, self->Omega_b * h2, self->n_spec, self->sigma_8,
+            self->w0_de, self->h_100, a, ksim[i_max] / self->h_100, err);
+            forwardError(*err, __LINE__, -1.0);
+            ratio /= P_NL_fitting(tmp, a, ksim[i_max] / self->h_100, err);
+            forwardError(*err, __LINE__, -1.0);
+            printf("ratio = %g\n", ratio);
+            }
+            val  = P_NL_fitting(tmp, a, k, err);                 forwardError(*err, __LINE__, -1.0);
+            val *= ratio;
+          */
+
+      } else {
+
+         /* Coyote v1 */
+         val = P_NL_coyote5(self->Omega_m * h2, self->Omega_b * h2, self->n_spec, self->sigma_8,
+               self->w0_de, self->h_100, a, k, err);
+         forwardError(*err, __LINE__, -1.0);
+
       }
-      val  = P_NL_fitting(tmp, a, k, err);                 forwardError(*err, __LINE__, -1.0);
-      val *= ratio;
-      */
+
+   } else if (self->nonlinear == coyote13) {
+
+      if (k < fr_ksim[0] / self->h_100) {
+
+         /* Large scales -> linear power spectrum */
+         val = P_L(self, a, k, err);   forwardError(*err, __LINE__, -1.0);
+
+      } else if (k > fr_ksim[i_max] / self->h_100) {
+
+         /* Small scales, option 1 -> Set power to zero */
+         val = 0;
+
+      } else {
+
+         /* Coyote v2 */
+         val = P_NL_coyote6(self->Omega_m * h2, self->Omega_b * h2, self->n_spec, self->sigma_8,
+               self->w0_de, self->h_100, a, k, &(self->ystar_allz), err);
+         forwardError(*err, __LINE__, -1.0);
+
+      }
+
    } else {
-      val = P_NL_coyote5(self->Omega_m * h2, self->Omega_b * h2, self->n_spec, self->sigma_8,
-			 self->w0_de, self->h_100, a, k, err);
-      forwardError(*err, __LINE__, -1.0);
+
+      val = -1;
+      *err = addError(ce_unknown, "Invalid nonlinear mode (should be coyote10 or coyote13 here)", *err, __LINE__);
+
    }
 
    return val;
@@ -2184,11 +2150,11 @@ double int_for_w(double a, void *intpar, error **err)
 
 int change_w(cosmo *avant, cosmo *apres) {
    if (NCOEQ(avant,apres,de_param) || NCOEQ(avant,apres,N_a)) 
-     return 1;
+      return 1;
    if (NCOCLOSE(avant,apres,Omega_m) || NCOCLOSE(avant,apres,Omega_de) || NCOCLOSE(avant,apres,w0_de) ||
-       NCOCLOSE(avant,apres,w1_de) || NCOCLOSE(avant,apres,a_min) || NCOCLOSE(avant,apres,Omega_nu_mass))
-     return 1;
-	/* MKDEBUG TODO: check N_poly_de */
+         NCOCLOSE(avant,apres,w1_de) || NCOCLOSE(avant,apres,a_min) || NCOCLOSE(avant,apres,Omega_nu_mass))
+      return 1;
+   /* MKDEBUG TODO: check N_poly_de */
 
    if (change_w_de(avant, apres)) return 1;
 
@@ -2208,7 +2174,7 @@ double w(cosmo* self, double a, int wOmegar, error **err)
    double res;
    interTable *lw;
    cosmoANDint intpar;
-	 
+
    if (self->w==NULL) {
       da = (1.0-self->a_min)/(self->N_a-1.0);
       aa = self->a_min;
@@ -2219,8 +2185,8 @@ double w(cosmo* self, double a, int wOmegar, error **err)
       intpar.i    = wOmegar;
 
       for (i=0; i<self->N_a-1; i++, aa+=da) {
-	 table[i] = R_HUBBLE*sm2_qromberg(int_for_w, (void*)(&intpar), aa, 1.0, 1.0e-6, err);
-	 forwardError(*err,__LINE__,0);
+         table[i] = R_HUBBLE*sm2_qromberg(int_for_w, (void*)(&intpar), aa, 1.0, 1.0e-6, err);
+         forwardError(*err,__LINE__,0);
       }
 
       table[self->N_a-1] = 0.0;
@@ -2237,7 +2203,11 @@ double w(cosmo* self, double a, int wOmegar, error **err)
 double dwoverda(cosmo *self, double a, error **err)
 {
    double res;
-   res = R_HUBBLE*int_for_w(a, (void*)self, err);
+   cosmoANDint intpar;
+
+   intpar.self = self;
+   intpar.i    = 0;    /* wOmegar */
+   res = R_HUBBLE*int_for_w(a, (void*)&intpar, err);
    forwardError(*err,__LINE__,0);
    return res;
 }
@@ -2246,7 +2216,7 @@ double dwoverda(cosmo *self, double a, error **err)
 double drdz(cosmo *self, double a, error **err)
 {
    double res;
-   int wOmegar = 0;
+   int wOmegar = 0;   
 
    res  = 1.0/sqrt(Esqr(self, a, wOmegar, err));
    forwardError(*err,__LINE__,-1);
@@ -2258,25 +2228,12 @@ double drdz(cosmo *self, double a, error **err)
 /* dVol/dz */
 double dvdz(cosmo *self, double a, error **err)
 {
-  double res;
-  int wOmegar;
-
-  wOmegar = 0;
-  res   = dsqr(w(self, a, wOmegar, err));     forwardError(*err, __LINE__, -1.0);
-  res  *= drdz(self, a, err);                 forwardError(*err, __LINE__, -1.0);
-
-  return res;
-}
-
-double volume_ana(cosmo *self, double a, error **err)
-{
-   int wOmegar;
    double res;
+   int wOmegar;
 
    wOmegar = 0;
-   res = w(self, a, wOmegar, err);            forwardError(*err, __LINE__, -1.0);
-   res = res*res*res;
-   res *= 4.0*pi/3.0;
+   res   = dsqr(w(self, a, wOmegar, err));     forwardError(*err, __LINE__, -1.0);
+   res  *= drdz(self, a, err);                 forwardError(*err, __LINE__, -1.0);
 
    return res;
 }
@@ -2290,11 +2247,11 @@ double f_K(cosmo* self, double w, error **err)
 
    /* Curvature without radiation (photons + massless neutrinos) density */
    K = self->Omega_m + self->Omega_nu_mass + self->Omega_de - 1.0;
-  
+
    if (K>EPSILON) {             /* closed */
       K_h = sqrt(K)/R_HUBBLE;
       testErrorRet(K_h*w>pi, ce_zmax, "z larger than zmax in closed Universe",
-		   *err, __LINE__, -1.0);
+            *err, __LINE__, -1.0);
       f = 1.0/K_h*sin(K_h*w);
    } else if (K<-EPSILON) {     /* open */
       K_h = sqrt(-K)/R_HUBBLE;
@@ -2325,11 +2282,11 @@ int test_range_de_conservative(cosmo *model, error **err)
    /* Prior:
       1. w(a) >= -1
       2. w(a) <= -1/3 for a>=a_acc=2/3 (z=1/5)
-   */
+    */
 
    testErrorRet(model->de_param!=linder, ce_unknown,
-		"Conservative de prior at the moment only defined for de_param=linder",
-		*err, __LINE__, 1);
+         "Conservative de prior at the moment only defined for de_param=linder",
+         *err, __LINE__, 1);
 
    w = w_de(model, 1.0, err);   forwardError(*err, __LINE__, 0.0);
    if (w<-1 || w>-1.0/3.0) return 1;
@@ -2354,26 +2311,13 @@ int test_range_de_conservative(cosmo *model, error **err)
  * ...								*
  * n-1 n-1							*
  * ============================================================ */
-int idx_zz(int i_bin, int j_bin, int Nzbin)
+int idx_zz(int i_bin, int j_bin, int Nzbin, error **err)
 {
+   testErrorRetVA(i_bin >= Nzbin || j_bin >= Nzbin || i_bin < 0 || j_bin < 0, ce_range,
+		  "Redshift bin(s) (%d,%d) out of range [0; %d]",
+		  *err, __LINE__, -1, i_bin, j_bin, Nzbin);
+
    return i_bin*Nzbin - i_bin*(i_bin-1)/2 + j_bin - i_bin;
-}
-
-/* Index of (i i_bin j_bin)-correlation.			*/
-int idx_tzz(int i, int i_bin, int j_bin, int Nzbin)
-{
-   int Nzcorr;
-   Nzcorr = Nzbin*(Nzbin+1)/2;
-   return i*Nzcorr + idx_zz(i_bin, j_bin, Nzbin);
-}
-
-/* Covariance index */
-int idx_tzztzz(int i, int i_bin, int j_bin, int j, int k_bin, int l_bin, int Ntheta, int Nzbin)
-{
-   int Nzcorr;
-   Nzcorr = Nzbin*(Nzbin+1)/2;
-   return idx_tzz(i, i_bin, j_bin, Nzbin)*Ntheta*Nzcorr
-     + idx_tzz(j, k_bin, l_bin, Nzbin);
 }
 
 /* ============================================================ *

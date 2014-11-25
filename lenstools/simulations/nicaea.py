@@ -162,11 +162,11 @@ class NicaeaSettings(dict):
 		
 		#Available settings
 		if knob=="snonlinear":
-			return [ "linear", "pd96", "smith03", "smith03_de", "coyote10", "halodm" ]
+			return [ "linear", "pd96", "smith03", "smith03_de", "coyote10", "coyote13", "halodm", "smith03_revised" ]
 		elif knob=="stransfer":
-			return [ "bbks", "eisenhu", "eisenhu_osc", "camb_vinschter", "camb", "be84" ]
+			return [ "bbks", "eisenhu", "eisenhu_osc", "be84" ]
 		elif knob=="sgrowth":
-			return [ "heath", "growth_de", "camb_vinschter_gr" ]
+			return [ "heath", "growth_de" ]
 		elif knob=="sde_param":
 			return [ "jassal", "linder", "earlyDE", "poly_DE" ]
 		elif knob=="normmode":

@@ -1919,6 +1919,11 @@ void tpstat_via_hankel(void* self, double **xi, double *logthetamin, double *log
 	 mu = 0.0;
 	 norm = 2.0*pi;
 	 break;
+      case tp_gt :
+         q =  0.0; 
+         mu = 2.0;
+         norm = 2.0*pi;
+         break;
       case tp_gsqr :
 	 q = -2.0;
 	 mu = 1.0;
@@ -1951,8 +1956,9 @@ void tpstat_via_hankel(void* self, double **xi, double *logthetamin, double *log
 	 kk = 2*pi*i/(dlnl*N_thetaH);
 
 	 switch (tpstat) {
-	    case tp_xipm : 
+	    case tp_xipm :
 	    case tp_w :
+	    case tp_gt  :
 	       hankel_kernel_mu(kk, &kernel, q, mu, err);
 	       break;
 	    case tp_gsqr :
@@ -1966,7 +1972,7 @@ void tpstat_via_hankel(void* self, double **xi, double *logthetamin, double *log
 	       hankel_kernel_tophat(kk, &kernel, err);
 	       break;
 	    default :
-	       *err = addError(math_unknown, "unknown tpstat", *err, __LINE__);
+	       *err = addErrorVA(math_unknown, "unknown tpstat %d", *err, __LINE__, tpstat);
 	       return;
 	 }
 	 forwardError(*err, __LINE__,);

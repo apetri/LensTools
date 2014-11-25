@@ -88,7 +88,7 @@ double *readASCII(char *filename, int *fnx, int *fny, sm2_error **err) {
     for(i=0;i<*fnx;i++) {
       n = fscanf(F, "%le\n", &val);
       testErrorRetVA(n!=1, io_file, "%d elements read from file %s, expected %d",
-		     *err, __LINE__, NULL, filename, n, 1);
+		     *err, __LINE__, NULL, n, filename, 1);
       mat[i+j*(*fnx)] = val;  /* hopefully the right order ... */
     }
   }
@@ -452,5 +452,51 @@ void end_time(time_t t_start, FILE *FOUT)
    fprintf(FOUT, "Computation time %.0fs (= %dd %dh %dm %ds)\n",
            diff, (int)diff/86400, ((int)diff%86400)/3600,
            ((int)diff%3600)/60, ((int)diff%60));
+}
+
+clock_t start_clock(FILE *FOUT)
+{
+   clock_t c_start;
+   time_t t_start;
+
+   time(&t_start);
+   c_start = clock();
+   fprintf(FOUT, "Started at %s\n", ctime(&t_start));
+   fflush(FOUT);
+   return c_start;
+}
+
+void end_clock(clock_t c_start, FILE *FOUT)
+{
+   clock_t c_end;
+   time_t t_end;
+   float diff;
+   int idiff;
+
+   c_end = clock();
+   time(&t_end);
+   fprintf(FOUT, "Ended at %s", ctime(&t_end));
+
+   diff  = (float)c_end - (float)c_start;
+   diff /= 1000000.0; /* in seconds */
+   idiff = (int)diff;
+ 
+   fprintf(FOUT, "Computation time %.3fs (= %dd %dh %dm %ds %dms)\n",
+           diff, idiff/86400, (idiff%86400)/3600,
+           (idiff%3600)/60, idiff%60, (int)(1000*diff)-1000*idiff);
+}
+
+/* Returns 1 if path is a directory, and 0 otherwise */
+int is_directory(const char *path)
+{
+   struct stat s;
+   int err;
+
+   err = stat(path, &s);
+   if (err != -1 && S_ISDIR(s.st_mode)) {
+      return 1;
+   } else {
+      return 0;
+   }
 }
 

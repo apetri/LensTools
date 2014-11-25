@@ -20,6 +20,7 @@
 #include "constants.h"
 
 
+/* Used only one to create C-table with values of Kriging basis for constants.c */
 void KrigBasisOut()
 {
    FILE *F;
@@ -51,6 +52,7 @@ void fill_xstar_wo_z(double omega_m, double omega_b, double n_spec, double sigma
  * Returns the Coyote non-linear power spectrum. k is in units  *
  * of h/Mpc, h_100 is needed to transform it to [1/Mpc] as      *
  * needed by the Coyote emulator.				*
+ * Five parameters, for coyote10.				*
  * ============================================================ */
 double P_NL_coyote5(double omega_m, double omega_b, double n_spec, double sigma_8, double w0_de,
 		    double h_100, double a, double k, error **err)
@@ -98,6 +100,8 @@ double P_NL_coyote5(double omega_m, double omega_b, double n_spec, double sigma_
 // Cosmological parameters, placeholder for the output, type of output
 void emu(double *xstar, double *ystar, error **err)
 {
+    const double sd = 1.4613227729637035e-01;
+
     int i, j, k;
     double wstar[peta], Sigmastar[peta][m], ystaremu[neta], ystar_allz[rs*nsim], logc;
     double xstarstd[p];
@@ -108,6 +112,7 @@ void emu(double *xstar, double *ystar, error **err)
     gsl_interp_accel *accel = gsl_interp_accel_alloc();
     
     /* CosmoPMC version of Coyote: no initialisation, no static variables */
+   //fprintf(stderr, "MKDEBUG: (m, neta, p, peta, rs) = (%d, %d, %d, %d, %d)\n", m, neta, p, peta, rs);
     
     // Check the inputs to make sure we're interpolating.
     for(i=0; i<p; i++) {

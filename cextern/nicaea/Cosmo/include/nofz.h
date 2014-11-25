@@ -24,6 +24,8 @@
 #define redshift_unknown                  -5 + redshift_base
 #define redshift_Nzbin                    -6 + redshift_base
 #define redshift_narrow_hist              -7 + redshift_base
+#define redshift_type                     -8 + redshift_base
+#define redshift_dz                       -9 + redshift_base
 
 /* Very narrow redshift bins cause a bug in the shear correlation function */
 #define MINIMUM_ZBIN_WIDTH 0.1

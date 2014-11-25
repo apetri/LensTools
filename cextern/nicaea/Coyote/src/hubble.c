@@ -3,6 +3,7 @@
  *  
  *  written by christian wagner
  *
+ *
  */
 
 #include "coyote.h"
@@ -134,7 +135,7 @@ double getH0fromCMB(double omega_m, double omega_b, double w0_de, int physical)
   to last scattering (in Mpc).
   */
 
-   double h_100_min, h_100_max, h_100_mid, ymin, ymax, ymid;
+   double h_100_min, h_100_max, h_100_mid, ymin, ymid; // ymax
    double rs, dLS, wm, wb;
 
    dLS = 302.4 / pi;   /* Constraint from WMAP7 */
@@ -150,7 +151,8 @@ double getH0fromCMB(double omega_m, double omega_b, double w0_de, int physical)
    wm = set_omega(omega_m, h_100_max, physical);
    wb = set_omega(omega_b, h_100_max, physical);
    rs   = soundhorizon(wm, wb);
-   ymax = distls(wm, wb, w0_de, h_100_max) - dLS * rs;
+   // MKDEBUG: ymax not used, is this correct?
+   //ymax = distls(wm, wb, w0_de, h_100_max) - dLS * rs;
 
    while (fabs(h_100_max - h_100_min) > PREC) {
 
@@ -163,7 +165,7 @@ double getH0fromCMB(double omega_m, double omega_b, double w0_de, int physical)
 
       if (ymin*ymid<0) {
 	 h_100_max = h_100_mid;
-	 ymax      = ymid;
+	 //ymax      = ymid;
       } else {
 	 h_100_min = h_100_mid;
 	 ymin      = ymid;

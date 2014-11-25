@@ -5,7 +5,6 @@
 #include "decomp_eb.h"
 #include <gsl/gsl_sf_gamma.h>
 
-
 /* === CFHTLS Wide 3rd data release, Fu&Kilbinger (2010) === */
 
 /* S/N, Psi=19' eta=1/50 */
@@ -566,7 +565,7 @@ double *read_zeros_norm_cosebi_auto_check(double Psimin, double Psimax, const ch
    double *c_cosebi, psimin, psimax;
    char rname[1024];
 
-   sprintf(rname, "%s/cosebi_tplog_rN_%d_%.1f_%.1f",
+   sprintf(rname, "%s/cosebi_tplog_rN_%d_%.3f_%.3f",
 	   path == NULL ? "." : path, NMAX_COSEBI, Psimin/arcmin, Psimax/arcmin);
    c_cosebi = read_zeros_norm_cosebi(rname, &psimin, &psimax, err);
    forwardError(*err, __LINE__, NULL);
@@ -787,3 +786,35 @@ double sum_combinations(int j, int n, const double *r, error **err)
 
    return sum;
 }
+
+
+/* ============================================================ *
+ * E-/B-mode correlation functions from COSEBIs, SEK10 (40).    *
+ * The results are stored in xi_pm_EB = (E+, E-, B+, B-).       *
+ * ============================================================ */
+void xipmEB(double theta, double THETA_MIN, double THETA_MAX, const double *c,
+	    const double *E, const double *B, int N, double xi_pm_EB[4], error **err) 
+{
+   double Tp, Tm, z;
+   int n;
+
+   for (n=0; n<4; n++) {
+      xi_pm_EB[n] = 0.0;
+   }
+
+   for (n=1; n<=N; n++) {
+      z  = log(theta/THETA_MIN);
+      Tp = Tplog_c(z, c, n, err); 
+      Tm = Tmlog(z, c, n, err); 
+	 
+      xi_pm_EB[0] += E[n] * Tp;   // E+
+      xi_pm_EB[1] += E[n] * Tm;   // E-
+      xi_pm_EB[2] += B[n] * Tp;   // B+
+      xi_pm_EB[3] += B[n] * Tm;   // B-
+   }
+
+   for (n=0; n<4; n++) {
+      xi_pm_EB[n] *= 2.0 / theta / (THETA_MAX - THETA_MIN);
+   }
+}
+

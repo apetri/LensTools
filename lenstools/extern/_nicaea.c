@@ -74,29 +74,34 @@ static int translate(int Nobjects,char *string_dictionary[],char *string){
 static cosmo_lens *parse_model(PyObject *args, error **err){
 
 	//Type translators
-	char *distribution_strings[5] = {"ludo","jonben","ymmk","hist","single"};
-	const nofz_t distribution_types[5] = {ludo,jonben,ymmk,hist,single};
+	char *distribution_strings[Nnofz_t] = {"ludo", "jonben", "ymmk", "ymmk0const", "hist", "single"};
+	const nofz_t distribution_types[Nnofz_t] = {ludo, jonben, ymmk, ymmk0const, hist, single};
 
-	char *nonlinear_strings[6] = {"linear", "pd96", "smith03", "smith03_de", "coyote10", "halodm"}; 
-	const nonlinear_t nonlinear_types[6] = {linear, pd96, smith03, smith03_de, coyote10, halodm};
+	char *nonlinear_strings[Nnonlinear_t] = {"linear", "pd96", "smith03", "smith03_de", "coyote10", "coyote13", "halodm", "smith03_revised"}; 
+	const nonlinear_t nonlinear_types[Nnonlinear_t] = {linear, pd96, smith03, smith03_de, coyote10, coyote13, halodm, smith03_revised};
 
-	char *transfer_strings[6] = {"bbks", "eisenhu", "eisenhu_osc", "camb_vinschter", "camb", "be84"};
-	const transfer_t transfer_types[6] = {bbks, eisenhu, eisenhu_osc, camb_vinschter, camb, be84}; 
+	char *transfer_strings[Ntransfer_t] = {"bbks", "eisenhu", "eisenhu_osc", "be84"};
+	const transfer_t transfer_types[Ntransfer_t] = {bbks, eisenhu, eisenhu_osc, be84}; 
 
-	char *growth_strings[3] = {"heath", "growth_de", "camb_vinschter_gr"};
-	const growth_t growth_types[3] = {heath, growth_de, camb_vinschter_gr};
+	char *growth_strings[Ngrowth_t] = {"heath", "growth_de"};
+	const growth_t growth_types[Ngrowth_t] = {heath, growth_de};
 
-	char *de_param_strings[4] = {"jassal", "linder", "earlyDE", "poly_DE"};
-	const de_param_t de_param_types[4] = {jassal, linder, earlyDE, poly_DE};
+	char *de_param_strings[Nde_param_t] = {"jassal", "linder", "earlyDE", "poly_DE"};
+	const de_param_t de_param_types[Nde_param_t] = {jassal, linder, earlyDE, poly_DE};
 
 	char *norm_strings[2] = {"norm_s8", "norm_as"};
 	const norm_t norm_types[2] = {norm_s8, norm_as};
 
-	char *tomo_strings[3] = {"tomo_all", "tomo_auto_only", "tomo_cross_only"};
-	const tomo_t tomo_types[3] = {tomo_all, tomo_auto_only, tomo_cross_only};
+	char *tomo_strings[Ntomo_t] = {"tomo_all", "tomo_auto_only", "tomo_cross_only"};
+	const tomo_t tomo_types[Ntomo_t] = {tomo_all, tomo_auto_only, tomo_cross_only};
 
-	char *reduced_strings[2] = {"none", "reduced_K10"};
-	const reduced_t reduced_types[2] = {reduced_none, reduced_K10};
+	char *reduced_strings[Nreduced_t] = {"none", "reduced_K10"};
+	const reduced_t reduced_types[Nreduced_t] = {reduced_none, reduced_K10};
+
+	//Intrinsic alignment interface not implemented yet (defaults to none)
+	ia_t IA=ia_none;
+	ia_terms_t IA_TERMS=ia_undef;
+	double A_IA=0.0;
 
 	//Cosmological parameters
 	double Om,Ode,w0,w1,H100,Omegab,Omeganu,Neff,si8,ns;
@@ -139,7 +144,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 
 		PyArg_Parse(PyList_GetItem(nofz_obj,i),"s",&distr_type);
 		
-		if((j=translate(5,distribution_strings,distr_type))==-1){
+		if((j=translate(Nnofz_t,distribution_strings,distr_type))==-1){
 			
 			Py_DECREF(Nnz_array);
 			Py_DECREF(par_nz_array);
@@ -157,7 +162,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	//nonlinear_t
 	nonlinear_t nonlinear_type;
 	PyArg_Parse(PyDict_GetItemString(settings_dict,"snonlinear"),"s",&setting_string);
-	if((j=translate(6,nonlinear_strings,setting_string))==-1){
+	if((j=translate(Nnonlinear_t,nonlinear_strings,setting_string))==-1){
 		Py_DECREF(Nnz_array);
 		Py_DECREF(par_nz_array);
 		return NULL;
@@ -168,7 +173,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	//transfer_t
 	transfer_t transfer_function;
 	PyArg_Parse(PyDict_GetItemString(settings_dict,"stransfer"),"s",&setting_string);
-	if((j=translate(6,transfer_strings,setting_string))==-1){
+	if((j=translate(Ntransfer_t,transfer_strings,setting_string))==-1){
 		Py_DECREF(Nnz_array);
 		Py_DECREF(par_nz_array);
 		return NULL;
@@ -179,7 +184,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	//growth_t
 	growth_t growth;
 	PyArg_Parse(PyDict_GetItemString(settings_dict,"sgrowth"),"s",&setting_string);
-	if((j=translate(3,growth_strings,setting_string))==-1){
+	if((j=translate(Ngrowth_t,growth_strings,setting_string))==-1){
 		Py_DECREF(Nnz_array);
 		Py_DECREF(par_nz_array);
 		return NULL;
@@ -191,7 +196,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	//de_param_t
 	de_param_t dark_energy;
 	PyArg_Parse(PyDict_GetItemString(settings_dict,"sde_param"),"s",&setting_string);
-	if((j=translate(4,de_param_strings,setting_string))==-1){
+	if((j=translate(Nde_param_t,de_param_strings,setting_string))==-1){
 		Py_DECREF(Nnz_array);
 		Py_DECREF(par_nz_array);
 		return NULL;
@@ -213,7 +218,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	//tomo_t
 	tomo_t tomography;
 	PyArg_Parse(PyDict_GetItemString(settings_dict,"stomo"),"s",&setting_string);
-	if((j=translate(3,tomo_strings,setting_string))==-1){
+	if((j=translate(Ntomo_t,tomo_strings,setting_string))==-1){
 		Py_DECREF(Nnz_array);
 		Py_DECREF(par_nz_array);
 		return NULL;
@@ -224,7 +229,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	//reduced_t
 	reduced_t sreduced;
 	PyArg_Parse(PyDict_GetItemString(settings_dict,"sreduced"),"s",&setting_string);
-	if((j=translate(2,reduced_strings,setting_string))==-1){
+	if((j=translate(Nreduced_t,reduced_strings,setting_string))==-1){
 		Py_DECREF(Nnz_array);
 		Py_DECREF(par_nz_array);
 		return NULL;
@@ -235,7 +240,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	double Q_MAG_SIZE = PyFloat_AsDouble(PyDict_GetItemString(settings_dict,"q_mag_size"));
 
 	//cosmo model object
-	cosmo_lens *model=init_parameters_lens(Om,Ode,w0,w1,NULL,0,H100,Omegab,Omeganu,Neff,si8,ns,nzbins,Nnz,nofz,par_nz,nonlinear_type,transfer_function,growth,dark_energy,norm_mode,tomography,sreduced,Q_MAG_SIZE,err);
+	cosmo_lens *model=init_parameters_lens(Om,Ode,w0,w1,NULL,0,H100,Omegab,Omeganu,Neff,si8,ns,nzbins,Nnz,nofz,par_nz,nonlinear_type,transfer_function,growth,dark_energy,norm_mode,tomography,sreduced,Q_MAG_SIZE,IA,IA_TERMS,A_IA,err);
 
 	//cleanup
 	Py_DECREF(Nnz_array);

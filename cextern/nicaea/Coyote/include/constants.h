@@ -23,3 +23,5 @@ extern const double w_coyote[peta][m];
 extern const double KrigBasis[peta][m];
 
 #endif
+
+/* The above defined quantities are undefined at the end of emu.c */

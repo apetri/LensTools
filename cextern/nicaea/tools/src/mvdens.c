@@ -367,7 +367,7 @@ double mvdens_log_pdf(mvdens *g, const double *x, error **err) {
   /* log_g contains the scalar product xt . var . x */
   log_g = scalar_product(g, x, err);
   forwardError(*err,__LINE__,-1);  
-  
+
   /* Student-t distribution with df degrees of freedom */
   if (g->df!=-1) {
     n = g->df;

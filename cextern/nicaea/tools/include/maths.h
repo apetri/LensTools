@@ -36,7 +36,7 @@ typedef enum {comp_c=0, comp_b=1, comp_nu=2} comp_t;
 
 /* Size of fast Hankel transform arrays (from lensing.h) */
 #define N_thetaH  1024
-typedef enum {tp_xipm, tp_gsqr, tp_map2_poly, tp_map2_gauss, tp_w, tp_xir} tpstat_t;
+typedef enum {tp_xipm, tp_gsqr, tp_map2_poly, tp_map2_gauss, tp_w, tp_xir, tp_gt} tpstat_t;
 
 
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))

@@ -38,7 +38,7 @@
 #define T_CMB  2.725
 
 /* Dimensions of interpolation tables */
-#define _N_a    50
+#define _N_a    100 // 50 // 200
 /* New! Changed from 100 (nicaea v2.2) -> 250 */
 #define N_k     250
 
@@ -46,41 +46,39 @@
 #define a_minmin  0.0009
 /* [k] = h/Mpc */
 #define k_min     3.336e-6
-//#define k_min     1.5e-6
 #define k_max     333.6
-// MKDBUG: Why was it at some point 3336? To test HOD?
 //ATTENTION k_max is set to 3336.0 for HOD (see halomodel/include/halomodel.h
 //#define k_max     3336.0
 
-typedef enum {linear, pd96, smith03, smith03_de, coyote10, halodm} nonlinear_t;
+typedef enum {linear, pd96, smith03, smith03_de, coyote10, coyote13, halodm, smith03_revised} nonlinear_t;
 #define snonlinear_t(i) ( \
-  i==linear     ? "linear" : \
-  i==pd96       ? "pd96"   : \
-  i==smith03    ? "smith03" : \
-  i==smith03_de ? "smith03_de" : \
-  i==coyote10   ? "coyote10" : \
-  i==halodm     ? "halodm" : \
+  i==linear          ? "linear" : \
+  i==pd96            ? "pd96"   : \
+  i==smith03         ? "smith03" : \
+  i==smith03_de      ? "smith03_de" : \
+  i==coyote10        ? "coyote10" : \
+  i==coyote13        ? "coyote13" : \
+  i==halodm          ? "halodm" : \
+  i==smith03_revised ? "smith03_revised" : \
   "")
-#define Nnonlinear_t 6
+#define Nnonlinear_t 8
 
-typedef enum {bbks, eisenhu, eisenhu_osc, camb_vinschter, camb, be84} transfer_t;
+typedef enum {bbks, eisenhu, eisenhu_osc, Class, be84} transfer_t;
 #define stransfer_t(i) ( \
   i==bbks           ? "bbks" :           \
   i==eisenhu        ? "eisenhu" :	 \
   i==eisenhu_osc    ? "eisenhu_osc" :    \
-  i==camb_vinschter ? "camb_vinschter" : \
-  i==camb           ? "camb" :		 \
+  i==Class          ? "class" :          \
   i==be84           ? "be84" :		 \
   "")
-#define Ntransfer_t 6
+#define Ntransfer_t 4
 
-typedef enum {heath, growth_de, camb_vinschter_gr} growth_t;
+typedef enum {heath, growth_de} growth_t;
 #define sgrowth_t(i) ( \
   i==heath             ? "heath" : \
   i==growth_de         ? "growth_de" : \
-  i==camb_vinschter_gr ? "camb_vinschter_gr" :  \
   "")
-#define Ngrowth_t 4
+#define Ngrowth_t 2
 
 typedef enum {jassal, linder, earlyDE, poly_DE} de_param_t;
 #define sde_param_t(i) ( \
@@ -120,6 +118,7 @@ typedef enum {norm_s8=0, norm_as=1} norm_t;
 #define ce_npar                     -33
 #define ce_range                    -34
 #define ce_de                       -35
+#define ce_omega                    -36
 
 typedef struct {
 
@@ -145,7 +144,7 @@ typedef struct {
    * Flags.							  *
    * ============================================================ */
 
-  nonlinear_t nonlinear;  /* linear, pd96, smith03, smith03_de, coyote10, halodm      */
+  nonlinear_t nonlinear;  /* linear, pd96, smith03, smith03_de, coyote10, coyote13, halodm, smith03_revised */
   transfer_t transfer;    /* bbks, eisenhu, eisenhu_osc	                    */
   growth_t growth;        /* heath, growth_de				    */
   de_param_t de_param;    /* jassal, linder, earlyDE, poly_DE               */
@@ -165,13 +164,13 @@ typedef struct {
   double transfer_alpha_Gamma;
   double transfer_s;
   interTable* transferBE;
-  interTable2Dneq *tsqr_vinschter;
 
   double cmp_sigma8;                  /* sigma8 computed */
   interTable2D* P_NL;
   interTable* slope;
   interTable* w;
-  interTable *k_NL;
+   //interTable *k_NL;
+  double *ystar_allz; /* For nonlinear=coyote13 */
 
 } cosmo;
 
@@ -219,6 +218,7 @@ cosmo* init_parameters(double OMEGAM, double OMEGAV, double W0_DE, double W1_DE,
 		       nonlinear_t NONLINEAR, transfer_t TRANSFER, growth_t GROWTH,
 		       de_param_t DEPARAM, norm_t normmode, double AMIN, error **err);
 
+void consistency_parameters(const cosmo *self, error **err);
 cosmo* copy_parameters_only(cosmo* source,error **err);
 cosmo* copy_parameters(cosmo* source,error **err);
 void read_cosmological_parameters(cosmo **self, FILE *F, error **err);
@@ -284,21 +284,13 @@ double G_EH98(double y);
 double T_tilde(const cosmo *self, double k, double alpha_c, double beta_c);
 double Tsqr_one(cosmo*,double k,double Gamma_eff,error **err);
 double Tsqr(cosmo*,double k,error **err);
-double Transfer_function(cosmo *self, double k, error **err);
-interTable2Dspline *init_and_copy_Tsqr_vinschter_table(int m, int n, const double *x,
-		    const double *y, const double ***z,error **err);
-interTable2Dneq *init_and_copy_Tsqr_vinschter_table_neq(int m, int n, const double *x,
-		 const double *y, const double ***z, error **err);
-void set_vinschter(cosmo* self, int m, int n, const double *x,  const double *y,
-		   const double ***z,error **err);
-double Tsqr_vinschter(cosmo *, comp_t comp, double k, double a,  error **err);
 
 /* Linear power spectrum */
 double W_tophat(double x);
 double int_for_sigma_R(double logk, void *intpar, error **err);
 double sigma_8_sqr(cosmo*, error **err);
 double P_L(cosmo* ,double a, double k, error **err);
-double P_nu(cosmo *self, double a, double k, error **err);
+double P_L_nonorm(cosmo* self, double a, double k, error **err);
 double sm2_dfridr(double (*func)(cosmo*,double,double,error **), double x, double h,
                   double *err, double aa, cosmo* self,error **);
 
@@ -308,7 +300,7 @@ double n_L(cosmo*,double a, double k, error **err);
 double f_NL(cosmo*,double x, double a, double k, error **err);
 
 /* Smith et al. non-linear power spectrum (halofit) */
-double sm2_transfer(cosmo*, double k, double a, error **err);
+double sm2_transfer(cosmo*, double k, error **err);
 double Delta_L_BE2(cosmo*, double k, error **err);
 double int_for_wint2_knl(double logk, void *intpar, error **err);
 double int_for_wint2_neff(double logk, void *intpar, error **err);
@@ -330,9 +322,7 @@ void set_H0_for_Coyote(cosmo *self, int iterative, error **err);
 int test_range_de_conservative(cosmo *model, error **err);
 
 /* Index functions for tomography. Used in lensing & halomodel */
-int idx_zz(int i_bin, int j_bin, int Nzbin);
-int idx_tzz(int i, int i_bin, int j_bin, int Nzbin);
-int idx_tzztzz(int i, int i_bin, int j_bin, int j, int k_bin, int l_bin, int Ntheta, int Nzbin);
+int idx_zz(int i_bin, int j_bin, int Nzbin, error **err);
 int idx_zzz(int i_bin, int j_bin, int k_bin, int Nzbin);
 
 
@@ -343,7 +333,6 @@ int idx_zzz(int i_bin, int j_bin, int k_bin, int Nzbin);
 CHANGE(Esqr);
 CHANGE(D_plus);
 CHANGE(Tsqr);
-CHANGE(Tsqr_camb_vinschter);
 CHANGE(sigma_8_sqr);
 CHANGE(norm);
 CHANGE(Delta_L_BE2);

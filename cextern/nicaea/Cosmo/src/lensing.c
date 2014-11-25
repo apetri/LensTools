@@ -5,8 +5,8 @@
  * With many thanks to P. Schneider, J. Hartlap and P. Simon.	*
  * ============================================================ */
 
-
 #include "lensing.h"
+
 
 /* TODO: Not hard-code these halomodel parameters */
 #define C0        9.0
@@ -16,7 +16,10 @@
 #define HALO_BIAS halo_bias_sc
 
 
-
+/* ============================================================ *
+ * Creates and returns a new cosmo_lens structure with          *
+ * parameters given in function call.                           *
+ * ============================================================ */
 cosmo_lens *init_parameters_lens(double OMEGAM, double OMEGADE, double W0_DE, double W1_DE,
 				 double *W_POLY_DE, int N_POLY_DE,
 				 double H100, double OMEGAB, double OMEGANUMASS,
@@ -24,7 +27,8 @@ cosmo_lens *init_parameters_lens(double OMEGAM, double OMEGADE, double W0_DE, do
 				 int Nzbin, const int *Nnz, const nofz_t *nofz, double *par_nz,
 				 nonlinear_t NONLINEAR, transfer_t TRANSFER,
 				 growth_t GROWTH, de_param_t DEPARAM,
-				 norm_t NORMMODE, tomo_t TOMO, reduced_t REDUCED, double Q_MAG_SIZE, sm2_error **err)
+				 norm_t NORMMODE, tomo_t TOMO, reduced_t REDUCED, double Q_MAG_SIZE,
+				 ia_t IA, ia_terms_t IA_TERMS, double A_IA, error **err)
 {
    cosmo_lens *res;
    double amin;
@@ -47,6 +51,10 @@ cosmo_lens *init_parameters_lens(double OMEGAM, double OMEGADE, double W0_DE, do
    res->reduced    = REDUCED;
    res->q_mag_size = Q_MAG_SIZE;
 
+   res->ia         = IA;
+   res->ia_terms   = IA_TERMS;
+   res->A_ia       = A_IA;
+
    if (NONLINEAR==halodm) {
       res->hm = init_parameters_hm(res->cosmo->Omega_m, res->cosmo->Omega_de, res->cosmo->w0_de, res->cosmo->w1_de,
 				   res->cosmo->w_poly_de, res->cosmo->N_poly_de,
@@ -60,7 +68,10 @@ cosmo_lens *init_parameters_lens(double OMEGAM, double OMEGADE, double W0_DE, do
 				   //---------------------------------------------------------------------
 				   halodm, res->cosmo->transfer, res->cosmo->growth, res->cosmo->de_param,
 				   res->cosmo->normmode,
-				   C0, ALPHA_NFW, BETA_NFW, MASSFCT, HALO_BIAS, 0.0, 0.0, 0.0, 0.0, 0.0, hod_none, err);
+				   C0, ALPHA_NFW, BETA_NFW, MASSFCT, HALO_BIAS, 0.0, 0.0, 0.0, 0.0, 0.0,
+				   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-1.0, 0.0, 0.0, 0.0,
+				   hod_none, 60.0, err);
+      
       forwardError(*err, __LINE__, NULL);
    } else {
       res->hm = NULL;
@@ -75,14 +86,32 @@ cosmo_lens *init_parameters_lens(double OMEGAM, double OMEGADE, double W0_DE, do
    res->gamma     = NULL;
    res->map_gauss = NULL;
    res->map_poly  = NULL;
-   res->E_cosebi  = NULL;
    res->c_cosebi  = NULL;
    res->psimin_cosebi = res->psimax_cosebi = 0.0; 
    res->N_cosebi  = 0;
  
+   consistency_parameters_lens(res, err);    forwardError(*err, __LINE__, NULL);
+
    return res;
 }
 
+/* ============================================================ *
+ * Checks for consistent parameters in structure cosmo_lens.    *
+ * ============================================================ */
+void consistency_parameters_lens(const cosmo_lens *self, error **err)
+{
+   testErrorRet(self->ia == ia_none && self->ia_terms != ia_undef, lensing_ia,
+		"IA terms should be 'ia_undef' for no intrinsic alignment",
+		*err, __LINE__,);
+   testErrorRet(self->ia != ia_none && self->ia_terms == ia_undef, lensing_ia,
+		"IA terms cannot be 'ia_undef' for intrinsic alignment",
+		*err, __LINE__,);
+}
+
+/* ============================================================ *
+ * Creates and returns a new cosmo_lens structure with          *
+ * parameters copied from source.                               *
+ * ============================================================ */
 cosmo_lens* copy_parameters_lens_only(cosmo_lens* source, sm2_error **err)
 {
    cosmo_lens *res;
@@ -96,7 +125,8 @@ cosmo_lens* copy_parameters_lens_only(cosmo_lens* source, sm2_error **err)
 			      source->redshift->par_nz,
 			      source->cosmo->nonlinear, source->cosmo->transfer,
 			      source->cosmo->growth, source->cosmo->de_param, 
-			      source->cosmo->normmode, source->tomo, source->reduced, source->q_mag_size, err);
+			      source->cosmo->normmode, source->tomo, source->reduced, source->q_mag_size,
+			      source->ia, source->ia_terms, source->A_ia, err);
    forwardError(*err, __LINE__, NULL);
 
    return res;
@@ -105,7 +135,7 @@ cosmo_lens* copy_parameters_lens_only(cosmo_lens* source, sm2_error **err)
 cosmo_lens* copy_parameters_lens(cosmo_lens* source, sm2_error **err)
 {
    cosmo_lens *res;
-   int Nzbin, Ncoeff;
+   int Nzbin, Ncoeff, Nzcorr;
 
    res = copy_parameters_lens_only(source, err);             forwardError(*err, __LINE__, NULL);
 
@@ -117,10 +147,15 @@ cosmo_lens* copy_parameters_lens(cosmo_lens* source, sm2_error **err)
    res->redshift  = copy_redshift(source->redshift, err);    forwardError(*err, __LINE__, NULL);
 
    Nzbin = res->redshift->Nzbin;
+   Nzcorr = Nzbin * (Nzbin+1) / 2;
 
    res->tomo       = source->tomo;
    res->reduced    = source->reduced;
    res->q_mag_size = source->q_mag_size;
+
+   res->ia         = source->ia;
+   res->ia_terms   = res->ia_terms;
+   res->A_ia       = source->A_ia;
 
    if (source->cosmo->nonlinear==halodm) {
       res->hm = copy_parameters_hm(source->hm, err);          forwardError(*err, __LINE__, NULL);
@@ -129,22 +164,21 @@ cosmo_lens* copy_parameters_lens(cosmo_lens* source, sm2_error **err)
    }
 
    /* TODO: Nzbin^2 -> Nzcorr should also work */
-   res->Pshear = copy_interTable_arr(source->Pshear, Nzbin*Nzbin, err);
+   res->Pshear = copy_interTable_arr(source->Pshear, Nzcorr, err);
    forwardError(*err, __LINE__, NULL);
-   res->Pg1    = copy_interTable_arr(source->Pg1, Nzbin*Nzbin, err);
+   res->Pg1    = copy_interTable_arr(source->Pg1, Nzcorr, err);
    forwardError(*err, __LINE__, NULL);
-   res->xiP    = copy_interTable_arr(source->xiP, Nzbin*Nzbin, err);
+   res->xiP    = copy_interTable_arr(source->xiP, Nzcorr, err);
    forwardError(*err, __LINE__, NULL);
-   res->xiM    = copy_interTable_arr(source->xiM, Nzbin*Nzbin, err);
+   res->xiM    = copy_interTable_arr(source->xiM, Nzcorr, err);
    forwardError(*err, __LINE__, NULL);
-   res->gamma  = copy_interTable_arr(source->gamma, Nzbin*Nzbin, err);
+   res->gamma  = copy_interTable_arr(source->gamma, Nzcorr, err);
    forwardError(*err, __LINE__, NULL);
-   res->map_poly = copy_interTable_arr(source->map_poly, Nzbin*Nzbin, err);
+   res->map_poly = copy_interTable_arr(source->map_poly, Nzcorr, err);
    forwardError(*err, __LINE__, NULL);
-   res->map_gauss = copy_interTable_arr(source->map_gauss, Nzbin*Nzbin, err);
+   res->map_gauss = copy_interTable_arr(source->map_gauss, Nzcorr, err);
    forwardError(*err, __LINE__, NULL);
 
-   memcpy(res->E_cosebi, source->E_cosebi, sizeof(double) * source->N_cosebi*Nzbin*Nzbin);
    Ncoeff = NMAX_COSEBI * (NMAX_COSEBI + 5) / 2;
    memcpy(res->c_cosebi, source->c_cosebi, sizeof(double) * Ncoeff);
    res->psimin_cosebi = source->psimin_cosebi;
@@ -157,7 +191,8 @@ cosmo_lens* copy_parameters_lens(cosmo_lens* source, sm2_error **err)
 void read_cosmological_parameters_lens(cosmo_lens **self, FILE *F, error **err)
 {
    cosmo_lens *tmp;
-   struct { char cosmo_file[128], nofz_file[128], stomo[128], sreduced[128]; } tmp2;
+   struct { char cosmo_file[128], nofz_file[128], stomo[128], sreduced[128],
+	sia[128], sia_terms[128]; } tmp2;
    config_element c = {0, 0.0, ""};
    int j;
    FILE *FD;
@@ -165,6 +200,8 @@ void read_cosmological_parameters_lens(cosmo_lens **self, FILE *F, error **err)
    tmp = set_cosmological_parameters_to_default_lens(err);
    forwardError(*err, __LINE__,);
 
+
+   /* Cosmological parameters */
    CONFIG_READ_S(&tmp2, cosmo_file, s, F, c, err);
    if (strcmp(tmp2.cosmo_file, "-")!=0) {
       FD = fopen_err(tmp2.cosmo_file, "r", err);
@@ -176,6 +213,8 @@ void read_cosmological_parameters_lens(cosmo_lens **self, FILE *F, error **err)
    forwardError(*err, __LINE__,);
    if (strcmp(tmp2.cosmo_file, "-")!=0) fclose(FD);
 
+
+   /* Redshift parameters */
    CONFIG_READ_S(&tmp2, nofz_file, s, F, c, err);
    if (strcmp(tmp2.nofz_file, "-")!=0) {
       FD = fopen_err(tmp2.nofz_file, "r", err);
@@ -185,10 +224,10 @@ void read_cosmological_parameters_lens(cosmo_lens **self, FILE *F, error **err)
    }
    read_redshift_info(&(tmp->redshift), FD, err);
    forwardError(*err, __LINE__,);
-   if (strcmp(tmp2.cosmo_file, "-")!=0) fclose(FD);
+   if (strcmp(tmp2.nofz_file, "-")!=0) fclose(FD);
 
 
-   /* Here: Lensing parameters */
+   /* Lensing parameters */
    CONFIG_READ_S(&tmp2, stomo, s, F, c, err);
    STRING2ENUM(tmp->tomo, tmp2.stomo, tomo_t, stomo_t, j, Ntomo_t, err);
 
@@ -198,6 +237,23 @@ void read_cosmological_parameters_lens(cosmo_lens **self, FILE *F, error **err)
       CONFIG_READ(tmp, q_mag_size, d, F, c, err);
    }
 
+   CONFIG_READ_S(&tmp2, sia, s, F, c, err);
+   STRING2ENUM(tmp->ia, tmp2.sia, ia_t, sia_t, j, Nia_t, err);
+   switch (tmp->ia) {
+
+      case ia_HS04 :
+       CONFIG_READ_S(&tmp2, sia_terms, s, F, c, err);
+       STRING2ENUM(tmp->ia_terms, tmp2.sia_terms, ia_terms_t, sia_terms_t, j, Nia_terms_t, err);
+       CONFIG_READ(tmp, A_ia, d, F, c, err);
+       break;
+
+      default :
+       tmp->ia_terms = ia_undef;
+       tmp->A_ia     = 0.0;
+       break;
+
+   }
+
 
    *self = copy_parameters_lens_only(tmp, err);
    forwardError(*err, __LINE__,);
@@ -205,25 +261,30 @@ void read_cosmological_parameters_lens(cosmo_lens **self, FILE *F, error **err)
    free_parameters_lens(&tmp);
 }
 
+/* ============================================================ *
+ * Updates cosmo_lens structure apres from avant: Deletes pre   *
+ * calculated tables if corresponding parameters have changed,  *
+ * so tables will be re-calculated when needed.                 *
+ * ============================================================ */
 void updateFrom_lens(cosmo_lens *avant, cosmo_lens *apres, error **err)
 {
-   int Nzbin;
+   int Nzbin, Nzcorr;
 
    Nzbin = apres->redshift->Nzbin;
+   Nzcorr = Nzbin*(Nzbin+1)/2;
 
    if (change_g_source(avant,apres)) {
       del_interTable_arr(&(apres->g_source), Nzbin);
    }
 
    if (change_Pshear(avant,apres)) {
-      del_interTable_arr(&(apres->Pshear), Nzbin*Nzbin);
-      del_interTable_arr(&(apres->Pg1), Nzbin*Nzbin);
-      del_interTable_arr(&(apres->xiP), Nzbin*Nzbin);
-      del_interTable_arr(&(apres->xiM), Nzbin*Nzbin);
-      del_interTable_arr(&(apres->gamma), Nzbin*Nzbin);
-      del_interTable_arr(&(apres->map_poly), Nzbin*Nzbin);
-      del_interTable_arr(&(apres->map_gauss), Nzbin*Nzbin);
-      free(apres->E_cosebi); apres->E_cosebi = NULL;
+      del_interTable_arr(&(apres->Pshear), Nzcorr);
+      del_interTable_arr(&(apres->Pg1), Nzcorr);
+      del_interTable_arr(&(apres->xiP), Nzcorr);
+      del_interTable_arr(&(apres->xiM), Nzcorr);
+      del_interTable_arr(&(apres->gamma), Nzcorr);
+      del_interTable_arr(&(apres->map_poly), Nzcorr);
+      del_interTable_arr(&(apres->map_gauss), Nzcorr);
       free(apres->c_cosebi); apres->c_cosebi = NULL;
    }
 
@@ -263,8 +324,8 @@ cosmo_lens *set_cosmological_parameters_to_default_lens(error **err)
 
    res = init_parameters_lens(0.25, 0.75, -1.0, 0.0, NULL, 0, 0.70, 0.044, 0.0, 0.0, 0.80, 1.0,
 			      NZBIN, Nnz, nofz, par_nz, smith03, eisenhu, growth_de, linder,
-			      norm_s8, tomo_all, reduced_none, 0.0, err);
-  forwardError(*err, __LINE__, NULL);
+			      norm_s8, tomo_all, reduced_none, 0.0, ia_none, ia_undef, 0.0, err);
+   forwardError(*err, __LINE__, NULL);
 
    return res;
 }
@@ -274,21 +335,21 @@ cosmo_lens *set_cosmological_parameters_to_default_lens(error **err)
 void free_parameters_lens(cosmo_lens** self)
 {
    cosmo_lens *s;
-   int Nzbin;
+   int Nzbin, Nzcorr;
 
    s = *self;
 
    Nzbin = s->redshift->Nzbin;
+   Nzcorr = Nzbin*(Nzbin+1)/2;
    del_interTable_arr(&s->g_source, Nzbin);
 
-   del_interTable_arr(&s->Pshear, Nzbin);
-   del_interTable_arr(&s->Pg1, Nzbin);
-   del_interTable_arr(&s->xiP, Nzbin);
-   del_interTable_arr(&s->xiM, Nzbin);
-   del_interTable_arr(&s->gamma, Nzbin);
-   del_interTable_arr(&s->map_poly, Nzbin);
-   del_interTable_arr(&s->map_gauss, Nzbin);
-   free(s->E_cosebi); s->c_cosebi = NULL;
+   del_interTable_arr(&s->Pshear, Nzcorr);
+   del_interTable_arr(&s->Pg1, Nzcorr);
+   del_interTable_arr(&s->xiP, Nzcorr);
+   del_interTable_arr(&s->xiM, Nzcorr);
+   del_interTable_arr(&s->gamma, Nzcorr);
+   del_interTable_arr(&s->map_poly, Nzcorr);
+   del_interTable_arr(&s->map_gauss, Nzcorr);
    free(s->c_cosebi); s->c_cosebi = NULL;
 
    if (s->hm!=NULL) {
@@ -307,8 +368,10 @@ void dump_param_lens(cosmo_lens* self, FILE *F, int wnofz, error **err)
    dump_param(self->cosmo, F);
    if (wnofz) dump_redshift(self->redshift, F, err);
    forwardError(*err, __LINE__,);
-   fprintf(F, "# (s)tomo = (%s)%d (s)reduced=(%s)%d q_mag_size=%g\n", stomo_t(self->tomo), self->tomo,
-	   sreduced_t(self->reduced), self->reduced, self->q_mag_size);
+   fprintf(F, "# (s)tomo = (%s)%d (s)reduced=(%s)%d q_mag_size=%g (s)ia=(%s)%d (s)ia_terms=(%s)%d A_ia=%g\n",
+	   stomo_t(self->tomo), self->tomo, sreduced_t(self->reduced), self->reduced, self->q_mag_size,
+	   sia_t(self->ia), self->ia, sia_terms_t(self->ia_terms), self->ia_terms,
+	   self->A_ia);
    if (self->cosmo->nonlinear==halodm) dump_param_only_hm(self->hm, F);
 }
 
@@ -344,7 +407,12 @@ int change_g_source(cosmo_lens* avant, cosmo_lens* apres)
    return 0;
 }
 
-/* S98 2.9 */
+/* ============================================================ *
+ * See S98 2.9.							*
+ * Returns integral (dimensionless)				*
+ * int dw' n(w') f(w'-w)/f(w') = int da' n(a') f(w'-w)/f(w')    *
+ *  = int da' n(z') / a'^2 f(w'-w)/f(w')			*
+ * ============================================================ */
 double g_source(cosmo_lens* self, double a, int n_bin, error **err)
 {
    double *table, res;
@@ -370,20 +438,20 @@ double g_source(cosmo_lens* self, double a, int n_bin, error **err)
       				  self->cosmo->a_min, 1.0, da, 0.0, 0.0, err);
       forwardError(*err,__LINE__,0);
       for (nn=0; nn<self->redshift->Nzbin; nn++) {
-	 table       = self->g_source[nn]->table;
-	 table[0]    = 0.0;
-	 aa          = self->cosmo->a_min+da;
-	 intpar.self = self;
-	 intpar.i    = nn;
+          table       = self->g_source[nn]->table;
+          table[0]    = 0.0;
+          aa          = self->cosmo->a_min+da;
+          intpar.self = self;
+          intpar.i    = nn;
 
-	 for (i=1;i<self->cosmo->N_a-1;i++,aa+=da) {
-	    intpar.r  = aa;
-	    /* Precision decreased from 1e-6 to 1e-5 */
-	    table[i]  = sm2_qromberg(int_for_g, (void*)&intpar, self->cosmo->a_min, aa, 1.0e-5, err);
-	    forwardError(*err, __LINE__, 0.0);
-	 }
+          for (i=1;i<self->cosmo->N_a-1;i++,aa+=da) {
+             intpar.r  = aa;
+             /* Precision decreased from 1e-6 to 1e-5 */
+             table[i]  = sm2_qromberg(int_for_g, (void*)&intpar, self->cosmo->a_min, aa, 1.0e-5, err);
+             forwardError(*err, __LINE__, 0.0);
+          }
 
-	 table[self->cosmo->N_a-1] = 1.0;
+          table[self->cosmo->N_a-1] = 1.0;
       }
    }
 
@@ -403,6 +471,9 @@ double G(cosmo_lens* self, double a, int n_bin, error **err)
    return res;	
 }
 
+/* ============================================================ *
+ * dP_kappa/da. Integrand for P_kappa.				*
+ * ============================================================ */
 double int_for_p_2(double a, void *intpar, error **err)
 {
    double hoverh0, asqr, s, fKw, f, res, wa, gg;
@@ -440,11 +511,130 @@ double int_for_p_2(double a, void *intpar, error **err)
 }
 
 /* ============================================================ *
+ * Non-linear intrinsic alignment model                         *
+ *                                                              *
+ * C1 factor included in Pkappa with IGfact                     *
+ * Includes extra powers of a outlined in Joachimi et al 2010   *
+ * and Hirata and Seljak erratum 2010                           *
+ * ============================================================ */
+
+
+/* ============================================================ *
+ * Integrand for GI power spectrum, HS04 model. BK08 eqs 4, 12	*
+ * ============================================================ */
+double int_for_p_GI(double a, void *intpar, error **err)
+{
+   double hoverh0, asqr, s, fKw, f, res, wa, n, g, gn, Om_o_D;
+   int i_bin, j_bin;
+   cosmo_lensANDiid* cANDiid;
+   cosmo_lens* self;
+
+   cANDiid = (cosmo_lensANDiid*)intpar;
+   self    = cANDiid->self;
+   s       = cANDiid->r;
+   i_bin   = cANDiid->i;
+   j_bin   = cANDiid->j;
+  
+   testErrorRet(a>=1.0, ce_overflow, "Scale factor a>=1", *err, __LINE__, -1);
+ 
+   asqr    = dsqr(a); /* a*a */
+   wa      = w(self->cosmo, a, 0, err);          forwardError(*err, __LINE__, -1);
+   fKw     = f_K(self->cosmo, wa, err);          forwardError(*err, __LINE__, -1);
+   f       = s/fKw;
+  
+   hoverh0 = Esqr(self->cosmo, a, 0, err);       forwardError(*err, __LINE__,-1);
+   hoverh0 = sqrt(hoverh0);
+
+   Om_o_D = self->cosmo->Omega_m/D_plus(self->cosmo, a, 1, err);     forwardError(*err,__LINE__,0)
+
+   g   = g_source(self, a, i_bin, err);         forwardError(*err, __LINE__, -1);
+   n   = prob(self->redshift, 1.0/a-1.0, j_bin, err);   forwardError(*err, __LINE__, -1);
+
+   gn = g*n;
+
+   g   = g_source(self, a, j_bin, err);         forwardError(*err, __LINE__, -1);
+   n   = prob(self->redshift, 1.0/a-1.0, i_bin, err);   forwardError(*err, __LINE__, -1);
+
+   res = (gn + g*n)/fKw;
+
+   res *= Om_o_D;
+
+   //HS04
+   //res *= 1.0/a/asqr/hoverh0*R_HUBBLE; 
+   //HS10 ->  * a^2
+   //res *= 1.0/a/hoverh0*R_HUBBLE; 
+   //BJ10
+   res *= 1.0/a/asqr;
+
+   res *= P_NL_tot(self, a, f, err);             forwardError(*err,__LINE__, -1);
+
+   testErrorRetVA(!finite(res), ce_overflow, "Integrand not finite at a=%g", *err, __LINE__, -1.0, a);
+	
+   return res;
+}
+
+/* ============================================================ *
+ * Integrand for II power spectrum, HS04 model. BK08 eqs. 5, 7, *
+ * BJ10 eq B7.							*
+ * ============================================================ */
+double int_for_p_II(double a, void *intpar, error **err)
+{
+   double hoverh0, asqr, s, fKw, f, res, wa, nn, Om_o_D;
+   int i_bin, j_bin;
+   cosmo_lensANDiid* cANDiid;
+   cosmo_lens* self;
+
+   cANDiid = (cosmo_lensANDiid*)intpar;
+   self    = cANDiid->self;
+   s       = cANDiid->r;
+   i_bin   = cANDiid->i;
+   j_bin   = cANDiid->j;
+  
+   testErrorRet(a>=1.0, ce_overflow, "Scale factor a>=1", *err, __LINE__, -1);
+ 
+   asqr    = dsqr(a); /* a*a */
+   wa      = w(self->cosmo, a, 0, err);          forwardError(*err, __LINE__, -1);
+   fKw     = f_K(self->cosmo, wa, err);          forwardError(*err, __LINE__, -1);
+   f       = s/fKw;
+  
+   hoverh0 = Esqr(self->cosmo, a, 0, err);       forwardError(*err, __LINE__,-1);
+   Om_o_D  = self->cosmo->Omega_m/D_plus(self->cosmo, a, 1, err);     forwardError(*err,__LINE__,0);
+
+   hoverh0 = sqrt(hoverh0);
+
+   nn   = prob(self->redshift, 1.0/a-1.0, i_bin, err);   forwardError(*err, __LINE__, -1);
+   nn  *= prob(self->redshift, 1.0/a-1.0, j_bin, err);   forwardError(*err, __LINE__, -1);
+
+   res  = Om_o_D/fKw ;
+   res  = dsqr(res);
+     
+   // HS04:
+   //   res *= nn/asqr/hoverh0*R_HUBBLE;
+   // HS10 ->  * a^4
+   //res *= nn*asqr/hoverh0*R_HUBBLE;
+   // BJ10
+   
+   res *= nn/asqr*hoverh0/R_HUBBLE;
+   res *= P_NL_tot(self, a, f, err);             forwardError(*err,__LINE__, -1);
+
+   testErrorRet(!finite(res), ce_overflow, "Value not finite", *err, __LINE__, -1);
+
+   return res;
+}
+
+
+/* ============================================================ *
+ * Intrinsic alignment model for <Map^3>, Semboloni et al.      *
+ * 2008, 2010.                                                  *
+ * ============================================================ */
+
+
+/* ============================================================ *
  * Total (dark+baryon+neutrino) power spectrum.			*
  * ============================================================ */
 double P_NL_tot(cosmo_lens *self, double a, double k, error **err)
 {
-   double p_cb, p_nu, p_cb_nl, p_tot=0.0, f_nu, f_bc, Omega_m_tot;
+   double p_cb, p_tot;
 
    /*
    // **** MKDEBUG ****
@@ -458,38 +648,27 @@ double P_NL_tot(cosmo_lens *self, double a, double k, error **err)
    switch (self->cosmo->nonlinear) {
 
       case linear : case pd96 : case smith03 : case smith03_de : case coyote10 :
-	 p_cb = P_NL(self->cosmo, a, k, err);
-	 forwardError(*err, __LINE__, -1.0);
-	 break;
+      case coyote13 : case smith03_revised :
+	      p_cb = P_NL(self->cosmo, a, k, err);
+         forwardError(*err, __LINE__, -1.0);
+         break;
 
       case halodm :
-	 p_cb = Pth_dm(self->hm, a, k, err);
-	 forwardError(*err, __LINE__, -1.0);
-	 break;
+         p_cb = P1h_dm(self->hm, a, k, err);
+         forwardError(*err, __LINE__, -1.0);
+         p_cb += P2h_dm(self->hm, a, k, err);
+         forwardError(*err, __LINE__, -1.0);
+         break;
 
       default :
-	 *err = addErrorVA(ce_unknown, "Unknown nonlinear flag %d", *err, __LINE__, self->cosmo->nonlinear);
-	 return -1.0;
+         *err = addErrorVA(ce_unknown, "Unknown nonlinear flag %d", *err, __LINE__, self->cosmo->nonlinear);
+	      return -1.0;
 
    }
 
    switch (self->cosmo->transfer) {
       case bbks: case eisenhu: case eisenhu_osc:
 	 p_tot = p_cb;
-	 break;
-
-      case camb_vinschter :
-	 /* Linear neutrino power spectrum */
-
-	 Omega_m_tot = self->cosmo->Omega_m + self->cosmo->Omega_nu_mass;
-	 testErrorRet(Omega_m_tot<0.0, ce_negative, "Omega_m + Omega_nu_mass < 0", *err, __LINE__, 0.0);
-
-	 f_nu = self->cosmo->Omega_nu_mass/Omega_m_tot;
-	 f_bc = self->cosmo->Omega_m/Omega_m_tot;
-	 /* Hannestad et al. 2006 (3.4, 3.5) */
-	 p_cb_nl = p_cb;
-	 p_nu = P_nu(self->cosmo, a, k, err);                         forwardError(*err, __LINE__, 0);
-	 p_tot = dsqr(f_nu*sqrt(p_nu) + f_bc*sqrt(p_cb_nl));
 	 break;
 
       default :
@@ -508,6 +687,9 @@ int change_Pshear(cosmo_lens* avant, cosmo_lens* apres)
    if (change_P_NL(avant->cosmo, apres->cosmo)) return 1;
    if (NCOEQ(avant, apres, tomo)) return 1;
    if (NCOEQ(avant, apres, reduced)) return 1;
+   if (NCOEQ(avant, apres, ia)) return 1;
+   if (NCOEQ(avant, apres, ia_terms)) return 1;
+   if (NCOCLOSE(avant, apres, A_ia)) return 1;
 
    return 0;
 }
@@ -526,9 +708,7 @@ double Pshear(cosmo_lens* self, double s, int i_bin, int j_bin, error **err)
    double ds, logsmin, logsmax, prefactor;
    double ss, slog, f1, f2;
    int    i, Nzbin, Nzcorr, ii, jj;
-   double a, da;
    cosmo_lensANDiid intpar;
-
 
    if (s<s_min || s>s_max) return 0.0;
 
@@ -543,59 +723,47 @@ double Pshear(cosmo_lens* self, double s, int i_bin, int j_bin, error **err)
       logsmin   = log(s_min);
       logsmax   = log(s_max);
       ds        = (logsmax - logsmin)/(N_s - 1.0);
-      da        = (1.0 - self->cosmo->a_min)/(self->cosmo->N_a-1.0);
       prefactor = 9.0/4.0*dsqr((self->cosmo->Omega_m+self->cosmo->Omega_nu_mass)/R_HUBBLE/R_HUBBLE);
 
       self->Pshear = init_interTable_arr(Nzcorr, N_s, logsmin, logsmax, ds, 1.0, -3.0, err);
+      forwardError(*err, __LINE__, -1.0);
 
       for (ii=0; ii<Nzbin; ii++) {
-	 for (jj=ii; jj<Nzbin; jj++) {
+       for (jj=ii; jj<Nzbin; jj++) {
 
-	    if (self->tomo==tomo_auto_only && ii!=jj) continue;
-	    if (self->tomo==tomo_cross_only && ii==jj) continue;
+          if (self->tomo==tomo_auto_only && ii!=jj) continue;
+          if (self->tomo==tomo_cross_only && ii==jj) continue;
 
-	    table = self->Pshear[idx_zz(ii,jj,Nzbin)]->table;
-	    intpar.self = self;
-	    intpar.i    = ii;
-	    intpar.j    = jj;
-	    for (i=0,slog=logsmin; i<N_s; i++,slog+=ds) {
-	       ss = exp(slog);
-	       intpar.r = ss;
+          table = self->Pshear[idx_zz(ii,jj,Nzbin,err)]->table;
+          intpar.self = self;
+          intpar.i    = ii;
+          intpar.j    = jj;
+          for (i=0,slog=logsmin; i<N_s; i++,slog+=ds) {
+             ss = exp(slog);
+             intpar.r = ss;
 
-#ifndef fastxi
-	       *err = addError(lensing_fastxi, "The macro cosmo.h:fastxi is not defined", *err, __LINE__);
-	       return -1.0;
+             table[i] = 0.0;
 
-	       /* Romberg-integration (slow) */
-	       if (self->cosmo->a_min<0.7) {
-		  f1 = sm2_qromberg(int_for_p_2, (void*)&intpar, self->cosmo->a_min, 0.7, 1.0e-6, err);
-		  forwardError(*err, __LINE__, -1.0);
-		  f2 = sm2_qrombergo(int_for_p_2, (void*)&intpar, 0.7, 1.0, sm2_midpntberg, 1.0e-7, err);
-		  forwardError(*err, __LINE__, -1.0);
-	       } else {
-		  f1 = 0.0;
-		  f2 = sm2_qrombergo(int_for_p_2, (void*)&intpar, self->cosmo->a_min, 1.0, sm2_midpntberg, 1.0e-7, err);
-		  forwardError(*err, __LINE__, -1.0);
-	       }
-#else
-	       /* Riemann summation (fast) */
-	       for (a=self->cosmo->a_min,f1=0.0; a<1.0; a+=da) {
-		  f1 += int_for_p_2(a, (void*)&intpar, err);
-		  forwardError(*err, __LINE__, -1.0);
-	       }
-	       f1 = f1*da;
-	       f2 = 0.0;
-#endif
+             table[i] += prefactor * int_over_P_kappa(self, int_for_p_2, (void*)&intpar, err);
+             forwardError(*err, __LINE__, -1.0);
 
-	       testErrorRetVA(!finite(f1+f2), ce_overflow, "Power spectrum P(a=%g, l=%g)^{%d%d} not finite",
-			      *err, __LINE__, -1.0, a, ss, ii, jj);
-	       //testErrorRetVA(fabs(f1+f2)<1.0e-50, ce_overflow, "Power spectrum P(a=%g, l=%g)^{%d%d} = %g invalid %g",
-	       //	      *err, __LINE__, -1.0, a, ss, ii, jj, f1+f2, prefactor);
+             if (self->ia != ia_none && self->ia_terms != ia_only_II) {
+                table[i] += -1.0 * self->A_ia * sqrt(prefactor) * ia_c1_rho_crit
+                            * int_over_P_kappa(self, int_for_p_GI, (void*)&intpar, err);
+                forwardError(*err, __LINE__, -1.0);
+             }
+             if (self->ia != ia_none && self->ia_terms != ia_only_GI) {
+                table[i] += dsqr(self->A_ia * ia_c1_rho_crit)
+                            * int_over_P_kappa(self, int_for_p_II, (void*)&intpar, err);
+                forwardError(*err, __LINE__, -1.0);
+             }
 
-	       table[i] = prefactor*(f1+f2);
-	    }
+             testErrorRetVA(!finite(table[i]), ce_overflow, "Power spectrum P(l=%g)^{%d%d} not finite",
+                            *err, __LINE__, -1.0, ss, ii, jj);
 
-	 }
+          }
+
+       }
       }
 
    }
@@ -608,7 +776,9 @@ double Pshear(cosmo_lens* self, double s, int i_bin, int j_bin, error **err)
 		  *err, __LINE__, -1.0, i_bin);
 
    slog = log(s);
-   f1 = interpol_wr(self->Pshear[idx_zz(i_bin,j_bin,Nzbin)], slog, err);
+   i    = idx_zz(i_bin,j_bin,Nzbin, err);
+   forwardError(*err, __LINE__, -1.0);
+   f1 = interpol_wr(self->Pshear[i], slog, err);
    forwardError(*err, __LINE__, -1.0);
 
 
@@ -647,6 +817,44 @@ double P_projected_kappa(void *self, double l, int i_bin, int j_bin, error **err
    return res;
 }
 
+double int_over_P_kappa(cosmo_lens *self, funcwithpars int_for_p, void *intpar, error **err)
+{
+   double f1, f2, a, da;
+
+
+#ifndef fastxi
+
+   *err = addError(lensing_fastxi, "The macro cosmo.h:fastxi is not defined", *err, __LINE__);
+   return -1.0;
+
+   /* Romberg-integration (slow) */
+   if (self->cosmo->a_min<0.7) {
+      f1 = sm2_qromberg(int_for_p, intpar, self->cosmo->a_min, 0.7, 1.0e-6, err);
+      forwardError(*err, __LINE__, -1.0);
+      f2 = sm2_qrombergo(int_for_p, intpar, 0.7, 1.0, sm2_midpntberg, 1.0e-7, err);
+      forwardError(*err, __LINE__, -1.0);
+   } else {
+      f1 = 0.0;
+      f2 = sm2_qrombergo(int_for_p, intpar, self->cosmo->a_min, 1.0, sm2_midpntberg, 1.0e-7, err);
+      forwardError(*err, __LINE__, -1.0);
+   }
+
+#else
+
+   /* Riemann summation (fast) */
+   da = (1.0 - self->cosmo->a_min)/(self->cosmo->N_a-1.0);
+   for (a=self->cosmo->a_min,f1=0.0; a<1.0; a+=da) {
+     f1 += int_for_p(a, intpar, err);
+     forwardError(*err, __LINE__, -1.0);
+   }
+   f1 = f1*da;
+   f2 = 0.0;
+
+#endif
+
+   return f1+f2;
+}
+
 /* ============================================================ *
  * Functions for reduced-shear correction (K10).		*
  * ============================================================ */
@@ -662,10 +870,11 @@ cosmo_lens *set_cosmological_parameters_lens_to_WMAP7(const redshift_t *nofz, to
    */
 
    cosmo_lens *self;
-   
+
    self = init_parameters_lens(0.27, 0.73, -1.0, 0.0, NULL, 0, 0.71, 0.045, 0.0, 0.0, 0.8, 0.96,
 			       nofz->Nzbin, nofz->Nnz, nofz->nofz, nofz->par_nz,
-			       smith03, eisenhu, growth_de, linder, norm_s8, tomo, reduced_none, 0.0, err);
+			       smith03, eisenhu, growth_de, linder, norm_s8, tomo, reduced_none, 0.0,
+			       ia_none, ia_undef, 0.0, err);
    forwardError(*err, __LINE__, NULL);
 
    return self;
@@ -846,7 +1055,7 @@ double Pg1(cosmo_lens *self, double s, int i_bin, int j_bin, error **err)
 
       fmn       = malloc_err(Na*sizeof(double), err);  forwardError(*err, __LINE__, 0.0);
       for (alpha=1; alpha<M_PAR; alpha++) {
-	 dfmn_dp[alpha] = calloc_err(Na, sizeof(double), err);  forwardError(*err, __LINE__, 0.0);
+         dfmn_dp[alpha] = calloc_err(Na, sizeof(double), err);  forwardError(*err, __LINE__, 0.0);
       }
 
       wmap7 = set_cosmological_parameters_lens_to_WMAP7(self->redshift, self->tomo, err);
@@ -863,7 +1072,8 @@ double Pg1(cosmo_lens *self, double s, int i_bin, int j_bin, error **err)
 	    if (self->tomo==tomo_auto_only && ii!=jj) continue;
 	    if (self->tomo==tomo_cross_only && ii==jj) continue;
 
-	    table = self->Pg1[idx_zz(ii,jj,Nzbin)]->table;
+	    table = self->Pg1[idx_zz(ii,jj,Nzbin, err)]->table;
+	    forwardError(*err, __LINE__, -1.0);
 
 	    /* F^{mn}, K10 eq. 10 */
 	    fill_Fbar_array(wmap7, fmn, ii, jj, self->cosmo->a_min, Na, da, err);
@@ -894,7 +1104,9 @@ double Pg1(cosmo_lens *self, double s, int i_bin, int j_bin, error **err)
    }
 
    slog = log(s);
-   res = interpol_wr(self->Pg1[idx_zz(i_bin,j_bin,Nzbin)], slog, err);
+   i    = idx_zz(i_bin,j_bin,Nzbin, err);
+   forwardError(*err, __LINE__, -1.0);
+   res  = interpol_wr(self->Pg1[i], slog, err);
    forwardError(*err, __LINE__, -1.0);
 
    /* The factor 2 is already included in the fitting formulae */
@@ -937,7 +1149,8 @@ double xi(cosmo_lens* self, int pm, double theta, int i_bin, int j_bin, error **
 	    if (self->tomo==tomo_auto_only && ii!=jj) continue;
 	    if (self->tomo==tomo_cross_only && ii==jj) continue;
 
-	    index = idx_zz(ii,jj,Nzbin);
+	    index = idx_zz(ii,jj,Nzbin, err);
+	    forwardError(*err, __LINE__, 0.0);
 	    table[0] = self->xiP[index]->table;
 	    table[1] = self->xiM[index]->table;
 	    tpstat_via_hankel(self, table, &logthetamin, &logthetamax, tp_xipm, P_projected_kappa,
@@ -963,11 +1176,13 @@ double xi(cosmo_lens* self, int pm, double theta, int i_bin, int j_bin, error **
 		  "Cross-correlation (bin #%d) not valid if tomo=tomo_auto_only",
 		  *err, __LINE__, -1.0, i_bin);
 
+   index = idx_zz(i_bin,j_bin,Nzbin, err);
+      forwardError(*err,__LINE__,0);
    if (pm==1) {
-      res = interpol_wr(self->xiP[idx_zz(i_bin,j_bin,Nzbin)], log(theta), err);
+      res = interpol_wr(self->xiP[index], log(theta), err);
       forwardError(*err,__LINE__,0);
    } else if (pm==-1) {
-      res = interpol_wr(self->xiM[idx_zz(i_bin,j_bin,Nzbin)], log(theta), err);
+      res = interpol_wr(self->xiM[index], log(theta), err);
       forwardError(*err,__LINE__,0);
    } else {
       *err = addErrorVA(lensing_pm, "pm=%d not valid, has to be +1 or -1", *err, __LINE__, pm);
@@ -1017,7 +1232,8 @@ double gamma2(cosmo_lens* self, double theta, int i_bin, int j_bin, error **err)
 	    if (self->tomo==tomo_auto_only && ii!=jj) continue;
 	    if (self->tomo==tomo_cross_only && ii==jj) continue;
 
-	    index   = idx_zz(ii,jj,Nzbin);
+	    index   = idx_zz(ii,jj,Nzbin,err);
+	    forwardError(*err, __LINE__, 0.0);
 	    table   = self->gamma[index]->table;
 	    tpstat_via_hankel(self, &table, &logthetamin, &logthetamax, tp_gsqr, P_projected_kappa,
 			      ii, jj, err);
@@ -1038,7 +1254,9 @@ double gamma2(cosmo_lens* self, double theta, int i_bin, int j_bin, error **err)
 		  "Cross-correlation (bin #%d) not valid if tomo=tomo_auto_only",
 		  *err, __LINE__, -1.0, i_bin);
 
-   res = interpol_wr(self->gamma[idx_zz(i_bin,j_bin,Nzbin)], log(theta), err);
+   index = idx_zz(i_bin,j_bin,Nzbin,err);
+   forwardError(*err,__LINE__,0);
+   res   = interpol_wr(self->gamma[index], log(theta), err);
    forwardError(*err,__LINE__,0);
    return res;
 
@@ -1082,7 +1300,8 @@ double map2_poly(cosmo_lens* self, double theta,  int i_bin, int j_bin, error **
 	    if (self->tomo==tomo_auto_only && ii!=jj) continue;
 	    if (self->tomo==tomo_cross_only && ii==jj) continue;
 
-	    index   = idx_zz(ii,jj,Nzbin);
+	    index   = idx_zz(ii,jj,Nzbin,err);
+	    forwardError(*err,__LINE__,0);
 	    table   = self->map_poly[index]->table;
 	    tpstat_via_hankel(self, &table, &logthetamin, &logthetamax, tp_map2_poly, P_projected_kappa,
 			      ii, jj, err);
@@ -1103,7 +1322,9 @@ double map2_poly(cosmo_lens* self, double theta,  int i_bin, int j_bin, error **
 		  "Cross-correlation (bin #%d) not valid if tomo=tomo_auto_only",
 		  *err, __LINE__, -1.0, i_bin);
 
-   res = interpol_wr(self->map_poly[idx_zz(i_bin,j_bin,Nzbin)], log(theta), err);
+   index = idx_zz(i_bin,j_bin,Nzbin, err);
+   forwardError(*err,__LINE__,0);
+   res   = interpol_wr(self->map_poly[index], log(theta), err);
    forwardError(*err, __LINE__, 0);
 
    return res;
@@ -1129,7 +1350,8 @@ double map2_gauss(cosmo_lens* self, double theta, int i_bin, int j_bin, error **
 	    if (self->tomo==tomo_auto_only && ii!=jj) continue;
 	    if (self->tomo==tomo_cross_only && ii==jj) continue;
 
-	    index   = idx_zz(ii,jj,Nzbin);
+	    index   = idx_zz(ii,jj,Nzbin,err);
+	    forwardError(*err,__LINE__,0);
 	    table   = self->map_gauss[index]->table;
 	    tpstat_via_hankel(self, &table, &logthetamin, &logthetamax, tp_map2_gauss, P_projected_kappa,
 			      ii, jj, err);
@@ -1149,7 +1371,9 @@ double map2_gauss(cosmo_lens* self, double theta, int i_bin, int j_bin, error **
 		  "Cross-correlation (bin #%d) not valid if tomo=tomo_auto_only",
 		  *err, __LINE__, -1.0, i_bin);
 
-   res = interpol_wr(self->map_gauss[idx_zz(i_bin,j_bin,Nzbin)], log(theta), err);
+   index = idx_zz(i_bin,j_bin,Nzbin,err);
+   forwardError(*err, __LINE__, 0);
+   res = interpol_wr(self->map_gauss[index], log(theta), err);
    forwardError(*err, __LINE__, 0);
 
    return res;
@@ -1325,7 +1549,7 @@ double RR_cosebi(cosmo_lens *lens, double THETA_MIN, double THETA_MAX, int i_bin
 
    testErrorRet(!finite(res), math_infnan, "R is not finite", *err, __LINE__, -1.0);
 
-   res *= THETA_MIN*THETA_MIN/2.0; // MKDBUG: /2.0 ?????
+   res *= THETA_MIN*THETA_MIN;
 
    return res;
 }
@@ -1370,54 +1594,6 @@ double dRR_cosebi_dz(double z, void *intpar, error **err)
    return summand;
 }
 
-double EnBn(cosmo_lens *lens, double THETA_MIN, double THETA_MAX, 
-	    int i_bin, int j_bin, int n, int EB, error **err) 
-{
-   double res, rp, rm;
-   
-   testErrorRetVA(abs(EB)!=1, mr_incompatible, "EB=%d not valid, has to be +1 or -1",
-		  *err, __LINE__, 0.0, EB);
-
-   rp = RR_cosebi(lens, THETA_MIN, THETA_MAX, i_bin, j_bin, n, +1, err);
-   forwardError(*err, __LINE__, 0.0);
-   
-   rm = RR_cosebi(lens, THETA_MIN, THETA_MAX, i_bin, j_bin, n, -1, err);
-   forwardError(*err, __LINE__, 0.0);
-   
-   if (EB == 1) res = (rp+rm)/2.0;
-   else if (EB == -1) res = (rp-rm)/2.0;
-
-   return res;
-}
-
-
-double xipmEB(cosmo_lens *lens, double THETA_MIN, double THETA_MAX, double dTHETA, 
-	      int i_bin, int j_bin, const double *c, int N, int pm, int EB, error **err) 
-{
-  //double res=0., EnBn, Tn, z;
-   //int n;
-   testErrorRetVA(abs(pm)!=1, mr_incompatible, "pm=%d not valid, has to be +1 or -1",
-		  *err, __LINE__, 0.0, pm);
-   
-   testErrorRetVA(abs(EB)!=1, mr_incompatible, "EB=%d not valid, has to be +1 or -1",
-		  *err, __LINE__, 0.0, EB);
-
-   return 0.0;
-
-   /*   
-   for (theta=THETA_MIN; theta<=THETA_MAX; theta+=dTHETA){
-      for (n=1;n<=Nmax;n++){
-	 EnBn = EnBn(model, THETA_MIN, THETA_MAX, i_bin, j_bin, c, N, EB, err);
-	 z = log(theta/THETA_MIN);
-	 if (pm == 1) tn = Tplog_c(z, c, n, err); 
-	 else if (pm == -1) tn = Tmlog(z, c, n, err); 
-	 
-	 res += EnBn*tn;
-      }
-      res *= 2/theta/dTHETA;
-   }
-   */
-}
 
 double int_for_map2_slow(double logell, void *intpar, error **err)
 {
@@ -1487,7 +1663,6 @@ datcov *init_datcov_for_cov_only(int Nzbin, int Ntheta, error **err)
    dc->Ntheta2  = 0;
    dc->n        = dc->Nzcorr*dc->Ntheta;
    dc->usecov   = 1;
-   dc->Nexclude = 0;
    dc->lndetC   = 0.0;
    dc->theta    = dc->data = dc->var = dc->cov[0] = dc->cov[1] = dc->cov[2] = NULL;
    dc->cov_scaling = cov_const;
@@ -1497,11 +1672,10 @@ datcov *init_datcov_for_cov_only(int Nzbin, int Ntheta, error **err)
 
 datcov *init_data_cov_tomo(char* dataname, char *dataname2, char** covname_ptr, lensdata_t type,
 			   decomp_eb_filter_t decomp_eb_filter, lensformat_t format, double corr_invcov, 
-			   double a1, double a2, int Nexclude, const int *exclude, order_t order,
+			   double a1, double a2, order_t order,
 			   cov_scaling_t cov_scaling, error **err)
 {
    datcov *res;
-   int i;
    gsl_matrix_view A;
    
    testErrorRetVA(type<0||type>=Nlensdata_t, ce_unknown, "Unknown lens data type %d",
@@ -1518,35 +1692,28 @@ datcov *init_data_cov_tomo(char* dataname, char *dataname2, char** covname_ptr, 
    /* a1 and a2 are zero if format!=angle_wquadr */
    res->a1 = a1;
    res->a2 = a2;
-   res->Nexclude = Nexclude;
-   if (exclude==NULL) {
-      res->exclude = NULL;
-   } else {
-      res->exclude = malloc_err(sizeof(int)*Nexclude, err);  forwardError(*err, __LINE__, NULL);
-      for (i=0; i<Nexclude; i++)  res->exclude[i] = exclude[i];
-   }
 
    switch (res->type) {
 
       case map3gauss:
-	 /* Three angular scales per bin */
-	 read_data_3rd(res, dataname, 0, err);
-	 forwardError(*err, __LINE__, NULL);
-	 break;
-	 /* Two files */
-      case map2gauss_map3gauss_diag: case map2gauss_map3gauss:
-	 read_data_2nd_3rd(res, dataname, dataname2, err);
-	 forwardError(*err, __LINE__, NULL);
-	 break;
-      default:
-	 /* One angular scale per bin */
-	 read_data_tomo(res, dataname, 0, order, err);
-	 forwardError(*err,__LINE__,NULL);
-	 break;
-   }      
+         /* Three angular scales per bin */
+         read_data_3rd(res, dataname, 0, err);
+         forwardError(*err, __LINE__, NULL);
+         break;
 
-   testErrorRetVA(res->Nzcorr<Nexclude, lensing_inconsistent, "Nexclude=%d larger than Nzcorr=%d",
-		  *err, __LINE__, NULL, Nexclude, res->Nzcorr);
+      case map2gauss_map3gauss_diag: case map2gauss_map3gauss:
+      case decomp_eb_map3gauss_diag: case decomp_eb_map3gauss:
+         /* Two files */
+         read_data_2nd_3rd(res, dataname, dataname2, err);
+         forwardError(*err, __LINE__, NULL);
+         break;
+
+      default:
+         /* One angular scale per bin */
+         read_data_tomo(res, dataname, 0, order, err);
+         forwardError(*err,__LINE__,NULL);
+         break;
+   }      
 
    read_cov_tomo(res, covname_ptr[0], 0, err);                      forwardError(*err,__LINE__,NULL);
 
@@ -1564,13 +1731,14 @@ datcov *init_data_cov_tomo(char* dataname, char *dataname2, char** covname_ptr, 
 
       /* Replace res->cov with L, where C = L L^T */
       if (gsl_linalg_cholesky_decomp(&A.matrix) == GSL_EDOM) {
-	 del_data_cov(&res);
-	 *err = addError(mv_cholesky, "Cholesky decomposition failed", *err, __LINE__);
-	 return NULL;
+         del_data_cov(&res);
+         *err = addError(mv_cholesky, "Cholesky decomposition failed", *err, __LINE__);
+         return NULL;
       }
 
-      /* Now cov is L, where L * L^T is the covariance matrix. *
-       * Therefore, multiply with the inverse Hartlap factor   */
+
+      /* Now cov is L, where L * L^T is the covariance matrix.           *
+       * Therefore, multiply with the inverse square root Hartlap factor */
       multiply_all(res->cov[0], res->n*res->n, sqrt(1.0/corr_invcov));
 
       /* Determinant of the covariance.    *
@@ -1604,8 +1772,9 @@ void del_data_cov(datcov** dc)
      free(d->cov[0]);
      if (d->cov[1] != NULL) free(d->cov[1]);
      if (d->cov[2] != NULL) free(d->cov[2]);
+   } else {
+      free(d->var);
    }
-   else free(d->var);
    free(d);
    d = NULL;
 }
@@ -1619,6 +1788,8 @@ void del_data_cov(datcov** dc)
  *  order.							*
  * The file can contain xi+ and xi- data, in this case it       *
  * corresponds to 'cat xi+.dat xi-.dat > xi+-.dat'.		*
+ * Used for 2nd-order and 3rd-order diagonal, also for combined *
+ * 2nd and 3rd.							*
  * ============================================================ */
 void read_data_tomo(datcov *dc, char data_name[], int Nzbin, order_t order, error **err)
 {
@@ -1670,8 +1841,8 @@ void read_data_tomo(datcov *dc, char data_name[], int Nzbin, order_t order, erro
    for (i=0; i<Ntheta; i++) {
       dc->theta[i] = ptr[i*Ncol+0]*arcmin;
       if (dc->format==angle_mean || dc->format==angle_wlinear || dc->format==angle_wquadr) {
-	 /* Second column: upper bin limit */
-	 dc->theta2[i] = ptr[i*Ncol+1]*arcmin;
+         /* Second column: upper bin limit */
+         dc->theta2[i] = ptr[i*Ncol+1]*arcmin;
       }
    }
 
@@ -1684,9 +1855,9 @@ void read_data_tomo(datcov *dc, char data_name[], int Nzbin, order_t order, erro
    /* In final data vector: angular scale is varying fast, redshift is varying slow */
    for (nz=0,n=0; nz<Nzcorr; nz++) {
       for (i=0; i<Ntheta; i++,n++) {
-	 testErrorRetVA(n>=dc->n, math_overflow, "Index overflow (%d>=%d)", *err, __LINE__,, n, dc->n);
+         testErrorRetVA(n>=dc->n, math_overflow, "Index overflow (%d>=%d)", *err, __LINE__,, n, dc->n);
 
-	 dc->data[n] = ptr[i*Ncol+offset+nz];
+         dc->data[n] = ptr[i*Ncol+offset+nz];
       }
    }
 }
@@ -1694,11 +1865,10 @@ void read_data_tomo(datcov *dc, char data_name[], int Nzbin, order_t order, erro
 /* ============================================================ *
  * Reada the covariance matrix in block format.			*
  * ============================================================ */
-#define FACTOR_EXCLUDE (100.0*100.0)
 void read_cov_tomo(datcov* dc, char cov_name[], int icov, error **err)
 {
-   int i, j, index, nz, mz, count, Nzbin, Nzcorr;
-   size_t Nrec, Nrow, Nangular;
+   int i, j, index, Nzcorr;
+   size_t Nrec, Nrow, Nangular, Nangular2;
    double *ptr;
 
    testErrorRetVA(icov<0 || icov>2, lensing_range, "Cov matrix number %d out of range [0;2]",
@@ -1709,7 +1879,7 @@ void read_cov_tomo(datcov* dc, char cov_name[], int icov, error **err)
    testErrorRet(dc->Nzcorr<=0, lensing_initialised,
 		"Data file has to be read before covariance, to set number of bins (Nzcorr)", *err, __LINE__,);
    testErrorRet(dc->Nzbin<=0, lensing_initialised,
-		"Data file has to be read before covariance, to set number of bins (dc->Nzbin)", *err, __LINE__,);
+		"Data file has to be read before covariance, to set number of bins (Nzbin)", *err, __LINE__,);
 
    /* Read file to double pointer */
    Nrec = 0;
@@ -1717,7 +1887,7 @@ void read_cov_tomo(datcov* dc, char cov_name[], int icov, error **err)
    forwardError(*err, __LINE__,);
 
    testErrorVA(Nrow!=dc->n, lensing_inconsistent,
-	       "Covariance matrix (%dx%d) inconsistent with data vector of length %d",
+	       "Covariance matrix (%d rows) inconsistent with data vector of length %d",
 	       *err, __LINE__, Nrow, dc->n);
    testErrorRetVA(Nrec!=Nrow*Nrow, lensing_inconsistent, "Covariance matrix is not square, Nrow=%d, Nrec=%d\n",
 		  *err, __LINE__,, Nrec, Nrow);
@@ -1726,66 +1896,47 @@ void read_cov_tomo(datcov* dc, char cov_name[], int icov, error **err)
 
    dc->cov[icov] = malloc_err(dc->n*dc->n*sizeof(double), err);   forwardError(*err, __LINE__,);
 
-   Nzbin = dc->Nzbin;
-
    switch (dc->type) {
       case map3gauss :
-	 Nangular = dc->Ntheta * (dc->Ntheta + 1) * (dc->Ntheta + 2) / 6;
-	 break;
-      case map2gauss_map3gauss :
-	 Nangular = dc->Ntheta + dc->Ntheta2 * (dc->Ntheta2 + 1) * (dc->Ntheta2 + 2) / 6;
-	 break;
-      case map2gauss_map3gauss_diag:
-	 Nangular = dc->Ntheta + dc->Ntheta2;
-	 break;
+         Nangular  = dc->Ntheta * (dc->Ntheta + 1) * (dc->Ntheta + 2) / 6;
+         Nangular2 = 0;
+         break;
+      case map2gauss_map3gauss : case decomp_eb_map3gauss :
+         Nangular  = dc->Ntheta;
+         Nangular2 = dc->Ntheta2 * (dc->Ntheta2 + 1) * (dc->Ntheta2 + 2) / 6;
+         break;
+      case map2gauss_map3gauss_diag : case decomp_eb_map3gauss_diag :
+         Nangular  = dc->Ntheta;
+         Nangular2 = dc->Ntheta2;
+         break;
       default :
-	 Nangular = dc->Ntheta;
-	 break;
-   }
-   
-
-   switch (dc->type) {
-      case map3gauss: case map3gauss_diag:
-	 Nzcorr = Nzbin * (Nzbin + 1) * (Nzbin + 2)  / 6;
-	 break;
-      case map2gauss_map3gauss: case map2gauss_map3gauss_diag:
-	 Nzcorr = Nzbin * (Nzbin + 1) / 2 + Nzbin * (Nzbin + 1) * (Nzbin + 2)  / 6;
-	 break;
-      default:
-	 Nzcorr = Nzbin * (Nzbin + 1) / 2;
-	 break;
+         Nangular  = dc->Ntheta;
+         Nangular2 = 0;
+         break;
    }
 
+   Nzcorr  = dc->Nzcorr;
 
-   for (nz=0,index=0; nz<Nzcorr; nz++) {
-      for (i=0; i<Nangular; i++) {
+   /* MKDEBUG: Second term had Nzcorr2 instead of Nzcorr */
+   testErrorRetVA(dc->n != Nangular * Nzcorr + Nangular2 * Nzcorr,
+		  lensing_range, "Inconsistent number of angular/redshift bins (%d != %d*%d + %d*%d",
+		  *err, __LINE__,, dc->n, Nangular, Nzcorr, Nangular2, Nzcorr);
 
-	 for (mz=0; mz<Nzcorr; mz++) {
-	    for (j=0;j<Nangular;j++,index++) {
 
-	       dc->cov[icov][index] = ptr[index];
+   /* MKDEBUG: New! Re-ordering of loop. Takes into account 2nd and 3rd. *
+    * 16 Nov 2012. */
 
-	       /* Exclude z-bins from analysis */
-	       for (count=0; count<dc->Nexclude; count++) {
-		  if (nz!=mz) { /* Off-diagonal */
-		     if (dc->exclude[count]==nz || dc->exclude[count]==mz) {
-			dc->cov[icov][index] = 0.0;
-		     }
-		  } else {      /* Diagonal */
-		     if (dc->exclude[count]==nz) {
-			dc->cov[icov][index] *= FACTOR_EXCLUDE;
-		     }
+   for (i=0,index=0; i<dc->n; i++) {
+      for (j=0; j<dc->n; j++,index++) {
 
-		  }
-	       }
+         testErrorRetVA(index >= dc->n * dc->n, lensing_range, "Index overflow, %d >= %d",
+			*err, __LINE__,, index, dc->n * dc->n);
+         dc->cov[icov][index] = ptr[index];
 
-	    }
-	 }
       }
    }
 
 }
-#undef FACTOR_EXCLUDE
 
 /* ============================================================ *
  * Creates the vectors xip, xim, theta and theta2 (if required  *
@@ -1795,7 +1946,7 @@ void read_cov_tomo(datcov* dc, char cov_name[], int icov, error **err)
 void datcov2xipm(const datcov *dc, int i_bin, int j_bin, double **xip, double **xim, double **theta,
 		 double **theta2, int *N, error **err)
 {
-   int i, index;
+   int i, index, offset;
 
    testErrorRetVA(dc->type!=xipm, lensing_type, "lenstype has to be %d('%s'), not %d",
    		  *err, __LINE__,, xipm, slensdata_t(xipm), dc->type);
@@ -1819,20 +1970,22 @@ void datcov2xipm(const datcov *dc, int i_bin, int j_bin, double **xip, double **
    }
 
 
+   offset = dc->Ntheta * idx_zz(i_bin, j_bin, dc->Nzbin, err);
+   forwardError(*err, __LINE__,);
    for (i=0; i<*N; i++) {
-      index = idx_tzz(i, i_bin, j_bin, dc->Nzbin);
-       (*xip)[i]   = dc->data[index];
-       (*theta)[i] = dc->theta[i];
+      index = offset + i;
+      (*xip)[i]   = dc->data[index];
+      (*theta)[i] = dc->theta[i];
       if (dc->format==angle_mean || dc->format==angle_wlinear || dc->format==angle_wquadr) {
 	 (*theta2)[i] = dc->theta2[i];
       }
    }
    
    for (i=*N; i<dc->Ntheta; i++) {
-      index = idx_tzz(i, i_bin, j_bin, dc->Nzbin);
+      index = offset + i;
       (*xim)[i-(*N)] = dc->data[index];
    }
-   
+
 }
 
 /* Really only reads a covariance (in column format) for xi+ */
@@ -1874,7 +2027,7 @@ void read_cov_col(datcov *dc, char cov_name[], error **err)
 
 /* ============================================================ *
  * Scales the cosmic variance xi+/xi- covariance term, see      *
- * EHS09, eq. (20, 21).						*
+ * ESH09, eq. (20, 21).						*
  * ============================================================ */
 void scale_cosmic_variance_ESH09(cosmo_lens *model, gsl_matrix *cov, const datcov *dc, error **err)
 {
@@ -1978,7 +2131,7 @@ void scale_mixed_ESH09(const cosmo_lens *model, gsl_matrix *cov, const datcov *d
 {
    const double theta[NTH_M_ESH09] = {1.0, 4.9, 10.3, 15.7, 33.0, 45.4, 69.3, 85.7, 106.6, 131.0, 162.0, 180.0};
 
-   /* EHS09, http://www.astro.uni-bonn.de/~teifler/fit-parameters.pdf */
+   /* ESH09, http://www.astro.uni-bonn.de/~teifler/fit-parameters.pdf */
    const double alpha_pp[NTH_M_ESH09][NTH_M_ESH09] = {
      {1.1892,1.3888,1.4163,1.4212,1.4485,1.4726,1.5186,1.5485,1.5841,1.6262,1.6768,1.7063},
      {1.3888,1.2955,1.4126,1.4214,1.4483,1.4723,1.5183,1.5483,1.5838,1.6260,1.6767,1.7061},
@@ -2132,9 +2285,9 @@ void scale_mixed_ESH09(const cosmo_lens *model, gsl_matrix *cov, const datcov *d
  * ============================================================ */
 
 double lensing_signal(cosmo_lens *model, double theta, int i_bin, int j_bin, lensdata_t type,
-		      decomp_eb_filter_t decomp_eb_filter, error **err)
+		      decomp_eb_filter_t decomp_eb_filter, const cosebi_info_t *cosebi_info, error **err)
 {
-   double res, resE, resB, eta;
+   double res, resp, resm, eta;
    const double *a;
    int N;
 
@@ -2143,51 +2296,76 @@ double lensing_signal(cosmo_lens *model, double theta, int i_bin, int j_bin, len
 		  *err, __LINE__, 0.0, type, decomp_eb_filter);
 
    switch (type) {
+
       case xip :
-	 res = xi(model, +1, theta, i_bin, j_bin, err);
-	 forwardError(*err, __LINE__, 0);
-	 break;
+         res = xi(model, +1, theta, i_bin, j_bin, err);
+         forwardError(*err, __LINE__, 0);
+         break;
+
       case xim :
-	 res = xi(model, -1, theta, i_bin, j_bin, err);
-	 forwardError(*err, __LINE__, 0);
-	 break;
+         res = xi(model, -1, theta, i_bin, j_bin, err);
+         forwardError(*err, __LINE__, 0);
+         break;
+
       case map2poly :
-	 res = map2_poly(model, theta, i_bin, j_bin, err);
-	 forwardError(*err, __LINE__, 0);
-	 break;
+         res = map2_poly(model, theta, i_bin, j_bin, err);
+         forwardError(*err, __LINE__, 0);
+         break;
+
       case map2gauss :
-	 res = map2_gauss(model, theta, i_bin, j_bin, err);
-	 forwardError(*err, __LINE__, 0);
-	 break;
+         res = map2_gauss(model, theta, i_bin, j_bin, err);
+         forwardError(*err, __LINE__, 0);
+         break;
+
       case gsqr :
-	 res = gamma2(model, theta, i_bin, j_bin, err);
-	 forwardError(*err, __LINE__, 0);
-	 break;
+         res = gamma2(model, theta, i_bin, j_bin, err);
+         forwardError(*err, __LINE__, 0);
+         break;
+
       case decomp_eb :
-	 switch (decomp_eb_filter) {
-	    case FK10_SN        : a = a_FK10_SN;        eta = eta_FK10_SN;        N = N_FK10; break;
-	    case FK10_FoM_eta10 : a = a_FK10_FoM_eta10; eta = eta_FK10_FoM_eta10; N = N_FK10; break;
-	    case FK10_FoM_eta50 : a = a_FK10_FoM_eta50; eta = eta_FK10_FoM_eta10; N = N_FK10; break;
-	    default : *err = addErrorVA(lensing_type, "Unknown decomp_eb_filter type %d",
-				      *err, __LINE__, decomp_eb_filter);
-	       return 0.0;
-	 }
-	 resE = 0.5*RR(model, theta*eta, theta, a, N, cheby2, +1, err);
-	 forwardError(*err, __LINE__, 0.0);
-	 resB = 0.5*RR(model, theta*eta, theta, a, N, cheby2, -1, err);
-	 forwardError(*err, __LINE__, 0.0);
-	 res = resE + resB;
-	 break;
+
+         if (decomp_eb_filter == COSEBIs_log) {
+
+            int n = (int)round(theta/arcmin);
+            testErrorRetVA(n > cosebi_info->n_max, lensing_cosebi_n_max,
+                  "COSEBIs mode %d larger than maximum mode %d", *err, __LINE__, 0.0, n, cosebi_info->n_max);
+            res = E_cosebi(model, n, cosebi_info->th_min, cosebi_info->th_max,
+                  i_bin, j_bin, cosebi_info->path, NULL, err);
+            forwardError(*err, __LINE__, 0);
+
+         } else {
+
+            switch (decomp_eb_filter) {
+               case FK10_SN        : a = a_FK10_SN;        eta = eta_FK10_SN;        N = N_FK10; break;
+               case FK10_FoM_eta10 : a = a_FK10_FoM_eta10; eta = eta_FK10_FoM_eta10; N = N_FK10; break;
+               case FK10_FoM_eta50 : a = a_FK10_FoM_eta50; eta = eta_FK10_FoM_eta10; N = N_FK10; break;
+               case decomp_eb_none : *err = addErrorVA(lensing_type, "decomp_eb_filter type cannot be 'decomp_eb_none'",
+                                           *err, __LINE__, decomp_eb_filter);
+                                     return 0.0;
+               default             : *err = addErrorVA(lensing_type, "Unknown decomp_eb_filter type %d",
+                                           *err, __LINE__, decomp_eb_filter);
+                                     return 0.0;
+            }
+            resp = RR(model, theta*eta, theta, a, N, cheby2, +1, err);
+            forwardError(*err, __LINE__, 0.0);
+            resm = RR(model, theta*eta, theta, a, N, cheby2, -1, err);
+            forwardError(*err, __LINE__, 0.0);
+            res = 0.5*(resp + resm); /* E-mode */
+         }
+         break;
+
       case pkappa :
-	 /* Interpret theta as ell, undo arcminute transformation. */
+         /* Interpret theta as ell, undo arcminute transformation. */
 	 res = Pshear(model, theta/arcmin, i_bin, j_bin, err);
 	 forwardError(*err, __LINE__, 0.0);
 	 break;
+
       case xipm : case nofz :
       default :
 	 *err = addErrorVA(ce_unknown, "Unknown or invalid lensdata type %d(%s)",
 			   *err, __LINE__, type, slensdata_t(type));
 	 return 0.0;
+
    }
 
    return res;
@@ -2199,7 +2377,8 @@ double lensing_signal(cosmo_lens *model, double theta, int i_bin, int j_bin, len
  * Returns chi^2 = -2 log L					*
  * ============================================================ */
 #define NPERBIN 20
-double chi2_lensing(cosmo_lens* csm, datcov* dc, int return_model, double **model_array, int *Nmodel, error **err)
+double chi2_lensing(cosmo_lens* csm, datcov* dc, int return_model, double **model_array, int *Nmodel,
+		    const cosebi_info_t *cosebi_info, error **err)
 {
    double *data_minus_model, model, th, dth, w, wtot;
    int i, j, in,i_bin, j_bin, Nzbin;
@@ -2230,64 +2409,64 @@ double chi2_lensing(cosmo_lens* csm, datcov* dc, int return_model, double **mode
 
    for (i_bin=0,in=0; i_bin<Nzbin; i_bin++) {
       for (j_bin=i_bin; j_bin<Nzbin; j_bin++) {
-	 for (j=0; j<dc->Ntheta; j++,in++) {
+         for (j=0; j<dc->Ntheta; j++,in++) {
 
-	    /* First half of data vector = xi+, second half = xi- */
-	    if (dc->type==xipm) {
-	       if (j<dc->Ntheta/2) type = xip;
-	       else type = xim;
-	    } else {
-	       type = dc->type;
-	    }
+            /* First half of data vector = xi+, second half = xi- */
+            if (dc->type==xipm) {
+               if (j<dc->Ntheta/2) type = xip;
+               else type = xim;
+            } else {
+               type = dc->type;
+            }
 
-	    if (dc->format==angle_mean) {
+            if (dc->format==angle_mean) {
 
-	       /* Average model over bin width */
-	       dth = (dc->theta2[j]-dc->theta[j])/(double)(NPERBIN-1.0);
-	       for (i=0,model=0.0,th=dc->theta[j]; i<NPERBIN; i++,th+=dth) {
-		  model += lensing_signal(csm, th, i_bin, j_bin, type, dc->decomp_eb_filter, err);
-		  forwardError(*err, __LINE__, 0.0);
-	       }
-	       model /= (double)NPERBIN;
+               /* Average model over bin width */
+               dth = (dc->theta2[j]-dc->theta[j])/(double)(NPERBIN-1.0);
+               for (i=0,model=0.0,th=dc->theta[j]; i<NPERBIN; i++,th+=dth) {
+                  model += lensing_signal(csm, th, i_bin, j_bin, type, dc->decomp_eb_filter, NULL, err);
+                  forwardError(*err, __LINE__, 0.0);
+               }
+               model /= (double)NPERBIN;
 
-	    }  else if (dc->format==angle_wlinear) {
+            }  else if (dc->format==angle_wlinear) {
 
-	       /* Linear weighting over angular bin */
-	       dth = (dc->theta2[j]-dc->theta[j])/(double)(NPERBIN-1.0);
-	       for (i=0,model=wtot=0.0,th=dc->theta[j]; i<NPERBIN; i++,th+=dth) {
-		  w      = th/arcmin;
-		  model += w*lensing_signal(csm, th, i_bin, j_bin, type, dc->decomp_eb_filter, err);
-		  forwardError(*err, __LINE__, 0.0);
-		  wtot  += w;
-	       }
-	       model /= wtot;
+               /* Linear weighting over angular bin */
+               dth = (dc->theta2[j]-dc->theta[j])/(double)(NPERBIN-1.0);
+               for (i=0,model=wtot=0.0,th=dc->theta[j]; i<NPERBIN; i++,th+=dth) {
+                  w      = th/arcmin;
+                  model += w*lensing_signal(csm, th, i_bin, j_bin, type, dc->decomp_eb_filter, NULL, err);
+                  forwardError(*err, __LINE__, 0.0);
+                  wtot  += w;
+               }
+               model /= wtot;
 
-	    }  else if (dc->format==angle_wquadr) {
+            }  else if (dc->format==angle_wquadr) {
 
-	       /* Quadratic weighting over angular bin */
-	       dth = (dc->theta2[j]-dc->theta[j])/(double)(NPERBIN-1.0);
-	       for (i=0,model=wtot=0.0,th=dc->theta[j]; i<NPERBIN; i++,th+=dth) {
-		  w      = dc->a1*th/arcmin + dc->a2*dsqr(th/arcmin);
-		  model += w*lensing_signal(csm, th, i_bin, j_bin, type, dc->decomp_eb_filter, err);
-		  forwardError(*err, __LINE__, 0.0);
-		  wtot  += w;
-	       }
-	       model /= wtot;
+               /* Quadratic weighting over angular bin */
+               dth = (dc->theta2[j]-dc->theta[j])/(double)(NPERBIN-1.0);
+               for (i=0,model=wtot=0.0,th=dc->theta[j]; i<NPERBIN; i++,th+=dth) {
+                  w      = dc->a1*th/arcmin + dc->a2*dsqr(th/arcmin);
+                  model += w*lensing_signal(csm, th, i_bin, j_bin, type, dc->decomp_eb_filter, NULL, err);
+                  forwardError(*err, __LINE__, 0.0);
+                  wtot  += w;
+               }
+               model /= wtot;
 
-	    } else {
+            } else {
 
-	       /* Model at bin center */
-	       model = lensing_signal(csm, dc->theta[j], i_bin, j_bin, type, dc->decomp_eb_filter, err);
-	       forwardError(*err, __LINE__, -1);
+               /* Model at bin center */
+               model = lensing_signal(csm, dc->theta[j], i_bin, j_bin, type, dc->decomp_eb_filter, cosebi_info, err);
+               forwardError(*err, __LINE__, -1);
 
-	    }
+            }
 
-	    testErrorRetVA(in>=dc->n, math_overflow, "Overflow, data index %d>=%d", *err, __LINE__, 0, in, dc->n);
+            testErrorRetVA(in>=dc->n, math_overflow, "Overflow, data index %d>=%d", *err, __LINE__, 0, in, dc->n);
 
-	    (*model_array)[in]   = model;
-	    data_minus_model[in] = dc->data[in] - model;
+            (*model_array)[in]   = model;
+            data_minus_model[in] = dc->data[in] - model;
 
-	 }
+         }
       }
    }
 
@@ -2303,75 +2482,76 @@ double chi2_lensing(cosmo_lens* csm, datcov* dc, int return_model, double **mode
       x = gsl_vector_view_array(data_minus_model, dc->n);
 
       switch (dc->cov_scaling) {
-	 case cov_const :
+         case cov_const :
 
-	    A = gsl_matrix_view_array(dc->cov[0], dc->n, dc->n);
+            A = gsl_matrix_view_array(dc->cov[0], dc->n, dc->n);
             lndetC = dc->lndetC;
-	    break;
+            break;
 
          case cov_ESH09 :
 
-	    /* Copy shot noise term D -> tmp */
-	    tmp = gsl_matrix_alloc(dc->n, dc->n);
-	    A   = gsl_matrix_view_array(dc->cov[2], dc->n, dc->n);
-	    i   = gsl_matrix_memcpy(tmp, &A.matrix);
-	    testErrorRetVA(i != 0, math_unknown, "Matrix copying failed, gsl return value = %d",
-			   *err, __LINE__, -1, i);
+            /* Copy shot noise term D -> tmp */
+            tmp = gsl_matrix_alloc(dc->n, dc->n);
+            A   = gsl_matrix_view_array(dc->cov[2], dc->n, dc->n);
+            i   = gsl_matrix_memcpy(tmp, &A.matrix);
+            testErrorRetVA(i != 0, math_unknown, "Matrix copying failed, gsl return value = %d",
+                  *err, __LINE__, -1, i);
 
 
-	    /* Copy mixed term M -> tmp2 */
-	    tmp2 = gsl_matrix_alloc(dc->n, dc->n);
-	    B    = gsl_matrix_view_array(dc->cov[1], dc->n, dc->n);
-	    i    = gsl_matrix_memcpy(tmp2, &B.matrix);
-	    testErrorRetVA(i != 0, math_unknown, "Matrix copying failed, gsl return value = %d",
-			   *err, __LINE__, -1, i);
+            /* Copy mixed term M -> tmp2 */
+            tmp2 = gsl_matrix_alloc(dc->n, dc->n);
+            B    = gsl_matrix_view_array(dc->cov[1], dc->n, dc->n);
+            i    = gsl_matrix_memcpy(tmp2, &B.matrix);
+            testErrorRetVA(i != 0, math_unknown, "Matrix copying failed, gsl return value = %d",
+                  *err, __LINE__, -1, i);
 
-	    /* Scale mixed term */
-	    scale_mixed_ESH09(csm, tmp2, dc, err);
+            /* Scale mixed term */
+            scale_mixed_ESH09(csm, tmp2, dc, err);
+            //write_matrix(tmp2->data, dc->n, "M_ESH09", err); forwardError(*err, __LINE__, -1.0);
 
-	    /* Add mixed to shot noise -> tmp */
-	    A = gsl_matrix_submatrix(tmp, 0, 0, dc->n, dc->n);
-	    B = gsl_matrix_submatrix(tmp2, 0, 0, dc->n, dc->n);
-	    i = gsl_matrix_add(&A.matrix, &B.matrix);
-	    testErrorRetVA(i != 0, math_unknown, "Matrix addition failed, gsl return value = %d",
-			   *err, __LINE__, -1, i);
+            /* Add mixed to shot noise -> tmp */
+            A = gsl_matrix_submatrix(tmp, 0, 0, dc->n, dc->n);
+            B = gsl_matrix_submatrix(tmp2, 0, 0, dc->n, dc->n);
+            i = gsl_matrix_add(&A.matrix, &B.matrix);
+            testErrorRetVA(i != 0, math_unknown, "Matrix addition failed, gsl return value = %d",
+                  *err, __LINE__, -1, i);
 
 
-	    /* Copy cosmic variance term V -> tmp2 */
-	    B = gsl_matrix_view_array(dc->cov[0], dc->n, dc->n);
-	    i = gsl_matrix_memcpy(tmp2, &B.matrix);
-	    testErrorRetVA(i != 0, math_unknown, "Matrix copying failed, gsl return value = %d",
-			   *err, __LINE__, -1, i);
+            /* Copy cosmic variance term V -> tmp2 */
+            B = gsl_matrix_view_array(dc->cov[0], dc->n, dc->n);
+            i = gsl_matrix_memcpy(tmp2, &B.matrix);
+            testErrorRetVA(i != 0, math_unknown, "Matrix copying failed, gsl return value = %d",
+                  *err, __LINE__, -1, i);
 
-	    /* Scale cosmic variance term */
-	    scale_cosmic_variance_ESH09(csm, tmp2, dc, err);
+            /* Scale cosmic variance term */
+            scale_cosmic_variance_ESH09(csm, tmp2, dc, err);
 
-	    /* Add cosmic variance to shot+mixed -> tmp */
-	    A = gsl_matrix_submatrix(tmp, 0, 0, dc->n, dc->n);
-	    B = gsl_matrix_submatrix(tmp2, 0, 0, dc->n, dc->n);
-	    i = gsl_matrix_add(&A.matrix, &B.matrix);
-	    testErrorRetVA(i != 0, math_unknown, "Matrix addition failed, gsl return value = %d",
-			   *err, __LINE__, -1, i);
+            /* Add cosmic variance to shot+mixed -> tmp */
+            A = gsl_matrix_submatrix(tmp, 0, 0, dc->n, dc->n);
+            B = gsl_matrix_submatrix(tmp2, 0, 0, dc->n, dc->n);
+            i = gsl_matrix_add(&A.matrix, &B.matrix);
+            testErrorRetVA(i != 0, math_unknown, "Matrix addition failed, gsl return value = %d",
+                  *err, __LINE__, -1, i);
             //write_matrix(tmp->data, dc->n, "tot", err); forwardError(*err, __LINE__, -1.0);
 
-	    gsl_matrix_free(tmp2);
+            gsl_matrix_free(tmp2);
 
-	    /* Replace res->cov with L, where C = L L^T */
-	    testErrorRet(gsl_linalg_cholesky_decomp(&A.matrix) == GSL_EDOM, mv_cholesky,
-		 	 "Cholesky decomposition of covariance matrix failed", *err, __LINE__, -1);
+            /* Replace res->cov with L, where C = L L^T */
+            testErrorRet(gsl_linalg_cholesky_decomp(&A.matrix) == GSL_EDOM, mv_cholesky,
+                  "Cholesky decomposition of covariance matrix failed", *err, __LINE__, -1);
 
-      	    /* Determinant of the covariance.  ln C = 2 ln L */
-      	    //write_matrix(A.matrix.data, dc->n, "L", err); forwardError(*err, __LINE__, -1.0);
-      	    lndetC = 2.0 * ln_determinant(A.matrix.data, dc->n, err);
-      	    forwardError(*err, __LINE__, -1.0);
+            /* Determinant of the covariance.  ln C = 2 ln L */
+            //write_matrix(A.matrix.data, dc->n, "L", err); forwardError(*err, __LINE__, -1.0);
+            lndetC = 2.0 * ln_determinant(A.matrix.data, dc->n, err);
+            forwardError(*err, __LINE__, -1.0);
 
-	    break;
+            break;
 
-	 default :
+         default :
 
-	    *err = addErrorVA(ce_unknown, "Unknown or invalid cov_scaling type %d(%s)",
-			      *err, __LINE__, dc->cov_scaling, scov_scaling_t(dc->cov_scaling));
-	    return -1.0;
+            *err = addErrorVA(ce_unknown, "Unknown or invalid cov_scaling type %d(%s)",
+                  *err, __LINE__, dc->cov_scaling, scov_scaling_t(dc->cov_scaling));
+            return -1.0;
 
       }
 
@@ -2383,30 +2563,27 @@ double chi2_lensing(cosmo_lens* csm, datcov* dc, int return_model, double **mode
 
       /* x^T . x */
       for (i=0; i<dc->n; i++) {
-	 res += dsqr(gsl_vector_get(&x.vector, i));
+         res += dsqr(gsl_vector_get(&x.vector, i));
       }
 
       if (dc->cov_scaling == cov_ESH09) {
-	 gsl_matrix_free(tmp);
+         gsl_matrix_free(tmp);
       }
 
    } else {
 
-      // MKDEBUG NEW
       *err = addError(lensing_inconsistent, "usecov = 0 not valid", *err, __LINE__);
       return -1.0;
 
    }
 
    testErrorRetVA(res<0.0, math_negative, "Negative chi^2 %g. Maybe the covariance matrix is not positive",
-                  *err, __LINE__, -1.0, res);
+         *err, __LINE__, -1.0, res);
 
    if (! return_model) free(*model_array);
-   // MKDEBUG NEW
    logL = -0.5 * (res + dc->n * ln2pi + lndetC);
 
-   /* To avoid infinite weights in importance sampling with WMAP */
-   logL -= 480;
+   /* New v1.2: Problem with infinite weights solved */
 
    return logL;
 }
@@ -2419,7 +2596,7 @@ int Nperm_to_Ntheta(int Nperm, error **err)
    int N;
 
    for (N=1; N<NMAX; N++) {
-      if (N * (N +1) * (N + 2) / 6 == Nperm) return N;
+      if (N * (N + 1) * (N + 2) / 6 == Nperm) return N;
    }
 
    *err = addErrorVA(lensing_nperm, "Number of angular bins not found, maybe > %d?",
@@ -2468,25 +2645,25 @@ void read_data_3rd(datcov *dc, char data_name[], int Nzbin, error **err)
 
    dc->data  = malloc_err(sizeof(double)*dc->n, err);          forwardError(*err, __LINE__,);
    dc->theta = malloc_err(sizeof(double)*dc->Ntheta, err);     forwardError(*err, __LINE__,);
-   dc->theta2 = NULL;
+   dc->theta2 = NULL;  /* Only valid format is angle_center */
    dc->var    = NULL;
 
    /* First three columns: angular scales (theta_1 theta_2 theta_3) */
    for (i=n=0; i<dc->Ntheta; i++) {
       for (j=i; j<dc->Ntheta; j++) {
-	 for (k=j; k<dc->Ntheta; k++,n++) {
+         for (k=j; k<dc->Ntheta; k++,n++) {
 
-	    /* Store angular scale from theta_k for i,j=0 */
-	    if (i==0 && j==0) {
-	       dc->theta[k] = ptr[Ncol*k+2]*arcmin;
-	    }
+            /* Store angular scale from theta_k for i,j=0 */
+            if (i==0 && j==0) {
+               dc->theta[k] = ptr[Ncol*k+2]*arcmin;
+            }
 
-	    testErrorRetVA(n>=dc->n, math_overflow, "Index overflow (%d>=%d)",
-			   *err, __LINE__,, n, dc->n);
+            testErrorRetVA(n>=dc->n, math_overflow, "Index overflow (%d>=%d)",
+                  *err, __LINE__,, n, dc->n);
 
-	    dc->data[n] = ptr[n*Ncol+3];
+            dc->data[n] = ptr[n*Ncol+3];
 
-	 }
+         }
       }
    }
 
@@ -2494,8 +2671,8 @@ void read_data_3rd(datcov *dc, char data_name[], int Nzbin, error **err)
 
 /* ============================================================ *
  * Reads two files with 2nd- and 3rd-order data, respectively.  *
- * Copies the data to res. The 3rd-order file can be in diagonal*
- * or general (3theta) format					*
+ * Copies the data to res. The 3rd-order file can be diagonal   *
+ * or general (3theta) format					                      *
  * ============================================================ */
 void read_data_2nd_3rd(datcov *res, char *dataname, char *dataname2, error **err)
 {
@@ -2505,10 +2682,11 @@ void read_data_2nd_3rd(datcov *res, char *dataname, char *dataname2, error **err
    dc2 = malloc_err(sizeof(datcov), err);              forwardError(*err,__LINE__,);
 
    /* Read second-order file */
+   dc->format = res->format;
    read_data_tomo(dc, dataname, 0, second_order, err); forwardError(*err, __LINE__,);
 
    /* Read third-order file, verifying same number of redshift bins as 2nd-order */
-   if (res->type==map2gauss_map3gauss_diag) {
+   if (res->type==map2gauss_map3gauss_diag || res->type==decomp_eb_map3gauss_diag) {
       read_data_tomo(dc2, dataname2, dc->Nzbin, third_order, err);  forwardError(*err, __LINE__,);
    } else {
       read_data_3rd(dc2, dataname2, dc->Nzbin, err);   forwardError(*err, __LINE__,);
@@ -2517,8 +2695,12 @@ void read_data_2nd_3rd(datcov *res, char *dataname, char *dataname2, error **err
    res->Ntheta  = dc->Ntheta;
    res->Ntheta2 = dc2->Ntheta;
    res->n       = dc->n + dc2->n;
-   res->Nzbin   = dc->Nzbin;       /* Equal to dc2->Nzbin */
-   res->Nzcorr  = dc->Nzcorr;      /* Equal to dc2->Nzcorr */
+   res->Nzbin   = dc->Nzbin;
+   res->Nzcorr  = dc->Nzcorr;
+
+   testErrorRetVA(dc->Nzbin != dc2->Nzbin, lensing_nzbin,
+	       "Different number of redshift bins for 2nd (%d) and 3rd (%d) order",
+	       *err, __LINE__,, dc->Nzbin, dc2->Nzbin);
 
    res->theta   = malloc_err(sizeof(double)*res->Ntheta, err);   forwardError(*err, __LINE__,);
    res->theta2  = malloc_err(sizeof(double)*res->Ntheta2, err);  forwardError(*err, __LINE__,);

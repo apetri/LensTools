@@ -27,6 +27,8 @@
 #define io_eof		-3 + io_base
 #define io_null         -4 + io_base
 #define io_inconsistent -5 + io_base
+#define io_directory    -6 + io_base
+
 
 
 unsigned int numberoflines(const char *, error **err);
@@ -63,10 +65,13 @@ void* read_bin_list(const char* fnm, size_t *n, error **err);
 
 void chomp(char *x);
 
+int is_directory(const char *path);
+
 /* ============================================================ *
  * To calculate the program run time.				*
  * ============================================================ */
 time_t start_time(FILE *FOUT);
 void end_time(time_t t_start, FILE *FOUT);
+void end_clock(clock_t c_start, FILE *FOUT);
 
 #endif

@@ -4,7 +4,6 @@
  * Martin Kilbinger, Karim Benabed 2006-2012			*
  * ============================================================ */
 
-
 #ifndef __LENSING_H
 #define __LENSING_H
 
@@ -69,14 +68,24 @@
 #define lensing_fastxi                   -8 + lensing_base
 #define lensing_nperm                    -9 + lensing_base
 #define lensing_range                   -10 + lensing_base
+#define lensing_cosebi_n_max            -11 + lensing_base
+#define lensing_ia                      -12 + lensing_base
+#define lensing_angle_format            -13 + lensing_base
+#define lensing_nzbin                   -14 + lensing_base
 
 /* If Ob/Oc > BARYON_FRAC, chi2 produces an error */
 #define BARYON_FRAC 0.75
 
 
-#define Nlensdata_t 13
+/* Intrinsic alignment, constant amplitude C_1 * rho_crit, *
+ * with C_1 = 5e-14 h^2 Mpc^3/M_sol.                       */
+#define ia_c1_rho_crit     0.0134
+
+
 typedef enum {xipm, xip, xim, map2poly, map2gauss, gsqr, decomp_eb, nofz, pkappa, map3gauss,
-	      map3gauss_diag, map2gauss_map3gauss_diag, map2gauss_map3gauss} lensdata_t;
+	      map3gauss_diag, map2gauss_map3gauss_diag, map2gauss_map3gauss,
+	      decomp_eb_map3gauss_diag, decomp_eb_map3gauss}
+  lensdata_t;
 #define slensdata_t(i) ( \
  i==xipm      ? "xipm" : \
  i==xip       ? "xip"  : \
@@ -91,15 +100,18 @@ typedef enum {xipm, xip, xim, map2poly, map2gauss, gsqr, decomp_eb, nofz, pkappa
  i==map3gauss_diag ? "map3gauss_diag" : \
  i==map2gauss_map3gauss_diag ? "map2gauss_map3gauss_diag" : \
  i==map2gauss_map3gauss ? "map2gauss_map3gauss" : \
+ i==decomp_eb_map3gauss_diag ? "decomp_eb_map3gauss_diag" : \
+ i==decomp_eb_map3gauss ? "decomp_eb_map3gauss" : \
  "")
+#define Nlensdata_t 15
 
-typedef enum {decomp_eb_none, FK10_SN, FK10_FoM_eta10, FK10_FoM_eta50, COSEBI} decomp_eb_filter_t;
+typedef enum {decomp_eb_none, FK10_SN, FK10_FoM_eta10, FK10_FoM_eta50, COSEBIs_log} decomp_eb_filter_t;
 #define sdecomp_eb_filter_t(i) (		\
  i==decomp_eb_none ? "none" : \
  i==FK10_SN        ? "FK10_SN" : \
  i==FK10_FoM_eta10 ? "FK10_FoM_eta10" : \
  i==FK10_FoM_eta50 ? "FK10_FoM_eta50" : \
- i==COSEBI ? "COSEBI" : \
+ i==COSEBIs_log    ? "COSEBIs_log" : \
  "")
 #define Ndecomp_eb_filter_t 5
 
@@ -123,6 +135,33 @@ typedef enum {cov_const, cov_ESH09} cov_scaling_t;
   "__undef__")
 #define Ncov_scaling_t 2
 
+typedef enum {reduced_none, reduced_K10} reduced_t;
+#define sreduced_t(i) ( \
+  i==reduced_none ? "none" : \
+  i==reduced_K10  ? "K10" : \
+  "")
+#define Nreduced_t 2
+
+/* Intrinsic alignment model */
+typedef enum {ia_none, ia_HS04} ia_t;
+#define sia_t(i) ( \
+  i==ia_none ? "none" :	\
+  i==ia_HS04 ? "HS04" : \
+  "")
+#define Nia_t 2
+
+/* Bit-coded IA terms */
+typedef enum {ia_undef, ia_GI_II, ia_only_GI, ia_only_II} ia_terms_t;
+#define sia_terms_t(i) (      \
+  i==ia_undef   ? "undef" :   \
+  i==ia_GI_II   ? "GI_II" :   \
+  i==ia_only_GI ? "only_GI" : \
+  i==ia_only_II ? "only_II" : \
+  "")
+#define Nia_terms_t 4
+ 
+typedef enum {second_order=2, third_order=3} order_t;
+
 typedef enum {tomo_all, tomo_auto_only, tomo_cross_only} tomo_t;
 #define stomo_t(i) ( \
  i==tomo_all        ? "tomo_all" : \
@@ -131,14 +170,11 @@ typedef enum {tomo_all, tomo_auto_only, tomo_cross_only} tomo_t;
  "")
 #define Ntomo_t 3
 
-typedef enum {reduced_none, reduced_K10} reduced_t;
-#define sreduced_t(i) ( \
-  i==reduced_none ? "none" : \
-  i==reduced_K10  ? "K10" : \
-  "")
-#define Nreduced_t 2
-
-typedef enum {second_order=2, third_order=3} order_t;
+typedef struct {
+  int n_max;
+  double th_min, th_max;
+  char path[1024];
+} cosebi_info_t;
 
 typedef struct {
 
@@ -157,6 +193,11 @@ typedef struct {
 		       * alpha, beta: slopes of number density *
 		       * with flux (alpha), size (beta)        */
 
+  /* Intrinsic aligmnent */
+  ia_t ia;
+  double A_ia;           /* IA amplitude */
+  ia_terms_t ia_terms;  /* Bit-coded terms, GG=1, GI=2, II=4 */
+
   /* Halomodel stuff (only initialised if cosmo->nonlinear=halodm) */
   cosmo_hm *hm;
 
@@ -169,7 +210,6 @@ typedef struct {
 
   /* Shear second-order functions */
   interTable **xiP, **xiM, **gamma, **map_gauss, **map_poly;
-  double **E_cosebi;
   double *c_cosebi, psimin_cosebi, psimax_cosebi;
   int N_cosebi;
 
@@ -218,7 +258,6 @@ typedef struct {
    double *cov[3];     /* Maximum three nxn-dimensional covariance matrix */
    double a1, a2;      /* Coefficients for 'angle_wquadr' */
    double lndetC;
-   int Nexclude, *exclude;   /* Number and indices of z-bins to exclude from analysis */
    int usecov;
    lensdata_t type;
    lensformat_t format;
@@ -240,7 +279,10 @@ cosmo_lens *init_parameters_lens(double OMEGAM, double OMEGAV, double W0_DE, dou
 				 int Nzbin, const int *Nnz, const nofz_t *nofz, double *par_nz,
 				 nonlinear_t NONLINEAR, transfer_t TRANSFER,
 				 growth_t GROWTH, de_param_t DEPARAM,
-				 norm_t normmode, tomo_t TOMO, reduced_t REDUCED, double Q_MAG_SIZE, error **err);
+				 norm_t normmode, tomo_t TOMO, reduced_t REDUCED, double Q_MAG_SIZE,
+				 ia_t IA, ia_terms_t ia_terms, double A_IA, error **err);
+
+void consistency_parameters_lens(const cosmo_lens *self, error **err);
 cosmo_lens* copy_parameters_lens_only(cosmo_lens* source, error **err);
 cosmo_lens* copy_parameters_lens(cosmo_lens* source, sm2_error **err);
 void updateFrom_lens(cosmo_lens* avant, cosmo_lens* apres, error **err);
@@ -262,6 +304,11 @@ double int_for_p_2(double a, void *intpar,error **err);
 double P_NL_tot(cosmo_lens *self, double a, double k, error **err);
 double Pshear(cosmo_lens *self, double a, int i_bin, int j_bin, error **err);
 double P_projected_kappa(void *self, double l, int i_bin, int j_bin, error **err);
+double int_over_P_kappa(cosmo_lens *self, funcwithpars int_for_p, void *intpar, error **err);
+
+double int_for_p_GI(double a, void *intpar, error **err);
+double int_for_p_II(double a, void *intpar, error **err);
+
 
 /* Reduced-shear correction (K10) */
 extern const int parameter[M_PAR];
@@ -288,10 +335,6 @@ double RR_cosebi(cosmo_lens *lens, double THETA_MIN, double THETA_MAX, int i_bin
 		 int n, int pm, error **err);
 double dRR_cosebi_dz_MC(double *z, int ndim, void *intpar);
 double dRR_cosebi_dz(double z, void *intpar, error **err);
-double xipmEB(cosmo_lens *lens, double THETA_MIN, double THETA_MAX, double dTHETA,
-	      int i_bin, int j_bin, const double *c, int N, int pm, int EB, error **err);
-double EnBn(cosmo_lens *lens, double THETA_MIN, double THETA_MAX, 
-	    int i_bin, int j_bin, int n, int EB, error **err);  
 double int_for_map2_slow(double ell, void *intpar, error **err);
 double map2_slow(cosmo_lens *self, double theta, tpstat_t tpstat, int i_bin, int j_bin, error **err);
 
@@ -299,7 +342,7 @@ double map2_slow(cosmo_lens *self, double theta, tpstat_t tpstat, int i_bin, int
 datcov *init_data_cov_tomo(char* dataname, char *dataname2, char** covname_ptr, lensdata_t type,
 			   decomp_eb_filter_t decomp_eb_filter, 
 			   lensformat_t format, double corr_invcov,
-			   double a1, double a2, int Nexclue, const int *exclude, order_t order,
+			   double a1, double a2, order_t order,
 			   cov_scaling_t cov_scaling, error **err);
 datcov *init_datcov_for_cov_only(int Nzbin, int Ntheta, error **err);
 
@@ -317,8 +360,9 @@ int find_bin(double x, const double *list, int N, int prev, error **err);
 void scale_cosmic_variance_ESH09(cosmo_lens *model, gsl_matrix *cov, const datcov *dc, error **err);
 void scale_mixed_ESH09(const cosmo_lens *model, gsl_matrix *cov, const datcov *dc, error **err);
 double lensing_signal(cosmo_lens *model, double theta, int i_bin, int j_bin, lensdata_t type,
-		      decomp_eb_filter_t decomp_eb_filter, error **err);
-double chi2_lensing(cosmo_lens* csm, datcov* dc, int return_model, double **model_array, int *Nmodel, error **err);
+		      decomp_eb_filter_t decomp_eb_filter, const cosebi_info_t *cosebi_info, error **err);
+double chi2_lensing(cosmo_lens* csm, datcov* dc, int return_model, double **model_array, int *Nmodel,
+		    const cosebi_info_t *cosebi_info, error **err);
 
 /* Some third-order stuff which is called from lensing.c */
 int Nperm_to_Ntheta(int Nperm, error **err);

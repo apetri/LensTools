@@ -154,25 +154,25 @@ void read_redshift_info(redshift_t **self, FILE *F, error **err)
    switch (tmp.nzmode) {
 
       case nz_fit_hist :
-	 *self = NULL;
-	 return;           /* Used only in wrappers:nz.c */
+         *self = NULL;
+         return;           /* Used only in wrappers:nz.c */
 
       case nz_read_from_files :
-	 tmp.nzfile = malloc_err(sizeof(char*)*tmp.Nzbin, err);
-	 forwardError(*err, __LINE__,);
-	 for (j=0; j<tmp.Nzbin; j++) {
-	    tmp.nzfile[j] = malloc_err(sizeof(char)*128*tmp.Nzbin, err);
-	 }
-	 CONFIG_READ_S_ARR(&tmp, nzfile, s, j, tmp.Nzbin, F, c, err);
+         tmp.nzfile = malloc_err(sizeof(char*)*tmp.Nzbin, err);
+         forwardError(*err, __LINE__,);
+         for (j=0; j<tmp.Nzbin; j++) {
+            tmp.nzfile[j] = malloc_err(sizeof(char)*128*tmp.Nzbin, err);
+         }
+         CONFIG_READ_S_ARR(&tmp, nzfile, s, j, tmp.Nzbin, F, c, err);
 
-	 *self = init_redshift_from_files((const char**)(tmp.nzfile), tmp.Nzbin, err);
-	 forwardError(*err, __LINE__,);
-	 break;
- 
-     default :
-	*err = addErrorVA(redshift_unknown, "Unknown nzmode type %d",
-			  *err, __LINE__, tmp.nzmode);
-	 return;
+         *self = init_redshift_from_files((const char**)(tmp.nzfile), tmp.Nzbin, err);
+         forwardError(*err, __LINE__,);
+         break;
+
+      default :
+         *err = addErrorVA(redshift_unknown, "Unknown nzmode type %d",
+               *err, __LINE__, tmp.nzmode);
+         return;
    }
 }
 
@@ -197,8 +197,8 @@ void read_redshift_slice(redshift_t *self, int n_bin, const char *name, error **
       Nrec = 0;
       ptr = (double*)read_any_list_count(name, &Nrec, "%lg", sizeof(double), &Nlines, err);
       testErrorRetVA(Nrec!=Nlines, redshift_nnz,
-		     "Number of records (%d) not equal to number of lines (%d) in n(z) file '%s'",
-		     *err, __LINE__,, Nrec, Nlines, name);
+            "Number of records (%d) not equal to number of lines (%d) in n(z) file '%s'",
+            *err, __LINE__,, Nrec, Nlines, name);
       self->Nnz[n_bin] = Nlines;
       for (i=0; i<Nrec; i++) {
 	 self->par_nz[n_bin*self->Nnz_max+i] = ptr[i];
@@ -709,6 +709,7 @@ int get_and_check_Nzbin(int Nzcorr, int Nzbin, error **err)
    double dNzbin;
    int n;
 
+   /* Solution to Nzcorr = Nzbin (Nzbin + 1) / 2 */
    dNzbin = 0.5*(sqrt(8.0*Nzcorr+1.0) - 1.0);
    testErrorRetVA(fabs(dNzbin-floor(dNzbin+0.5))>EPSILON, redshift_Nzbin,
 		  "Number of z-correlations inconsistent, %d != Nz*(Nz+1)/2", *err, __LINE__, 0, Nzcorr);

@@ -3,6 +3,7 @@
  * Martin Kilbinger, Liping Fu 2008, 2009			*
  * ============================================================ */
 
+
 #ifndef __DECOMP_EB_H
 #define __DECOMP_EB_H
 
@@ -101,5 +102,8 @@ double an2(int n,  const double *c);
 double an4(int n, const double *c);
 double dnm(int n, const int m, const double *c);
 double sum_combinations(int j, int n, const double *r, error **err);
+void xipmEB(double theta, double THETA_MIN, double THETA_MAX, const double *c, 
+	    const double *E, const double *B, int N, double xi_pm_EB[4], error **err);
+
 
 #endif
