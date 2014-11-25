@@ -176,7 +176,7 @@ else:
 #Decide if we can install the NICAEA bindings
 fftw3_location = check_fftw3(conf)
 
-if (gsl_location is not None) and (fftw3_location is not None):
+if (gsl_location is not None) and (fftw3_location is not None) and (conf.getboolean("nicaea","install_python_bindings")):
 	print("[OK] Checked GSL and FFTW3 installations, the NICAEA bindings will be installed")
 	lenstools_includes += [ os.path.join(fftw3_location,"include") ]
 	lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")),"-lfftw3"]
@@ -192,7 +192,7 @@ if (gsl_location is not None) and (fftw3_location is not None):
 	external_support["_nicaea"] = nicaea_sources
 
 else:
-	raw_input("[FAIL] GSL and/or FFTW3 installations not found, NICAEA bindings will not be installed, please press a key to continue: ")
+	raw_input("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3 installation), please press a key to continue: ")
 
 
 #################################################################################################
