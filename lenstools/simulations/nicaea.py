@@ -1,3 +1,4 @@
+import types
 import numpy as np
 from astropy.cosmology import w0waCDM
 
@@ -6,6 +7,80 @@ try:
 	_nicaea=_nicaea
 except ImportError:
 	_nicaea=None
+
+
+##########################################################
+##########Nicaea built-in redshift distributions##########
+##########################################################
+
+_nicaea_builtin = dict()
+_nicaea_builtin["ludo"] = 5
+_nicaea_builtin["jonben"] = 5
+_nicaea_builtin["ymmk"] = 5
+_nicaea_builtin["single"] = 2
+_nicaea_builtin["hist"] = 0
+
+################################################################################
+###########Useful to check validity of redshift distribution inputs#############
+################################################################################
+
+def _check_redshift(z,distribution,distribution_parameters,**kwargs):
+
+	#Parse redshift distribution from input
+	if type(z)==np.float:
+			
+		nzbins = 1
+		nofz = ["single"]
+		Nnz = np.array([2],dtype=np.int32)
+		par_nz = np.array([z,z])
+
+	elif type(distribution)==types.FunctionType:
+
+		assert type(z)==np.ndarray and z.ndim==1,"distribution is a callable, hence z must be a one dimensional array!"
+		nzbins = 1
+		nofz = ["hist"]
+		Nnz = np.array([2*len(z)-1],dtype=np.int32)
+
+		#Format paramaters accordingly
+		midpoints = 0.5*(z[1:]+z[:-1])
+		gal_in_bin = distribution(midpoints,**kwargs)
+		par_nz = np.concatenate((np.array([z[0],z[-1]]),z[1:-1],gal_in_bin))
+		assert len(par_nz)==Nnz[0]
+
+	else:
+			
+		assert z is None,"If you want to specify the distribution parameters manually z must be None"
+		assert type(distribution)==list and type(distribution_parameters)==list,"If you want to specify the distribution parameters manually both distribution and distribution parameters must be lists"
+		assert len(distribution)==len(distribution_parameters),"The lists must have the same length"
+
+		nzbins = len(distribution)
+		nofz = distribution
+		Nnz = list()
+			
+		for n,distr_in_bin in enumerate(nofz):
+				
+			assert distr_in_bin in _nicaea_builtin.keys(),"{0} must be one of NICAEA built in types: {1}".format(distr_in_bin,_nicaea_builtin.keys())
+			if distr_in_bin=="hist":
+
+				#Check that number of parameters is odd to conform to standard
+				assert len(distribution_parameters[n]%2==1)
+				Nnz.append(len(distribution_parameters[n]))
+
+			else:
+
+				#Check that number of parameters conforms to standard
+				assert len(distribution_parameters[n])==_nicaea_builtin[distr_in_bin],"You must provide exactly {0} parameters for distribution {1}".format(_nicaea_builtin[distr_in_bin],distr_in_bin)
+				Nnz.append(len(distribution_parameters[n]))
+
+		#Build the ordered array par_nz
+		assert len(Nnz)==nzbins
+		par_nz = np.concatenate(distribution_parameters)
+
+
+	#Return in NICAEA friendly format
+	return nzbins,nofz,Nnz,par_nz
+
+
 
 
 ##########################################
@@ -158,7 +233,7 @@ class Nicaea(w0waCDM):
 		return cls(H0=H0,Om0=Om0,Ode0=Ode0,Ob0=Ob0,w0=w0,wa=wa,sigma8=sigma8,ns=ns)
 
 
-	def convergencePowerSpectrum(self,ell,z=2.0,distribution=None,settings=None):
+	def convergencePowerSpectrum(self,ell,z=2.0,distribution=None,distribution_parameters=None,settings=None,**kwargs):
 
 		"""
 		Computes the convergence power spectrum for the given cosmological parameters and redshift distribution using NICAEA
@@ -167,13 +242,19 @@ class Nicaea(w0waCDM):
 		:type ell: array.
 
 		:param z: redshift bins for the sources; if a single float is passed, single redshift is assumed
-		:type z: float.
+		:type z: float., array or None
 
-		:param distribution: redshift distribution of the sources (normalization not necessary)
-		:type distribution: None or callable
+		:param distribution: redshift distribution of the sources (normalization not necessary); if None a single redshift is expected; if callable, z must be an array, and a single redshift bin is considered, with the galaxy distribution specified by the call of distribution(z); if a list is passed, each element must be a NICAEA type
+		:type distribution: None,callable or list
+
+		:param distribution_parameters: relevant only when distribution is a list, in which case each element in the list should be the tuple of parameters expected by the correspondent NICAEA distribution type
+		:type distribution_parameters: list.
 
 		:param settings: NICAEA code settings
 		:type settings: NicaeaSettings instance
+
+		:param kwargs: the keyword arguments are passed to the distribution, if callable
+		:type kwargs: dict.
 
 		:returns: (array) computed power spectrum at the selected multipoles
 
@@ -183,20 +264,12 @@ class Nicaea(w0waCDM):
 		if settings is None:
 			settings=NicaeaSettings.default()
 
-		#Parse redshift distribution from input
-		if type(z)==np.float:
-			
-			nzbins = 1
-			Nnz = np.array([2],dtype=np.int32)
-			nofz = ["single"]
-			par_nz = np.array([z,z])
+		#Check sanity of input
+		nzbins,nofz,Nnz,par_nz = _check_redshift(z,distribution,distribution_parameters,**kwargs)
 
-		elif type(z)==np.ndarray:
-			raise TypeError("Not implemented yet!")
-		else:
-			raise TypeError("Redshift format not recognized!")
+		#Compute the power spectrum via NICAEA
+		power_spectrum_nicaea = _nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings,None)
 		
-		
-		return _nicaea.shearPowerSpectrum(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,ell,Nnz,nofz,par_nz,settings,None)
-
+		#Return
+		return power_spectrum_nicaea
 
