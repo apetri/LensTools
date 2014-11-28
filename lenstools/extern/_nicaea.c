@@ -17,6 +17,8 @@ The module is called _nicaea and it defines the methods below (see docstrings)
 #include "lensing.h"
 #include "nofz.h"
 
+#define SPEC_IN_TUPLE 11
+
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface to the NICAEA computations";
 static char shearPowerSpectrum_docstring[] = "Compute the shear power spectrum";
@@ -332,7 +334,7 @@ static PyObject *_nicaea_Wrapper(PyObject *args,double (*nicaea_method)(cosmo_le
 	}
 
 	//Read in the multipoles
-	spec_array=PyArray_FROM_OTF(PyTuple_GetItem(args,11),NPY_DOUBLE,NPY_IN_ARRAY);
+	spec_array=PyArray_FROM_OTF(PyTuple_GetItem(args,SPEC_IN_TUPLE),NPY_DOUBLE,NPY_IN_ARRAY);
 	if(spec_array==NULL){
 		free_parameters_lens(&model);
 		return NULL;
