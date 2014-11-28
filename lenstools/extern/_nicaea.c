@@ -24,7 +24,12 @@ static char shearPowerSpectrum_docstring[] = "Compute the shear power spectrum";
 //Useful methods for parsing Nicaea class attributes into cosmo_lens structs
 static int translate(int Nobjects, char *string_dictionary[],char *string);
 static cosmo_lens *parse_model(PyObject *args, error **err);
+
+//output memory allocator
 static PyObject *alloc_output(PyObject *spec,cosmo_lens *model);
+
+//NICAEA method wrapper
+static PyObject *_nicaea_Wrapper(PyObject *args,double (*nicaea_method)(cosmo_lens*,double,int,int,error**));
 
 //Method declarations
 static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args);
@@ -297,13 +302,12 @@ static PyObject *alloc_output(PyObject *spec,cosmo_lens *model){
 
 }
 
-
-//////////////////////////////////////////////////
-/*Function implementations using backend C code*/
-/////////////////////////////////////////////////
+/////////////////////////////////////
+/*Implementation of _nicaea_wrapper*/
+/////////////////////////////////////
 
 //shearPowerSpectrum() implementation
-static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
+static PyObject *_nicaea_Wrapper(PyObject *args,double (*nicaea_method)(cosmo_lens*,double,int,int,error**)){
 
 	//counters
 	int l,i,j,b;
@@ -311,8 +315,8 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 	//cosmological model handler
 	cosmo_lens *model;
 	
-	//multipoles and power spectrum
-	PyObject *ell_array,*power_spectrum_array;
+	//specifications (multipoles, angles) and output
+	PyObject *spec_array,*output_array;
 
 	//NICAEA error handlers
 	error *myerr=NULL,**err;
@@ -328,32 +332,32 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 	}
 
 	//Read in the multipoles
-	ell_array=PyArray_FROM_OTF(PyTuple_GetItem(args,11),NPY_DOUBLE,NPY_IN_ARRAY);
-	if(ell_array==NULL){
+	spec_array=PyArray_FROM_OTF(PyTuple_GetItem(args,11),NPY_DOUBLE,NPY_IN_ARRAY);
+	if(spec_array==NULL){
 		free_parameters_lens(&model);
 		return NULL;
 	}
 
-	//allocate the numpy array which will hold the power spectrum
-	power_spectrum_array = alloc_output(ell_array,model);
-	if(power_spectrum_array==NULL){
-		Py_DECREF(ell_array);
+	//allocate the numpy array which will hold the output
+	output_array = alloc_output(spec_array,model);
+	if(output_array==NULL){
+		Py_DECREF(spec_array);
 		free_parameters_lens(&model);
 		return NULL;
 	}
 
-	int Nl=(int)PyArray_DIM(power_spectrum_array,0);
-	int Nztot=(int)PyArray_DIM(power_spectrum_array,1);
+	int Nl=(int)PyArray_DIM(output_array,0);
+	int Nztot=(int)PyArray_DIM(output_array,1);
 	int Nzbin=model->redshift->Nzbin;
 	tomo_t tomo=model->tomo;
 	
-	//Data pointer to the multipoles and power spectrum
-	double *ell=(double *)PyArray_DATA(ell_array);
-	double *power_spectrum=(double *)PyArray_DATA(power_spectrum_array);
+	//Data pointer to specification and output array
+	double *spec=(double *)PyArray_DATA(spec_array);
+	double *output=(double *)PyArray_DATA(output_array);
 
-	//Call NICAEA to measure the power spectrum
+	//Call the NICAEA method
 
-	//cycle over multipoles 
+	//cycle over specification (angles or multipoles)
 	for(l=0;l<Nl;l++){
 		
 		//cycle over redshift bins
@@ -361,7 +365,7 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 			
 			//diagonal only
 			for(i=0;i<Nzbin;i++){
-				power_spectrum[l*Nzbin+i]=Pshear(model,ell[l],i,i,err);
+				output[l*Nzbin+i]=nicaea_method(model,spec[l],i,i,err);
 				if(isError(*err)) break;
 			} 
 		} else if(tomo==tomo_cross_only){
@@ -371,7 +375,7 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 			for(i=0;i<Nzbin;i++){
 				for(j=i+1;j<Nzbin;j++){
 
-					power_spectrum[l*Nztot+b]=Pshear(model,ell[l],i,j,err);
+					output[l*Nztot+b]=nicaea_method(model,spec[l],i,j,err);
 					b+=1;
 					if(isError(*err)) break;
 				}
@@ -386,7 +390,7 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 			for(i=0;i<Nzbin;i++){
 				for(j=i;j<Nzbin;j++){
 
-					power_spectrum[l*Nztot+b]=Pshear(model,ell[l],i,j,err);
+					output[l*Nztot+b]=nicaea_method(model,spec[l],i,j,err);
 					b+=1;
 					if(isError(*err)) break;
 				}
@@ -400,15 +404,28 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 			stringError(stringerr,*err);
 			PyErr_SetString(PyExc_RuntimeError,stringerr);
 			free_parameters_lens(&model);
-			Py_DECREF(ell_array);
-			Py_DECREF(power_spectrum_array);
+			Py_DECREF(spec_array);
+			Py_DECREF(output_array);
 			return NULL;
 		}
 
 	}
 	
 	//Computation succeeded, cleanup and return
-	Py_DECREF(ell_array);
-	return power_spectrum_array;
+	Py_DECREF(spec_array);
+	return output_array;
 
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////
+/*Function implementations using backend C code*/
+/////////////////////////////////////////////////
+static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){ 
+
+	return _nicaea_Wrapper(args,Pshear);
+}
+
