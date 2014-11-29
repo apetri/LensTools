@@ -17,13 +17,17 @@ The module is called _nicaea and it defines the methods below (see docstrings)
 #include "lensing.h"
 #include "nofz.h"
 
+#include "nicaea_wrappers.h"
+
 #define SPEC_IN_TUPLE 11
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface to the NICAEA computations";
 static char shearPowerSpectrum_docstring[] = "Compute the shear power spectrum";
+static char shear2pt_docstring[] = "Compute the shear correlation function";
 
 //Useful methods for parsing Nicaea class attributes into cosmo_lens structs
+static PyObject *extra_args(PyObject *args);
 static int translate(int Nobjects, char *string_dictionary[],char *string);
 static cosmo_lens *parse_model(PyObject *args, error **err);
 
@@ -35,11 +39,13 @@ static PyObject *_nicaea_Wrapper(PyObject *args,double (*nicaea_method)(cosmo_le
 
 //Method declarations
 static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args);
+static PyObject *_nicaea_shear2pt(PyObject *self,PyObject *args);
 
 //_nicaea method definitions
 static PyMethodDef module_methods[] = {
 
 	{"shearPowerSpectrum",_nicaea_shearPowerSpectrum,METH_VARARGS,shearPowerSpectrum_docstring},
+	{"shear2pt",_nicaea_shear2pt,METH_VARARGS,shear2pt_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -53,6 +59,15 @@ PyMODINIT_FUNC init_nicaea(void){
 	/*Load numpy functionality*/
 	import_array();
 
+}
+
+//////////////////////////////////
+/*Implementation of extra_args*///
+//////////////////////////////////
+static PyObject *extra_args(PyObject *args){
+
+	int args_size=(int)PyTuple_Size(args);
+	return PyTuple_GetItem(args,args_size-1);
 }
 
 /////////////////////////////////
@@ -429,5 +444,26 @@ static PyObject *_nicaea_Wrapper(PyObject *args,double (*nicaea_method)(cosmo_le
 static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){ 
 
 	return _nicaea_Wrapper(args,Pshear);
+}
+
+static PyObject *_nicaea_shear2pt(PyObject *self,PyObject *args){
+
+	int pm=(int)PyInt_AsLong(extra_args(args));
+
+	if(pm==1){
+		
+		return _nicaea_Wrapper(args,xi_plus);
+	
+	} else if(pm==-1){
+		
+		return _nicaea_Wrapper(args,xi_minus);
+	
+	} else{
+		
+		PyErr_SetString(PyExc_ValueError,"Only +1 and -1 allowed for pm!");
+		return NULL;
+	}
+
+
 }
 

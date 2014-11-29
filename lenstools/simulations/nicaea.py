@@ -1,6 +1,7 @@
 import types
 import numpy as np
 from astropy.cosmology import w0waCDM
+from astropy.units import rad
 
 try:
 	from ..extern import _nicaea
@@ -299,4 +300,64 @@ class Nicaea(w0waCDM):
 			return power_spectrum_nicaea[:,0]
 		else:
 			return power_spectrum_nicaea
+
+
+	def shearTwoPoint(self,theta,z=2.0,distribution=None,distribution_parameters=None,settings=None,kind="+",**kwargs):
+
+		"""
+		Computes the shear two point function for the given cosmological parameters and redshift distribution using NICAEA
+
+		:param theta: angles at which to compute the two point function 
+		:type theta: array. with units
+
+		:param z: redshift bins for the sources; if a single float is passed, single redshift is assumed
+		:type z: float., array or None
+
+		:param distribution: redshift distribution of the sources (normalization not necessary); if None a single redshift is expected; if callable, z must be an array, and a single redshift bin is considered, with the galaxy distribution specified by the call of distribution(z); if a list is passed, each element must be a NICAEA type
+		:type distribution: None,callable or list
+
+		:param distribution_parameters: relevant only when distribution is a list or callable. When distribution is callable, distribution_parameters has to be one between "one" and "all" to decide if one or multiple redshift bins have to be considered. If it is a list, each element in it should be the tuple of parameters expected by the correspondent NICAEA distribution type
+		:type distribution_parameters: str. or list.
+
+		:param settings: NICAEA code settings
+		:type settings: NicaeaSettings instance
+
+		:param kind: must be "+" or "-"
+		:type kind: str.
+
+		:param kwargs: the keyword arguments are passed to the distribution, if callable
+		:type kwargs: dict.
+
+		:returns: ( NtxNz array ) computed two point function at the selected angles (when computing the cross components these are returned in row major C ordering)
+
+		"""
+
+		#If no settings provided, use the default ones
+		if settings is None:
+			settings=NicaeaSettings.default()
+
+		#Convert angles in radians
+		theta_rad = theta.to(rad).value
+
+		#Check sanity of input
+		nzbins,nofz,Nnz,par_nz = _check_redshift(z,distribution,distribution_parameters,**kwargs)
+
+		#Plus or minus?
+		if kind=="+":
+			pm = 1
+		elif kind=="-":
+			pm = -1
+		else:
+			raise ValueError("kind must be either + or -")
+
+		#Compute the two point function using NICAEA
+		two_point_function_nicaea = _nicaea.shear2pt(self.Om0,self.Ode0,self.w0,self.wa,self.H0.value/100.0,self.Ob0,self.Onu0,self.Neff,self.sigma8,self.ns,nzbins,theta_rad,Nnz,nofz,par_nz,settings,pm)
+
+		#Return
+		if two_point_function_nicaea.shape[1]==1:
+			return two_point_function_nicaea[:,0]
+		else:
+			return two_point_function_nicaea
+
+
 
