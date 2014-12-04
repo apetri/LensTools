@@ -3,7 +3,7 @@
 
 /*this routine writes particle positions and velocities to a snapshot in Gadget's default
 binary file format*/
-int writeSnapshot(FILE *fp,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart,char writeVel){
+int writeSnapshot(FILE *fp,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart,int writeVel){
 
 	int k,id,garbage=256;
 

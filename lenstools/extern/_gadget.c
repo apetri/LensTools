@@ -254,12 +254,12 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 
 	PyObject *header_obj,*positions_obj,*velocities_obj;
 	const char *filename;
-	int k,NumPart,firstID;
+	int k,NumPart,firstID,writeVel;
 
 	struct io_header_1 header;
 
 	//interpret input tuple
-	if(!PyArg_ParseTuple(args,"OOOis",&header_obj,&positions_obj,&velocities_obj,&firstID,&filename)){
+	if(!PyArg_ParseTuple(args,"OOOisi",&header_obj,&positions_obj,&velocities_obj,&firstID,&filename,&writeVel)){
 		return NULL;
 	}
 
@@ -336,7 +336,7 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	float *velocities_data = (float *)PyArray_DATA(velocities_array);
 
 	//ready to write Gadget snapshot, do it!
-	if(writeSnapshot(fp,&header,positions_data,velocities_data,firstID,NumPart,1)==-1){
+	if(writeSnapshot(fp,&header,positions_data,velocities_data,firstID,NumPart,writeVel)==-1){
 		
 		fclose(fp);
 		PyErr_SetString(PyExc_IOError,"Coulnd't write snapshot!");

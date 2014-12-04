@@ -458,8 +458,8 @@ class Gadget2Snapshot(object):
 		"""
 
 		#Sanity checks
-		assert hasattr(self,"positions") and hasattr(self,"velocities"),"Positions and velocities must be specified!!"
-		assert self.positions.shape[0]==self.velocities.shape[0]
+		assert hasattr(self,"positions"),"Positions must be specified!!"
+		assert self.positions.shape[1]==3
 
 		if not hasattr(self,"_header"):
 			self.setHeaderInfo()	
@@ -473,7 +473,14 @@ class Gadget2Snapshot(object):
 
 		#Convert units for positions and velocities
 		_positions_converted = self.positions.to(self.kpc_over_h).value.astype(np.float32)
-		_velocities_converted = (self.velocities.to(cm/s).value / self._velocity_unit).astype(np.float32)
+
+		if hasattr(self,"velocities"):
+			assert self.positions.shape==self.velocities.shape
+			_velocities_converted = (self.velocities.to(cm/s).value / self._velocity_unit).astype(np.float32)
+			writeVel = 1
+		else:
+			_velocities_converted = np.zeros((1,3),dtype=np.float32)
+			writeVel = 0
 
 		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
 		if files>1:
@@ -491,7 +498,7 @@ class Gadget2Snapshot(object):
 
 				#Write it!
 				filename_with_extension = "{0}.{1}".format(filename,n)
-				ext._gadget.write(_header_bare,_positions_converted[n*particles_per_file:(n+1)*particles_per_file],_velocities_converted[n*particles_per_file:(n+1)*particles_per_file],n*particles_per_file+1,filename_with_extension)
+				ext._gadget.write(_header_bare,_positions_converted[n*particles_per_file:(n+1)*particles_per_file],_velocities_converted[n*particles_per_file:(n+1)*particles_per_file],n*particles_per_file+1,filename_with_extension,writeVel)
 
 			
 			#The last file might have a different number of particles
@@ -504,12 +511,12 @@ class Gadget2Snapshot(object):
 
 			#Write it!
 			filename_with_extension = "{0}.{1}".format(filename,files-1)
-			ext._gadget.write(_header_bare,_positions_converted[particles_per_file*(files-1):],_velocities_converted[particles_per_file*(files-1):],(files-1)*particles_per_file+1,filename_with_extension)
+			ext._gadget.write(_header_bare,_positions_converted[particles_per_file*(files-1):],_velocities_converted[particles_per_file*(files-1):],(files-1)*particles_per_file+1,filename_with_extension,writeVel)
 
 		else:
 			
 			#Write it!!
-			ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename)
+			ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename,writeVel)
 
 	
 	def setPositions(self,positions):
