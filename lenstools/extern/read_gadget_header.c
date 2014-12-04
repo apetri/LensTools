@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "read_gadget.h"
+#include "gadget.h"
 
 /*This routine reads the information from the snapshot header
 and fills out a struct io_header1 instance*/

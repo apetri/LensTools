@@ -10,7 +10,7 @@ The module is called _gadget and it defines the methods below (see docstrings)
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
-#include "read_gadget.h"
+#include "gadget.h"
 #include "grid.h"
 
 //Python module docstrings 
@@ -189,6 +189,7 @@ static PyObject *_gadget_getPosVel(PyObject *self,PyObject *args){
 
 		PyFile_DecUseCount((PyFileObject *)file_obj);
 		Py_DECREF(particle_data_array);
+		PyErr_SetString(PyExc_IOError,"End of file reached, the information requested is not available!");
 		return NULL;
 	
 	}
@@ -235,6 +236,7 @@ static PyObject *_gadget_getID(PyObject *self,PyObject *args){
 
 		PyFile_DecUseCount((PyFileObject *)file_obj);
 		Py_DECREF(id_data_array);
+		PyErr_SetString(PyExc_IOError,"End of file reached, the information requested is not available!");
 		return NULL;
 
 	}
@@ -334,7 +336,7 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	float *velocities_data = (float *)PyArray_DATA(velocities_array);
 
 	//ready to write Gadget snapshot, do it!
-	if(writeSnapshot(fp,&header,positions_data,velocities_data,firstID,NumPart)==-1){
+	if(writeSnapshot(fp,&header,positions_data,velocities_data,firstID,NumPart,1)==-1){
 		
 		fclose(fp);
 		PyErr_SetString(PyExc_IOError,"Coulnd't write snapshot!");

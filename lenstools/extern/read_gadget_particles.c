@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "read_gadget.h"
+#include "gadget.h"
 
 /*this routine loads particle positions and velocities from Gadget's default
 binary file format*/
