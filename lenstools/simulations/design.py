@@ -59,8 +59,8 @@ class Design(object):
 		"""
 		Load a pre-computed design from a file, only numpy format supported so far
 
-		:param filename: name of the file from which to load the design
-		:type filename: str.
+		:param filename: name of the file from which to load the design, or numpy array with the points
+		:type filename: str. or array
 
 		:param labels: labels of the cosmological parameters included in the design
 		:type labels: list.
@@ -70,7 +70,11 @@ class Design(object):
 		"""
 
 		#Load the parameters from the file
-		points = np.load(filename)
+		if type(filename)==str:
+			points = np.load(filename)
+		else:
+			assert type(filename)==np.ndarray,"If not a string, the first argument must be a numpy array!!"
+			points = filename.copy()
 
 		#Make sure there are enough labels 
 		assert len(labels)==points.shape[1],"There must be exactly one label per parameter!"
