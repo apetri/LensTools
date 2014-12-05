@@ -98,6 +98,14 @@ Weak lensing simulations
    simulations
    raytracing
 
+Command line scripts
+--------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   scripts
+
 3D visualization with Mayavi
 ----------------------------
 
