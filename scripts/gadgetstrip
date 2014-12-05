@@ -4,4 +4,13 @@ sys.modules["mpi4py"]=None
 
 import lenstools.scripts.gadgetstrip
 
-lenstools.scripts.gadgetstrip.main(sys.argv[1])
+#If provided, read files from the command line arguments, otherwise from stdin
+if len(sys.argv)>1:
+	filenames = sys.argv[1:]
+else:
+	filenames = sys.stdin
+
+#Strip all filenames
+for filename in filenames:
+	filename = filename.rstrip("\n")
+	lenstools.scripts.gadgetstrip.main(filename)
