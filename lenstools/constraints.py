@@ -445,14 +445,16 @@ class FisherAnalysis(Analysis):
 	def get_varied(self):
 
 		"""
-		Displays the ordered list of the indices of the varied parameters 
+		Displays the indices of the parameters that are varied 
 
 		"""
 
-		assert hasattr(self,"derivatives"),"You must compute the derivatives first!"
+		loc = self.where().keys()
+		loc.sort()
+		
+		return loc 
 
-		return self._varied_list
-
+	
 	def fit(self,observed_feature,features_covariance):
 
 		"""
