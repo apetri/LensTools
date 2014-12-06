@@ -405,41 +405,28 @@ class FisherAnalysis(Analysis):
 		"""
 		Computes the feature derivatives with respect to the parameter sets using one step finite differences; the derivatives are computed with respect to the fiducial parameter set
 
-		:returns: array of shape (p-1,N), where N is the feature dimension and p is the size of the parameter_set
+		:returns: array of shape (p,N), where N is the feature dimension and p is the number of varied parameters
 
 		"""
 
 		assert self.parameter_set.shape[0] > 1,"You need at least 2 models to proceed in a Fisher Analysis!"
 
-		#Keep a list of the varied parameters so far to avoid duplicates
-		self._varied_list = list()
+		#Find the varied parameters and their locations
+		loc_varied = self.where()
+		par_varied = loc_varied.keys()
+		par_varied.sort()
 
-		#Calculate the size of the fiducial and non_fiducial features
-		derivative_indices = range(self.parameter_set.shape[0])
-		derivative_indices.remove(self._fiducial)
-		non_fiducial_features = self.training_set[derivative_indices]
-		non_fiducial_parameters = self.parameter_set[derivative_indices]
-
-		derivatives = np.zeros(non_fiducial_features.shape)
+		#Allocate space for the derivatives
+		derivatives = np.zeros((len(par_varied),)+self.training_set.shape[1:])
 
 		#cycle to parameters to calculate derivatives, and do some sanity checks (for example that the parameters are varied one at a time with respect to the fiducial value)
-		for n,p in enumerate(derivative_indices):
-
-			#Check that we vary only one parameter at a time
-			comparison = non_fiducial_parameters[n] == self.parameter_set[self._fiducial]
-			assert comparison.sum() == len(comparison) - 1,"You must vary one parameter at a time!"
-
-			#Check which is the parameter that we varied
-			varied_parameter_index = np.where(comparison==False)[0][0]
-			assert varied_parameter_index not in self._varied_list,"You cannot vary a parameter twice!!"
-			self._varied_list.append(varied_parameter_index)
+		for n,p in enumerate(par_varied):
 
 			#Calculate the finite difference derivative with respect to this parameter
-			derivatives[n]  = (non_fiducial_features[n] - self.training_set[self._fiducial]) / (non_fiducial_parameters[n,varied_parameter_index] - self.parameter_set[self._fiducial,varied_parameter_index])
+			derivatives[n]  = (self.training_set[loc_varied[p]] - self.training_set[self._fiducial]) / (self.parameter_set[loc_varied[p],p] - self.parameter_set[self._fiducial,p])
 
 		#set the derivatives attribute and return the result
 		self.derivatives = derivatives
-
 		return derivatives
 
 	def get_varied(self):
@@ -493,7 +480,7 @@ class FisherAnalysis(Analysis):
 		dP = np.dot(M,observed_feature - self.training_set[self._fiducial])
 
 		#Return the actual best fit
-		return self.parameter_set[self._fiducial,self._varied_list] + dP
+		return self.parameter_set[self._fiducial,self.get_varied()] + dP
 
 
 
