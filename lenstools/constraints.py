@@ -382,7 +382,7 @@ class FisherAnalysis(Analysis):
 		return "OK!"
 
 
-	def where(self):
+	def where(self,par=None):
 
 		"""
 		Finds the locations of the varied parameters in the parameter set
@@ -397,7 +397,10 @@ class FisherAnalysis(Analysis):
 		for n in range(len(v[0])):
 			loc[v[1][n]] = v[0][n]
 
-		return loc
+		if par is None:
+			return loc
+		else:
+			return loc[par]
 
 
 	def compute_derivatives(self):
