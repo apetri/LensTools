@@ -422,9 +422,9 @@ class FisherAnalysis(Analysis):
 		#Allocate space for the derivatives
 		derivatives = np.zeros((len(par_varied),)+self.training_set.shape[1:])
 
-		#cycle to parameters to calculate derivatives, and do some sanity checks (for example that the parameters are varied one at a time with respect to the fiducial value)
+		#cycle to parameters to calculate derivatives
 		for n,p in enumerate(par_varied):
-
+			
 			#Calculate the finite difference derivative with respect to this parameter
 			derivatives[n]  = (self.training_set[loc_varied[p]] - self.training_set[self._fiducial]) / (self.parameter_set[loc_varied[p],p] - self.parameter_set[self._fiducial,p])
 
