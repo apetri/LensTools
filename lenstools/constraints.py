@@ -344,6 +344,49 @@ class FisherAnalysis(Analysis):
 
 		self._fiducial = n
 
+	@property
+	def variations(self):
+
+		"""
+		Checks the parameter variations with respect to the fiducial cosmology
+
+		:returns: bool array (True if the parameter is varied, False otherwise)
+
+		"""
+
+		return self.parameter_set!=self.parameter_set[self._fiducial]
+
+	def check(self):
+
+		"""
+		Asserts that the parameters are varied one at a time, and that a parameter is not varied more than once
+
+		:raises: AssertionError
+
+		"""
+
+		assert (self.variations.sum(0)<2).all(),"You can vary a parameter only once!"
+		assert (self.variations.sum(1)<2).all(),"You can vary only a parameter at a time!"
+
+
+	def where(self):
+
+		"""
+		Finds the locations of the varied parameters in the parameter set
+
+		:returns: dict. with the locations of the variations, for each parameter
+
+		"""
+
+		loc = dict()
+		v = np.where(self.variations==1)
+
+		for n in range(len(v[0])):
+			loc[v[1][n]] = v[0][n]
+
+		return loc
+	
+
 	def compute_derivatives(self):
 
 		"""
