@@ -330,6 +330,17 @@ class FisherAnalysis(Analysis):
 
 	"""
 
+	def add_model(self,parameters,feature):
+
+		super(FisherAnalysis,self).add_model(parameters,feature)
+
+		try:
+			self.check()
+		except Exception,e:
+			self.remove_model(-1)
+			raise RuntimeError(e)
+
+
 	def set_fiducial(self,n):
 
 		"""
@@ -368,6 +379,8 @@ class FisherAnalysis(Analysis):
 		assert (self.variations.sum(0)<2).all(),"You can vary a parameter only once!"
 		assert (self.variations.sum(1)<2).all(),"You can vary only a parameter at a time!"
 
+		return "OK!"
+
 
 	def where(self):
 
@@ -385,7 +398,7 @@ class FisherAnalysis(Analysis):
 			loc[v[1][n]] = v[0][n]
 
 		return loc
-	
+
 
 	def compute_derivatives(self):
 
