@@ -15,11 +15,19 @@ int getHeader(FILE *fp,struct io_header_1 *header){
 
 	/*Perform an endianness check*/
 	if(buf[1]==1){	
+		
 		//little endian
 		return 0;
-	} else{
+	
+	} else if(buf[1]==0){
+		
 		//big endian
 		return 1;
+	
+	} else{
+
+		//not a valid gadget2 snapshot
+		return -1;
 	}
 
 }

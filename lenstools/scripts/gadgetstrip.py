@@ -3,7 +3,11 @@ from ..simulations import Gadget2Snapshot
 def main(filename):
 
 	#Open snapshot
-	snap = Gadget2Snapshot.open(filename)
+	try:
+		snap = Gadget2Snapshot.open(filename)
+	except IOError,e:
+		print("{0} : {1}".format(filename,e))
+		return
 
 	#If velocities are not present, skip this snapshot
 	try:

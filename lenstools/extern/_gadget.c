@@ -76,9 +76,9 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	//Release the file object
 	PyFile_DecUseCount((PyFileObject *)file_obj);
 
-	//Exit if there was a problem (endianness check shall return 1 or 0, no exceptions; if not, the snapshot is messed up)
+	//Exit if there was a problem (endianness check shall return 1 or 0, no exceptions; if not, the snapshot has the wrong format)
 	if(endianness==-1){
-		PyErr_SetString(PyExc_ValueError,"Couldn't determine snapshot endianness!");
+		PyErr_SetString(PyExc_IOError,"Not a valid Gadget2 snapshot!");
 		return NULL;
 	}
 
