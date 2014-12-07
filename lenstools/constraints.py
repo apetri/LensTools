@@ -356,6 +356,11 @@ class FisherAnalysis(Analysis):
 		self._fiducial = n
 
 	@property
+	def fiducial(self):
+
+		return self.training_set[self._fiducial]
+
+	@property
 	def _variations(self):
 
 		"""
@@ -461,6 +466,37 @@ class FisherAnalysis(Analysis):
 		
 		return loc 
 
+
+	def chi2(self,observed_feature,features_covariance):
+
+		"""
+		Computes the chi2 between an observed feature and the fiducial feature, using the provided covariance
+
+		:param observed_feature: observed feature to fit, must have the same shape as self.training_set[0] (or derivatives[0])
+		:type observed_feature: array
+
+		:param features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
+		:type features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:returns: chi2 of the comparison
+		:rtype: float.
+
+		"""
+
+		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+
+		#Check for correct shape of input
+		assert observed_feature.shape==self.training_set.shape[1:]
+		assert features_covariance.shape==observed_feature.shape*2 or features_covariance.shape==observed_feature.shape
+
+		#Compute the difference
+		difference = observed_feature - self.fiducial
+
+		if features_covariance.shape==observed_feature.shape:
+			return np.dot(difference,difference/features_covariance)
+		else:
+			return np.dot(difference,solve(features_covariance,difference))
+
 	
 	def fit(self,observed_feature,features_covariance):
 
@@ -480,8 +516,8 @@ class FisherAnalysis(Analysis):
 		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
 
 		#Check for correct shape of input
-		assert observed_feature.shape == self.training_set.shape[1:]
-		assert features_covariance.shape == observed_feature.shape * 2 or features_covariance.shape == observed_feature.shape
+		assert observed_feature.shape==self.training_set.shape[1:]
+		assert features_covariance.shape==observed_feature.shape * 2 or features_covariance.shape==observed_feature.shape
 
 		#If derivatives are not computed, compute them
 		if not hasattr(self,"derivatives"):
