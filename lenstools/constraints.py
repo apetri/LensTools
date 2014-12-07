@@ -356,7 +356,7 @@ class FisherAnalysis(Analysis):
 		self._fiducial = n
 
 	@property
-	def variations(self):
+	def _variations(self):
 
 		"""
 		Checks the parameter variations with respect to the fiducial cosmology
@@ -367,6 +367,21 @@ class FisherAnalysis(Analysis):
 
 		return self.parameter_set!=self.parameter_set[self._fiducial]
 
+	@property
+	def variations(self):
+
+		"""
+		Checks the parameter variations with respect to the fiducial cosmology
+
+		:returns: iterable with the positions of the variations
+
+		"""
+
+		for n,b in enumerate(self._variations.sum(1)):
+			if b:
+				yield n
+
+
 	def check(self):
 
 		"""
@@ -376,8 +391,8 @@ class FisherAnalysis(Analysis):
 
 		"""
 
-		assert (self.variations.sum(0)<2).all(),"You can vary a parameter only once!"
-		assert (self.variations.sum(1)<2).all(),"You can vary only a parameter at a time!"
+		assert (self._variations.sum(0)<2).all(),"You can vary a parameter only once!"
+		assert (self._variations.sum(1)<2).all(),"You can vary only a parameter at a time!"
 
 		return "OK!"
 
@@ -392,7 +407,7 @@ class FisherAnalysis(Analysis):
 		"""
 
 		loc = dict()
-		v = np.where(self.variations==1)
+		v = np.where(self._variations==1)
 
 		for n in range(len(v[0])):
 			loc[v[1][n]] = v[0][n]
@@ -413,6 +428,7 @@ class FisherAnalysis(Analysis):
 		"""
 
 		assert self.parameter_set.shape[0] > 1,"You need at least 2 models to proceed in a Fisher Analysis!"
+		self.check()
 
 		#Find the varied parameters and their locations
 		loc_varied = self.where()
@@ -432,7 +448,8 @@ class FisherAnalysis(Analysis):
 		self.derivatives = derivatives
 		return derivatives
 
-	def get_varied(self):
+	@property
+	def varied(self):
 
 		"""
 		Displays the indices of the parameters that are varied 
@@ -483,7 +500,7 @@ class FisherAnalysis(Analysis):
 		dP = np.dot(M,observed_feature - self.training_set[self._fiducial])
 
 		#Return the actual best fit
-		return self.parameter_set[self._fiducial,self.get_varied()] + dP
+		return self.parameter_set[self._fiducial,self.varied] + dP
 
 
 

@@ -51,7 +51,7 @@ def test_fisher():
 
 	#Sanity check
 	assert derivatives.shape == (3,len(l))
-	assert f.get_varied() == range(3)
+	assert f.varied == range(3)
 
 	#Plot the results
 	for n in range(3): 
