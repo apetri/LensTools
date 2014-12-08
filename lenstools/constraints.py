@@ -292,9 +292,9 @@ class Analysis(object):
 	def load(cls,filename):
 
 		"""
-		Unpickle an already trained and pickled emulator: be sure the file you are unpickling comes from a trusted source, this operation is potentially dangerous for your computer!
+		Unpickle a previously pickled instance: be sure the file you are unpickling comes from a trusted source, this operation is potentially dangerous for your computer!
 
-		:param filename: Name of the file from which you want to load the emulator, or file object
+		:param filename: Name of the file from which you want to load the instance, or file object
 		:type filename: str. or file object
 
 		"""
@@ -615,7 +615,7 @@ class FisherAnalysis(Analysis):
 	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
 
 		"""
-		Computes the Fisher matrix of the associated features, that in the end allows to compute the paramtere confidence contours (around the fiducial value)
+		Computes the Fisher matrix of the associated features, that in the end allows to compute the paramter confidence contours (around the fiducial value)
 
 		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
 		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
