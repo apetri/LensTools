@@ -553,7 +553,7 @@ class FisherAnalysis(Analysis):
 		return self.parameter_set[self._fiducial,self.varied] + dP
 
 
-	def classify(self,observed_feature,features_covariance,labels=range(2)):
+	def classify(self,observed_feature,features_covariance,labels=range(2),confusion=False):
 
 		"""
 		Performs a Fisher classification of the observed feature, choosing the most probable label based on the value of the chi2
@@ -566,6 +566,9 @@ class FisherAnalysis(Analysis):
 
 		:param labels: labels of the classification, must be the indices of the available classes (from 0 to training_set.shape[0])
 		:type labels: iterable
+
+		:param confusion: if True, an array with the label percentage occurrences is returned; if False an array of labels is returned
+		:type confusion: bool.
 
 		:returns: array with the labels resulting from the classification
 		:rtype: int.
@@ -593,8 +596,19 @@ class FisherAnalysis(Analysis):
 		for n,l in enumerate(labels):
 			classes[chi2_min==n] = l
 
-		#Return
-		return classes
+		if confusion:
+
+			#Compute confusion array
+			confusion_array = np.zeros(n+1)
+			for n,l in enumerate(labels):
+				confusion_array[n] = (classes==l).sum() / len(classes)
+
+			#Return
+			return confusion_array
+		
+		else:	
+			#Return
+			return classes
 
 
 
@@ -646,6 +660,15 @@ class FisherAnalysis(Analysis):
 				parameter_covariance = np.dot(M * observed_features_covariance,M.transpose())
 
 			return inv(parameter_covariance)
+
+
+	def reparametrize(self,formatter,*args,**kwargs):
+
+		#Call the parent method
+		super(FisherAnalysis,self).reparametrize(formatter,*args,**kwargs)
+
+		#Check that the format of the parameter set is valid
+		self.check()
 
 
 #######################################################
