@@ -159,15 +159,16 @@ class Ensemble(object):
 		self.num_realizations = full_data.shape[0]
 		self.data = full_data
 
-	def save(self,file_name,format="numpy",**kwargs):
+	
+	def save(self,filename,format=None,**kwargs):
 		
 		"""
 		Save ensemble data in an external file (in arbitrary format)
 
-		:param file_name: file name of the external file
-		:type file_name: str.
+		:param filename: file name of the external file
+		:type filename: str.
 
-		:format: format in which to save the ensemble
+		:format: format in which to save the ensemble; if None the format is auto detected from the filename
 		:type format: str.or callable
 
 		:param kwargs: the keyword arguments are passed to the saver (or to format if callable)
@@ -175,12 +176,23 @@ class Ensemble(object):
 
 		"""
 
+		#Auto detect format
+		if format is None:
+			if filename.endswith(".npy"):
+				format = "numpy"
+			elif filename.endswith(".mat"):
+				format = "matlab"
+			else:
+				raise ValueError("Format not recognized!")
+
+
+		#Proceed to the saving procedure
 		if format=="numpy":
-			np.save(file_name,self.data)
+			np.save(filename,self.data)
 		elif format=="matlab":
-			sio.savemat(file_name,{"data": self.data},**kwargs)
+			sio.savemat(filename,{"data": self.data},**kwargs)
 		else:
-			format(self,file_name,**kwargs)
+			format(self,filename,**kwargs)
 	
 	def mean(self):
 
