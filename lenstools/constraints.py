@@ -472,11 +472,11 @@ class FisherAnalysis(Analysis):
 		"""
 		Computes the chi2 between an observed feature and the fiducial feature, using the provided covariance
 
-		:param observed_feature: observed feature to fit, must have the same shape as self.training_set[0] (or derivatives[0])
+		:param observed_feature: observed feature to fit, its last dimension must have the same shape as self.training_set[0] 
 		:type observed_feature: array
 
 		:param features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
-		:type features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+		:type features_covariance: 2 dimensional array (or 1 dimensional if diagonal)
 
 		:returns: chi2 of the comparison
 		:rtype: float.
@@ -485,17 +485,31 @@ class FisherAnalysis(Analysis):
 
 		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
 
+		#Cast the observed feature in suitable shape
+		if len(observed_feature.shape)==1:
+			observed_feature = observed_feature[None]
+			single = True
+		else:
+			single = False
+
 		#Check for correct shape of input
-		assert observed_feature.shape==self.training_set.shape[1:]
-		assert features_covariance.shape==observed_feature.shape*2 or features_covariance.shape==observed_feature.shape
+		assert observed_feature.shape[-1:]==self.training_set.shape[-1:]
+		assert features_covariance.shape in [self.training_set.shape[-1:],self.training_set.shape[-1:]*2]
 
 		#Compute the difference
-		difference = observed_feature - self.fiducial
+		difference = observed_feature - self.fiducial[None]
 
-		if features_covariance.shape==observed_feature.shape:
-			return np.dot(difference,difference/features_covariance)
+		#Compute the chi2
+		if features_covariance.shape==self.training_set.shape[-1:]:
+			result = ((difference**2)/features_covariance[None]).sum(-1)
 		else:
-			return np.dot(difference,solve(features_covariance,difference))
+			result = (difference * solve(features_covariance,difference.transpose()).transpose()).sum(-1)
+
+		#Return the result
+		if single:
+			return result[0]
+		else:
+			return result
 
 	
 	def fit(self,observed_feature,features_covariance):
@@ -503,7 +517,7 @@ class FisherAnalysis(Analysis):
 		"""
 		Maximizes the gaussian likelihood on which the Fisher matrix formalism is based, and returns the best fit for the parameters given the observed feature
 
-		:param observed_feature: observed feature to fit, must have the same shape as self.training_set[0] (or derivatives[0])
+		:param observed_feature: observed feature to fit, must have the same shape as self.training_set[0]
 		:type observed_feature: array
 
 		:param features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
