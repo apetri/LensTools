@@ -553,6 +553,50 @@ class FisherAnalysis(Analysis):
 		return self.parameter_set[self._fiducial,self.varied] + dP
 
 
+	def classify(self,observed_feature,features_covariance,labels=range(2)):
+
+		"""
+		Performs a Fisher classification of the observed feature, choosing the most probable label based on the value of the chi2
+		
+		:param observed_feature: observed feature to fit, the last dimenstion must have the same shape as self.training_set[0]
+		:type observed_feature: array
+
+		:param features_covariance: covariance matrix of the simulated features, must be provided for a correct classification!
+		:type features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param labels: labels of the classification, must be the indices of the available classes (from 0 to training_set.shape[0])
+		:type labels: iterable
+
+		:returns: array with the labels resulting from the classification
+		:rtype: int.
+
+		"""
+
+		fiducial_original = self._fiducial
+
+		#Compute all the chi squared values, for each observed feature and each label
+		all_chi2 = list()
+		for l in labels:
+			self.set_fiducial(l)
+			all_chi2.append(self.chi2(observed_feature,features_covariance))
+
+		self.set_fiducial(fiducial_original)
+
+		#Cast the list into an array
+		all_chi2 = np.array(all_chi2)
+
+		#Find the minima
+		chi2_min = all_chi2.argmin(0)
+
+		#Translate into the corresponding classes
+		classes = np.zeros_like(chi2_min)
+		for n,l in enumerate(labels):
+			classes[chi2_min==n] = l
+
+		#Return
+		return classes
+
+
 
 	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
 
