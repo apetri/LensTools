@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "gadget.h"
 
 /*This routine reads the information from the snapshot header
@@ -14,12 +15,12 @@ int getHeader(FILE *fp,struct io_header_1 *header){
 	if(fread(header,sizeof(struct io_header_1),1,fp)!=1) return -1;
 
 	/*Perform an endianness check*/
-	if(buf[1]==1){	
+	if(memcmp(buf,"\x00\x01\x00\x00",4)==0){	
 		
 		//little endian
 		return 0;
 	
-	} else if(buf[1]==0){
+	} else if(memcmp(buf,"\x00\x00\x01\x00",4)==0){
 		
 		//big endian
 		return 1;
