@@ -396,11 +396,14 @@ class FisherAnalysis(Analysis):
 
 		"""
 
-		assert (self._variations.sum(0)<2).all(),"You can vary a parameter only once!"
 		assert (self._variations.sum(1)<2).all(),"You can vary only a parameter at a time!"
 
-		return "OK!"
-
+		#Check how many variations are there for each parameter
+		num_par_variations = self._variations.sum(0)
+		if (num_par_variations<2).all():
+			return 0
+		else:
+			return 1
 
 	def where(self,par=None):
 
@@ -414,13 +417,40 @@ class FisherAnalysis(Analysis):
 		loc = dict()
 		v = np.where(self._variations==1)
 
-		for n in range(len(v[0])):
-			loc[v[1][n]] = v[0][n]
+		#Decide if keys are lists or simple numbers
+		if self.check():
+
+			for n in range(self.parameter_set.shape[1]):
+				loc[n] = list()
+
+			for n in range(len(v[0])):
+				loc[v[1][n]].append(v[0][n])
+
+		else:
+
+			for n in range(len(v[0])):
+				loc[v[1][n]] = v[0][n]
 
 		if par is None:
 			return loc
 		else:
 			return loc[par]
+
+
+	@property
+	def varied(self):
+
+		"""
+		Returns the indices of the parameters that are varied 
+
+		:returns: list with the indices of the varied parameters
+
+		"""
+
+		loc = self.where().keys()
+		loc.sort()
+		
+		return loc 
 
 
 	def compute_derivatives(self):
@@ -433,7 +463,7 @@ class FisherAnalysis(Analysis):
 		"""
 
 		assert self.parameter_set.shape[0] > 1,"You need at least 2 models to proceed in a Fisher Analysis!"
-		self.check()
+		assert self.check()==0,"Finite differences implemented only at first order! Cannot compute derivatives"
 
 		#Find the varied parameters and their locations
 		loc_varied = self.where()
@@ -452,19 +482,6 @@ class FisherAnalysis(Analysis):
 		#set the derivatives attribute and return the result
 		self.derivatives = derivatives
 		return derivatives
-
-	@property
-	def varied(self):
-
-		"""
-		Displays the indices of the parameters that are varied 
-
-		"""
-
-		loc = self.where().keys()
-		loc.sort()
-		
-		return loc 
 
 
 	def chi2(self,observed_feature,features_covariance):
