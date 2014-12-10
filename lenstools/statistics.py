@@ -321,7 +321,7 @@ class Ensemble(object):
 
 		#Sanity checks
 		assert self.data.ndim==2,"Only one dimensional feature cuts implemented so far!"
-		assert (min is not None) and (max is not None),"No cutting extremes selected!"
+		assert (min is not None) or (max is not None),"No cutting extremes selected!"
 
 		if type(min)==list:
 		
