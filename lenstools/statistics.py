@@ -301,12 +301,12 @@ class Ensemble(object):
 		return self.__class__(data=diff_data,num_realizations=diff_data.shape[0])
 
 
-	def cut(self,min,max,feature_label=None):
+	def cut(self,min=None,max=None,feature_label=None):
 
 		"""
 		Allows to manually cut the ensemble along the second axis, if you want to select a feature subset; you better know what you are doing if you are using this function
 
-		:param min: left extreme of the cut, included
+		:param min: left extreme of the cut, included; if a list of indices is passed, the cut is performed on those indices, on the second axis and the remaining parameters are ignored
 		:type min: int or float
 
 		:param max: right extreme of the cut, included
@@ -315,34 +315,50 @@ class Ensemble(object):
 		:param feature_label: if not None, serves as a reference for min and max, in which the ensemble is cut according to the position of the min and max elements in the feature_label array
 		:type feature_label: array
 
-		:returns: the min and max cut indices if feature_label is None, otherwise it returns the array of the cut feature
+		:returns: the min and max cut indices if feature_label is None, otherwise it returns the array of the cut feature; if min was a list of indices, these are returned back
 
 		"""
 
+		#Sanity checks
 		assert self.data.ndim==2,"Only one dimensional feature cuts implemented so far!"
+		assert (min is not None) and (max is not None),"No cutting extremes selected!"
 
-		if feature_label is not None:
+		if type(min)==list:
+		
+			self.data = self.data[:,min]
 
-			#Look for the corresponding indices in the feature label
-			min_idx = np.abs(feature_label-min).argmin()
-			max_idx = np.abs(feature_label-max).argmin()
+			#Recompute mean after cut, if mean was precomputed
+			if hasattr(self,"_mean"):
+				self.mean()
+
+			#Return
+			return min
 
 		else:
+		
+			if feature_label is not None:
 
-			#Interpret max and min as indices between which to perform the cut
-			min_idx = min
-			max_idx = max
+				#Look for the corresponding indices in the feature label
+				min_idx = np.abs(feature_label-min).argmin()
+				max_idx = np.abs(feature_label-max).argmin()
 
-		self.data = self.data[:,min_idx:max_idx+1]
-		#Recompute mean after cut, if mean was precomputed
-		if hasattr(self,"_mean"):
-			self.mean()
+			else:
 
-		#Return
-		if feature_label is not None:
-			return feature_label[min_idx:max_idx+1]
-		else:
-			return min_idx,max_idx
+				#Interpret max and min as indices between which to perform the cut
+				min_idx = min
+				max_idx = max
+
+			self.data = self.data[:,min_idx:max_idx+1]
+			
+			#Recompute mean after cut, if mean was precomputed
+			if hasattr(self,"_mean"):
+				self.mean()
+
+			#Return
+			if feature_label is not None:
+				return feature_label[min_idx:max_idx+1]
+			else:
+				return min_idx,max_idx
 
 
 
