@@ -101,21 +101,31 @@ def check_fftw3(conf):
 	return fftw3_location
 
 
-#Retrieve all the filenames of all the source code in the NICAEA distribution
-def list_nicaea():
+#Check correctness of NICAEA installation
+def check_nicaea(conf):
 
-	nicaea_root = os.path.join(external_support_dir,"nicaea")
-	nicaea_source_dirs = ["Cosmo","Coyote","halomodel","tools"]
+	nicaea_root = conf.get("nicaea","installation_path")
 
-	#These are the includes
-	nicaea_includes = [ os.path.join(nicaea_root,source_dir,"include") for source_dir in nicaea_source_dirs ]
+	#These are the include and lib directory
+	nicaea_include = os.path.join(nicaea_root,"include","nicaea")
+	nicaea_lib = os.path.join(nicaea_root,"lib")
 
-	#And these are the actual source files
-	nicaea_sources = list()
-	for source_dir in nicaea_source_dirs:
-		nicaea_sources += [ f for f in glob.glob(os.path.join(nicaea_root,source_dir,"src","*")) if f.endswith(".c") ]
+	#Check for their existence
+	sys.stderr.write("Checking for {0}...".format(nicaea_include))
+	if os.path.isdir(nicaea_include):
+		sys.stderr.write("[OK]\n")
+	else:
+		sys.stderr.write("[FAIL]\n")
+		return None
+
+	sys.stderr.write("Checking for {0}...".format(os.path.join(nicaea_lib,"libnicaea.a")))
+	if os.path.isfile(os.path.join(nicaea_lib,"libnicaea.a")):
+		sys.stderr.write("[OK]\n")
+	else:
+		sys.stderr.write("[FAIL]\n")
+		return None
 	
-	return nicaea_includes,nicaea_sources
+	return nicaea_include,nicaea_lib
 
 
 ############################################################
@@ -175,24 +185,23 @@ else:
 
 #Decide if we can install the NICAEA bindings
 fftw3_location = check_fftw3(conf)
+nicaea_location = check_nicaea(conf)
 
-if (gsl_location is not None) and (fftw3_location is not None) and (conf.getboolean("nicaea","install_python_bindings")):
-	print("[OK] Checked GSL and FFTW3 installations, the NICAEA bindings will be installed")
-	lenstools_includes += [ os.path.join(fftw3_location,"include") ]
-	lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")),"-lfftw3"]
+if conf.getboolean("nicaea","install_python_bindings"):
 	
-	#List nicaea source files
-	nicaea_includes,nicaea_sources = list_nicaea()
+	if (gsl_location is not None) and (fftw3_location is not None) and (nicaea_location is not None):
+	
+		print("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed")
+		
+		#Add necessary includes and links
+		lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
+		lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
 
-	#Add includes
-	lenstools_includes += nicaea_includes
+		#Specify the NICAEA extension
+		external_sources["_nicaea"] = ["_nicaea.c"]
 
-	#Specify the NICAEA extension
-	external_sources["_nicaea"] = ["_nicaea.c"]
-	external_support["_nicaea"] = nicaea_sources
-
-else:
-	raw_input("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3 installation), please press a key to continue: ")
+	else:
+		raw_input("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations), please press a key to continue: ")
 
 
 #################################################################################################

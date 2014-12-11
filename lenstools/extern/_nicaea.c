@@ -129,7 +129,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 	double Om,Ode,w0,w1,H100,Omegab,Omeganu,Neff,si8,ns;
 	int nzbins;
 	int i,j;
-	char *distr_type,*setting_string,error_buf[256];
+	char *distr_type,*setting_string;
 
 	//Multipoles/angles, redshift distribution and other settings
 	PyObject *spec_obj,*Nnz_obj,*nofz_obj,*par_nz_obj,*settings_dict,*extra_obj;
