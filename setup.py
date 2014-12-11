@@ -2,11 +2,17 @@ import os,sys,glob,re
 import platform
 from distutils import config
 
+
+#Names
 name = "lenstools"
 me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
 url = "http://www.columbia.edu/~ap3020/LensTools/html"
 default_cfg = "setup.cfg"
+external_dir = "extern"
+external_support_dir = "cextern"
+simulations_dir = "simulations"
+observations_dir = "observations"
 
 try:
 	import numpy.distutils.misc_util 
@@ -62,6 +68,66 @@ def check_gsl(conf):
 	return gsl_location
 
 
+#Check fftw3 installation, required from NICAEA
+def check_fftw3(conf):
+
+	fftw3_location = conf.get("fftw3","installation_path")
+	fftw3_required_includes = ["fftw3.h"]
+	fftw3_required_links = ["libfftw3.a"]
+
+	#Check for required GSL includes and links
+	for include in fftw3_required_includes:
+	
+		include_filename = os.path.join(fftw3_location,"include",include)
+		sys.stderr.write("Checking if {0} exists... ".format(include_filename))
+
+		if os.path.isfile(include_filename):
+			sys.stderr.write("[OK]\n")
+		else:
+			sys.stderr.write("[FAIL]\n")
+			return None
+
+	for lib in fftw3_required_links:
+
+		lib_filename = os.path.join(fftw3_location,"lib",lib)
+		sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
+
+		if os.path.isfile(lib_filename):
+			sys.stderr.write("[OK]\n")
+		else:
+			sys.stderr.write("[FAIL]\n")
+			return None
+
+	return fftw3_location
+
+
+#Check correctness of NICAEA installation
+def check_nicaea(conf):
+
+	nicaea_root = conf.get("nicaea","installation_path")
+
+	#These are the include and lib directory
+	nicaea_include = os.path.join(nicaea_root,"include","nicaea")
+	nicaea_lib = os.path.join(nicaea_root,"lib")
+
+	#Check for their existence
+	sys.stderr.write("Checking for {0}...".format(nicaea_include))
+	if os.path.isdir(nicaea_include):
+		sys.stderr.write("[OK]\n")
+	else:
+		sys.stderr.write("[FAIL]\n")
+		return None
+
+	sys.stderr.write("Checking for {0}...".format(os.path.join(nicaea_lib,"libnicaea.a")))
+	if os.path.isfile(os.path.join(nicaea_lib,"libnicaea.a")):
+		sys.stderr.write("[OK]\n")
+	else:
+		sys.stderr.write("[FAIL]\n")
+		return None
+	
+	return nicaea_include,nicaea_lib
+
+
 ############################################################
 #####################Execution##############################
 ############################################################
@@ -93,9 +159,7 @@ classifiers = [
 	]
 
 external_sources = dict()
-external_dir = "extern"
-simulations_dir = "simulations"
-observations_dir = "observations"
+external_support = dict()
 
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
@@ -109,12 +173,36 @@ gsl_location = check_gsl(conf)
 if gsl_location is not None:
 	print("[OK] Checked GSL installation, the Design feature will be installed")
 	lenstools_includes = [ os.path.join(gsl_location,"include") ]
-	lenstools_link = ["-lm","-L {0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
 	raw_input("[FAIL] GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
 	lenstools_includes = list()
 	lenstools_link = ["-lm"]
+
+
+######################################################################################################################################
+
+#Decide if we can install the NICAEA bindings
+fftw3_location = check_fftw3(conf)
+nicaea_location = check_nicaea(conf)
+
+if conf.getboolean("nicaea","install_python_bindings"):
+	
+	if (gsl_location is not None) and (fftw3_location is not None) and (nicaea_location is not None):
+	
+		print("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed")
+		
+		#Add necessary includes and links
+		lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
+		lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
+
+		#Specify the NICAEA extension
+		external_sources["_nicaea"] = ["_nicaea.c"]
+
+	else:
+		raw_input("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations), please press a key to continue: ")
+
 
 #################################################################################################
 #############################Extensions##########################################################
@@ -128,6 +216,10 @@ for ext_module in external_sources.keys():
 	sources = list()
 	for source in external_sources[ext_module]:
 		sources.append(os.path.join(name,external_dir,source))
+
+	#Append external support sources too
+	if ext_module in external_support.keys():
+		sources += external_support[ext_module]
 
 	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
 
