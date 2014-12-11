@@ -89,7 +89,7 @@ Nicaea bindings
 ===============
 
 .. autoclass:: lenstools.simulations.NicaeaSettings
-	:inherited-members:
+	:members: default,available,knobs
 
 .. autoclass:: lenstools.simulations.Nicaea
 	:members: fromCosmology,convergencePowerSpectrum
