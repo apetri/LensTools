@@ -183,11 +183,11 @@ else:
 
 ######################################################################################################################################
 
-#Decide if we can install the NICAEA bindings
-fftw3_location = check_fftw3(conf)
-nicaea_location = check_nicaea(conf)
-
 if conf.getboolean("nicaea","install_python_bindings"):
+
+	#Decide if we can install the NICAEA bindings
+	fftw3_location = check_fftw3(conf)
+	nicaea_location = check_nicaea(conf)
 	
 	if (gsl_location is not None) and (fftw3_location is not None) and (nicaea_location is not None):
 	
