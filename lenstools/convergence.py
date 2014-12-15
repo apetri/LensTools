@@ -172,6 +172,48 @@ class Spin0(object):
 		self.side_angle = self.side_angle.to(unit)
 
 
+	def mean(self):
+
+		"""
+		Computes the mean value of the pixels, taking into account eventual masking
+
+		:returns: float.
+
+		"""
+
+		if not self._masked:
+			
+			return self.data.mean()
+		
+		else:
+			
+			if not hasattr(self,"_full_mask"):
+				self.maskBoundaries()
+			
+			return self.data[self._full_mask].mean()
+
+
+	def std(self):
+
+		"""
+		Computes the standard deviation of the pixels, taking into account eventual masking
+
+		:returns: float.
+
+		"""
+
+		if not self._masked:
+
+			return self.data.std()
+
+		else:
+
+			if not hasattr(self,"_full_mask"):
+				self.maskBoundaries()
+
+			return self.data[self._full_mask].std()
+
+
 	def getValues(self,x,y):
 
 		"""
