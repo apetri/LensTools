@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+from __future__ import print_function,with_statement
+import sys,ast
+
+if len(sys.argv)<2:
+	print("Usage {0} <npy_file_1> <npy_file_2> ...".format(sys.argv[0]))
+
+for filename in sys.argv[1:]:
+
+	with open(filename,"r") as npyfile:
+
+		print(filename+":")
+
+		#Skip the first byte
+		npyfile.read(1)
+
+		#Read the first 5 bytes
+		npy_head = npyfile.read(5)
+		if npy_head!="NUMPY":
+			print("not a numpy file\n".format(filename))
+		else:
+
+			#Read contents in chunks of 4 bytes until we hit a newline
+			contents = ""
+			while "\n" not in contents:
+				contents += npyfile.read(4)
+
+			#Find the specifications
+			spec = ast.literal_eval(contents[contents.find("{"):contents.find("}")+1])
+			
+			#Print specifications to screen
+			for key in spec.keys():
+				print("{0} = {1}".format(key,spec[key]))
