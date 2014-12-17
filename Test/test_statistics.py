@@ -26,6 +26,7 @@ import logging
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -246,6 +247,27 @@ def test_differentiate():
 	ax.set_ylabel(r"$P(\kappa)$")
 
 	fig.savefig("ensemble_differentiate.png")
+
+
+def test_selfChi2():
+
+	ens = Ensemble.read("Data/all/Om0.295_Ol0.705_w-1.878_ns0.960_si0.100/subfield1/sigma05/power_spectrum.npy")
+	chi2 = ens.selfChi2()
+	assert chi2.shape[0]==ens.data.shape[0]
+
+	#Plot histogram
+	fig,ax = plt.subplots()
+	n,bins,patch = ax.hist(chi2,bins=50,normed=True,histtype="stepfilled",alpha=0.5)
+
+	#Compare to chi2 distribution
+	ax.plot(stats.chi2.pdf(bins,ens.data.shape[1]))
+
+	#Labels
+	ax.set_xlabel(r"$\chi^2$")
+	ax.set_ylabel(r"$P(\chi^2)$")
+
+	#Save figure
+	fig.savefig("self_chi2.png")
 
 
 

@@ -466,7 +466,7 @@ class Ensemble(object):
 	def compare(self,rhs,**kwargs):
 
 		"""
-		A comparison operation between ensembles: computes a chi2-style difference between two different ensembles to assert how different they are
+		Computes a comparison score between two Ensembles: computes a chi2-style difference between two different ensembles to assert how different they are
 
 		"""
 
@@ -489,6 +489,24 @@ class Ensemble(object):
 		else:
 
 			raise ValueError("Only chi2 metric implemented so far!!")
+
+
+	def selfChi2(self):
+
+		"""
+		Computes the Ensemble distribution of chi squared values, defined with respect to the same Ensemble mean and covariance
+
+		:returns: array with the self chi squared for each realization
+
+		"""
+
+		#Compute mean and covariance
+		mean = self.mean()
+		covariance = self.covariance()
+		difference = self.data - mean[None]
+
+		#Compute the chi2 for each realization
+		return (difference * np.linalg.solve(covariance,difference.T).T).sum(-1)
 
 	
 	def __add__(self,rhs):
