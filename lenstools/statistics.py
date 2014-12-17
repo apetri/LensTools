@@ -301,7 +301,7 @@ class Ensemble(object):
 		return self.__class__(data=diff_data,num_realizations=diff_data.shape[0])
 
 
-	def cut(self,min=None,max=None,feature_label=None):
+	def cut(self,min=None,max=None,feature_label=None,inplace=True):
 
 		"""
 		Allows to manually cut the ensemble along the second axis, if you want to select a feature subset; you better know what you are doing if you are using this function
@@ -315,7 +315,10 @@ class Ensemble(object):
 		:param feature_label: if not None, serves as a reference for min and max, in which the ensemble is cut according to the position of the min and max elements in the feature_label array
 		:type feature_label: array
 
-		:returns: the min and max cut indices if feature_label is None, otherwise it returns the array of the cut feature; if min was a list of indices, these are returned back
+		:param inplace: if True, the Ensemble cut is made in place, otherwise a new ensemble is returned
+		:type inplace: bool.
+
+		:returns: the min and max cut indices if feature_label is None, otherwise it returns the array of the cut feature; if min was a list of indices, these are returned back. Returns the new Ensemble if inplace is False
 
 		"""
 
@@ -325,14 +328,21 @@ class Ensemble(object):
 
 		if type(min)==list:
 		
-			self.data = self.data[:,min]
+			new_data = self.data[:,min]
 
-			#Recompute mean after cut, if mean was precomputed
-			if hasattr(self,"_mean"):
-				self.mean()
+			if inplace:
 
-			#Return
-			return min
+				self.data = new_data
+
+				#Recompute mean after cut, if mean was precomputed
+				if hasattr(self,"_mean"):
+					self.mean()
+
+				#Return
+				return min
+
+			else:
+				return self.__class__.fromdata(new_data)
 
 		else:
 		
@@ -348,17 +358,24 @@ class Ensemble(object):
 				min_idx = min
 				max_idx = max
 
-			self.data = self.data[:,min_idx:max_idx+1]
-			
-			#Recompute mean after cut, if mean was precomputed
-			if hasattr(self,"_mean"):
-				self.mean()
+			new_data = self.data[:,min_idx:max_idx+1]
 
-			#Return
-			if feature_label is not None:
-				return feature_label[min_idx:max_idx+1]
+			if inplace:
+
+				self.data = new_data
+			
+				#Recompute mean after cut, if mean was precomputed
+				if hasattr(self,"_mean"):
+					self.mean()
+
+				#Return
+				if feature_label is not None:
+					return feature_label[min_idx:max_idx+1]
+				else:
+					return min_idx,max_idx
+
 			else:
-				return min_idx,max_idx
+				return self.__class__.fromdata(new_data)
 
 
 
@@ -376,7 +393,7 @@ class Ensemble(object):
 
 		data = self.data[realizations]
 		
-		return self.__class__(data=data,num_realizations=data.shape[0])
+		return self.__class__.fromdata(data)
 
 
 	def transform(self,transformation,inplace=False,**kwargs):
