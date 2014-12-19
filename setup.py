@@ -228,7 +228,7 @@ for ext_module in external_sources.keys():
 #################################################################################################
 
 #Data files on which the package depends on
-package_data = {name:[os.path.join("data","CFHTemu1.txt"),os.path.join("data","CFHTemu1_array.npy")],"licenses":[os.path.join("licenses","LICENSE.rst")]}
+package_data = {name:[os.path.join("data","CFHTemu1.txt"),os.path.join("data","CFHTemu1_array.npy"),os.path.join("data","contour.cfg")],"licenses":[os.path.join("licenses","LICENSE.rst")]}
 
 #################################################################################################
 #############################Additional includes#################################################

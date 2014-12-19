@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+import sys,os
+import argparse,ConfigParser
+
+#LensTools
+import lenstools.scripts.confidencecontour
+from lenstools import data
+
+#Read command line options
+parser = argparse.ArgumentParser(prog=os.path.split(sys.argv[0])[-1])
+parser.add_argument("filename",nargs="+")
+parser.add_argument("-f","--file",dest="config_file",action="store",type=str,default=data("contour.cfg"),help="contours config file")
+parser.add_argument("-a","--axes",dest="axes",action="store",default="Omega_m,w,sigma8",help="axes of the likelihood")
+parser.add_argument("-c","--colors",dest="colors",action="store",default=None,help="Colors of the contours")
+parser.add_argument("-m","--marginalize",dest="marginalize",action="store",default=None,help="Parameter to marginalize over")
+parser.add_argument("-s","--slice",dest="slice",action="store",default=None,help="Slice the likelihood over this parameter")
+parser.add_argument("-ff","--fill",dest="fill",action="store_true",default=False,help="Fill the contours")
+parser.add_argument("-p","--display_percentages",dest="display_percentages",action="store_true",default=False,help="Display the confidence percentages")
+parser.add_argument("-mm","--display_maximum",dest="display_maximum",action="store_true",default=False,help="Put a cross at the maximum of the likelihood")
+parser.add_argument("-t","--figtype",dest="figtype",action="store",default="png",help="Format in which to save the figure")
+
+cmd_args = parser.parse_args()
+
+#Check that we have at least one likelihood file to read from
+if cmd_args.filename is None:
+	parser.print_help()
+	sys.exit(0)
+
+#Read the options file
+print("Reading configuration from {0}".format(cmd_args.config_file))
+options = ConfigParser.ConfigParser()
+options.read(cmd_args.config_file)
+
+#Parse the parameter names
+parameter_axes = dict()
+for n,par in enumerate(cmd_args.axes.split(",")):
+	parameter_axes[par] = n
+
+#Cycle over filenames
+for filename in cmd_args.filename:
+	contour = lenstools.scripts.confidencecontour.main(filename,cmd_args,options,parameter_axes)
+	contour.savefig(os.path.split(filename)[-1].replace(".npy","."+cmd_args.figtype))
