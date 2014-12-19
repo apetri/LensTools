@@ -39,6 +39,13 @@ Constraining cosmology
 .. autoclass:: lenstools.constraints.LikelihoodAnalysis
 	:inherited-members:
 
+
+Confidence contour plotting
+===========================
+
+.. autoclass:: lenstools.contours.ContourPlot
+	:inherited-members:
+
 Noise
 =====
 
