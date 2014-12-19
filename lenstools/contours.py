@@ -115,6 +115,10 @@ class ContourPlot(object):
 
 		plt.close(self.fig)
 
+	def window(self):
+
+		plt.show()
+
 	def getUnitsFromOptions(self,options):
 		
 		"""
@@ -195,6 +199,9 @@ class ContourPlot(object):
 
 		assert len(self.parameter_axes.keys()) == self.likelihood.ndim,"The number of parameters should be the same as the number of dimensions of the likelihood!"
 
+		#Normalize
+		self.likelihood /= self.likelihood.sum()
+
 	def getMaximum(self,which="full"):
 
 		"""
@@ -272,35 +279,38 @@ class ContourPlot(object):
 	def marginalize(self,parameter_name="w"):
 
 		"""
-		Marginalize the likelihood over one of the parameters
+		Marginalize the likelihood over the indicated parameters
 
 		"""
 
+		#Parse all the parameters to marginalize over
+		marginalize_parameters = parameter_name.split(",")
+
 		assert hasattr(self,"likelihood"),"You have to load in the likelihood first!"
-		assert parameter_name in self.parameter_axes.keys(),"You are trying to marginalize over a parameter that does not exist!"
+
+		for par in marginalize_parameters:
+			assert par in self.parameter_axes.keys(),"You are trying to marginalize over a parameter {0}, that does not exist!".format(par)
+
+		marginalize_indices = [ self.parameter_axes[par] for par in marginalize_parameters ]
+		self.reduced_likelihood = self.likelihood.sum(tuple(marginalize_indices))
+
+		#Normalize
+		self.reduced_likelihood /= self.reduced_likelihood.sum()
+
+		#Find the remaining parameters
+		self.remaining_parameters = self.parameter_axes.keys()
+
+		for par in marginalize_parameters:
+			self.remaining_parameters.pop(self.remaining_parameters.index(par))
+
+		#Sort the remaining parameter names so that the corresponding axes are in increasing order
+		self.remaining_parameters.sort(key=self.parameter_axes.get)
 		
-		if self.likelihood.ndim<3:
+		if len(self.remaining_parameters)==2:
 			
-			print("The likelihood is already marginal!")
-			self.reduced_likelihood = self.likelihood / self.likelihood.sum()
-			self.remaining_parameters = self.parameter_axes.keys()
-
-		else:
-
-			self.reduced_likelihood = self.likelihood.sum(self.parameter_axes[parameter_name])
-
-			#Normalize
-			self.reduced_likelihood /= self.reduced_likelihood.sum()
-
-			#Find the remaining parameters
-			self.remaining_parameters = self.parameter_axes.keys()
-			self.remaining_parameters.pop(self.remaining_parameters.index(parameter_name))
-			#Sort the remaining parameter names so that the corresponding axes are in increasing order
-			self.remaining_parameters.sort(key=self.parameter_axes.get)
-		
-		self.extent = (self.min[self.remaining_parameters[0]],self.max[self.remaining_parameters[0]],self.min[self.remaining_parameters[1]],self.max[self.remaining_parameters[1]])
-		self.ax.set_xlim(self.extent[0],self.extent[1])
-		self.ax.set_ylim(self.extent[2],self.extent[3])
+			self.extent = (self.min[self.remaining_parameters[0]],self.max[self.remaining_parameters[0]],self.min[self.remaining_parameters[1]],self.max[self.remaining_parameters[1]])
+			self.ax.set_xlim(self.extent[0],self.extent[1])
+			self.ax.set_ylim(self.extent[2],self.extent[3])
 
 
 	def marginal(self,parameter_name="w",levels=None):
@@ -355,31 +365,24 @@ class ContourPlot(object):
 
 		assert hasattr(self,"likelihood"),"You have to load in the likelihood first!"
 		assert parameter_name in self.parameter_axes.keys(),"You are trying to get a slice with a parameter that does not exist!"
-		
-		if self.likelihood.ndim<3:
-			
-			print("The likelihood is already sliced!")
-			self.reduced_likelihood = self.likelihood / self.likelihood.sum()
-			self.remaining_parameters = self.parameter_axes.keys()
 
-		else:
 			
-			#Select the slice
-			slice_axis = self.parameter_axes[parameter_name]
-			slice_index = int((parameter_value - self.min[parameter_name]) / self.unit[parameter_name])
-			assert slice_index<self.npoints[parameter_name],"Out of bounds!"
+		#Select the slice
+		slice_axis = self.parameter_axes[parameter_name]
+		slice_index = int((parameter_value - self.min[parameter_name]) / self.unit[parameter_name])
+		assert slice_index<self.npoints[parameter_name],"Out of bounds!"
 
-			#Get the slice
-			self.reduced_likelihood = np.split(self.likelihood,self.npoints[parameter_name],axis=slice_axis)[slice_index].squeeze()
+		#Get the slice
+		self.reduced_likelihood = np.split(self.likelihood,self.npoints[parameter_name],axis=slice_axis)[slice_index].squeeze()
 			
-			#Normalize
-			self.reduced_likelihood /= self.reduced_likelihood.sum()
+		#Normalize
+		self.reduced_likelihood /= self.reduced_likelihood.sum()
 
-			#Find the remaining parameters
-			self.remaining_parameters = self.parameter_axes.keys()
-			self.remaining_parameters.pop(self.remaining_parameters.index(parameter_name))
-			#Sort the remaining parameter names so that the corresponding axes are in increasing order
-			self.remaining_parameters.sort(key=self.parameter_axes.get)
+		#Find the remaining parameters
+		self.remaining_parameters = self.parameter_axes.keys()
+		self.remaining_parameters.pop(self.remaining_parameters.index(parameter_name))
+		#Sort the remaining parameter names so that the corresponding axes are in increasing order
+		self.remaining_parameters.sort(key=self.parameter_axes.get)
 		
 		self.extent = (self.min[self.remaining_parameters[0]],self.max[self.remaining_parameters[0]],self.min[self.remaining_parameters[1]],self.max[self.remaining_parameters[1]])
 		self.ax.set_xlim(self.extent[0],self.extent[1])
@@ -393,7 +396,7 @@ class ContourPlot(object):
 
 		"""
 
-		assert self.reduced_likelihood.ndim == 2,"The marginalized likelihood must be two dimensional!!"
+		assert self.reduced_likelihood.ndim == 2,"Can show only 2 dimensional likelihoods in the figure!!"
 		
 		self.likelihood_image = self.ax.imshow(self.reduced_likelihood.transpose(),origin="lower",cmap=plt.cm.binary_r,extent=self.extent,aspect="auto")
 		self.colorbar = plt.colorbar(self.likelihood_image,ax=self.ax)
@@ -405,6 +408,10 @@ class ContourPlot(object):
 		Put the labels on the plot
 
 		"""
+
+		if not hasattr(self,"remaining_parameters"):
+			self.remaining_parameters = self.parameter_axes.keys()
+			self.remaining_parameters.sort(key=self.parameter_axes.__getitem__)
 
 		self.ax.set_xlabel(self.parameter_labels[self.remaining_parameters[0]],fontsize=fontsize)
 		self.ax.set_ylabel(self.parameter_labels[self.remaining_parameters[1]],fontsize=fontsize)
@@ -420,6 +427,10 @@ class ContourPlot(object):
 
 		"""
 
+		if not hasattr(self,"remaining_parameters"):
+			self.remaining_parameters = self.parameter_axes.keys()
+			self.remaining_parameters.sort(key=self.parameter_axes.__getitem__)
+
 		#First translate the physical coordinates into pixels, to obtain the likelihood value
 		px = int((coordinate_x - self.min[self.remaining_parameters[0]]) / self.unit[self.remaining_parameters[0]])
 		py = int((coordinate_y - self.min[self.remaining_parameters[1]]) / self.unit[self.remaining_parameters[1]])
@@ -428,7 +439,10 @@ class ContourPlot(object):
 		self.ax.plot(coordinate_x,coordinate_y,color=color,marker=marker)
 
 		#Return the likelihood value at the specified point
-		return self.reduced_likelihood[px,py]
+		if hasattr(self,"reduced_likelihood"):
+			return self.reduced_likelihood[px,py]
+		else:
+			return self.likelihood[px,py]
 
 
 	#################################################################################################

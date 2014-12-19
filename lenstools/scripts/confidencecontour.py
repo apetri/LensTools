@@ -3,7 +3,12 @@ from ..contours import ContourPlot
 
 default_colors = ["#fff7ec","#fee8c8","#fdd49e","#fdbb84","#fc8d59","#ef6548","#d7301f","#b30000","#7f0000"]
 
-def main(filename,cmd_args,options,parameter_axes,levels=[0.684]):
+def main(filename,cmd_args,options):
+
+	#Parse the parameter names
+	parameter_axes = dict()
+	for n,par in enumerate(cmd_args.axes.split(",")):
+		parameter_axes[par] = n
 
 	#Get the parameter labels from the options
 	cosmo_labels = dict()
@@ -32,6 +37,7 @@ def main(filename,cmd_args,options,parameter_axes,levels=[0.684]):
 	contour.show()
 
 	#Compute the likelihood levels
+	levels = [ float(l) for l in cmd_args.levels.split(",") ]
 	contour.getLikelihoodValues(levels=levels)
 
 	#Choose the colors
@@ -42,6 +48,12 @@ def main(filename,cmd_args,options,parameter_axes,levels=[0.684]):
 
 	#Display the contours
 	contour.plotContours(colors=colors,fill=cmd_args.fill,display_percentages=cmd_args.display_percentages,display_maximum=cmd_args.display_maximum)
+
+	#Optionally give a title to the figure
+	if cmd_args.title is not None:
+		contour.title_label = cmd_args.title
+	else:
+		contour.title_label = ""
 
 	#Labels
 	contour.labels()
