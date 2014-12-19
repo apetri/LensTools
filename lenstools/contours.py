@@ -441,17 +441,20 @@ class ContourPlot(object):
 		Find the likelihood values that correspond to the selected p_values
 		"""
 
-		likelihood = self.reduced_likelihood
+		if hasattr(self,"reduced_likelihood"):
+			likelihood = self.reduced_likelihood
+		else:
+			likelihood = self.likelihood
+
 		self.original_p_values = levels
 
 		#Check sanity of input, likelihood must be normalized
-		assert likelihood.ndim == 2
 		np.testing.assert_approx_equal(likelihood.sum(),1.0)
 
 		#Initialize list of likelihood values
 		values = list()
 		p_values = list()
-		f = stats.chi2(2)
+		f = stats.chi2(likelihood.ndim)
 
 		#Maximum value of the likelihood
 		max_likelihood = likelihood.max()
@@ -521,6 +524,7 @@ class ContourPlot(object):
 			self.getLikelihoodValues(levels=[0.683,0.95,0.997])
 
 		assert len(colors) >= len(self.likelihood_values)
+		assert self.reduced_likelihood.ndim==2,"this routine plots 2D contours only!!"
 
 		extent = self.extent
 		likelihood = self.reduced_likelihood.transpose()
