@@ -228,7 +228,10 @@ for ext_module in external_sources.keys():
 #################################################################################################
 
 #Data files on which the package depends on
-package_data = {name:[os.path.join("data","CFHTemu1.txt"),os.path.join("data","CFHTemu1_array.npy"),os.path.join("data","contour.cfg")],"licenses":[os.path.join("licenses","LICENSE.rst")]}
+package_data = dict()
+package_data[name] = [ os.path.join("data",filename) for filename in os.listdir(os.path.join(name,"data")) if os.path.isfile(os.path.join(name,"data",filename)) ]
+package_data["licenses"] = [ os.path.join("licenses","LICENSE.rst") ]
+print(package_data)
 
 #################################################################################################
 #############################Additional includes#################################################
