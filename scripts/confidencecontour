@@ -40,9 +40,10 @@ options.read(cmd_args.config_file)
 for filename in cmd_args.filename:
 	
 	contour = lenstools.scripts.confidencecontour.main(filename,cmd_args,options)
+	savename = os.path.split(filename)[-1].replace(".npy","."+cmd_args.figtype)
 	
 	if cmd_args.interactive:
 		contour.window()
-		code.interact(local=locals())
+		code.interact(banner="[{0}]".format(savename),local=locals())
 	
-	contour.savefig(os.path.split(filename)[-1].replace(".npy","."+cmd_args.figtype))
+	contour.savefig(savename)
