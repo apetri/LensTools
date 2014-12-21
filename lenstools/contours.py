@@ -52,11 +52,8 @@ def _1d_level_values(p,l,level=0.684,quantity=2):
 	for n in range(quantity):
 		par.append(p[np.where(ranks==n)[0][0]])
 
-	#Sort parameters in order of closeness to the maximum
-	def _closest(x):
-		return np.abs(x-parmax)
-
-	par.sort(key=_closest)
+	#Sort from left to right
+	par.sort()
 
 	return par
 
@@ -117,6 +114,7 @@ class ContourPlot(object):
 
 	def window(self):
 
+		plt.ion()
 		plt.show()
 
 	def getUnitsFromOptions(self,options):
@@ -345,7 +343,7 @@ class ContourPlot(object):
 			for level in levels:
 
 				pL = _1d_level_values(parameter_range,marginal_likelihood,level=level,quantity=3)
-				par_extremes.append((pL[0],pL[1]))
+				par_extremes.append((pL[0],pL[-1]))
 
 			#Return the normalized single parameter likelihood, along with the contour extremes
 			return parameter_range,marginal_likelihood,par_max,par_extremes
@@ -573,3 +571,36 @@ class ContourPlot(object):
 			#Plot scaling to physical values
 			self.ax.plot(extent[0] + np.arange(likelihood.shape[1])*unit_j,np.ones(likelihood.shape[1])*imax[0]*unit_i + extent[2],linestyle="--",color="green")
 			self.ax.plot(extent[0] + np.ones(likelihood.shape[0])*jmax[0]*unit_j,extent[2] + np.arange(likelihood.shape[0])*unit_i,linestyle="--",color="green")
+
+
+	##################################################################################################
+	#################Plot the likelihood marginalized over all parameters except one##################
+	##################################################################################################
+
+	def plotMarginal(self,parameter,levels=[0.684],colors=["red","blue","green"],alpha=0.5,fill=False):
+
+		"""
+		Plot the likelihood function marginalized over all parameters except one
+
+		"""
+
+		#Compute marginalized likelihood
+		p,l,par_max,par_extremes = self.marginal(parameter,levels=levels)
+
+		#Plot the likelihood
+		self.ax.plot(p,l)
+
+		#Plot the confidence contours
+		for n,level in enumerate(levels):
+
+			relevant_indices = np.where((p>=par_extremes[n][0])*(p<=par_extremes[n][1]))[0]
+			if fill:
+				self.ax.fill_between(p[relevant_indices],np.ones_like(relevant_indices)*l.min(),l[relevant_indices],facecolor=colors[n],alpha=alpha)
+			else:
+				self.ax.plot(np.ones(100)*p[relevant_indices[0]],np.linspace(l.min(),l[relevant_indices[0]],100),color=colors[n])
+				self.ax.plot(np.ones(100)*p[relevant_indices[-1]],np.linspace(l.min(),l[relevant_indices[-1]],100),color=colors[n])
+
+
+		#Labels
+		self.ax.set_xlabel(self.parameter_labels[parameter],fontsize=22)
+		self.ax.set_ylabel(r"$\mathcal{L}$"+"$($"+self.parameter_labels[parameter]+"$)$",fontsize=22)

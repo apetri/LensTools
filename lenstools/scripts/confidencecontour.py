@@ -22,8 +22,17 @@ def main(filename,cmd_args,options):
 	#Set the physical units
 	contour.getUnitsFromOptions(options)
 
+	#Parse levels
+	levels = [ float(l) for l in cmd_args.levels.split(",") ]
+
+	#Choose the colors
+	if cmd_args.colors is not None:
+		colors = cmd_args.colors.split(",")
+	else:
+		colors = default_colors
+
 	#Decide if marginalize over one of the parameters or take a slice over it
-	assert (cmd_args.marginalize is None) != (cmd_args.slice is None),"You cannot both marginalize and slice over a parameter!"
+	assert (cmd_args.marginalize is None)+(cmd_args.slice is None)+(cmd_args.marginal is None)==2,"You cannot both marginalize and slice over a parameter!"
 
 	if cmd_args.marginalize is not None:
 		contour.marginalize(cmd_args.marginalize)
@@ -33,31 +42,32 @@ def main(filename,cmd_args,options):
 		value = float(value)
 		contour.slice(slice_over,value)
 
-	#Show the full likelihood
-	contour.show()
+	if cmd_args.marginal is None:
 
-	#Compute the likelihood levels
-	levels = [ float(l) for l in cmd_args.levels.split(",") ]
-	contour.getLikelihoodValues(levels=levels)
+		#Show the full likelihood
+		contour.show()
 
-	#Choose the colors
-	if cmd_args.colors is not None:
-		colors = cmd_args.colors.split(",")
+		#Compute the likelihood levels
+		contour.getLikelihoodValues(levels=levels)
+
+		#Display the contours
+		contour.plotContours(colors=colors,fill=cmd_args.fill,display_percentages=cmd_args.display_percentages,display_maximum=cmd_args.display_maximum)
+
+		#Optionally give a title to the figure
+		if cmd_args.title is not None:
+			contour.title_label = cmd_args.title
+		else:
+			contour.title_label = ""
+
+		#Labels
+		contour.labels()
+
 	else:
-		colors = default_colors
 
-	#Display the contours
-	contour.plotContours(colors=colors,fill=cmd_args.fill,display_percentages=cmd_args.display_percentages,display_maximum=cmd_args.display_maximum)
+		#Plot the marginal likelihood
+		contour.plotMarginal(cmd_args.marginal,levels=levels,colors=colors,fill=cmd_args.fill)
 
-	#Optionally give a title to the figure
-	if cmd_args.title is not None:
-		contour.title_label = cmd_args.title
-	else:
-		contour.title_label = ""
-
-	#Labels
-	contour.labels()
-
+	
 	#Return the contour object
 	return contour
 

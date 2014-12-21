@@ -14,6 +14,7 @@ parser.add_argument("-f","--file",dest="config_file",action="store",type=str,def
 parser.add_argument("-a","--axes",dest="axes",action="store",default="Omega_m,w,sigma8",help="axes of the likelihood")
 parser.add_argument("-c","--colors",dest="colors",action="store",default=None,help="Colors of the contours")
 parser.add_argument("-m","--marginalize",dest="marginalize",action="store",default=None,help="Parameter to marginalize over")
+parser.add_argument("-M","--marginal",dest="marginal",action="store",default=None,help="Marginalize likelihood over all parameters but this")
 parser.add_argument("-s","--slice",dest="slice",action="store",default=None,help="Slice the likelihood over this parameter")
 parser.add_argument("-l","--levels",dest="levels",action="store",default="0.684",help="Likelihood confidence levels")
 parser.add_argument("-ff","--fill",dest="fill",action="store_true",default=False,help="Fill the contours")
@@ -43,5 +44,5 @@ for filename in cmd_args.filename:
 	if cmd_args.interactive:
 		contour.window()
 		code.interact(local=locals())
-	else:
-		contour.savefig(os.path.split(filename)[-1].replace(".npy","."+cmd_args.figtype))
+	
+	contour.savefig(os.path.split(filename)[-1].replace(".npy","."+cmd_args.figtype))
