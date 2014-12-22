@@ -65,11 +65,10 @@ def _1d_level_values(p,l,level=0.684,quantity=2):
 def _nd_level_value(likelihood,level,low,high,precision=0.01):
 
 	middle = (low+high)/2
-
-	if np.abs((high-low)/middle)<precision:
-		return middle
-
 	current_integral = likelihood[likelihood>middle].sum()
+
+	if np.abs((current_integral-level)/level)<precision:
+		return middle
 	
 	#Proceed with bisection method
 	if current_integral>level:
