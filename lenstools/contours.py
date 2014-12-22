@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 
 #############################################################
-############Find likelihood levels in 1D likelihood##########
+############Find confidence levels in 1D likelihood##########
 #############################################################
 
 def _1d_level_values(p,l,level=0.684,quantity=2):
@@ -57,6 +57,25 @@ def _1d_level_values(p,l,level=0.684,quantity=2):
 
 	return par
 
+
+#############################################################
+###########Find confidence levels in N-dim likelihood########
+#############################################################
+
+def _nd_level_value(likelihood,level,low,high,precision=0.01):
+
+	middle = (low+high)/2
+
+	if np.abs((high-low)/middle)<precision:
+		return middle
+
+	current_integral = likelihood[likelihood>middle].sum()
+	
+	#Proceed with bisection method
+	if current_integral>level:
+		return _nd_level_value(likelihood,level,middle,high,precision=precision)
+	else:
+		return _nd_level_value(likelihood,level,low,middle,precision=precision)
 
 #############################################################
 ##################ContourPlot class##########################
@@ -447,7 +466,7 @@ class ContourPlot(object):
 	###############Find the likelihood values that correspond to the confidence contours#############
 	#################################################################################################
 
-	def getLikelihoodValues(self,levels,epsilon=0.01,max_iterations=1000):
+	def getLikelihoodValues(self,levels,precision=0.001):
 
 		"""
 		Find the likelihood values that correspond to the selected p_values
@@ -466,50 +485,13 @@ class ContourPlot(object):
 		#Initialize list of likelihood values
 		values = list()
 		p_values = list()
-		f = stats.chi2(likelihood.ndim)
-
-		#Maximum value of the likelihood
-		max_likelihood = likelihood.max()
-
-		#Initial step for the search
-		step = max_likelihood
-		direction = 0 
 
 		#Loop through levels to find corresponding likelihood values
 		for level in levels:
 
-			#Iteration counter
-			iterations = 0
-
-			#Start with a guess based on a chi2 distribution with 2 degrees of freedom
-			value = max_likelihood*np.exp(-0.5*f.ppf(level))
-			confidence_integral = likelihood[likelihood > value].sum() 
-
-			#Continue looping until we reach the requested precision
-			while np.abs(confidence_integral/level - 1.0) > epsilon:
-
-				#Break loop if too many iterations
-				iterations += 1
-				if iterations > max_iterations:
-					break
-
-				if confidence_integral>level:
-					
-					if direction==-1:
-						logging.debug("Change direction, accuracy={0}".format(np.abs(confidence_integral/level - 1.0)))
-						step /= 10.0
-					value += step
-					direction = 1
-				
-				else:
-
-					if direction==1:
-						logging.debug("Change direction, accuracy={0}".format(np.abs(confidence_integral/level - 1.0)))
-						step /= 10.0
-					value -= step
-					direction = -1
-
-				confidence_integral = likelihood[likelihood > value].sum() 
+			#Call the recursive bisection method
+			value = _nd_level_value(likelihood,level,likelihood.min(),likelihood.max(),precision=precision)
+			confidence_integral = likelihood[likelihood>value].sum()
 
 			#Append the found likelihood value to the output
 			values.append(value)
