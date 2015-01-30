@@ -8,7 +8,7 @@ import numpy as np
 from scipy.stats import rankdata
 
 #astropy stuff, invaluable here
-from astropy.units import kpc,Mpc,cm,km,g,s,deg,arcmin,rad,Msun,quantity,def_unit
+from astropy.units import kpc,Mpc,cm,km,g,s,day,deg,arcmin,rad,Msun,quantity,def_unit
 from astropy.constants import c
 from astropy.cosmology import w0waCDM
 
@@ -52,13 +52,20 @@ class Gadget2Settings(object):
 		self.SnapshotBase = "snapshot"
 		self.OutputListFilename = "outputs.txt"
 
+		#CPU Timings
+		self.TimeLimitCPU = 1.0*day
+		self.ResubmitOn = 0
+		self.ResubmitCommand = "my-scriptfile"
+
+		
+
 	@classmethod
 	def default(cls):
 
 		"""
 		Generate default settings
 		"""
-		
+
 		return cls()
 
 ############################################################
