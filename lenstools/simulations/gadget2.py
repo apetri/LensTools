@@ -31,6 +31,37 @@ except ImportError:
 	matplotlib = False
 
 ############################################################
+################Gadget2Settings class#######################
+############################################################
+
+class Gadget2Settings(object):
+
+	"""
+	Class handler of the tunable settings in a Gadget2 run
+
+	"""
+
+	def __init__(self):
+
+		#File names
+		self.EnergyFile = "energy.txt"
+		self.InfoFile = "info.txt"
+		self.TimingsFile = "timings.txt"
+		self.CPUFile = "cpu.txt"
+		self.RestartFile = "restart"
+		self.SnapshotBase = "snapshot"
+		self.OutputListFilename = "outputs.txt"
+
+	@classmethod
+	def default(cls):
+
+		"""
+		Generate default settings
+		"""
+		
+		return cls()
+
+############################################################
 ################Gadget2Header class#########################
 ############################################################
 
@@ -89,10 +120,10 @@ class Gadget2Snapshot(object):
 
 	"""
 
-	_mass_unit = 1.989e43
-	_velocity_unit = 1.0e5
+	def __init__(self,fp=None,pool=None,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
 
-	def __init__(self,fp=None,pool=None):
+		self._mass_unit = mass_unit.to(g).value
+		self._velocity_unit = velocity_unit.to(cm/s).value
 
 		assert (type(fp)==file) or (fp is None),"Call the open() method instead!!"
 
