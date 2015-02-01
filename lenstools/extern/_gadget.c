@@ -304,7 +304,7 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	header.flag_cooling = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_cooling"));
 	header.flag_sfr = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_sfr"));
 	header.flag_feedback = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_feedback"));
-	header.num_files = 1;
+	header.num_files = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"num_files"));
 
 	//double and int arrays
 	for(k=0;k<6;k++){

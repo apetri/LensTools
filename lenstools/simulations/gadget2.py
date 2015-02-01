@@ -44,10 +44,10 @@ class Gadget2Settings(object):
 
 	"""
 
-	file_names = ["InitCondFile","OutputDir","EnergyFile","InfoFile","TimingsFile","CPUFile","RestartFile","SnapshotBase","OutputListFilename"]
+	file_names = ["InitCondFile","OutputDir","EnergyFile","InfoFile","TimingsFile","CpuFile","RestartFile","SnapshotFileBase","OutputListFilename"]
 	cpu_timings = ["TimeLimitCPU","ResubmitOn","ResubmitCommand"]
 	code_options = ["ICFormat","SnapFormat","ComovingIntegrationOn","TypeOfTimestepCriterion","OutputListOn","PeriodicBoundariesOn"]
-	characteristics_of_run = ["TimeBegin","TimeMax"]
+	characteristics_of_run = ["TimeMax"]
 	output_frequency = ["TimeBetSnapshot","TimeOfFirstSnapshot","CpuTimeBetRestartFile","TimeBetStatistics","NumFilesPerSnapshot","NumFilesWrittenInParallel"]
 	accuracy_time_integration = ["ErrTolIntAccuracy","MaxRMSDisplacementFac","CourantFac","MaxSizeTimestep","MinSizeTimestep"]
 	tree_algorithm = ["ErrTolTheta","TypeOfOpeningCriterion","ErrTolForceAcc","TreeDomainUpdateFrequency"]
@@ -64,9 +64,9 @@ class Gadget2Settings(object):
 		self.EnergyFile = "energy.txt"
 		self.InfoFile = "info.txt"
 		self.TimingsFile = "timings.txt"
-		self.CPUFile = "cpu.txt"
+		self.CpuFile = "cpu.txt"
 		self.RestartFile = "restart"
-		self.SnapshotBase = "snapshot"
+		self.SnapshotFileBase = "snapshot"
 		self.OutputListFilename = "outputs.txt"
 
 		#CPU Timings
@@ -82,8 +82,7 @@ class Gadget2Settings(object):
 		self.OutputListOn = 1
 		self.PeriodicBoundariesOn = 1
 
-		#Caracteristics of run
-		self.TimeBegin = 0.009901  
+		#Caracteristics of run  
 		self.TimeMax = 1.0
 
 		#Output frequency
@@ -647,6 +646,9 @@ class Gadget2Snapshot(object):
 
 		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
 		if files>1:
+
+			#There are multiple files
+			_header_bare["num_files"] = files
 
 			#Distribute particles among files
 			particles_per_file = _header_bare["num_particles_total"] // files
