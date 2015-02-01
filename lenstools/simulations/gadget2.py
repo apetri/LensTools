@@ -2,6 +2,7 @@ from __future__ import division
 from operator import mul
 from functools import reduce
 
+import os
 import StringIO
 
 from .. import extern as ext
@@ -43,7 +44,7 @@ class Gadget2Settings(object):
 
 	"""
 
-	file_names = ["EnergyFile","InfoFile","TimingsFile","CPUFile","RestartFile","SnapshotBase","OutputListFilename"]
+	file_names = ["InitCondFile","OutputDir","EnergyFile","InfoFile","TimingsFile","CPUFile","RestartFile","SnapshotBase","OutputListFilename"]
 	cpu_timings = ["TimeLimitCPU","ResubmitOn","ResubmitCommand"]
 	code_options = ["ICFormat","SnapFormat","ComovingIntegrationOn","TypeOfTimestepCriterion","OutputListOn","PeriodicBoundariesOn"]
 	characteristics_of_run = ["TimeBegin","TimeMax"]
@@ -58,6 +59,8 @@ class Gadget2Settings(object):
 	def __init__(self):
 
 		#File names
+		self.InitCondFile = "gadget_ic"
+		self.OutputDir = "snapshots"
 		self.EnergyFile = "energy.txt"
 		self.InfoFile = "info.txt"
 		self.TimingsFile = "timings.txt"
@@ -692,6 +695,16 @@ class Gadget2Snapshot(object):
 
 		"""
 
+		#Create output directory if not existent already
+		outputdir = settings.OutputDir
+		if not(os.path.isdir(outputdir)):
+			os.mkdir(outputdir)
+
+		#Set the appropriate name for the initial condition file
+		if "files" in self.header.keys():
+			settings.InitCondFile = os.path.abspath(self.header["files"][0].split(".")[0])
+
+		#Write the options
 		with open(filename,"w") as paramfile:
 
 			#Filenames section
