@@ -2,13 +2,15 @@ from __future__ import division
 from operator import mul
 from functools import reduce
 
+import StringIO
+
 from .. import extern as ext
 
 import numpy as np
 from scipy.stats import rankdata
 
 #astropy stuff, invaluable here
-from astropy.units import kpc,Mpc,cm,km,g,s,day,deg,arcmin,rad,Msun,quantity,def_unit
+from astropy.units import Mbyte,kpc,Mpc,cm,km,g,s,hour,day,deg,arcmin,rad,Msun,quantity,def_unit
 from astropy.constants import c
 from astropy.cosmology import w0waCDM
 
@@ -41,6 +43,18 @@ class Gadget2Settings(object):
 
 	"""
 
+	file_names = ["EnergyFile","InfoFile","TimingsFile","CPUFile","RestartFile","SnapshotBase","OutputListFilename"]
+	cpu_timings = ["TimeLimitCPU","ResubmitOn","ResubmitCommand"]
+	code_options = ["ICFormat","SnapFormat","ComovingIntegrationOn","TypeOfTimestepCriterion","OutputListOn","PeriodicBoundariesOn"]
+	characteristics_of_run = ["TimeBegin","TimeMax"]
+	output_frequency = ["TimeBetSnapshot","TimeOfFirstSnapshot","CpuTimeBetRestartFile","TimeBetStatistics","NumFilesPerSnapshot","NumFilesWrittenInParallel"]
+	accuracy_time_integration = ["ErrTolIntAccuracy","MaxRMSDisplacementFac","CourantFac","MaxSizeTimestep","MinSizeTimestep"]
+	tree_algorithm = ["ErrTolTheta","TypeOfOpeningCriterion","ErrTolForceAcc","TreeDomainUpdateFrequency"]
+	sph = ["DesNumNgb","MaxNumNgbDeviation","ArtBulkViscConst","InitGasTemp","MinGasTemp"]
+	memory_allocation = ["PartAllocFactor","TreeAllocFactor","BufferSize"]
+	system_of_units = ["UnitLength_in_cm","UnitMass_in_g","UnitVelocity_in_cm_per_s","GravityConstantInternal"]
+	softening = ["MinGasHsmlFractional","SofteningGas","SofteningHalo","SofteningDisk","SofteningBulge","SofteningStars","SofteningBndry","SofteningGasMaxPhys","SofteningHaloMaxPhys","SofteningDiskMaxPhys","SofteningBulgeMaxPhys","SofteningStarsMaxPhys","SofteningBndryMaxPhys"]
+
 	def __init__(self):
 
 		#File names
@@ -57,6 +71,114 @@ class Gadget2Settings(object):
 		self.ResubmitOn = 0
 		self.ResubmitCommand = "my-scriptfile"
 
+		#Code options
+		self.ICFormat  = 1
+		self.SnapFormat = 1
+		self.ComovingIntegrationOn = 1
+		self.TypeOfTimestepCriterion = 0
+		self.OutputListOn = 1
+		self.PeriodicBoundariesOn = 1
+
+		#Caracteristics of run
+		self.TimeBegin = 0.009901  
+		self.TimeMax = 1.0
+
+		#Output frequency
+		self.TimeBetSnapshot = 0.5
+		self.TimeOfFirstSnapshot = 0
+		self.CpuTimeBetRestartFile = 12.5*hour 
+		self.TimeBetStatistics = 0.05
+		self.NumFilesPerSnapshot = 1
+		self.NumFilesWrittenInParallel = 1
+
+		#Accuracy of time integration
+		self.ErrTolIntAccuracy = 0.025 
+		self.MaxRMSDisplacementFac = 0.2
+		self.CourantFac = 0.15     
+		self.MaxSizeTimestep = 0.02
+		self.MinSizeTimestep = 0.0
+
+
+		#Tree algorithm, force accuracy, domain update frequency
+		self.ErrTolTheta = 0.45
+		self.TypeOfOpeningCriterion = 1
+		self.ErrTolForceAcc = 0.005
+		self.TreeDomainUpdateFrequency = 0.025
+
+		
+		#Further parameters of SPH
+		self.DesNumNgb = 33
+		self.MaxNumNgbDeviation = 2
+		self.ArtBulkViscConst = 0.8
+		self.InitGasTemp = 1000.0    
+		self.MinGasTemp = 50.0    
+
+		#Memory allocation
+		self.PartAllocFactor = 2    
+		self.TreeAllocFactor = 1 
+		self.BufferSize = 20*Mbyte 
+
+
+		#System of units
+		self.UnitLength_in_cm = 3.085678e21       # ;  1.0 kpc 
+		self.UnitMass_in_g = 1.989e43    #;  1.0e10 solar masses 
+		self.UnitVelocity_in_cm_per_s = 1.0 * km/s               # ;  1 km/sec 
+		self.GravityConstantInternal = 0
+
+
+		#Softening lengths
+		self.MinGasHsmlFractional = 0.25
+		self.SofteningGas = 0
+		self.SofteningHalo = 9.000000
+		self.SofteningDisk = 0
+		self.SofteningBulge = 0
+		self.SofteningStars = 0
+		self.SofteningBndry = 0
+
+		self.SofteningGasMaxPhys = 0
+		self.SofteningHaloMaxPhys = 9.000000
+		self.SofteningDiskMaxPhys = 0
+		self.SofteningBulgeMaxPhys = 0
+		self.SofteningStarsMaxPhys = 0
+		self.SofteningBndryMaxPhys = 0
+
+
+	def writeSection(self,section):
+
+		"""
+		Writes the corresponding section of the Gadget2 parameter file
+
+		"""
+
+		output = StringIO.StringIO()
+
+		#Write preamble
+		output.write("% {0}\n\n".format(section))
+
+		#Cycle through options
+		for option in getattr(self,section):
+
+			#Read the corresponding value
+			value = getattr(self,option)
+
+			#Convert units as necessary
+			if type(value)==quantity.Quantity:
+				
+				if value.unit.physical_type=="time":
+					value = value.to(s).value
+				elif value.unit.physical_type=="speed":
+					value = value.to(cm/s).value
+				elif "byte" in value.unit.to_string():
+					value = value.to(Mbyte).value
+
+			#Write the line
+			output.write("{0}		{1}\n".format(option,value))
+
+		#Finish
+		output.write("\n\n")
+		output.seek(0)
+
+		return output.read()
 		
 
 	@classmethod
@@ -556,6 +678,68 @@ class Gadget2Snapshot(object):
 			#Write it!!
 			ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename,writeVel)
 
+
+	def writeParameterFile(self,filename,settings=Gadget2Settings.default()):
+
+		"""
+		Writes a Gadget2 parameter file to evolve the current snapshot using Gadget2
+
+		:param filename: name of the file to which to write the parameters
+		:type filename: str.
+
+		:param settings: tunable settings of Gadget2 (see Gadget2 manual)
+		:type settings: Gadget2Settings
+
+		"""
+
+		with open(filename,"w") as paramfile:
+
+			#Filenames section
+			paramfile.write(settings.writeSection("file_names"))
+			
+			#CPU time limit section
+			paramfile.write(settings.writeSection("cpu_timings"))
+
+			#Code options section
+			paramfile.write(settings.writeSection("code_options"))
+
+			#Initial scale factor time
+			paramfile.write("{0}			{1}\n".format("TimeBegin",self.header["scale_factor"]))
+
+			#Characteristics of run section
+			paramfile.write(settings.writeSection("characteristics_of_run"))
+			
+			#Cosmological parameters
+			paramfile.write("{0}			{1}\n".format("Omega0",self.header["Om0"]))
+			paramfile.write("{0}			{1}\n".format("OmegaLambda",self.header["Ode0"]))
+			paramfile.write("{0}			{1}\n".format("OmegaBaryon",0.046))
+			paramfile.write("{0}			{1}\n".format("HubbleParam",self.header["h"]))
+			paramfile.write("{0}			{1}\n".format("BoxSize",self.header["box_size"].to(self.kpc_over_h).value))
+			paramfile.write("{0}			{1}\n".format("w0",self.header["w0"]))
+			paramfile.write("{0}			{1}\n\n".format("wa",self.header["wa"]))
+
+			#Output frequency section
+			paramfile.write(settings.writeSection("output_frequency"))
+
+			#Accuracy of time integration section
+			paramfile.write(settings.writeSection("accuracy_time_integration"))
+
+			#Tree algorithm section
+			paramfile.write(settings.writeSection("tree_algorithm"))
+
+			#SPH section
+			paramfile.write(settings.writeSection("sph"))
+
+			#Memory allocation section
+			paramfile.write(settings.writeSection("memory_allocation"))
+
+			#System of units section
+			paramfile.write(settings.writeSection("system_of_units"))
+
+			#Softening lengths section
+			paramfile.write(settings.writeSection("softening"))
+
+
 	
 	def setPositions(self,positions):
 
@@ -588,7 +772,7 @@ class Gadget2Snapshot(object):
 		self.velocities = velocities
 
 	
-	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,w0=-1.0,wa=-1.0,h=0.72,redshift=1.0,box_size=15.0*Mpc,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
+	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,w0=-1.0,wa=0.0,h=0.72,redshift=1.0,box_size=15.0*Mpc,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
 
 		"""
 		Sets the header info in the snapshot to write
