@@ -637,6 +637,9 @@ class Gadget2Snapshot(object):
 		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 		_header_bare["comoving_distance"] = _header_bare["comoving_distance"].to(self.Mpc_over_h).value * 1.0e6
 
+		#Number of files the snapshot is split into
+		_header_bare["num_files"] = files
+
 		#Convert units for positions and velocities
 		_positions_converted = self.positions.to(self.kpc_over_h).value.astype(np.float32)
 
@@ -650,9 +653,6 @@ class Gadget2Snapshot(object):
 
 		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
 		if files>1:
-
-			#There are multiple files
-			_header_bare["num_files"] = files
 
 			#Distribute particles among files
 			particles_per_file = _header_bare["num_particles_total"] // files
