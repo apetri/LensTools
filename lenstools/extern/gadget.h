@@ -21,7 +21,13 @@ struct io_header_1
   double HubbleParam;
   double w0;
   double wa;
-  char fill[256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8 - 2 * 8];	/* fills to 256 Bytes */
+  double comoving_distance;
+  int flag_stellarage;
+  int flag_metals;
+  unsigned int npartTotalHighWord[6];
+  int flag_entropy_instead_u;
+  int nothing;
+  char fill[32];	/* fills to 256 Bytes */
 };
 
 

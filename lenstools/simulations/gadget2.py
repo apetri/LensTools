@@ -274,6 +274,9 @@ class Gadget2Snapshot(object):
 			#Convert to Mpc/h
 			self._header["box_size"] = self._header["box_size"].to(self.Mpc_over_h)
 
+			#Read in the comoving distance
+			self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e6) * self.Mpc_over_h
+
 			#Scale masses to correct units
 			self._header["masses"] *= (self._mass_unit / self._header["h"])
 			self._header["masses"] *= g
@@ -632,6 +635,7 @@ class Gadget2Snapshot(object):
 		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"] / self._mass_unit
 		_header_bare["num_particles_file_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
+		_header_bare["comoving_distance"] = _header_bare["comoving_distance"].to(self.Mpc_over_h).value * 1.0e6
 
 		#Convert units for positions and velocities
 		_positions_converted = self.positions.to(self.kpc_over_h).value.astype(np.float32)
@@ -816,15 +820,20 @@ class Gadget2Snapshot(object):
 		self._header["flag_cooling"] = flag_cooling
 		self._header["flag_sfr"] = flag_sfr
 		self._header["flag_feedback"] = flag_feedback
+		self._header["flag_stellarage"] = 0
+		self._header["flag_metals"] = 0
+		self._header["flag_entropy_instead_u"] = 0
 		self._header["masses"] = masses
 		self._header["num_particles_file_of_type"] = num_particles_file_of_type
 		self._header["num_particles_file"] = num_particles_file_of_type.sum()
 		self._header["num_particles_total_of_type"] = num_particles_file_of_type
 		self._header["num_particles_total"] = num_particles_file_of_type.sum()
+		self._header["npartTotalHighWord"] = np.zeros(6,dtype=np.uint32)
 
 		#Define the kpc/h and Mpc/h units for convenience
 		self.kpc_over_h = def_unit("kpc/h",kpc/self._header["h"])
 		self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
+		self._header["comoving_distance"] = 1.0 * self.Mpc_over_h
 
 
 	def numberDensity(self,resolution=0.5*Mpc,left_corner=None,save=False):

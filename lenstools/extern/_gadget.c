@@ -88,11 +88,13 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	npy_intp Nkinds[] = {(npy_intp) 6};
 	PyObject *NumPart_array = PyArray_ZEROS(1,Nkinds,NPY_INT32,0);
 	PyObject *NumPart_array_file = PyArray_ZEROS(1,Nkinds,NPY_INT32,0);
+	PyObject *npartHighWord_array = PyArray_ZEROS(1,Nkinds,NPY_UINT32,0);
 	PyObject *Mass_array = PyArray_ZEROS(1,Nkinds,NPY_DOUBLE,0);
 
-	if(NumPart_array==NULL || Mass_array==NULL || NumPart_array_file==NULL){
+	if(NumPart_array==NULL || Mass_array==NULL || npartHighWord_array==NULL || NumPart_array_file==NULL){
 		Py_XDECREF(NumPart_array);
 		Py_XDECREF(Mass_array);
+		Py_XDECREF(npartHighWord_array);
 		Py_XDECREF(NumPart_array_file);
 		return NULL;
 	}
@@ -100,6 +102,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	//Get pointers to the array elements
 	int *NumPart_data = (int *)PyArray_DATA(NumPart_array);
 	int *NumPart_file_data = (int *)PyArray_DATA(NumPart_array_file);
+	unsigned int *npartHighWord_data = (unsigned int *)PyArray_DATA(npartHighWord_array);
 	double *Mass_data = (double *)PyArray_DATA(Mass_array);
 
 	//Fill in the values
@@ -111,6 +114,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 		NumPart_file_data[k] = header.npart[k];
 		NumPartFile += header.npart[k];
 		NumPart_data[k] = header.npartTotal[k];
+		npartHighWord_data[k] = header.npartTotalHighWord[k];
 		NumPart += header.npartTotal[k];
 		Mass_data[k] = header.mass[k];
 			
@@ -135,6 +139,7 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	if(PyDict_SetItemString(header_dict,"Ode0",Py_BuildValue("d",header.OmegaLambda))) return NULL;
 	if(PyDict_SetItemString(header_dict,"w0",Py_BuildValue("d",header.w0))) return NULL;
 	if(PyDict_SetItemString(header_dict,"wa",Py_BuildValue("d",header.wa))) return NULL;
+	if(PyDict_SetItemString(header_dict,"comoving_distance",Py_BuildValue("d",header.comoving_distance))) return NULL;
 	if(PyDict_SetItemString(header_dict,"h",Py_BuildValue("d",header.HubbleParam))) return NULL;
 	if(PyDict_SetItemString(header_dict,"box_size",Py_BuildValue("d",header.BoxSize))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_files",Py_BuildValue("i",header.num_files))) return NULL;
@@ -146,10 +151,14 @@ static PyObject *_gadget_getHeader(PyObject *self,PyObject *args){
 	if(PyDict_SetItemString(header_dict,"num_particles_file_with_mass",Py_BuildValue("i",Nwithmass_file))) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_total_of_type",NumPart_array)) return NULL;
 	if(PyDict_SetItemString(header_dict,"num_particles_file_of_type",NumPart_array_file)) return NULL;
+	if(PyDict_SetItemString(header_dict,"npartTotalHighWord",npartHighWord_array)) return NULL;
 	if(PyDict_SetItemString(header_dict,"masses",Mass_array)) return NULL;
 	if(PyDict_SetItemString(header_dict,"flag_cooling",Py_BuildValue("i",header.flag_cooling))) return NULL;
 	if(PyDict_SetItemString(header_dict,"flag_feedback",Py_BuildValue("i",header.flag_feedback))) return NULL;
 	if(PyDict_SetItemString(header_dict,"flag_sfr",Py_BuildValue("i",header.flag_sfr))) return NULL;
+	if(PyDict_SetItemString(header_dict,"flag_stellarage",Py_BuildValue("i",header.flag_stellarage))) return NULL;
+	if(PyDict_SetItemString(header_dict,"flag_metals",Py_BuildValue("i",header.flag_metals))) return NULL;
+	if(PyDict_SetItemString(header_dict,"flag_entropy_instead_u",Py_BuildValue("i",header.flag_entropy_instead_u))) return NULL;
 
 	//return
 	return header_dict;
@@ -274,11 +283,13 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	PyObject *mass_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"masses"),NPY_DOUBLE,NPY_IN_ARRAY);
 	PyObject *NumPart_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"num_particles_total_of_type"),NPY_INT32,NPY_IN_ARRAY);
 	PyObject *NumPart_file_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"num_particles_file_of_type"),NPY_INT32,NPY_IN_ARRAY);
+	PyObject *npartHighWord_array = PyArray_FROM_OTF(PyDict_GetItemString(header_obj,"npartTotalHighWord"),NPY_UINT32,NPY_IN_ARRAY);
 
-	if(mass_array==NULL || NumPart_array==NULL || NumPart_file_array==NULL){
+	if(mass_array==NULL || NumPart_array==NULL || NumPart_file_array==NULL || npartHighWord_array==NULL){
 		Py_XDECREF(mass_array);
 		Py_XDECREF(NumPart_array);
 		Py_XDECREF(NumPart_file_array);
+		Py_XDECREF(npartHighWord_array);
 		fclose(fp);
 		return NULL;
 	}
@@ -287,6 +298,7 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	double *mass_data = (double *)PyArray_DATA(mass_array);
 	int *NumPart_data = (int *)PyArray_DATA(NumPart_array);
 	int *NumPart_file_data = (int *)PyArray_DATA(NumPart_file_array);
+	unsigned int *npartHighWord_data = (unsigned int *)PyArray_DATA(npartHighWord_array);
 
 	//Fill in the header values
 
@@ -299,24 +311,31 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	header.redshift = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"redshift"));
 	header.BoxSize = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"box_size"));
 	header.HubbleParam = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"h"));
+	header.comoving_distance = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"comoving_distance"));
 
 	//simple ints
 	header.flag_cooling = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_cooling"));
 	header.flag_sfr = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_sfr"));
 	header.flag_feedback = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_feedback"));
 	header.num_files = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"num_files"));
+	header.flag_stellarage = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_stellarage"));
+	header.flag_metals = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_metals"));
+	header.flag_entropy_instead_u = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_entropy_instead_u"));
+
 
 	//double and int arrays
 	for(k=0;k<6;k++){
 		header.mass[k] = mass_data[k];
 		header.npart[k] = NumPart_file_data[k];
 		header.npartTotal[k] = NumPart_data[k];
+		header.npartTotalHighWord[k] = npartHighWord_data[k];
 	}
 
 	//release resources
 	Py_DECREF(mass_array);
 	Py_DECREF(NumPart_array);
 	Py_DECREF(NumPart_file_array);
+	Py_DECREF(npartHighWord_array);
 
 	//now interpret positions and velocities as numpy arrays
 	PyObject *positions_array = PyArray_FROM_OTF(positions_obj,NPY_FLOAT32,NPY_IN_ARRAY);
@@ -339,7 +358,7 @@ static PyObject *_gadget_write(PyObject *self,PyObject *args){
 	if(writeSnapshot(fp,&header,positions_data,velocities_data,firstID,NumPart,writeVel)==-1){
 		
 		fclose(fp);
-		PyErr_SetString(PyExc_IOError,"Coulnd't write snapshot!");
+		PyErr_SetString(PyExc_IOError,"Couldn't write snapshot!");
 		return NULL;
 
 	}
