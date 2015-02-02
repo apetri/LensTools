@@ -791,7 +791,7 @@ class Gadget2Snapshot(object):
 		self.velocities = velocities
 
 	
-	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,w0=-1.0,wa=0.0,h=0.72,redshift=1.0,box_size=15.0*Mpc,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
+	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,w0=-1.0,wa=0.0,h=0.72,redshift=1.0,box_size=15.0*Mpc/0.72,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
 
 		"""
 		Sets the header info in the snapshot to write
