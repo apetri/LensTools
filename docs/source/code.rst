@@ -107,6 +107,9 @@ Gadget2 snapshot handling
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
 
+.. autoclass:: lenstools.simulations.Gadget2Settings
+	:inherited-members:
+
 Ray tracing simulations
 =======================
 
