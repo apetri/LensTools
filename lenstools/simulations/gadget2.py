@@ -124,7 +124,7 @@ class Gadget2Settings(object):
 		#System of units
 		self.UnitLength_in_cm = 3.085678e21       # ;  1.0 kpc 
 		self.UnitMass_in_g = 1.989e43    #;  1.0e10 solar masses 
-		self.UnitVelocity_in_cm_per_s = 1.0 * km/s               # ;  1 km/sec 
+		self.UnitVelocity_in_cm_per_s = 1.0e5  # ;  1 km/sec 
 		self.GravityConstantInternal = 0
 
 
@@ -251,8 +251,9 @@ class Gadget2Snapshot(object):
 
 	"""
 
-	def __init__(self,fp=None,pool=None,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
+	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
 
+		self._length_unit = length_unit.to(cm).value
 		self._mass_unit = mass_unit.to(g).value
 		self._velocity_unit = velocity_unit.to(cm/s).value
 
@@ -275,7 +276,7 @@ class Gadget2Snapshot(object):
 			self._header["box_size"] = self._header["box_size"].to(self.Mpc_over_h)
 
 			#Read in the comoving distance
-			self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e6) * self.Mpc_over_h
+			self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
 
 			#Scale masses to correct units
 			self._header["masses"] *= (self._mass_unit / self._header["h"])
@@ -635,7 +636,7 @@ class Gadget2Snapshot(object):
 		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"] / self._mass_unit
 		_header_bare["num_particles_file_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
 		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
-		_header_bare["comoving_distance"] = _header_bare["comoving_distance"].to(self.Mpc_over_h).value * 1.0e6
+		_header_bare["comoving_distance"] = _header_bare["comoving_distance"].to(self.Mpc_over_h).value * 1.0e3
 
 		#Number of files the snapshot is split into
 		_header_bare["num_files"] = files
@@ -653,6 +654,9 @@ class Gadget2Snapshot(object):
 
 		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
 		if files>1:
+
+			#Update the header with the file names
+			self.header["files"] = [ "{0}.{1}".format(filename,n) for n in range(files) ]
 
 			#Distribute particles among files
 			particles_per_file = _header_bare["num_particles_total"] // files
@@ -683,6 +687,9 @@ class Gadget2Snapshot(object):
 			ext._gadget.write(_header_bare,_positions_converted[particles_per_file*(files-1):],_velocities_converted[particles_per_file*(files-1):],(files-1)*particles_per_file+1,filename_with_extension,writeVel)
 
 		else:
+
+			#Update the header with the file names
+			self.header["files"] = [ filename ]
 			
 			#Write it!!
 			ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename,writeVel)
@@ -705,6 +712,11 @@ class Gadget2Snapshot(object):
 		outputdir = settings.OutputDir
 		if not(os.path.isdir(outputdir)):
 			os.mkdir(outputdir)
+
+		#Update the settings according to the physical units of the current snapshot
+		settings.UnitLength_in_cm = self._length_unit
+		settings.UnitMass_in_g = self._mass_unit
+		settings.UnitVelocity_in_cm_per_s = self._velocity_unit
 
 		#Set the appropriate name for the initial condition file
 		if "files" in self.header.keys():
@@ -791,7 +803,7 @@ class Gadget2Snapshot(object):
 		self.velocities = velocities
 
 	
-	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,w0=-1.0,wa=0.0,h=0.72,redshift=1.0,box_size=15.0*Mpc/0.72,flag_cooling=0,flag_sfr=0,flag_feedback=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None):
+	def setHeaderInfo(self,Om0=0.26,Ode0=0.74,w0=-1.0,wa=0.0,h=0.72,redshift=100.0,box_size=15.0*Mpc/0.72,flag_cooling=0,flag_sfr=0,flag_feedback=0,flag_stellarage=0,flag_metals=0,flag_entropy_instead_u=0,masses=np.array([0,1.03e10,0,0,0,0])*Msun,num_particles_file_of_type=None,npartTotalHighWord=np.zeros(6,dtype=np.uint32)):
 
 		"""
 		Sets the header info in the snapshot to write
@@ -820,20 +832,23 @@ class Gadget2Snapshot(object):
 		self._header["flag_cooling"] = flag_cooling
 		self._header["flag_sfr"] = flag_sfr
 		self._header["flag_feedback"] = flag_feedback
-		self._header["flag_stellarage"] = 0
-		self._header["flag_metals"] = 0
-		self._header["flag_entropy_instead_u"] = 0
+		self._header["flag_stellarage"] = flag_stellarage
+		self._header["flag_metals"] = flag_metals
+		self._header["flag_entropy_instead_u"] = flag_entropy_instead_u
 		self._header["masses"] = masses
 		self._header["num_particles_file_of_type"] = num_particles_file_of_type
 		self._header["num_particles_file"] = num_particles_file_of_type.sum()
 		self._header["num_particles_total_of_type"] = num_particles_file_of_type
 		self._header["num_particles_total"] = num_particles_file_of_type.sum()
-		self._header["npartTotalHighWord"] = np.zeros(6,dtype=np.uint32)
+		self._header["npartTotalHighWord"] = npartTotalHighWord
 
 		#Define the kpc/h and Mpc/h units for convenience
 		self.kpc_over_h = def_unit("kpc/h",kpc/self._header["h"])
 		self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
-		self._header["comoving_distance"] = 1.0 * self.Mpc_over_h
+
+		#Compute the comoving distance according to the model
+		cosmo = w0waCDM(H0=100.0*h,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
+		self._header["comoving_distance"] = cosmo.comoving_distance(redshift).to(self.Mpc_over_h)
 
 
 	def numberDensity(self,resolution=0.5*Mpc,left_corner=None,save=False):

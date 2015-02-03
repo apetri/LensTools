@@ -21,7 +21,9 @@ def main(args=None):
 			print("")
 			print(filename+":")
 			print("")
-			for item in snap.header.keys():
+			keys = snap.header.keys()
+			keys.sort()
+			for item in keys:
 				print("{0} = {1}".format(item,snap.header[item]))
 			print("")
 			

@@ -56,3 +56,31 @@ def test_write():
 	snap.write("gadget_ic")
 
 
+def test_paramfile():
+
+	#Create an empty gadget snapshot
+	snap = Gadget2Snapshot()
+
+	#Generate random positions and velocities
+	NumPart = 32**3
+	x = np.random.normal(loc=7.0,scale=5.0,size=(NumPart,3)) * Mpc
+	v = np.zeros((NumPart,3)) * m / s
+
+	#Put the particles in the snapshot
+	snap.setPositions(x)
+	snap.setVelocities(v)
+
+	#Generate minimal header
+	snap.setHeaderInfo()
+
+	#Split the particles between two files
+	snap.write("gadget_sphere",files=2)
+
+	#Generate the parameter file that will determine the evolution
+	snap.writeParameterFile("gadget_sphere.param")
+
+	#Generate a file with the scale factor of the output snapshots
+	z = np.arange(90.0,0.0,-10.0)
+	a = 1.0 / (1 + z)
+	np.savetxt("outputs.txt",a)
+
