@@ -144,6 +144,24 @@ class Gadget2Settings(object):
 		self.SofteningStarsMaxPhys = 0
 		self.SofteningBndryMaxPhys = 0
 
+	def sections(self):
+
+		return [ "file_names","cpu_timings","code_options","characteristics_of_run","output_frequency","accuracy_time_integration","tree_algorithm","sph","memory_allocation","system_of_units","softening" ]
+
+	def showSection(self,section):
+
+		if section not in self.sections():
+			raise ValueError("Parameter file does not admit a section named {0}".format(section))
+
+		for option in getattr(self,section):
+			print("{0} = {1}".format(option,getattr(self,option)))
+
+	def show(self):
+
+		for section in self.sections():
+			print(section+":\n")
+			self.showSection(section)
+			print("\n")	
 
 	def writeSection(self,section):
 
