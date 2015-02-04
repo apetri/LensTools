@@ -23,15 +23,21 @@ except ImportError:
 	from .. import utils
 	rfftfreq = utils.rfftfreq
 
+#Plotting engine
 try:
-	
 	import matplotlib.pyplot as plt
 	from mpl_toolkits.mplot3d import Axes3D
 	matplotlib = True
-
 except ImportError:
 
 	matplotlib = False
+
+#Try to import r2py to save snapshot positions in R format
+try:
+	import rpy2.robjects as robj
+	rpy2 = True
+except ImportError:
+	rpy2 = False
 
 ############################################################
 ################Gadget2Settings class#######################
@@ -409,6 +415,37 @@ class Gadget2Snapshot(object):
 		
 		#Return
 		return positions
+
+
+	def pos2R(self,filename,variable_name="pos"):
+
+		"""
+		Saves the positions of the particles in a R readable format, for facilitating visualization with RGL
+
+		:param filename: name of the file on which to save the particles positions
+		:type filename: str.
+
+		:param variable_name: name of the variable that contains the (x,y,z) positions in the R environment
+		:type variable_name: str.
+
+		"""
+
+		if not rpy2:
+			raise ImportError("rpy2 is not installed, can't proceed!")
+
+		#Read in the positions
+		if not hasattr(self,"positions"):
+			self.getPositions()
+
+		#Convert numpy array into an R vector
+		positions_bare = self.positions.to(Mpc).value
+		r_positions = robj.FloatVector(positions_bare.T.ravel())
+
+		#Set the R environment
+		robj.rinterface.globalenv[variable_name] = robj.r["matrix"](r_positions,nrow=positions_bare.shape[0])
+
+		#Save
+		robj.r.save(variable_name,file=filename)
 
 	def getVelocities(self,first=None,last=None,save=True):
 
