@@ -1067,9 +1067,16 @@ class Gadget2Snapshot(object):
 
 			binning[normal] = np.linspace((center - thickness/2).to(positions.unit).value,(center + thickness/2).to(positions.unit).value,thickness_resolution+1)
 
-		#Now use histogramdd to compute the density along the slab
+		#Now use gridding to compute the density along the slab
 		assert positions.value.dtype==np.float32
 		density = ext._gadget.grid3d(positions.value,tuple(binning))
+
+		#Accumulate the density from the other processors
+		if self.pool is not None:
+			
+			self.pool.openWindow(density)
+			self.pool.accumulate()
+			self.pool.closeWindow()
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = [(binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit,(binning[2][1:]-binning[2][:-1]).mean() * positions.unit]
