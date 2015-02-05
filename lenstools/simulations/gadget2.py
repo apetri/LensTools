@@ -775,7 +775,8 @@ class Gadget2Snapshot(object):
 
 		#Set the appropriate name for the initial condition file
 		if "files" in self.header.keys():
-			settings.InitCondFile = os.path.abspath(self.header["files"][0].split(".")[0])
+			suffix = self.header["files"][0].split(".")[-1]
+			settings.InitCondFile = os.path.abspath(self.header["files"][0].rstrip(".{0}".format(suffix)))
 
 		#Write the options
 		with open(filename,"w") as paramfile:
