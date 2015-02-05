@@ -918,9 +918,9 @@ class Gadget2Snapshot(object):
 		:type left_corner: tuple of quantities or None
 
 		:param save: if True saves the density histogram and resolution as instance attributes
-		:type save:
+		:type save: bool.
 
-		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes)  
+		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density on a grid,bin resolution along the axes)  
 
 		"""
 
