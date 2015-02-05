@@ -110,6 +110,26 @@ If you don't believe that this works, here it is what happens with an actual sna
 
 .. figure:: ../../../examples/snapshot_gadget.png
 
+If you wish, you can export the snapshot positions in R format so that you can take full advantage of the RGL graphics library to visualize your snapshot (works a lot better than matplotlib for three dimensional plots):
+
+::
+	
+	#Save positions in R format
+	snap.pos2R("snapshot.rdata",variable_name="pos")
+
+	##################################################
+	#####Then, inside an R console####################
+	##################################################
+
+	library('rgl')
+	n <- 32^3
+	plot3d(pos[1:n,1],pos[1:n,2],pos[1:n,3],size=1,xlab='x(Mpc)',ylab='y(Mpc)',zlab='z(Mpc)')
+	rgl.snapshot( 'snapshot_R.png', fmt = "png", top = TRUE )
+
+which looks something like this 
+
+.. figure:: ../../../examples/snapshot_R.png
+
 We can also measure the density fluctuations power spectrum :math:`P_k`, defined as :math:`\langle \delta n_k \delta n_{k'} \rangle = \delta_D(k+k')P_k`
 
 ::
