@@ -907,13 +907,16 @@ class Gadget2Snapshot(object):
 		self._header["comoving_distance"] = cosmo.comoving_distance(redshift).to(self.Mpc_over_h)
 
 
-	def numberDensity(self,resolution=0.5*Mpc,left_corner=None,save=False):
+	def numberDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False):
 
 		"""
 		Uses a C backend gridding function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
 
 		:param resolution: resolution below which particles are grouped together; if an int is passed, this is the size of the grid
 		:type resolution: float with units or int.
+
+		:param smooth: if not None, performs a smoothing of the density (or potential) with a gaussian kernel of scale "smooth x the pixel resolution"
+		:type smooth: int. or None
 
 		:param left_corner: specify the position of the lower left corner of the box; if None, the minimum of the (x,y,z) of the contained particles is assumed
 		:type left_corner: tuple of quantities or None
@@ -972,6 +975,20 @@ class Gadget2Snapshot(object):
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = ((xi[1:]-xi[:-1]).mean() * positions.unit,(yi[1:]-yi[:-1]).mean() * positions.unit,(zi[1:]-zi[:-1]).mean() * positions.unit)
+
+		#Perform smoothing if prompted
+		if smooth is not None:
+
+			#Fourier transform the density field
+			fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
+			density_ft = rfftn(density)
+
+			#Perform the smoothing
+			density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
+
+			#Go back in real space
+			density = irfftn(density_ft)
+
 
 		#Return the density histogram, along with the bin resolution along each axis
 		if save:
