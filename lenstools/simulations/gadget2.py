@@ -23,6 +23,9 @@ except ImportError:
 	from .. import utils
 	rfftfreq = utils.rfftfreq
 
+#KD-Tree
+from scipy.spatial import KDTree
+
 #Plotting engine
 try:
 	import matplotlib.pyplot as plt
@@ -1148,7 +1151,57 @@ class Gadget2Snapshot(object):
 
 		"""
 
-		raise NotImplementedError("Adaptive smoothing not functional yet")
+		#Sanity checks
+		assert normal in range(3),"There are only 3 dimensions!"
+		assert kind in ["density","potential"],"Specify density or potential plane!"
+		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
+
+		#Direction of the plane
+		plane_directions = range(3)
+		plane_directions.pop(normal)
+
+		#Get the particle positions if not available get
+		if hasattr(self,"positions"):
+			positions = self.positions.copy()
+		else:
+			positions = self.getPositions(save=False)
+
+		#Lower left corner of the plane
+		if left_corner is None:
+			left_corner = positions.min(axis=0)
+		
+		#Binning of the plane
+		binning = [None,None]
+		assert type(plane_resolution) in [np.int,quantity.Quantity]
+		
+		if type(plane_resolution)==quantity.Quantity:
+			
+			assert plane_resolution.unit.physical_type=="length"
+			plane_resolution = plane_resolution.to(positions.unit)
+
+			for i in range(2):
+				binning[i] = np.arange(left_corner[plane_directions[i]].to(positions.unit).value,(left_corner[plane_directions[i]] + self._header["box_size"]).to(positions.unit).value,plane_resolution.value)
+
+		else:
+
+			for i in range(2):
+				binning[i] = np.linspace(left_corner[plane_directions[i]].to(positions.unit).value,(left_corner[plane_directions[i]] + self._header["box_size"]).to(positions.unit).value,plane_resolution+1)
+
+		###################################################################################
+		#For each particle, we need to determine the distance to its N-th nearest neighbor#
+		###################################################################################
+
+		#Build the KD-Tree
+		particle_tree = KDTree(self.positions.value)
+
+		#Find the distance to the Nth-nearest neighbor
+		rp = particle_tree.query(self.positions.value,k=neighbors)[0][:,neighbors-1]
+		assert (rp>0).all()
+
+		#Compute the adaptive smoothing
+		return ext._gadget.adaptive(positions.value,rp,binning,center.to(self.positions.unit).value,plane_directions[0],plane_directions[1],normal)
+
+
 
 	############################################################################################################################################################################
 

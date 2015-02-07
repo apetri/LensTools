@@ -20,6 +20,7 @@ static char getPosVel_docstring[] = "Gets the positions or velocities of the par
 static char getID_docstring[] = "Gets the 4 byte int particles IDs from the Gadget2 snapshot";
 static char write_docstring[] = "Writes the particles information to a Gadget snapshot, with a proper header";
 static char grid3d_docstring[] = "Put the snapshot particles on a regularly spaced grid";
+static char adaptive_docstring[] = "Put the snapshot particles on a regularly spaced grid using adaptive smoothing";
 
 //Method declarations
 static PyObject *_gadget_getHeader(PyObject *self,PyObject *args);
@@ -27,6 +28,7 @@ static PyObject *_gadget_getPosVel(PyObject *self,PyObject *args);
 static PyObject *_gadget_getID(PyObject *self,PyObject *args);
 static PyObject * _gadget_write(PyObject *self,PyObject *args);
 static PyObject * _gadget_grid3d(PyObject *self,PyObject *args);
+static PyObject * _gadget_adaptive(PyObject *self,PyObject *args);
 
 //_gadget method definitions
 static PyMethodDef module_methods[] = {
@@ -36,6 +38,7 @@ static PyMethodDef module_methods[] = {
 	{"getID",_gadget_getID,METH_VARARGS,getID_docstring},
 	{"write",_gadget_write,METH_VARARGS,write_docstring},
 	{"grid3d",_gadget_grid3d,METH_VARARGS,grid3d_docstring},
+	{"adaptive",_gadget_adaptive,METH_VARARGS,adaptive_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -439,5 +442,77 @@ static PyObject *_gadget_grid3d(PyObject *self,PyObject *args){
 	Py_DECREF(binsZ_array);
 
 	return grid_array;
+
+}
+
+//adaptive() implementation
+static PyObject * _gadget_adaptive(PyObject *self,PyObject *args){
+
+	PyObject *positions_obj,*rp_obj,*binning_obj;
+	double center;
+	int direction0,direction1,normal;
+
+	//Parse argument tuple
+	if(!PyArg_ParseTuple(args,"OOOdiii",&positions_obj,&rp_obj,&binning_obj,&center,&direction0,&direction1,&normal)){
+		return NULL;
+	}
+
+	//Parse arrays
+	PyObject *positions_array = PyArray_FROM_OTF(positions_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+	PyObject *rp_array = PyArray_FROM_OTF(rp_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binning0_array = PyArray_FROM_OTF(PyList_GetItem(binning_obj,0),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binning1_array = PyArray_FROM_OTF(PyList_GetItem(binning_obj,1),NPY_DOUBLE,NPY_IN_ARRAY);
+
+	//Check if anything went wrong
+	if(positions_array==NULL || rp_array==NULL || binning0_array==NULL || binning1_array==NULL){
+		
+		Py_XDECREF(positions_array);
+		Py_XDECREF(rp_array);
+		Py_XDECREF(binning0_array);
+		Py_XDECREF(binning1_array);
+
+		return NULL;
+	}
+
+	//Compute the number of particles
+	int NumPart = (int)PyArray_DIM(positions_array,0);
+
+	//Allocate space for lensing plane
+	npy_intp dims[] =  {PyArray_DIM(binning0_array,0)-1,PyArray_DIM(binning1_array,0)-1};
+	int size0 = (int)dims[0];
+	int size1 = (int)dims[1];
+	
+	PyObject *lensingPlane_array = PyArray_ZEROS(2,dims,NPY_DOUBLE,0);
+	
+	if(lensingPlane_array==NULL){
+
+		Py_DECREF(positions_array);
+		Py_DECREF(rp_array);
+		Py_DECREF(binning0_array);
+		Py_DECREF(binning1_array);
+
+		return NULL;
+
+	}
+
+	//Get data pointers
+	float *positions = (float *)PyArray_DATA(positions_array);
+	double *rp = (double *)PyArray_DATA(rp_array);
+	double *binning0 = (double *)PyArray_DATA(binning0_array);
+	double *binning1 = (double *)PyArray_DATA(binning1_array);
+	double *lensingPlane = (double *)PyArray_DATA(lensingPlane_array);
+
+	//Compute the adaptive smoothing using C backend
+	adaptiveSmoothing(NumPart,positions,rp,binning0,binning1,direction0,direction1,normal,size0,size1,lensingPlane);
+
+	//Cleanup
+	Py_DECREF(positions_array);
+	Py_DECREF(rp_array);
+	Py_DECREF(binning0_array);
+	Py_DECREF(binning1_array);
+
+	//Return
+	return lensingPlane_array;
+
 
 }
