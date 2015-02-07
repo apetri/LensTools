@@ -2,6 +2,7 @@
 #define __COORDINATES_H
 
 int min_int(int,int);
+int max_int(int,int);
 long min_long(long,long);
 
 static inline long coordinate(long x,long y,long map_size){

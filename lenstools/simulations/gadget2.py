@@ -1124,7 +1124,34 @@ class Gadget2Snapshot(object):
 
 	############################################################################################################################################################################
 
-	def cutPlaneAdaptive(self,normal=2,center=7.0*Mpc,left_corner=None,plane_resolution=0.1*Mpc,neighbors=64,kind="density"):
+	def neighborDistances(self,neighbors=64):
+
+		"""
+		Find the N-th nearest neighbors to each particle
+
+		:param neighbors: neighbor order
+		:type neighbors: int.
+
+		:returns: array with units
+
+		"""
+
+		#Get the particle positions if not available get
+		if hasattr(self,"positions"):
+			positions = self.positions.copy()
+		else:
+			positions = self.getPositions(save=False)
+
+		#Build the KD-Tree
+		particle_tree = KDTree(positions.value)
+
+		#Query the tree
+		return particle_tree.query(positions.value,k=neighbors)[0][:,neighbors-1] * positions.unit
+
+
+	############################################################################################################################################################################
+
+	def cutPlaneAdaptive(self,normal=2,center=7.0*Mpc,left_corner=None,plane_resolution=0.1*Mpc,neighbors=64,neighborDistances=None,kind="density"):
 
 		"""
 		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
@@ -1143,6 +1170,9 @@ class Gadget2Snapshot(object):
 
 		:param neighbors: number of nearest neighbors to use in the adaptive smoothing procedure
 		:type neighbors: int.
+
+		:param neighborDistances: precomputed distances of each particle to its N-th neighbors; if None these are computed
+		:type neighborDistances: array with units
 
 		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
 		:type kind: str. ("density" or "potential")
@@ -1187,19 +1217,30 @@ class Gadget2Snapshot(object):
 			for i in range(2):
 				binning[i] = np.linspace(left_corner[plane_directions[i]].to(positions.unit).value,(left_corner[plane_directions[i]] + self._header["box_size"]).to(positions.unit).value,plane_resolution+1)
 
+		#Recompute bin_resolution
+		bin_resolution = [ (binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit ]
+
 		###################################################################################
 		#For each particle, we need to determine the distance to its N-th nearest neighbor#
 		###################################################################################
 
-		#Build the KD-Tree
-		particle_tree = KDTree(self.positions.value)
+		if neighborDistances is None:
+	
+			#Find the distance to the Nth-nearest neighbor
+			rp = self.neighborDistances(neighbors).to(positions.unit).value
 
-		#Find the distance to the Nth-nearest neighbor
-		rp = particle_tree.query(self.positions.value,k=neighbors)[0][:,neighbors-1]
+		else:
+			
+			#Convert pre computed distances into appropriate units
+			assert neighbors is None,"You cannot specify the number of neighbors if the distances are precomputed!"
+			assert neighborDistances.shape[0]==positions.shape[0]
+			rp = neighborDistances.to(positions.unit).value
+
+		#Check that thay are all positive
 		assert (rp>0).all()
 
 		#Compute the adaptive smoothing
-		return ext._gadget.adaptive(positions.value,rp,binning,center.to(self.positions.unit).value,plane_directions[0],plane_directions[1],normal)
+		return (3.0/np.pi)*ext._gadget.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal),bin_resolution
 
 
 
