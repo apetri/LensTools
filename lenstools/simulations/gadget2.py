@@ -998,10 +998,10 @@ class Gadget2Snapshot(object):
 
 	###################################################################################################################################################
 
-	def cutPlane(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
+	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
 
 		"""
-		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab; the plane coordinates are cartesian comoving
+		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
 
 		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
 		:type normal: int. (0,1,2)
@@ -1119,6 +1119,36 @@ class Gadget2Snapshot(object):
 		#Return the computed density histogram
 		return density,bin_resolution
 
+	############################################################################################################################################################################
+
+	def cutPlaneAdaptive(self,normal=2,center=7.0*Mpc,left_corner=None,plane_resolution=0.1*Mpc,neighbors=64,kind="density"):
+
+		"""
+		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
+
+		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
+		:type normal: int. (0,1,2)
+
+		:param center: location of the plane along the normal direction
+		:type center: float. with units
+
+		:param plane_resolution: plane resolution (perpendicular to the normal)
+		:type plane_resolution: float. with units (or int.)
+
+		:param left_corner: specify the position of the lower left corner of the box; if None, the minimum of the (x,y,z) of the contained particles is assumed
+		:type left_corner: tuple of quantities or None
+
+		:param neighbors: number of nearest neighbors to use in the adaptive smoothing procedure
+		:type neighbors: int.
+
+		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
+		:type kind: str. ("density" or "potential")
+
+		:returns: tuple(numpy 2D array with the computed particle number density (or lensing potential),bin resolution along the axes)
+
+		"""
+
+		raise NotImplementedError("Adaptive smoothing not functional yet")
 
 	############################################################################################################################################################################
 
