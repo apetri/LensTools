@@ -1243,7 +1243,21 @@ class Gadget2Snapshot(object):
 		assert (rp>0).all()
 
 		#Compute the adaptive smoothing
-		return (3.0/np.pi)*ext._gadget.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll),bin_resolution
+		density = (3.0/np.pi)*ext._gadget.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
+
+		#Compute the dimensionless density fluctation
+
+		#Normalize to correct units and subtract the mean
+		density *= positions.unit**-2
+		density *= (self.header["box_size"]**3 / self.header["num_particles_total"]).decompose()
+		density -= self.header["box_size"]
+
+		#Add the cosmological normalization factor
+		density *= 1.5 * self.header["H0"]**2 * self.header["Om0"] / c**2
+		density *= self.header["comoving_distance"] / self.header["scale_factor"]
+		assert density.unit.physical_type=="dimensionless" 
+
+		return density.decompose().value,bin_resolution
 
 
 
