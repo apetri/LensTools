@@ -36,7 +36,7 @@ int grid3d(float *positions,int Npart,double leftX,double leftY,double leftZ,dou
 
 
 //adaptive smoothing
-int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,double *lensingPlane){
+int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane){
 
 	int i,j,p;
 	float posNormal,posTransverse0,posTransverse1;
@@ -51,11 +51,16 @@ int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, 
 		posTransverse0 = positions[3*p + direction0];
 		posTransverse1 = positions[3*p + direction1];
 
-		//If the particle is too far, skip to the next
-		if(fabs(posNormal-center)>rp[p]) continue;
+		//If we don't want to collapse all the snapshot, and if the particle is too far, skip to the next
+		if((!projectAll) && (fabs(posNormal-center)>rp[p])) continue;
 
 		//Compute catchment radius
-		catchmentRadius = sqrt(pow(rp[p],2) - pow(posNormal-center,2));
+		if(projectAll){
+			catchmentRadius = rp[p];
+		} else{
+			catchmentRadius = sqrt(pow(rp[p],2) - pow(posNormal-center,2));
+		}
+		
 		catchmentRadiusPixel = (int)(catchmentRadius / (binning0[1] - binning0[0]));
 
 		//Compute pixel extremes on the plane, enforcing the bounds
@@ -76,7 +81,11 @@ int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, 
 			for(j=pixelLeft1;j<pixelRight1;j++){
 
 				//Compute the distance between this plane pixel and the particle
-				distanceSquared = pow(posNormal-center,2) + pow(posTransverse0 - 0.5*(binning0[i]+binning0[i+1]),2) + pow(posTransverse1 - 0.5*(binning1[j]+binning1[j+1]),2);
+				if(projectAll){
+					distanceSquared = pow(posTransverse0 - 0.5*(binning0[i]+binning0[i+1]),2) + pow(posTransverse1 - 0.5*(binning1[j]+binning1[j+1]),2);
+				} else{	
+					distanceSquared = pow(posNormal-center,2) + pow(posTransverse0 - 0.5*(binning0[i]+binning0[i+1]),2) + pow(posTransverse1 - 0.5*(binning1[j]+binning1[j+1]),2);
+				}
 
 				//Add the corresponding contribution to the density
 				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += quadraticKernel(distanceSquared,rp[p]); 

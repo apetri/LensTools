@@ -1151,7 +1151,7 @@ class Gadget2Snapshot(object):
 
 	############################################################################################################################################################################
 
-	def cutPlaneAdaptive(self,normal=2,center=7.0*Mpc,left_corner=None,plane_resolution=0.1*Mpc,neighbors=64,neighborDistances=None,kind="density"):
+	def cutPlaneAdaptive(self,normal=2,center=7.0*Mpc,left_corner=None,plane_resolution=0.1*Mpc,neighbors=64,neighborDistances=None,kind="density",projectAll=False):
 
 		"""
 		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
@@ -1176,6 +1176,9 @@ class Gadget2Snapshot(object):
 
 		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
 		:type kind: str. ("density" or "potential")
+
+		:param projectAll: if True, all the snapshot is projected on a single slab perpendicular to the normal, ignoring the position of the center
+		:type projectAll: bool.
 
 		:returns: tuple(numpy 2D array with the computed particle number density (or lensing potential),bin resolution along the axes)
 
@@ -1240,7 +1243,7 @@ class Gadget2Snapshot(object):
 		assert (rp>0).all()
 
 		#Compute the adaptive smoothing
-		return (3.0/np.pi)*ext._gadget.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal),bin_resolution
+		return (3.0/np.pi)*ext._gadget.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll),bin_resolution
 
 
 

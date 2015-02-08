@@ -448,12 +448,12 @@ static PyObject *_gadget_grid3d(PyObject *self,PyObject *args){
 //adaptive() implementation
 static PyObject * _gadget_adaptive(PyObject *self,PyObject *args){
 
-	PyObject *positions_obj,*rp_obj,*binning_obj;
+	PyObject *positions_obj,*rp_obj,*binning_obj,*projectAll;
 	double center;
 	int direction0,direction1,normal;
 
 	//Parse argument tuple
-	if(!PyArg_ParseTuple(args,"OOOdiii",&positions_obj,&rp_obj,&binning_obj,&center,&direction0,&direction1,&normal)){
+	if(!PyArg_ParseTuple(args,"OOOdiiiO",&positions_obj,&rp_obj,&binning_obj,&center,&direction0,&direction1,&normal,&projectAll)){
 		return NULL;
 	}
 
@@ -503,7 +503,7 @@ static PyObject * _gadget_adaptive(PyObject *self,PyObject *args){
 	double *lensingPlane = (double *)PyArray_DATA(lensingPlane_array);
 
 	//Compute the adaptive smoothing using C backend
-	adaptiveSmoothing(NumPart,positions,rp,binning0,binning1,center,direction0,direction1,normal,size0,size1,lensingPlane);
+	adaptiveSmoothing(NumPart,positions,rp,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane);
 
 	//Cleanup
 	Py_DECREF(positions_array);
