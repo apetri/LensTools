@@ -24,7 +24,7 @@ except ImportError:
 	rfftfreq = utils.rfftfreq
 
 #KD-Tree
-from scipy.spatial import KDTree
+from scipy.spatial import cKDTree as KDTree
 
 #Plotting engine
 try:

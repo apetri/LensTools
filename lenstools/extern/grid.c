@@ -79,7 +79,7 @@ int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, 
 				distanceSquared = pow(posNormal-center,2) + pow(posTransverse0 - 0.5*(binning0[i]+binning0[i+1]),2) + pow(posTransverse1 - 0.5*(binning1[j]+binning1[j+1]),2);
 
 				//Add the corresponding contribution to the density
-				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += (1.0/pow(rp[p],2))*pow((1.0 - distanceSquared/pow(rp[p],2)),2); 
+				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += quadraticKernel(distanceSquared,rp[p]); 
 
 			}
 		}
