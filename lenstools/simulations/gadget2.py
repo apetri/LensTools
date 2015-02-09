@@ -1297,10 +1297,10 @@ class Gadget2Snapshot(object):
 
 	############################################################################################################################################################################
 
-	def cutLens(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,left_corner=None,plane_lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,tomography=False,kind="density",space="real"):
+	def cutPlaneAngular(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,left_corner=None,plane_lower_corner=np.array([0.0,0.0])*deg,plane_size=0.15*deg,plane_resolution=1.0*arcmin,thickness_resolution=0.1*Mpc,smooth=None,tomography=False,kind="density",space="real"):
 
 		"""
-		Same as cutPlane(), except that this method will return a lens plane as seen from an observer at z=0; the spatial transverse units are converted in angular units as seen from the observer
+		Same as cutPlaneGaussianGrid(), except that this method will return a lens plane as seen from an observer at z=0; the spatial transverse units are converted in angular units as seen from the observer
 
 		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
 		:type normal: int. (0,1,2)
