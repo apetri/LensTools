@@ -56,9 +56,14 @@ class Spin0(object):
 			self.data = data.astype(np.float)
 			
 		self.side_angle = angle
-		self.resolution = self.side_angle.to(arcsec) / self.data.shape[0]
-		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
-		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
+		self.resolution = self.side_angle / self.data.shape[0]
+
+		if self.side_angle.unit.physical_type=="angle":
+			
+			self.resolution = self.resolution.to(arcsec)
+			self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
+			self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
+		
 		self._masked = masked
 
 		#Extra keyword arguments
@@ -476,7 +481,7 @@ class Spin0(object):
 			#x coordinates
 			if type(x)==quantity.Quantity:
 			
-				assert x.unit.physical_type=="angle"
+				assert x.unit.physical_type==self.side_angle.unit.physical_type
 				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 			else:
@@ -486,7 +491,7 @@ class Spin0(object):
 			#y coordinates
 			if type(y)==quantity.Quantity:
 			
-				assert y.unit.physical_type=="angle"
+				assert y.unit.physical_type==self.side_angle.unit.physical_type
 				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
 
 			else:
@@ -541,7 +546,7 @@ class Spin0(object):
 			#x coordinates
 			if type(x)==quantity.Quantity:
 			
-				assert x.unit.physical_type=="angle"
+				assert x.unit.physical_type==self.side_angle.unit.physical_type
 				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 			else:
@@ -551,7 +556,7 @@ class Spin0(object):
 			#y coordinates
 			if type(y)==quantity.Quantity:
 			
-				assert y.unit.physical_type=="angle"
+				assert y.unit.physical_type==self.side_angle.unit.physical_type
 				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
 
 			else:
