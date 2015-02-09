@@ -65,15 +65,15 @@ int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, 
 
 		//Compute pixel extremes on the plane, enforcing the bounds
 		pos0Pixel = (int)((posTransverse0 - binning0[0]) / (binning0[1] - binning0[0]));
-		pixelLeft0 = max_int(pos0Pixel - catchmentRadiusPixel/2,0);
+		pixelLeft0 = max_int(pos0Pixel - catchmentRadiusPixel,0);
 		pixelLeft0 = min_int(pixelLeft0,size0);
-		pixelRight0 = min_int(pos0Pixel + catchmentRadiusPixel/2,size0);
+		pixelRight0 = min_int(pos0Pixel + catchmentRadiusPixel,size0);
 		pixelRight0 = max_int(pixelRight0,0);
 
 		pos1Pixel = (int)((posTransverse1 - binning1[0]) / (binning1[1] - binning1[0]));
-		pixelLeft1 = max_int(pos1Pixel - catchmentRadiusPixel/2,0);
+		pixelLeft1 = max_int(pos1Pixel - catchmentRadiusPixel,0);
 		pixelLeft1 = min_int(pixelLeft1,size1);
-		pixelRight1 = min_int(pos1Pixel + catchmentRadiusPixel/2,size1);
+		pixelRight1 = min_int(pos1Pixel + catchmentRadiusPixel,size1);
 		pixelRight1 = max_int(pixelRight1,0);
 
 		//Snap the particles on the plane
