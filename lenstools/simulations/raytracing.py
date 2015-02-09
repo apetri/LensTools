@@ -612,8 +612,19 @@ class PotentialPlane(Plane):
 		else:
 			raise ValueError("space must be either real or fourier!")
 
+		#Scale the units
+		laplacian *= self.unit
+		laplacian /= self.resolution**2
+
+		if self.side_angle.unit.physical_type=="length":
+			laplacian *= self.comoving_distance**2
+			laplacian /= rad**2
+
+		assert laplacian.unit.physical_type=="dimensionless"
+		laplacian = laplacian.decompose().value
+
 		#The density is twice the trace of the hessian
-		return DensityPlane(0.5*laplacian/(self.resolution**2).to(self.unit).value,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles)
+		return DensityPlane(0.5*laplacian,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles)
 
 
 #############################################################

@@ -1256,8 +1256,33 @@ class Gadget2Snapshot(object):
 		density *= 1.5 * self.header["H0"]**2 * self.header["Om0"] / c**2
 		density *= self.header["comoving_distance"] / self.header["scale_factor"]
 		assert density.unit.physical_type=="dimensionless" 
+		density = density.decompose().value
 
-		return density.decompose().value,bin_resolution
+		if kind=="density":
+			return density,bin_resolution
+
+		#################################################################################
+		##############Ready to compute the lensing potential#############################
+		#################################################################################
+
+		if kind=="potential":
+
+			#Compute the multipoles
+			lx,ly = np.meshgrid(fftfreq(density.shape[0]),rfftfreq(density.shape[1]),indexing="ij")
+			l_squared = lx**2 + ly**2
+
+			#Avoid dividing by 0
+			l_squared[0,0] = 1.0
+
+			#FFT the density field
+			density_ft = rfftn(density)
+
+			#Solve the poisson equation
+			density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / self.header["comoving_distance"]**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
+
+			#Revert the FFT and return
+			density = irfftn(density_ft)
+			return density*(rad**2),bin_resolution
 
 
 
