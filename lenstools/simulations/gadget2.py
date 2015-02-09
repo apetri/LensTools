@@ -1245,7 +1245,16 @@ class Gadget2Snapshot(object):
 		#Compute the adaptive smoothing
 		density = (3.0/np.pi)*ext._gadget.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
 
-		#Compute the dimensionless density fluctation
+		#Accumulate the density from the other processors
+		if self.pool is not None:
+			
+			self.pool.openWindow(density)
+			self.pool.accumulate()
+			self.pool.closeWindow()
+
+		##############################################
+		#Compute the dimensionless density fluctation#
+		##############################################
 
 		#Normalize to correct units and subtract the mean
 		density *= positions.unit**-2
