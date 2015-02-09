@@ -23,8 +23,13 @@ except ImportError:
 	from .. import utils
 	rfftfreq = utils.rfftfreq
 
-#KD-Tree
-from scipy.spatial import cKDTree as KDTree
+#Nearest neighbors search (preferrably with sklearn, otherwise scipy)
+try:
+	from sklearn.neighbors import NearestNeighbors
+	NearestNeighbors = NearestNeighbors
+except ImportError:
+	NearestNeighbors = None
+	from scipy.spatial import cKDTree as KDTree
 
 #Plotting engine
 try:
@@ -1142,11 +1147,17 @@ class Gadget2Snapshot(object):
 		else:
 			positions = self.getPositions(save=False)
 
-		#Build the KD-Tree
-		particle_tree = KDTree(positions.value)
+		#Try to proceed with scikit learn
+		if NearestNeighbors is not None:
+			nbrs = NearestNeighbors(n_neighbors=neighbors,algorithm="ball_tree").fit(positions.value)
+			rp = nbrs.kneighbors(positions.value)
+		else:
+			#Proceed with scipy KD-Tree
+			particle_tree = KDTree(positions.value)
+			rp = particle_tree.query(positions.value,k=neighbors)
 
-		#Query the tree
-		return particle_tree.query(positions.value,k=neighbors)[0][:,neighbors-1] * positions.unit
+		#Return the neighbor distances
+		return rp[0][:,neighbors-1] * positions.unit
 
 
 	############################################################################################################################################################################

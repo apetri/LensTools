@@ -242,7 +242,7 @@ class Plane(Spin0):
 			comoving_distance = (header["CHI"] / h) * Mpc
 
 			if "SIDE" in header.keys():
-				angle = header["SIDE"] * Mpc
+				angle = header["SIDE"] * Mpc / h
 			elif "ANGLE" in header.keys():
 				angle = header["ANGLE"] * deg
 			else:
