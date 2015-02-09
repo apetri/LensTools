@@ -160,7 +160,7 @@ class Plane(Spin0):
 			if self.side_angle.unit.physical_type=="angle":
 				hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
 			elif self.side_angle.unit.physical_type=="length":
-				hdu.header["SIDE"] = (self.side_angle.to(Mpc).value,"Side length in Mpc")
+				hdu.header["SIDE"] = (self.side_angle.to(Mpc).value*self.cosmology.h,"Side length in Mpc/h")
 
 			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane") 
 
