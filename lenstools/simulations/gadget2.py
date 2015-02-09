@@ -1145,8 +1145,23 @@ class Gadget2Snapshot(object):
 		#Build the KD-Tree
 		particle_tree = KDTree(positions.value)
 
-		#Query the tree
-		return particle_tree.query(positions.value,k=neighbors)[0][:,neighbors-1] * positions.unit
+		#For memory reasons, with large datasets it's better to proceed in chunks with nearest neighbors queries
+		numPart = positions.shape[0]
+		rp = np.zeros(numPart)
+
+		#Split the particles in chunks
+		chunkSize = numPart // neighbors
+		remaining = numPart % neighbors
+
+		#Cycle over the chunks, querying the tree
+		for i in range(neighbors):
+			rp[i*chunkSize:(i+1)*chunkSize] = particle_tree.query(positions[i*chunkSize:(i+1)*chunkSize].value,k=neighbors)[0][:,neighbors-1]
+
+		if remaining:
+			rp[neighbors*chunkSize:] = particle_tree.query(positions[neighbors*chunkSize:].value,k=neighbors)[0][:,neighbors-1]
+
+		#Return
+		return rp * positions.unit
 
 
 	############################################################################################################################################################################
