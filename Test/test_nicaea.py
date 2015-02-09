@@ -1,5 +1,6 @@
 try:
 	
+	import sys
 	from lenstools.simulations import Nicaea,NicaeaSettings
 
 except ImportError:
@@ -19,7 +20,10 @@ import astropy.units as u
 #Settings
 settings = NicaeaSettings.default()
 
-cosmo = Nicaea.fromCosmology(WMAP9)
+try:
+	cosmo = Nicaea.fromCosmology(WMAP9)
+except ImportError:
+	sys.exit(0)
 
 def test_power_spectrum():
 
