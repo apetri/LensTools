@@ -157,7 +157,11 @@ class Plane(Spin0):
 			hdu.header["Z"] = (self.redshift,"Redshift of the lens plane")
 			hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
 
-			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
+			if self.side_angle.unit.physical_type=="angle":
+				hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
+			elif self.side_angle.unit.physical_type=="length":
+				hdu.header["SIDE"] = (self.side_angle.to(Mpc).value,"Side length in Mpc")
+
 			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane") 
 
 			#Save the plane
@@ -237,9 +241,11 @@ class Plane(Spin0):
 			redshift = header["Z"]
 			comoving_distance = (header["CHI"] / h) * Mpc
 
-			try:
+			if "SIDE" in header.keys():
+				angle = header["SIDE"] * Mpc
+			elif "ANGLE" in header.keys():
 				angle = header["ANGLE"] * deg
-			except:
+			else:
 				angle = ((header["RES_X"] * header["NAXIS1"] / header["CHI"]) * rad).to(deg)
 
 			#Build the cosmology object if options directs
@@ -374,6 +380,9 @@ class DensityPlane(Plane):
 
 		"""
 
+		if self.side_angle.unit.physical_type=="length":
+			raise NotImplementedError("potential calculations for physical planes not implemented yet")
+
 		#Initialize l meshgrid
 		if lmesh is None:
 			l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
@@ -435,6 +444,11 @@ class PotentialPlane(Plane):
 		last_timestamp = now
 
 		if self.space=="real":
+
+			#Scale x and y to lengths in case this is a physical plane
+			if self.side_angle.unit.physical_type=="length" and (x is not None) and (y is not None):
+				x = x.to(rad).value * self.comoving_distance
+				y = y.to(rad).value * self.comoving_distance
 			
 			#Compute the gradient of the potential map
 			deflection_x,deflection_y = self.gradient(x,y)
@@ -475,7 +489,15 @@ class PotentialPlane(Plane):
 			raise ValueError("space must be either real or fourier!")
 
 		#Scale to units
-		deflection /= self.resolution.to(self.unit**0.5).value
+		deflection *= self.unit
+		deflection /= self.resolution
+		
+		if self.side_angle.unit.physical_type=="length":
+			deflection *= self.comoving_distance
+			deflection /= rad
+		
+		assert deflection.unit.physical_type=="angle"
+		deflection = deflection.to(rad)
 
 		if (x is not None) and (y is not None):
 			
@@ -485,7 +507,7 @@ class PotentialPlane(Plane):
 		else:
 		
 			#Otherwise return the whole DeflectionPlane instance if we computed the entire mesh
-			return DeflectionPlane(deflection,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=self.unit**0.5)
+			return DeflectionPlane(deflection,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=rad)
 
 
 	def shearMatrix(self,x=None,y=None,lmesh=None):
@@ -510,6 +532,11 @@ class PotentialPlane(Plane):
 		last_timestamp = now
 
 		if self.space=="real":
+
+			#Scale x and y to lengths in case this is a physical plane
+			if self.side_angle.unit.physical_type=="length" and (x is not None) and (y is not None):
+				x = x.to(rad).value * self.comoving_distance
+				y = y.to(rad).value * self.comoving_distance
 			
 			#Compute the second derivatives
 			tensor = np.array(self.hessian(x,y))
@@ -542,7 +569,15 @@ class PotentialPlane(Plane):
 
 
 		#Scale units
-		tensor /= self.resolution.to(self.unit**0.5).value**2
+		tensor *= self.unit
+		tensor /= self.resolution**2
+
+		if self.side_angle.unit.physical_type=="length":
+			tensor *= self.comoving_distance**2
+			tensor /= rad**2
+
+		assert tensor.unit.physical_type=="dimensionless"
+		tensor = tensor.decompose().value
 
 		#Return the ShearTensorPlane instance
 		if (x is not None) and (y is not None):
@@ -620,7 +655,14 @@ class DeflectionPlane(Spin1):
 
 		"""
 
-		return self.gradient() / self.resolution.to(self.unit).value
+		jac = self.gradient() * self.unit / self.resolution
+		
+		if self.side_angle.unit.physical_type=="length":
+			jac *= self.comoving_distance
+			jac /= rad
+
+		assert jac.unit.physical_type=="dimensionless"
+		return jac.decompose().value
 
 
 	def convergence(self,precision="first"):
@@ -951,7 +993,7 @@ class RayTracer(object):
 			last_timestamp = now
 
 			#Add deflections and log timestamp
-			current_deflection += Ck * deflections * current_lens.unit**0.5
+			current_deflection += Ck * deflections 
 			now = time.time()
 			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now

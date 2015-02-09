@@ -46,7 +46,7 @@ class Spin0(object):
 	def __init__(self,data,angle,masked=False,**kwargs):
 
 		#Sanity check
-		assert angle.unit.physical_type=="angle"
+		assert angle.unit.physical_type in ["angle","length"]
 		assert data.shape[0]==data.shape[1],"The map must be a square!!"
 
 		#Convert to double precision for calculation accuracy
