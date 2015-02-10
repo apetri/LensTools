@@ -99,7 +99,7 @@ Nicaea bindings
 	:members: default,available,knobs
 
 .. autoclass:: lenstools.simulations.Nicaea
-	:members: fromCosmology,convergencePowerSpectrum
+	:members: fromCosmology,convergencePowerSpectrum,shearTwoPoint
 
 Gadget2 snapshot handling
 ==========================

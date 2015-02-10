@@ -1035,7 +1035,7 @@ class Gadget2Snapshot(object):
 		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
 		:type kind: str. ("density" or "potential")
 
-		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes)
+		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes, number of particles on the plane)
 
 		"""
 
@@ -1241,7 +1241,7 @@ class Gadget2Snapshot(object):
 	def cutPlaneAdaptive(self,normal=2,center=7.0*Mpc,left_corner=None,plane_resolution=0.1*Mpc,neighbors=64,neighborDistances=None,kind="density",projectAll=False):
 
 		"""
-		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
+		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density using an adaptive smoothing scheme; the plane coordinates are cartesian comoving
 
 		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
 		:type normal: int. (0,1,2)
@@ -1258,7 +1258,7 @@ class Gadget2Snapshot(object):
 		:param neighbors: number of nearest neighbors to use in the adaptive smoothing procedure
 		:type neighbors: int.
 
-		:param neighborDistances: precomputed distances of each particle to its N-th neighbors; if None these are computed
+		:param neighborDistances: precomputed distances of each particle to its N-th nearest neighbor; if None these are computed
 		:type neighborDistances: array with units
 
 		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
@@ -1267,7 +1267,7 @@ class Gadget2Snapshot(object):
 		:param projectAll: if True, all the snapshot is projected on a single slab perpendicular to the normal, ignoring the position of the center
 		:type projectAll: bool.
 
-		:returns: tuple(numpy 2D array with the computed particle number density (or lensing potential),bin resolution along the axes)
+		:returns: tuple(numpy 2D array with the computed particle number density (or lensing potential),bin resolution along the axes,number of particles on the plane)
 
 		"""
 
