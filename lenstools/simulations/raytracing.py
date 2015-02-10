@@ -91,6 +91,7 @@ class Plane(Spin0):
 
 		#Length scale must have units of length
 		assert length_scale.unit.physical_type=="length"
+		assert self.side_angle.unit.physical_type=="angle"
 
 		angle_scale = (length_scale/self.comoving_distance).decompose().value * rad
 		pixel_scale = (angle_scale / self.resolution).decompose().value
