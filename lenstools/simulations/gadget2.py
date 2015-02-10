@@ -693,11 +693,9 @@ class Gadget2Snapshot(object):
 		_header_bare["box_size"] = _header_bare["box_size"].to(self.kpc_over_h).value
 		_header_bare["masses"] = _header_bare["masses"].to(g).value * _header_bare["h"] / self._mass_unit
 		_header_bare["num_particles_file_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
-		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_file_of_type"].astype(np.int32)
+		_header_bare["num_particles_total_of_type"] = _header_bare["num_particles_total_of_type"].astype(np.int32)
 		_header_bare["comoving_distance"] = _header_bare["comoving_distance"].to(self.Mpc_over_h).value * 1.0e3
 
-		#Number of files the snapshot is split into
-		_header_bare["num_files"] = files
 
 		#Convert units for positions and velocities
 		_positions_converted = self.positions.to(self.kpc_over_h).value.astype(np.float32)
@@ -712,6 +710,9 @@ class Gadget2Snapshot(object):
 
 		#Check if we want to split on multiple files (only DM particles supported so far for this feature)
 		if files>1:
+
+			#Number of files the snapshot is split into
+			_header_bare["num_files"] = files
 
 			#Update the header with the file names
 			self.header["files"] = [ "{0}.{1}".format(filename,n) for n in range(files) ]
@@ -745,6 +746,10 @@ class Gadget2Snapshot(object):
 			ext._gadget.write(_header_bare,_positions_converted[particles_per_file*(files-1):],_velocities_converted[particles_per_file*(files-1):],(files-1)*particles_per_file+1,filename_with_extension,writeVel)
 
 		else:
+
+			#Update the num_files key only if not present already
+			if "num_files" not in _header_bare.keys():
+				_header_bare["num_files"] = 1
 
 			#Update the header with the file names
 			self.header["files"] = [ filename ]
