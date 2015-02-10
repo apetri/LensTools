@@ -1339,6 +1339,9 @@ class Gadget2Snapshot(object):
 			self.pool.accumulate()
 			self.pool.closeWindow()
 
+		#Integrate the density to find the total number of particles
+		NumPartTotal = (density.sum() * bin_resolution[0] * bin_resolution[1] * positions.unit**-2).decompose().value
+
 		##############################################
 		#Compute the dimensionless density fluctation#
 		##############################################
@@ -1355,7 +1358,7 @@ class Gadget2Snapshot(object):
 		density = density.decompose().value
 
 		if kind=="density":
-			return density,bin_resolution,self._header["num_particles_total"]
+			return density,bin_resolution,NumPartTotal
 
 		#################################################################################
 		##############Ready to compute the lensing potential#############################
@@ -1381,7 +1384,7 @@ class Gadget2Snapshot(object):
 
 			#Revert the FFT and return
 			density = irfftn(density_ft)
-			return density*(rad**2),bin_resolution,,self._header["num_particles_total"]
+			return density*(rad**2),bin_resolution,NumPartTotal
 
 
 
