@@ -1355,7 +1355,7 @@ class Gadget2Snapshot(object):
 		density = density.decompose().value
 
 		if kind=="density":
-			return density,bin_resolution
+			return density,bin_resolution,self._header["num_particles_total"]
 
 		#################################################################################
 		##############Ready to compute the lensing potential#############################
@@ -1381,7 +1381,7 @@ class Gadget2Snapshot(object):
 
 			#Revert the FFT and return
 			density = irfftn(density_ft)
-			return density*(rad**2),bin_resolution
+			return density*(rad**2),bin_resolution,,self._header["num_particles_total"]
 
 
 
