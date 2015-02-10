@@ -1006,7 +1006,7 @@ class Gadget2Snapshot(object):
 
 	###################################################################################################################################################
 
-	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,kind="density"):
+	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,tomography=False,kind="density"):
 
 		"""
 		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
@@ -1044,6 +1044,9 @@ class Gadget2Snapshot(object):
 		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
+
+		#Cosmological normalization factor
+		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
 
 		#Direction of the plane
 		plane_directions = range(3)
@@ -1104,28 +1107,92 @@ class Gadget2Snapshot(object):
 			self.pool.accumulate()
 			self.pool.closeWindow()
 
+		#Compute the number of particles on the plane
+		NumPartTotal = density.sum()
+
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = [(binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit,(binning[2][1:]-binning[2][:-1]).mean() * positions.unit]
+
+		#Longitudinal normalization factor
+		density_normalization = bin_resolution[normal] * self._header["comoving_distance"] / self._header["scale_factor"]
+
+		#Normalize the density to the density fluctuation
+		density /= self._header["num_particles_total"]
+		density *= (self._header["box_size"]**3 / (bin_resolution[0]*bin_resolution[1]*bin_resolution[2])).decompose().value
+
+		#########################################################################################################################################
+		######################################Decide if returning full tomographic information###################################################
+		#########################################################################################################################################
+
+		if tomography:
+
+			if kind=="potential":
+				raise NotImplementedError("Lensing potential tomography is not implemented!")
+
+			if smooth is not None:
+		
+				#Fourier transform the density field
+				fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
+				density_ft = rfftn(density)
+
+				#Perform the smoothing
+				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
+
+				#Go back in real space
+				density = irfftn(density_ft)
+
+			#Return the computed density histogram
+			return density,bin_resolution,NumPartTotal
+
 
 		#################################################################################################################################
 		######################################Ready to solve poisson equation via FFTs###################################################
 		#################################################################################################################################
 
-		if smooth is not None:
-		
-			#Fourier transform the density field
-			fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
+		#First project along the normal direction
+		density = density.sum(normal)
+		bin_resolution.pop(normal)
+
+		#If smoothing is enabled or potential calculations are needed, we need to FFT the density field
+		if (smooth is not None) or kind=="potential":
+
+			#Compute the multipoles
+			lx,ly = np.meshgrid(fftfreq(density.shape[0]),rfftfreq(density.shape[1]),indexing="ij")
+			l_squared = lx**2 + ly**2
+
+			#Avoid dividing by 0
+			l_squared[0,0] = 1.0
+
+			#FFT the density field
 			density_ft = rfftn(density)
 
-			#Perform the smoothing
-			density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
+			#Zero out the zeroth frequency
+			density_ft[0,0] = 0.0
 
-			#Go back in real space
+			if kind=="potential":
+				#Solve the poisson equation
+				density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / self.header["comoving_distance"]**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
+
+			if smooth is not None:
+				#Perform the smoothing
+				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*l_squared)
+
+			#Revert the FFT
 			density = irfftn(density_ft)
-		
 
-		#Return the computed density histogram
-		return density,bin_resolution
+		#Multiply by the normalization factors
+		density = density * cosmo_normalization * density_normalization
+		density = density.decompose()
+		assert density.unit.physical_type=="dimensionless"
+
+		if kind=="potential":
+			density *= rad**2
+		else:
+			density = density.value
+
+		#Return
+		return density,bin_resolution,NumPartTotal
+
 
 	############################################################################################################################################################################
 
@@ -1306,6 +1373,9 @@ class Gadget2Snapshot(object):
 			#FFT the density field
 			density_ft = rfftn(density)
 
+			#Zero out the zeroth frequency
+			density_ft[0,0] = 0.0
+
 			#Solve the poisson equation
 			density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / self.header["comoving_distance"]**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
 
@@ -1478,8 +1548,8 @@ class Gadget2Snapshot(object):
 
 		if tomography:
 
-			if kind!="density":
-				raise ValueError("You selected kind={0}, but {0} tomography is not defined, the density fluctuation will be returned instead!".format(kind))
+			if kind=="potential":
+				raise NotImplementedError("Lensing potential tomography is not implemented!")
 
 			if smooth is not None:
 
