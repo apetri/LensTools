@@ -166,7 +166,7 @@ class Plane(Spin0):
 				hdu.header["SIDE"] = (self.side_angle.to(Mpc).value*self.cosmology.h,"Side length in Mpc/h")
 
 			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane")
-			hdu.header["UNIT"] = self.unit.to_string() 
+			hdu.header["UNIT"] = (self.unit.to_string(),"Measure units of the pixel values") 
 
 			#Save the plane
 			if self.space=="real":
