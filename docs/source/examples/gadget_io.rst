@@ -122,6 +122,7 @@ If you wish, you can export the snapshot positions in R format so that you can t
 	##################################################
 
 	library('rgl')
+	load('snapshot.rdata')
 	n <- 32^3
 	plot3d(pos[1:n,1],pos[1:n,2],pos[1:n,3],size=1,xlab='x(Mpc)',ylab='y(Mpc)',zlab='z(Mpc)')
 	rgl.snapshot( 'snapshot_R.png', fmt = "png", top = TRUE )
