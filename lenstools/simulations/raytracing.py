@@ -3,6 +3,7 @@ from ..shear import Spin1,Spin2,ShearMap
 
 import time
 import logging
+import re
 
 from operator import mul
 from functools import reduce
@@ -25,6 +26,7 @@ except ImportError:
 	from ..utils import rfftfreq
 
 from astropy.cosmology import w0waCDM
+import astropy.units 
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
 #Try to import the FITSIO library for optimal FITS images reading
@@ -163,7 +165,8 @@ class Plane(Spin0):
 			elif self.side_angle.unit.physical_type=="length":
 				hdu.header["SIDE"] = (self.side_angle.to(Mpc).value*self.cosmology.h,"Side length in Mpc/h")
 
-			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane") 
+			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane")
+			hdu.header["UNIT"] = self.unit.to_string() 
 
 			#Save the plane
 			if self.space=="real":
@@ -261,20 +264,32 @@ class Plane(Spin0):
 			except:
 				num_particles = None
 
+			#Read the units if present
+			try:
+				unit_string = header["UNIT"]
+				name,exponent = re.match(r"([a-zA-Z]+)([0-9])?",unit_string)
+				unit = getattr(astropy.units,name)
+				if exponent is not None:
+					unit *= exponent
+			except TypeError:
+				unit = dimensionless_unscaled
+			except ValueError:
+				unit = rad**2
+
 			#Instantiate the new PotentialPlane instance
 			if fitsio is not None:
 
 				if len(hdu)==1:
-					new_plane = cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
 				else:
-					new_plane = cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
 
 			else:
 			
 				if len(hdu)==1:
-					new_plane = cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
 				else:
-					new_plane = cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=rad**2,num_particles=num_particles)
+					new_plane = cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
 
 			#Close the FITS file and return
 			hdu.close()
@@ -625,7 +640,7 @@ class PotentialPlane(Plane):
 		laplacian = laplacian.decompose().value
 
 		#The density is twice the trace of the hessian
-		return DensityPlane(0.5*laplacian,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles)
+		return DensityPlane(0.5*laplacian,angle=self.side_angle,cosmology=self.cosmology,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles,unit=dimensionless_unscaled)
 
 
 #############################################################
