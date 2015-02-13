@@ -605,7 +605,28 @@ class Gadget2Snapshot(object):
 			self.velocities = self.velocities[ranks]
 
 		#Finally sort IDs
-		self.id.sort() 
+		self.id.sort()
+
+
+	def gridID(self):
+
+		"""
+		Compute an ID for the particles in incresing order according to their position on a Nside x Nside x Nside grid
+
+		:returns: the gridded IDs
+		:rtype: array
+
+		"""
+
+		try:
+			pos = self.positions
+		except:
+			pos = self.getPositions()
+		
+		row = np.array([1,self.header["box_size"].to(pos.unit).value,self.header["box_size"].to(pos.unit).value**2])
+		posID = np.dot(pos.value,row)
+
+		return rankdata(posID).astype(np.int32) - 1 
 
 
 	def visualize(self,fig=None,ax=None,scale=False,**kwargs):
