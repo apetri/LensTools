@@ -273,6 +273,7 @@ class Plane(Spin0):
 					unit *= exponent
 			except AttrbuteError:
 				unit = dimensionless_unscaled
+
 			except (ValueError,KeyError):
 				unit = rad**2
 
