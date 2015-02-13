@@ -8,7 +8,6 @@ import StringIO
 from .. import extern as ext
 
 import numpy as np
-from scipy.stats import rankdata
 
 #astropy stuff, invaluable here
 from astropy.units import Mbyte,kpc,Mpc,cm,km,g,s,hour,day,deg,arcmin,rad,Msun,quantity,def_unit
@@ -590,19 +589,19 @@ class Gadget2Snapshot(object):
 		assert hasattr(self,"id")
 		
 		#Rank the IDs
-		ranks = rankdata(self.id).astype(np.int32) - 1
+		idx = np.argsort(self.id)
 
 		#Sort positions
 		if hasattr(self,"positions"):
 			
 			assert self.positions.shape[0]==len(self.id)
-			self.positions = self.positions[ranks]
+			self.positions = self.positions[idx]
 
 		#Sort velocities
 		if hasattr(self,"velocities"):
 
 			assert self.velocities.shape[0]==len(self.id)
-			self.velocities = self.velocities[ranks]
+			self.velocities = self.velocities[idx]
 
 		#Finally sort IDs
 		self.id.sort()
@@ -611,10 +610,10 @@ class Gadget2Snapshot(object):
 	def gridID(self):
 
 		"""
-		Compute an ID for the particles in incresing order according to their position on a Nside x Nside x Nside grid
+		Compute an ID for the particles in incresing order according to their position on a Nside x Nside x Nside grid; the id is computed as x + y*Nside + z*Nside**2
 
 		:returns: the gridded IDs
-		:rtype: array
+		:rtype: array of float
 
 		"""
 
@@ -629,7 +628,7 @@ class Gadget2Snapshot(object):
 		row = np.array([1,self._header["num_particles_total_side"],self._header["num_particles_total_side"]**2])
 		posID = np.dot(pos.value/grid_unit,row)
 
-		return rankdata(posID).astype(np.int32) - 1 
+		return posID 
 
 
 	def visualize(self,fig=None,ax=None,scale=False,**kwargs):
