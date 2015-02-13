@@ -271,9 +271,9 @@ class Plane(Spin0):
 				unit = getattr(astropy.units,name)
 				if exponent is not None:
 					unit *= exponent
-			except TypeError:
+			except AttrbuteError:
 				unit = dimensionless_unscaled
-			except ValueError:
+			except ValueError,KeyError:
 				unit = rad**2
 
 			#Instantiate the new PotentialPlane instance
