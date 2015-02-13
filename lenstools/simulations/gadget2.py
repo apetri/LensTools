@@ -622,9 +622,12 @@ class Gadget2Snapshot(object):
 			pos = self.positions
 		except:
 			pos = self.getPositions()
+
+		#Set the measure units for the grid
+		grid_unit = self.header["box_size"].to(pos.unit).value / self._header["num_particles_total_side"]
 		
-		row = np.array([1,self.header["box_size"].to(pos.unit).value,self.header["box_size"].to(pos.unit).value**2])
-		posID = np.dot(pos.value,row)
+		row = np.array([1,self._header["num_particles_total_side"],self._header["num_particles_total_side"]**2])
+		posID = np.dot(pos.value/grid_unit,row)
 
 		return rankdata(posID).astype(np.int32) - 1 
 
