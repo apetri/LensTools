@@ -291,23 +291,30 @@ class Gadget2Snapshot(object):
 
 			self._header = Gadget2Header(ext._gadget.getHeader(fp))
 			self._header["files"] = [self.fp.name]
+			h = self._header["h"]
 
 			#Define the Mpc/h, and kpc/h units for convenience
-			self.kpc_over_h = def_unit("kpc/h",kpc/self._header["h"])
-			self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
+			if h>0.0:
+				
+				self.kpc_over_h = def_unit("kpc/h",kpc/self._header["h"])
+				self.Mpc_over_h = def_unit("Mpc/h",Mpc/self._header["h"])
 
-			#Scale box to kpc/h
-			self._header["box_size"] *= self.kpc_over_h
-			#Convert to Mpc/h
-			self._header["box_size"] = self._header["box_size"].to(self.Mpc_over_h)
+				#Scale box to kpc/h
+				self._header["box_size"] *= self.kpc_over_h
+				#Convert to Mpc/h
+				self._header["box_size"] = self._header["box_size"].to(self.Mpc_over_h)
 
-			#Read in the comoving distance
-			self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
+				#Read in the comoving distance
+				self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
+
+			else:
+				print("Warning! Hubble parameter h is zero!!")
 
 			#Scale masses to correct units
-			self._header["masses"] *= (self._mass_unit / self._header["h"])
-			self._header["masses"] *= g
-			self._header["masses"] = self._header["masses"].to(Msun) 
+			if h>0.0:
+				self._header["masses"] *= (self._mass_unit / self._header["h"])
+				self._header["masses"] *= g
+				self._header["masses"] = self._header["masses"].to(Msun) 
 
 			#Scale Hubble parameter to correct units
 			self._header["H0"] = self._header["h"] * 100 * km / (s*Mpc)
@@ -316,7 +323,8 @@ class Gadget2Snapshot(object):
 			self._header["num_particles_total_side"] = int(np.round(self._header["num_particles_total"]**(1/3)))
 
 			#Once all the info is available, add a wCDM instance as attribute to facilitate the cosmological calculations
-			self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
+			if h>0.0:
+				self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
 
 		self.pool = pool
 
@@ -411,7 +419,11 @@ class Gadget2Snapshot(object):
 
 
 		#Read in the particles positions and return the corresponding array
-		positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * self.kpc_over_h).to(self.Mpc_over_h) 
+		try:
+			positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * self.kpc_over_h).to(self.Mpc_over_h)
+		except AttributeError:
+			positions = ext._gadget.getPosVel(self.fp,offset,numPart) * kpc
+
 		if save:
 			self.positions = positions
 		
