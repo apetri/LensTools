@@ -271,7 +271,7 @@ class Plane(Spin0):
 				unit = getattr(astropy.units,name)
 				if exponent is not None:
 					unit *= exponent
-			except AttrbuteError:
+			except AttributeError:
 				unit = dimensionless_unscaled
 
 			except (ValueError,KeyError):
