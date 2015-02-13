@@ -308,6 +308,7 @@ class Gadget2Snapshot(object):
 				self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
 
 			else:
+				self._header["box_size"] *= kpc
 				print("Warning! Hubble parameter h is zero!!")
 
 			#Scale masses to correct units
@@ -643,7 +644,7 @@ class Gadget2Snapshot(object):
 		return posID 
 
 
-	def visualize(self,fig=None,ax=None,scale=False,**kwargs):
+	def visualize(self,fig=None,ax=None,scale=False,first=None,last=None,**kwargs):
 
 		"""
 		Visualize the particles in the Gadget snapshot using the matplotlib 3D plotting engine, the kwargs are passed to the matplotlib scatter method
@@ -660,6 +661,13 @@ class Gadget2Snapshot(object):
 		if not hasattr(self,"positions"):
 			self.getPositions()
 
+		#If first or last are not specified, show all the particles
+		if first is None:
+			first = 0
+
+		if last is None:
+			last = self.positions.shape[0]
+
 		#Instantiate figure
 		if (fig is None) or (ax is None):
 			
@@ -673,9 +681,9 @@ class Gadget2Snapshot(object):
 
 		#Put the particles in the figure
 		if scale:
-			self.ax.scatter(*(self.positions.transpose()*self._header["scale_factor"]),**kwargs)
+			self.ax.scatter(*(self.positions[first:last].transpose()*self._header["scale_factor"]),**kwargs)
 		else:
-			self.ax.scatter(*self.positions.transpose(),**kwargs)
+			self.ax.scatter(*self.positions[first:last].transpose(),**kwargs)
 
 		#Put the labels on the axes
 		self.ax.set_xlabel(r"$x({0})$".format(self.positions.unit.to_string()))
