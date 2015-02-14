@@ -270,7 +270,7 @@ class Plane(Spin0):
 				name,exponent = re.match(r"([a-zA-Z]+)([0-9])?",unit_string).groups()
 				unit = getattr(astropy.units,name)
 				if exponent is not None:
-					unit *= exponent
+					unit **= exponent
 			except AttributeError:
 				unit = dimensionless_unscaled
 			except (ValueError,KeyError):
