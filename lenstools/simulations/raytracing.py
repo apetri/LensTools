@@ -267,13 +267,12 @@ class Plane(Spin0):
 			#Read the units if present
 			try:
 				unit_string = header["UNIT"]
-				name,exponent = re.match(r"([a-zA-Z]+)([0-9])?",unit_string)
+				name,exponent = re.match(r"([a-zA-Z]+)([0-9])?",unit_string).groups()
 				unit = getattr(astropy.units,name)
 				if exponent is not None:
 					unit *= exponent
 			except AttributeError:
 				unit = dimensionless_unscaled
-
 			except (ValueError,KeyError):
 				unit = rad**2
 
