@@ -55,9 +55,12 @@ class Spin1(object):
 
 		self.data = data
 		self.side_angle = angle
-		self.resolution = self.side_angle.to(arcsec) / self.data.shape[1]
-		self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
-		self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
+		self.resolution = self.side_angle / self.data.shape[1]
+
+		if self.side_angle.unit.physical_type=="angle":
+			self.resolution = self.resolution.to(arcsec)
+			self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
+			self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
 
 	@property
 	def info(self):
