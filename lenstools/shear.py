@@ -50,7 +50,7 @@ class Spin1(object):
 	def __init__(self,data,angle):
 
 		#Sanity check
-		assert angle.unit.physical_type=="angle"
+		assert angle.unit.physical_type in ["angle","length"]
 		assert data.shape[1]==data.shape[2],"The map must be a square!!"
 
 		self.data = data
