@@ -1212,6 +1212,10 @@ class RayTracer(object):
 				raise TypeError("Lens format not recognized!")
 
 			#Extract the density at the ray positions
+			now = time.time()
+			logging.debug("Extracting density values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
+			last_timestamp = now
+
 			density = current_lens.density().getValues(initial_positions[0],initial_positions[1])
 
 			now = time.time()
