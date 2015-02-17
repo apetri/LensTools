@@ -1192,9 +1192,16 @@ class RayTracer(object):
 		redshift = np.array([0.0] + self.redshift)
 		lens = self.lens
 
+		#Timestamp
+		now = time.time()
+		last_timestamp = now
+
 		#Loop that goes through the lenses
 		current_convergence = np.zeros(initial_positions.shape[1:])
 		for k in range(last_lens+1):
+
+			#Start time for this lens
+			start = time.time()
 
 			#Load in the lens
 			if type(lens[k])==PotentialPlane:
@@ -1207,11 +1214,19 @@ class RayTracer(object):
 			#Extract the density at the ray positions
 			density = current_lens.density().getValues(initial_positions[0],initial_positions[1])
 
+			now = time.time()
+			logging.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
 			#Cumulate on the convergence
 			if k<last_lens:
 				current_convergence += 0.5 * density
 			else:
 				current_convergence += 0.5 * density * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+
+			now = time.time()
+			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			last_timestamp = now
 
 			#Save the intermediate convergence values if option is enabled
 			if save_intermediate:
