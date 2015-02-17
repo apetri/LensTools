@@ -899,6 +899,9 @@ class Spin0(object):
 		assert not self._masked,"Power spectrum calculation for masked maps is not allowed yet!"
 		assert l_edges is not None
 
+		if self.side_angle.unit.physical_type=="length":
+			raise NotImplementedError("Power spectrum measurement not implemented yet if side physical unit is length!")
+
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
 		#Calculate the Fourier transform of the map with numpy FFT
@@ -941,6 +944,9 @@ class Spin0(object):
 		if statistic=="power_spectrum":
 			
 			assert not (self._masked or other._masked),"Power spectrum calculation for masked maps is not allowed yet!"
+
+			if self.side_angle.unit.physical_type=="length":
+				raise NotImplementedError("Power spectrum measurement not implemented yet if side physical unit is length!")
 
 			assert "l_edges" in kwargs.keys()
 			l_edges = kwargs["l_edges"]
@@ -989,7 +995,7 @@ class Spin0(object):
 
 		assert not self._masked,"You cannot smooth a masked convergence map!!"
 		assert kind == "gaussian","Only gaussian smoothing implemented!!"
-		assert scale_angle.unit.physical_type=="angle"
+		assert scale_angle.unit.physical_type==self.side_angle.unit.physical_type
 
 		#Compute the smoothing scale in pixel units
 		smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value

@@ -373,6 +373,59 @@ class Plane(Spin0):
 		self.space="fourier"
 
 
+	def getValues(self,x,y):
+
+		"""
+		Extract the map values at the requested (x,y) positions; this is implemented using the numpy fast indexing routines, so the formats of x and y must follow the numpy advanced indexing rules. Periodic boundary conditions are enforced
+
+		:param x: x coordinates at which to extract the map values (if unitless these are interpreted as radians)
+		:type x: numpy array or quantity 
+
+		:param y: y coordinates at which to extract the map values (if unitless these are interpreted as radians)
+		:type y: numpy array or quantity 
+
+		:returns: numpy array with the map values at the specified positions, with the same shape as x and y
+
+		:raises: IndexError if the formats of x and y are not the proper ones
+
+		"""
+
+		assert isinstance(x,np.ndarray) and isinstance(y,np.ndarray)
+
+		#x coordinates
+		if type(x)==quantity.Quantity:
+			
+			assert x.unit.physical_type=="angle"
+
+			#Check if the resolution units are length units
+			if self.resolution.unit.physical_type=="length":
+				x = x.to(rad).value*self.comoving_distance 
+
+			j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
+
+		else:
+
+			j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
+
+		#y coordinates
+		if type(y)==quantity.Quantity:
+			
+			assert y.unit.physical_type=="angle"
+
+			#Check if the resolution units are length units
+			if self.resolution.unit.physical_type=="length":
+				y = y.to(rad).value*self.comoving_distance
+
+			i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
+
+		else:
+
+			i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+
+		#Return the map values at the specified coordinates
+		return self.data[i,j]
+
+
 ###########################################################
 #################DensityPlane class########################
 ###########################################################
