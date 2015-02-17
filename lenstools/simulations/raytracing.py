@@ -657,22 +657,35 @@ class PotentialPlane(Plane):
 			return ShearTensorPlane(tensor,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
 
 
-	def density(self):
+	def density(self,x=None,y=None):
 
 		"""
 		Computes the projected density fluctuation by taking the laplacian of the potential; useful to check if the potential is reasonable
 
-		:returns: Spin0 instance with the density fluctuation data 
+		:param x: optional; if not None, compute the density only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type x: array with units
+
+		:param y: optional; if not None, compute the density only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type y: array with units
+
+		:returns: DensityPlane instance with the density fluctuation data (if x and y are None), or numpy array with the same shape as x and y 
 
 		"""
 
 		#Compute the laplacian
-		if self.space=="real":			
+		if self.space=="real":
+
+			#Scale x and y to lengths in case this is a physical plane
+			if self.side_angle.unit.physical_type=="length" and (x is not None) and (y is not None):
+				x = x.to(rad).value * self.comoving_distance
+				y = y.to(rad).value * self.comoving_distance			
 			
 			logging.debug("Computing hessian...")
-			hessian_xx,hessian_yy,hessian_xy = self.hessian()
+			hessian_xx,hessian_yy,hessian_xy = self.hessian(x,y)
+			
 			logging.debug("Computing laplacian...")
 			laplacian = hessian_xx + hessian_yy
+			
 			logging.debug("Laplacian calculation completed")
 
 		elif self.space=="fourier":
@@ -696,7 +709,10 @@ class PotentialPlane(Plane):
 		laplacian = laplacian.decompose().value
 
 		#The density is twice the trace of the hessian
-		return DensityPlane(0.5*laplacian,angle=self.side_angle,cosmology=self.cosmology,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles,unit=dimensionless_unscaled)
+		if (x is not None) and (y is not None):
+			return 0.5*laplacian
+		else:
+			return DensityPlane(0.5*laplacian,angle=self.side_angle,cosmology=self.cosmology,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles,unit=dimensionless_unscaled)
 
 
 #############################################################
@@ -1220,15 +1236,9 @@ class RayTracer(object):
 			last_timestamp = now
 
 			#Compute full density plane
-			density = current_lens.density()
+			density = current_lens.density(initial_positions[0],initial_positions[1])
 
-			now = time.time()
-			logging.debug("Full density plane computed in {0:.3f}s".format(now-last_timestamp))
-			last_timestamp = now
-
-			#Extract the values at the wanted locations
-			density = density.getValues(initial_positions[0],initial_positions[1])
-
+			#Timestamp
 			now = time.time()
 			logging.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
