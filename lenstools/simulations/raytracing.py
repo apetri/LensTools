@@ -1216,7 +1216,15 @@ class RayTracer(object):
 			logging.debug("Extracting density values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
 			last_timestamp = now
 
-			density = current_lens.density().getValues(initial_positions[0],initial_positions[1])
+			#Compute full density plane
+			density = current_lens.density()
+
+			now = time.time()
+			logging.debug("Full density plane computed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
+			#Extract the values at the wanted locations
+			density = density.getValues(initial_positions[0],initial_positions[1])
 
 			now = time.time()
 			logging.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
