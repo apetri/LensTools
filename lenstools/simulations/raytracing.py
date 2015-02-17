@@ -669,8 +669,11 @@ class PotentialPlane(Plane):
 		#Compute the laplacian
 		if self.space=="real":			
 			
+			logging.debug("Computing hessian...")
 			hessian_xx,hessian_yy,hessian_xy = self.hessian()
+			logging.debug("Computing laplacian...")
 			laplacian = hessian_xx + hessian_yy
+			logging.debug("Laplacian calculation completed")
 
 		elif self.space=="fourier":
 
