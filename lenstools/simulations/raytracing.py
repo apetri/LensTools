@@ -9,7 +9,7 @@ from operator import mul
 from functools import reduce
 
 import numpy as np
-from scipy.spatial import KDTree
+from scipy.spatial import cKDTree as KDTree
 
 try:
 	import matplotlib.pyplot as plt
