@@ -285,6 +285,8 @@ class Nicaea(w0waCDM):
 
 		"""
 
+		assert isinstance(ell,np.ndarray)
+
 		#If no settings provided, use the default ones
 		if settings is None:
 			settings=NicaeaSettings.default()
@@ -331,6 +333,8 @@ class Nicaea(w0waCDM):
 		:returns: ( NtxNz array ) computed two point function at the selected angles (when computing the cross components these are returned in row major C ordering)
 
 		"""
+
+		assert isinstance(theta,np.ndarray)
 
 		#If no settings provided, use the default ones
 		if settings is None:
