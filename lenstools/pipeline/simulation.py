@@ -1,4 +1,4 @@
-import os
+import os,glob
 
 import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
@@ -18,14 +18,14 @@ name2attr["si"] = "sigma8"
 name2attr["ns"] = "ns"
 
 
-################################################
-##############Simulation class##################
-################################################
+#####################################################
+##############SimulationModel class##################
+#####################################################
 
-class Simulation(object):
+class SimulationModel(object):
 
 	"""
-	Class handler of a weak lensing simulation, defined by a set of cosmological parameters
+	Class handler of a weak lensing simulation model, defined by a set of cosmological parameters
 
 	"""
 
@@ -70,26 +70,23 @@ class Simulation(object):
 
 		for d in [self.home_subdir,self.storage_subdir]:
 			if not os.path.isdir(d):
-				print("[+] {0} created".format(d))
 				os.mkdir(d)
+				print("[+] {0} created".format(d))
 
 
-	def new(self,settings):
+	def newCollection(self,box_size=240.0*u.Mpc,nside=512):
 
 		"""
 		Instantiate new simulation with the specified settings
 
-		:param settings: settings of the new simulation
-		:type settings: SimulationSettings
-
 		"""
 
-		assert isinstance(settings,SimulationSettings)
-		newSimulation = self.__class__(self.cosmology,self.environment,self.parameters)
-		newSimulation.settings = settings
+		newSimulation = SimulationCollection(self.cosmology,self.environment,self.parameters)
+		newSimulation.box_size = box_size
+		newSimulation.nside = nside
 
 		#Build the geometry_id
-		newSimulation.geometry_id = "{0}b{1}".format(settings.ngenic.nside,int(settings.ngenic.box_size.to(self.Mpc_over_h).value))
+		newSimulation.geometry_id = "{0}b{1}".format(nside,int(box_size.to(self.Mpc_over_h).value))
 
 		#Make the corresponding directory if not already present
 		newSimulation.home_subdir = os.path.join(newSimulation.environment.home,newSimulation.cosmo_id,newSimulation.geometry_id)
@@ -97,48 +94,61 @@ class Simulation(object):
 
 		for d in [newSimulation.home_subdir,newSimulation.storage_subdir]:
 			if not os.path.isdir(d):
-				print("[+] {0} created".format(d))
 				os.mkdir(d)
+				print("[+] {0} created".format(d))
 
 
 		return newSimulation
 
 
+##########################################################
+##############SimulationCollection class##################
+##########################################################
 
-########################################################
-##############SimulationSettings class##################
-########################################################
+class SimulationCollection(SimulationModel):
 
-class SimulationSettings(object):
 
 	"""
-	Class handler of the simulation settings
-
-	"""
-
-	def __init__(self,ngenic=None,gadget=None,planes=None,rayTracing=None):
-
-		self.ngenic = ngenic
-		self.gadget = gadget
-		self.planes = planes
-		self.rayTracing = rayTracing
-
-
-####################################################
-##############NgenICSettings class##################
-####################################################
-
-class NGenICSettings(object):
-
-	"""
-	Class handler of N-GenIC settings
+	Class handler of a collection of simulations that share model parameters
 
 	"""
 
-	def __init__(self):
+	def newCollection(self):
+		raise
 
-		self.box_size = 240.0*u.Mpc
-		self.nside = 512
-		self.seed = 0
+	def newInitialCondition(self,seed=0):
+		
+		#Check if there are already generated initial conditions in there
+		ics_present = glob.glob(os.path.join(self.storage_subdir,"ic*"))
+		new_ic_index = len(ics_present) + 1
+
+		#Generate the new initial condition
+		newIC = SimulationIC(self.cosmology,self.environment,self.parameters)
+
+		#These are inherited from before
+		newIC.box_size = self.box_size
+		newIC.side = self.nside
+		newIC.geometry_id = self.geometry_id
+
+		#And these are specific to the new initial condition
+		newIC.seed = seed
+		newIC.storage_subdir = os.path.join(self.storage_subdir,"ic{0}".format(new_ic_index))
+		os.mkdir(newIC.storage_subdir)
+		print("[+] {0} created".format(newIC.storage_subdir))
+
+		return newIC
+
+
+
+##########################################################
+##############SimulationIC class##########################
+##########################################################
+
+class SimulationIC(SimulationCollection):
+
+	"""
+	Class handler of a simulation with a defined initial condition
+
+	"""
 
 
