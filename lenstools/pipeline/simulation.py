@@ -136,6 +136,10 @@ class SimulationCollection(SimulationModel):
 		os.mkdir(newIC.storage_subdir)
 		print("[+] {0} created".format(newIC.storage_subdir))
 
+		#Make new file with the number of the seed
+		seedfile = open(os.path.join(newIC.storage_subdir,"seed"+str(seed)),"w")
+		seedfile.close()
+
 		return newIC
 
 
