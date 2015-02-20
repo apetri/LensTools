@@ -11,7 +11,7 @@ class EnvironmentSettings(object):
 
 	"""
 
-	def __init__(self,home="/user",storage="/storage"):
+	def __init__(self,home="SimTest/Home",storage="SimTest/Storage"):
 
 		"""
 		Creates the home (meant to store small files like execution scripts) and storage (meant to store large files like simulation outputs) directories
