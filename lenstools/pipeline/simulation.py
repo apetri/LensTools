@@ -1,8 +1,8 @@
 import os
 from astropy.cosmology import FLRW,WMAP9
 
-
 from .environment import EnvironmentSettings
+from ..simulations import Gadget2Settings 
 
 name2attr = dict()
 name2attr["Om"] = "Om0"
@@ -52,8 +52,54 @@ class Simulation(object):
 			self.environment = environment
 
 		self.cosmology = cosmology
-		self.environment = environment
 		self.parameters = parameters
 
 		#Build the cosmo_id
 		self.cosmo_id = "_".join([ "{0}{1:.3f}".format(p,getattr(self.cosmology,name2attr[p])) for p in parameters if (hasattr(self.cosmology,name2attr[p]) and getattr(self.cosmology,name2attr[p]) is not None)])
+
+		#Create directories accordingly
+		home_subdir = os.path.join(self.environment.home,self.cosmo_id)
+		storage_subdir = os.path.join(self.environment.storage,self.cosmo_id)
+
+		for d in [home_subdir,storage_subdir]:
+			if not os.path.isdir(d):
+				print("[+] {0} created".format(d))
+				os.mkdir(d)
+
+
+	def new(self,settings):
+
+		"""
+		Instantiate new simulation with the specified settings
+
+		:param settings: settings of the new simulation
+		:type settings: SimulationSettings
+
+		"""
+
+		assert isinstance(settings,SimulationSettings)
+		newSimulation = self.__class__(self.cosmology,self.environment,self.parameters)
+		newSimulation.settings = settings
+
+		return newSimulation
+
+
+
+########################################################
+##############SimulationSettings class##################
+########################################################
+
+class SimulationSettings(object):
+
+	"""
+	Class handler of the simulation settings
+
+	"""
+
+	def __init__(self,gadget=None,planes=None,rayTracing=None):
+
+		self.gadget = gadget
+		self.planes = planes
+		self.rayTracing = rayTracing
+
+
