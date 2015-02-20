@@ -1,5 +1,8 @@
 import os
+
+import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
+
 
 from .environment import EnvironmentSettings
 from ..simulations import Gadget2Settings 
@@ -54,14 +57,18 @@ class Simulation(object):
 		self.cosmology = cosmology
 		self.parameters = parameters
 
+		#Define the scaled unit length for convenience
+		self.kpc_over_h = u.def_unit("kpc/h",u.kpc/self.cosmology.h)
+		self.Mpc_over_h = u.def_unit("Mpc/h",u.Mpc/self.cosmology.h)
+
 		#Build the cosmo_id
 		self.cosmo_id = "_".join([ "{0}{1:.3f}".format(p,getattr(self.cosmology,name2attr[p])) for p in parameters if (hasattr(self.cosmology,name2attr[p]) and getattr(self.cosmology,name2attr[p]) is not None)])
 
 		#Create directories accordingly
-		home_subdir = os.path.join(self.environment.home,self.cosmo_id)
-		storage_subdir = os.path.join(self.environment.storage,self.cosmo_id)
+		self.home_subdir = os.path.join(self.environment.home,self.cosmo_id)
+		self.storage_subdir = os.path.join(self.environment.storage,self.cosmo_id)
 
-		for d in [home_subdir,storage_subdir]:
+		for d in [self.home_subdir,self.storage_subdir]:
 			if not os.path.isdir(d):
 				print("[+] {0} created".format(d))
 				os.mkdir(d)
@@ -81,6 +88,19 @@ class Simulation(object):
 		newSimulation = self.__class__(self.cosmology,self.environment,self.parameters)
 		newSimulation.settings = settings
 
+		#Build the geometry_id
+		newSimulation.geometry_id = "{0}b{1}".format(settings.ngenic.nside,int(settings.ngenic.box_size.to(self.Mpc_over_h).value))
+
+		#Make the corresponding directory if not already present
+		newSimulation.home_subdir = os.path.join(newSimulation.environment.home,newSimulation.cosmo_id,newSimulation.geometry_id)
+		newSimulation.storage_subdir = os.path.join(newSimulation.environment.storage,newSimulation.cosmo_id,newSimulation.geometry_id)
+
+		for d in [newSimulation.home_subdir,newSimulation.storage_subdir]:
+			if not os.path.isdir(d):
+				print("[+] {0} created".format(d))
+				os.mkdir(d)
+
+
 		return newSimulation
 
 
@@ -96,10 +116,29 @@ class SimulationSettings(object):
 
 	"""
 
-	def __init__(self,gadget=None,planes=None,rayTracing=None):
+	def __init__(self,ngenic=None,gadget=None,planes=None,rayTracing=None):
 
+		self.ngenic = ngenic
 		self.gadget = gadget
 		self.planes = planes
 		self.rayTracing = rayTracing
+
+
+####################################################
+##############NgenICSettings class##################
+####################################################
+
+class NGenICSettings(object):
+
+	"""
+	Class handler of N-GenIC settings
+
+	"""
+
+	def __init__(self):
+
+		self.box_size = 240.0*u.Mpc
+		self.nside = 512
+		self.seed = 0
 
 
