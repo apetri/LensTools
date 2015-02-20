@@ -9,10 +9,16 @@ me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
 url = "http://www.columbia.edu/~ap3020/LensTools/html"
 default_cfg = "setup.cfg"
+
+#Sub-packages
+sub_package_names = ["simulations","observations","pipeline","scripts"]
+packages = [ name ]
+for sub_name in sub_package_names:
+	packages.append("{0}.{1}".format(name,sub_name))
+
+#External sub-packages
 external_dir = "extern"
 external_support_dir = "cextern"
-simulations_dir = "simulations"
-observations_dir = "observations"
 
 try:
 	import numpy.distutils.misc_util 
@@ -249,7 +255,6 @@ if platform.system() in ["Darwin","darwin"]:
 
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
-scripts_dir = "scripts"
 
 #################################################################################################
 #############################Setup###############################################################
@@ -260,7 +265,7 @@ setup(
 	version=version,
 	author=me,
 	author_email=email,
-	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir),"{0}.{1}".format(name,observations_dir),"{0}.{1}".format(name,scripts_dir)],
+	packages=packages,
 	package_data=package_data,
 	install_requires=["numpy","scipy","astropy","emcee"],
 	url=url,
