@@ -201,10 +201,9 @@ class Nicaea(w0waCDM):
 		if _nicaea is None:
 			raise ImportError("The Nicaea bindings were not installed, check your GSL/FFTW3 installations!")
 
-		super(Nicaea,self).__init__(H0,Om0,Ode0,w0=w0,wa=wa,name=name)
+		super(Nicaea,self).__init__(H0,Om0,Ode0,w0=w0,wa=wa,Ob0=Ob0,name=name)
 		self.sigma8=sigma8
 		self.ns=ns
-		self.Ob0=Ob0
 
 	def __repr__(self):
 
