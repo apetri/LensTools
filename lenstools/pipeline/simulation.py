@@ -81,17 +81,9 @@ class SimulationModel(object):
 
 		"""
 
-		newSimulation = SimulationCollection(self.cosmology,self.environment,self.parameters)
-		newSimulation.box_size = box_size
-		newSimulation.nside = nside
-
-		#Build the geometry_id
-		newSimulation.geometry_id = "{0}b{1}".format(nside,int(box_size.to(self.Mpc_over_h).value))
+		newSimulation = SimulationCollection(self.cosmology,self.environment,self.parameters,box_size,nside)
 
 		#Make the corresponding directory if not already present
-		newSimulation.home_subdir = os.path.join(newSimulation.environment.home,newSimulation.cosmo_id,newSimulation.geometry_id)
-		newSimulation.storage_subdir = os.path.join(newSimulation.environment.storage,newSimulation.cosmo_id,newSimulation.geometry_id)
-
 		for d in [newSimulation.home_subdir,newSimulation.storage_subdir]:
 			if not os.path.isdir(d):
 				os.mkdir(d)
@@ -113,8 +105,22 @@ class SimulationCollection(SimulationModel):
 
 	"""
 
+	def __init__(self,cosmology,environment,parameters,box_size,nside):
+
+		super(SimulationCollection,self).__init__(cosmology,environment,parameters)
+		self.box_size = box_size
+		self.nside = nside
+
+		#Build the geometry_id
+		self.geometry_id = "{0}b{1}".format(nside,int(box_size.to(self.Mpc_over_h).value))
+
+		#Build the directory names
+		self.home_subdir = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id)
+		self.storage_subdir = os.path.join(self.environment.storage,self.cosmo_id,self.geometry_id)
+
+
 	def newCollection(self):
-		raise
+		raise TypeError("This method should be called on SimulationModel instances!")
 
 	def newInitialCondition(self,seed=0):
 		
@@ -123,16 +129,9 @@ class SimulationCollection(SimulationModel):
 		new_ic_index = len(ics_present) + 1
 
 		#Generate the new initial condition
-		newIC = SimulationIC(self.cosmology,self.environment,self.parameters)
+		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed)
 
-		#These are inherited from before
-		newIC.box_size = self.box_size
-		newIC.side = self.nside
-		newIC.geometry_id = self.geometry_id
-
-		#And these are specific to the new initial condition
-		newIC.seed = seed
-		newIC.storage_subdir = os.path.join(self.storage_subdir,"ic{0}".format(new_ic_index))
+		#Make dedicated directory for new initial condition
 		os.mkdir(newIC.storage_subdir)
 		print("[+] {0} created".format(newIC.storage_subdir))
 
@@ -154,5 +153,15 @@ class SimulationIC(SimulationCollection):
 	Class handler of a simulation with a defined initial condition
 
 	"""
+
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed):
+
+		super(SimulationIC,self).__init__(cosmology,environment,parameters,box_size,nside)
+
+		#Save random seed information as attribute
+		self.seed = seed
+
+		#Save storage sub-directory name
+		self.storage_subdir = os.path.join(self.storage_subdir,"ic{0}".format(ic_index))
 
 
