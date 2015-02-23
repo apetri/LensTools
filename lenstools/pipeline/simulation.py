@@ -281,4 +281,7 @@ class SimulationIC(SimulationCollection):
 
 		return super(SimulationIC,self).__repr__() + " ; ic={0},seed={1}".format(self.ic_index,self.seed)
 
+	def newInitialCondition(self,seed):
+		raise TypeError("This method should be called on SimulationCollection instances!")
+
 
