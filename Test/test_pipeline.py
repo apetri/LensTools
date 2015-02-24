@@ -1,14 +1,18 @@
 try:
 	
-	from lenstools.pipeline import EnvironmentSettings,SimulationModel,SimulationCollection,SimulationIC
+	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
+	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings
 	from lenstools.simulations import Nicaea
+	from lenstools import data
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
-	from lenstools.pipeline import EnvironmentSettings,SimulationModel,SimulationCollection,SimulationIC
+	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
+	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings
 	from lenstools.simulations import Nicaea
+	from lenstools import data
 
 home = "../SimTest/Home"
 storage = "../SimTest/Storage"
@@ -35,3 +39,15 @@ def test_directoryTree():
 			
 			for seed in seeds:
 				ic = collection.newInitialCondition(seed)
+
+
+def test_NGenICParam():
+
+	#Create a parameter file for all the initial conditions present in the batch
+	settings = NGenICSettings()
+	settings.GlassFile = data("dummy_glass_little_endian.dat")
+
+	for model in SimulationModel.available(env):
+		for collection in model.collections:
+			for ic in collection.ics:
+				ic.writeNGenIC(settings)

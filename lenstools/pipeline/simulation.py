@@ -1,3 +1,5 @@
+from __future__ import division
+
 import os,glob
 import re
 
@@ -5,8 +7,8 @@ import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
 
-from .settings import EnvironmentSettings
-from ..simulations import Gadget2Settings,Nicaea 
+from .settings import EnvironmentSettings,NGenICSettings
+from ..simulations import Gadget2Settings,Gadget2Snapshot,Nicaea 
 
 name2attr = dict()
 name2attr["Om"] = "Om0"
@@ -222,6 +224,8 @@ class SimulationCollection(SimulationModel):
 		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed)
 
 		#Make dedicated directory for new initial condition
+		os.mkdir(newIC.home_subdir)
+		print("[+] {0} created".format(newIC.home_subdir))
 		os.mkdir(newIC.storage_subdir)
 		print("[+] {0} created".format(newIC.storage_subdir))
 
@@ -275,6 +279,7 @@ class SimulationIC(SimulationCollection):
 		self.seed = seed
 
 		#Save storage sub-directory name
+		self.home_subdir = os.path.join(self.home_subdir,"ic{0}".format(ic_index))
 		self.storage_subdir = os.path.join(self.storage_subdir,"ic{0}".format(ic_index))
 
 	def __repr__(self):
@@ -283,5 +288,90 @@ class SimulationIC(SimulationCollection):
 
 	def newInitialCondition(self,seed):
 		raise TypeError("This method should be called on SimulationCollection instances!")
+
+	
+	def writeNGenIC(self,settings):
+
+		"""
+		Generates the parameter file that NGenIC needs to read to generate the current initial condition
+
+		:param settings: NGenIC tunable settings
+		:type settings: NGenIC settings
+
+		"""
+
+		#Safety check
+		assert isinstance(settings,NGenICSettings)
+
+		#The filename is automatically generated from the class instance
+		filename = os.path.join(self.home_subdir,"ngeinc.param")
+
+		#Write the parameter file
+		with open(filename,"w") as paramfile:
+
+			#Mesh and grid size
+			paramfile.write("Nmesh			{0}\n".format(2*self.nside))
+			paramfile.write("Nsample		{0}\n".format(self.nside))
+
+			#Box
+			paramfile.write("Box 			{0:.1f}\n".format(self.box_size.to(self.kpc_over_h).value))
+
+			#Base names for outputs
+			paramfile.write("Filebase			ics_{0}_ic{1}\n".format(self.cosmo_id,self.ic_index))
+			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.storage_subdir)))
+
+			#Glass file
+			paramfile.write("GlassFile			{0}\n".format(os.path.abspath(settings.GlassFile)))
+
+			#Tiling
+			glass = Gadget2Snapshot.open(os.path.abspath(settings.GlassFile))
+			nside_glass = glass.header["num_particles_total_side"]
+			glass.close()
+			paramfile.write("TileFac			{0}\n".format(self.nside//nside_glass))
+
+			#Cosmological parameters
+			paramfile.write("Omega			{0:.6f}\n".format(self.cosmology.Om0))
+			paramfile.write("OmegaLambda			{0:.6f}\n".format(self.cosmology.Ode0))
+			paramfile.write("OmegaBaryon			{0:.6f}\n".format(self.cosmology.Ob0))
+			paramfile.write("HubbleParam			{0:.6f}\n".format(self.cosmology.h))
+			paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
+			paramfile.write("wa			{0:.6f}\n".format(self.cosmology.wa))
+
+			#Initial redshift
+			paramfile.write("Redshift 			{0:.6f}\n".format(settings.Redshift))
+
+			#TODO: prefactors
+			paramfile.write("GrowthFactor			{0:.6f}\n".format(settings.GrowthFactor))
+			paramfile.write("VelocityPrefactor			{0:.6f}\n".format(settings.VelocityPrefactor))
+
+			#Sigma8
+			paramfile.write("Sigma8				{0:.6f}\n".format(self.cosmology.sigma8))
+
+			#Power Spectrum settings
+			paramfile.write("SphereMode			{0}\n".format(settings.SphereMode))
+			paramfile.write("WhichSpectrum			{0}\n".format(settings.WhichSpectrum))
+			paramfile.write("FileWithInputSpectrum			{0}\n".format(settings.FileWithInputSpectrum))
+			paramfile.write("InputSpectrum_UnitLength_in_cm			{0:.6e}\n".format(settings.InputSpectrum_UnitLength_in_cm))
+			paramfile.write("ReNormalizeInputSpectrum		{0}\n".format(settings.ReNormalizeInputSpectrum))
+			paramfile.write("ShapeGamma			{0:.2f}\n".format(settings.ShapeGamma))
+			paramfile.write("PrimordialIndex			{0:.6f}\n".format(settings.PrimordialIndex))
+
+			#Random seed
+			paramfile.write("Seed 			{0}\n".format(self.seed))
+
+			#Files written in parallel
+			paramfile.write("NumFilesWrittenInParallel			{0}\n".format(settings.NumFilesWrittenInParallel))
+
+			#Units
+			paramfile.write("UnitLength_in_cm 			{0:.6e}\n".format(settings.UnitLength_in_cm))
+			paramfile.write("UnitMass_in_g			{0:.6e}\n".format(settings.UnitMass_in_g))
+			paramfile.write("UnitVelocity_in_cm_per_s 			{0:.6e}\n".format(settings.UnitVelocity_in_cm_per_s))
+
+		#Log and exit
+		print("[+] NGenIC parameter file {0} written".format(filename))
+
+
+
+
 
 

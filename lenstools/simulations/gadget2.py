@@ -4,6 +4,7 @@ from functools import reduce
 
 import os
 import StringIO
+import logging
 
 from .. import extern as ext
 
@@ -309,7 +310,7 @@ class Gadget2Snapshot(object):
 
 			else:
 				self._header["box_size"] *= kpc
-				print("Warning! Hubble parameter h is zero!!")
+				logging.debug("Warning! Hubble parameter h is zero!!")
 
 			#Scale masses to correct units
 			if h>0.0:
