@@ -44,8 +44,7 @@ def test_directoryTree():
 def test_NGenICParam():
 
 	#Create a parameter file for all the initial conditions present in the batch
-	settings = NGenICSettings()
-	settings.GlassFile = data("dummy_glass_little_endian.dat")
+	settings = NGenICSettings(GlassFile=data("dummy_glass_little_endian.dat"))
 
 	for model in SimulationModel.available(env):
 		for collection in model.collections:

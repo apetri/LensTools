@@ -45,7 +45,7 @@ class NGenICSettings(object):
 	
 	"""
 
-	def __init__(self):
+	def __init__(self,**kwargs):
 
 		self.GlassFile = "dummy_glass_little_endian.dat"
 		self.Redshift = 100.0
@@ -68,6 +68,10 @@ class NGenICSettings(object):
 		self.UnitLength_in_cm = 3.085678e21
 		self.UnitMass_in_g = 1.989e43
 		self.UnitVelocity_in_cm_per_s = 1e5
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
 
 
 
