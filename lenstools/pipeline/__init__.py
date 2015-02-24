@@ -9,5 +9,5 @@
 
 """
 
-from .environment import EnvironmentSettings
+from .settings import EnvironmentSettings
 from .simulation import SimulationModel,SimulationCollection,SimulationIC

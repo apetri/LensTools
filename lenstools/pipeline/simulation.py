@@ -5,7 +5,7 @@ import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
 
-from .environment import EnvironmentSettings
+from .settings import EnvironmentSettings
 from ..simulations import Gadget2Settings,Nicaea 
 
 name2attr = dict()
