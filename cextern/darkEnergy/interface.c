@@ -12,7 +12,7 @@
 
 // int main(int argc, char * argv[]){
 // Arguments in order: redshift today, redshift at beginning of N-body sim, omega matter (total, i.e. CDM+baryons), omega dark energy, omega cosmological constant (not used), w_0, w_a, h (Hubble parameter).
-double Dplus_Interface(double z2, double z1, double omegamI, double omegaQI, double omegavI, double wQI, double wQpI, double hI, double *vel_prefac_lam)
+double Dplus_Interface(double z1, double z2, double omegamI, double omegaQI, double omegavI, double wQI, double wQpI, double hI, double d2, double d2minus,double delz,double zmaxact,double zminact,int iwmodeI,double *vel_prefac_lam)
 {
 
   //float result;
@@ -21,10 +21,8 @@ double Dplus_Interface(double z2, double z1, double omegamI, double omegaQI, dou
   // double omegamI,omegavI,omegaQI,wQI,wQpI,hI, z1, z2;
   double D1, D2;
   double omegakI;
-  double zmaxact, zminact;
-  int iwmodeI;
   
-  double OM, OL, OK, DE, delz, z2minus, d2, d2minus, Hz, H0, fvel, fspringel, Dplus; // fspringel is fvel in Gadget units.
+  double OM, OL, OK, DE, z2minus,Hz, H0, fvel, fspringel, Dplus; // fspringel is fvel in Gadget units.
 
   
   /*
@@ -51,12 +49,12 @@ double Dplus_Interface(double z2, double z1, double omegamI, double omegaQI, dou
   */
   
   // change seldom (determines span over which finite derivative is calculated for growth factor (should be very small but within numerical accuracy of code):
-    delz=0.000001; // 0.000001 seems a good number for accuracy before numerical artifacts start creeping in (some part of fortran code work probably just with floats).
+  // delz=0.000001; // 0.000001 seems a good number for accuracy before numerical artifacts start creeping in (some part of fortran code work probably just with floats).
   
   // do not change:
-  zmaxact=110.0; // make larger than any initial redshift of simulation needed (determines precalculated values, otherwise tables too short).
-  zminact=0.0;
-  iwmodeI=3;
+  //zmaxact=110.0; // make larger than any initial redshift of simulation needed (determines precalculated values, otherwise tables too short).
+  //zminact=0.0;
+  //iwmodeI=3;
   //na=5000; // direct in FORTRAN by means of parameters.inc file.
   //cspeed=2.99792458e5; // direct in FORTRAN
     
@@ -89,15 +87,15 @@ double Dplus_Interface(double z2, double z1, double omegamI, double omegaQI, dou
   
   // printf("Now doing IC quantities:\n");
   
-  return_code = f77main_(&hI, &omegamI, &omegavI, &omegakI, &omegaQI, &wQI, &wQpI, &z1, &z2, &D1, &D2, &zmaxact, &zminact, &iwmodeI);
+  //return_code = f77main_(&hI, &omegamI, &omegavI, &omegakI, &omegaQI, &wQI, &wQpI, &z1, &z2, &D1, &D2, &zmaxact, &zminact, &iwmodeI);
   // printf("Redshifts and Growth Factors: %e %e %e %e \n", z1, z2, D1, D2);
 
-  d2=D2;
+  //d2=D2;
 
-  return_code = f77main_(&hI, &omegamI, &omegavI, &omegakI, &omegaQI, &wQI, &wQpI, &z1, &z2minus, &D1, &D2, &zmaxact, &zminact, &iwmodeI);
+  //return_code = f77main_(&hI, &omegamI, &omegavI, &omegakI, &omegaQI, &wQI, &wQpI, &z1, &z2minus, &D1, &D2, &zmaxact, &zminact, &iwmodeI);
   // printf("Redshifts and Growth Factors: %e %e %e %e \n", z1, z2, D1, D2);
 
-  d2minus=D2;
+  //d2minus=D2;
   
   
   H0=0.1; // in units km/s/kpc*h. H0=0.1 always in the internal units of Gadget, regardless of value of h (Hubble parameter).

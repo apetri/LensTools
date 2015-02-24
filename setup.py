@@ -162,13 +162,25 @@ classifiers = [
 external_sources = dict()
 external_support = dict()
 
+#Includes
+lenstools_includes = list()
+
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
-
 external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c","grid.c","coordinates.c"]
 
-#external_sources["_darkenergy"] = []
-#external_support["_darkenergy"] = [ f for f in glob.glob(os.path.join(external_support_dir,"darkEnergy","*")) if f.split(".")[-1] in "fc" ]
+
+#Decide if we can install the pipeline bindings (requires some external F77 sources)
+if conf.has_section("pipeline"):
+	if conf.getboolean("pipeline","install_pipeline"):
+		
+		lenstools_includes.append(os.path.join(external_support_dir,"darkEnergy"))
+
+		external_sources["_darkenergy"] = []
+		external_support["_darkenergy"] = [ f for f in glob.glob(os.path.join(external_support_dir,"darkEnergy","*")) if f.split(".")[-1] in "f" ]
+
+		external_sources["_prefactors"] = ["_prefactors.c"]
+		external_support["_prefactors"] = [ f for f in glob.glob(os.path.join(external_support_dir,"darkEnergy","*")) if f.split(".")[-1] in "c" ]
 
 ######################################################################################################################################
 
@@ -177,12 +189,11 @@ gsl_location = check_gsl(conf)
 
 if gsl_location is not None:
 	print("[OK] Checked GSL installation, the Design feature will be installed")
-	lenstools_includes = [ os.path.join(gsl_location,"include") ]
+	lenstools_includes.append(os.path.join(gsl_location,"include")) 
 	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
 	raw_input("[FAIL] GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
-	lenstools_includes = list()
 	lenstools_link = ["-lm"]
 
 
