@@ -2,7 +2,7 @@ try:
 	
 	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings
-	from lenstools.simulations import Nicaea
+	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
 except ImportError:
@@ -11,7 +11,7 @@ except ImportError:
 	sys.path.append("..")
 	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings
-	from lenstools.simulations import Nicaea
+	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
 home = "../SimTest/Home"
@@ -51,3 +51,14 @@ def test_NGenICParam():
 		for collection in model.collections:
 			for ic in collection.ics:
 				ic.writeNGenIC(settings)
+
+
+def test_Gadget2Param():
+
+	#Create a parameter file for all the initial conditions present in the batch
+	settings = Gadget2Settings()
+
+	for model in SimulationModel.available(env):
+		for collection in model.collections:
+			for ic in collection.ics:
+				ic.writeGadget2(settings)

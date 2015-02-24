@@ -3,6 +3,7 @@ from __future__ import division
 import os,glob
 import re
 
+import numpy as np
 import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
@@ -289,14 +290,15 @@ class SimulationIC(SimulationCollection):
 	def newInitialCondition(self,seed):
 		raise TypeError("This method should be called on SimulationCollection instances!")
 
-	
+	####################################################################################################################################
+
 	def writeNGenIC(self,settings):
 
 		"""
 		Generates the parameter file that NGenIC needs to read to generate the current initial condition
 
 		:param settings: NGenIC tunable settings
-		:type settings: NGenIC settings
+		:type settings: NGenICSettings
 
 		"""
 
@@ -367,8 +369,92 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("UnitMass_in_g			{0:.6e}\n".format(settings.UnitMass_in_g))
 			paramfile.write("UnitVelocity_in_cm_per_s 			{0:.6e}\n".format(settings.UnitVelocity_in_cm_per_s))
 
-		#Log and exit
+		#Log and return
 		print("[+] NGenIC parameter file {0} written".format(filename))
+
+	####################################################################################################################################
+
+	def writeGadget2(self,settings):
+
+		"""
+		Generates the parameter file that Gadget2 needs to read to evolve the current initial condition in time
+
+		:param settings: Gadget2 tunable settings
+		:type settings: Gadget2Settings
+
+		"""
+
+		#Safety check
+		assert isinstance(settings,Gadget2Settings)
+
+		#The filename is automatically generated from the class instance
+		filename = os.path.join(self.home_subdir,"gadget2.param")
+
+		#Write the parameter file
+		with open(filename,"w") as paramfile:
+
+			#File names for initial condition and outputs
+			initial_condition_file = os.path.join(os.path.abspath(self.storage_subdir),"ics_{0}_ic{1}".format(self.cosmo_id,self.ic_index))
+			paramfile.write("InitCondFile			{0}\n".format(initial_condition_file))
+			paramfile.write("OutputDir			{0}{1}\n".format(self.storage_subdir,os.path.sep))
+
+			#Use outputs in the settings to write the OutputListFilename, and set this as the output list of the code
+			outputs_filename = os.path.join(self.storage_subdir,"outputs.txt")
+			np.savetxt(outputs_filename,settings.OutputScaleFactor)
+			paramfile.write("OutputListFilename			{0}\n\n".format(os.path.abspath(outputs_filename)))
+
+			#CPU time limit section
+			paramfile.write(settings.writeSection("cpu_timings"))
+
+			#Code options section
+			paramfile.write(settings.writeSection("code_options"))
+
+			#Initial scale factor time
+			ic_filenames = glob.glob(initial_condition_file+"*")
+
+			try:
+				ic_snapshot = Gadget2Snapshot.open(ic_filenames[0])
+				paramfile.write("TimeBegin			{0}\n".format(ic_snapshot.header["scale_factor"]))
+				ic_snapshot.close()
+			except IndexError:
+				#TODO Dirty,make this better in the future
+				paramfile.write("TimeBegin			{0}\n".format(1.0/101.0))
+
+			#Characteristics of run section
+			paramfile.write(settings.writeSection("characteristics_of_run"))
+
+			#Cosmological parameters
+			paramfile.write("Omega0			{0:.6f}\n".format(self.cosmology.Om0))
+			paramfile.write("OmegaLambda			{0:.6f}\n".format(self.cosmology.Ode0))
+			paramfile.write("OmegaBaryon			{0:.6f}\n".format(self.cosmology.Ob0))
+			paramfile.write("HubbleParam			{0:.6f}\n".format(self.cosmology.h))
+			paramfile.write("BoxSize			{0:.6f}\n".format(self.box_size.to(self.kpc_over_h).value))
+			paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
+			paramfile.write("wa			{0:.6f}\n\n".format(self.cosmology.wa))
+
+			#Output frequency section
+			paramfile.write(settings.writeSection("output_frequency"))
+
+			#Accuracy of time integration section
+			paramfile.write(settings.writeSection("accuracy_time_integration"))
+
+			#Tree algorithm section
+			paramfile.write(settings.writeSection("tree_algorithm"))
+
+			#SPH section
+			paramfile.write(settings.writeSection("sph"))
+
+			#Memory allocation section
+			paramfile.write(settings.writeSection("memory_allocation"))
+
+			#System of units section
+			paramfile.write(settings.writeSection("system_of_units"))
+
+			#Softening lengths section
+			paramfile.write(settings.writeSection("softening"))
+
+		#Log and exit
+		print("[+] Gadget2 parameter file {0} written".format(filename))
 
 
 
