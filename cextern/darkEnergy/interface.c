@@ -65,6 +65,13 @@ double fvel_Interface(double z1, double z2, double omegamI, double omegaQI, doub
   w0=wQI;
   wa=wQpI;
   ret = initialize_darkenergy();
+  *err = ret;
+
+  if(ret>0){
+    free_darkenergy();
+    return 0.0;
+  }
+
   // w0 and wa above are global variables, need to be global for dark energy calculation functions.
   
   // Beware: Lam Hui's linear growth code does not seem to work well
@@ -119,7 +126,6 @@ double fvel_Interface(double z1, double z2, double omegamI, double omegaQI, doub
   fspringel=fvel*sqrt(1+z2);
   
   free_darkenergy();
-  *err = ret;
   
   return fspringel;
 
