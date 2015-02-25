@@ -17,7 +17,7 @@ except ImportError:
 home = "../SimTest/Home"
 storage = "../SimTest/Storage"
 
-cosmologies = [Nicaea(),Nicaea(wa=0.5)]
+cosmologies = [Nicaea(),Nicaea(Om0=0.4)]
 box_sizes = [15.0,240.0]
 part = [32,512]
 seeds = [0,11,222]

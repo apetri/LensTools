@@ -50,7 +50,7 @@ void derivs (double x, double y[], double dydx[])
 }
 
 
-void initialize_darkenergy (void) {
+int initialize_darkenergy (void) {
 	
 	int i;
 	// int neqs; // number of differential equations
@@ -59,6 +59,7 @@ void initialize_darkenergy (void) {
 	double x1, x2; // starting and end point of integration
 	double eps, h1, hmin; // Performance control parameters for numerical integrator odeint.
 	int nok, nbad; // counts number of good and bad steps (is passed on as a pointer to subroutines called by odeint, so can be modified by those correctly).
+	int ret;
 
 	// Number of ordinary differential equations to be solved:
 	neqs=1;
@@ -82,6 +83,7 @@ void initialize_darkenergy (void) {
 	// Allocate dark energy array:
 	ap=Vector(kmax);
 	DEp=Matrix(neqs,kmax);
+	y2=Vector(kmax);
 		
 	//Initial conditions (for first oder equation example here, only one starting value, no derivative, needed):
 	ystart[1]=0.0; // function value of first ODE at starting point is 0, because it's an integral.
@@ -91,7 +93,13 @@ void initialize_darkenergy (void) {
 	// printf("Kount before odeint: %d.\n", kount);
 	
 	// Call driver for numerical integrator with above parameters (the driver calls then further subroutines):
-	odeint(ystart, neqs, x1, x2, eps, h1, hmin, &nok, &nbad, derivs, rkqs);
+	ret = odeint(ystart, neqs, x1, x2, eps, h1, hmin, &nok, &nbad, derivs, rkqs);
+	if(ret>0){
+		free_Vector(xp);
+		free_Matrix(yp, neqs);
+		free_Vector(ystart);
+		return ret;
+	}
 
 	// printf("Kount: %d.\n", kount);
 
@@ -110,7 +118,7 @@ void initialize_darkenergy (void) {
 	//Now can spline this final expression as a function of scale factor:
 
 	// Now do interpolation of above tabulated solutions:
-	y2=Vector(kmax);
+	
 	// Initialize spline (need only do once):
 	// Arguments for spline(): table of arguments of function (x), table of function values at those arguments (y(x)), number of points tabulated, first derivatives at first and last point, output: second derivatives of function at tabulated points).
 	//spline(xp, yp[1], kmax, yp[1][1], yp[1][kmax], y2);
@@ -145,8 +153,7 @@ void initialize_darkenergy (void) {
 	//free_Vector(ap);
 	//free_Matrix(DEp, neqs);
 		
-    printf("Finished initializing dark energy.\n");
-    return;
+    return 0;
 }
 
 double w(double z)

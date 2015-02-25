@@ -36,7 +36,7 @@
 
 
 
-void odeint(double ystart[], int nvar, double x1, double x2, double eps, double h1,
+int odeint(double ystart[], int nvar, double x1, double x2, double eps, double h1,
 	double hmin, int *nok, int *nbad,
 	void (*derivs)(double, double [], double []),
 	void (*rkqs)(double [], double [], int, double *, double, double, double [],
@@ -86,17 +86,17 @@ void odeint(double ystart[], int nvar, double x1, double x2, double eps, double 
 		free_Vector(y);
 		free_Vector(yscal);
 
-			return;
+			return 0;
 		}
 		if (fabs(hnext) <= hmin)
 		{
-			printf("Step size too small in odeint");
-			exit(1);
+			//printf("Step size too small in odeint");
+			return 1;
 		}
 		h=hnext;
 	}
-	printf("Too many steps in routine odeint");
-	exit(1);
+	//printf("Too many steps in routine odeint");
+	return 2;
 }
 #undef MAXSTP
 #undef TINY

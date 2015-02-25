@@ -23,7 +23,7 @@ extern double *ap;
 extern double **DEp;
 
 void derivs (double x, double y[], double dydx[]);
-void initialize_darkenergy (void);
+int initialize_darkenergy (void);
 
 double w(double z);
 double DarkEnergy (double a);

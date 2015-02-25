@@ -12,17 +12,14 @@
 
 // int main(int argc, char * argv[]){
 // Arguments in order: redshift today, redshift at beginning of N-body sim, omega matter (total, i.e. CDM+baryons), omega dark energy, omega cosmological constant (not used), w_0, w_a, h (Hubble parameter).
-double Dplus_Interface(double z1, double z2, double omegamI, double omegaQI, double omegavI, double wQI, double wQpI, double hI, double d2, double d2minus,double delz,double zmaxact,double zminact,int iwmodeI,double *vel_prefac_lam)
+double fvel_Interface(double z1, double z2, double omegamI, double omegaQI, double omegavI, double wQI, double wQpI, double hI, double d2, double d2minus,double delz,double zmaxact,double zminact,int iwmodeI,int *err)
 {
-
-  //float result;
-  int return_code;
   
   // double omegamI,omegavI,omegaQI,wQI,wQpI,hI, z1, z2;
-  double D1, D2;
   double omegakI;
   
-  double OM, OL, OK, DE, z2minus,Hz, H0, fvel, fspringel, Dplus; // fspringel is fvel in Gadget units.
+  double OM, OL, OK, DE, Hz, H0, fvel, fspringel; // fspringel is fvel in Gadget units.
+  int ret;
 
   
   /*
@@ -59,18 +56,15 @@ double Dplus_Interface(double z1, double z2, double omegamI, double omegaQI, dou
   //cspeed=2.99792458e5; // direct in FORTRAN
     
   // automatic initialization:
-  D1=0.0;
-  D2=0.0;
   DE=0.0;
   omegakI=1.0-omegamI-omegavI-omegaQI;
   OM=omegamI;
   OL=omegaQI;
   OK=omegakI;
-  z2minus=z2-delz;
   
   w0=wQI;
   wa=wQpI;
-  initialize_darkenergy();
+  ret = initialize_darkenergy();
   // w0 and wa above are global variables, need to be global for dark energy calculation functions.
   
   // Beware: Lam Hui's linear growth code does not seem to work well
@@ -102,7 +96,7 @@ double Dplus_Interface(double z1, double z2, double omegamI, double omegaQI, dou
   if (w0>-1.00001 && w0<-0.99999 && wa > -0.00001 && wa < 0.00001)
   {
 	DE=1.0;
-	printf("NOTE: Setting DE contribution hard to DE=1 (LCDM) to avoid wiggles in spline for insufficiently sampled constant integral by odeint. This is only an accuracy improvement measure.\n");
+	fprintf(stderr,"[*]: Setting DE contribution hard to DE=1 (LCDM) to avoid wiggles in spline for insufficiently sampled constant integral by odeint. This is only an accuracy improvement measure.\n");
   }
   else DE=DarkEnergy(1.0/(z2+1.0));
   Hz=H0*sqrt( OM*(z2+1.0)*(z2+1.0)*(z2+1.0) + OK*(z2+1.0)*(z2+1.0) + OL*DE); // need to extend for w(z) by an integrator!
@@ -119,22 +113,14 @@ double Dplus_Interface(double z1, double z2, double omegamI, double omegaQI, dou
   }
   
   
-  fvel=((d2minus/d2-1.0)/delz)*Hz;
-  
-  // printf("f_vel = %e\n", fvel); 
+  fvel=((d2minus/d2-1.0)/delz)*Hz; 
     
   // Converting to Gadget-2 units as per Springel's N-GenIC:
   fspringel=fvel*sqrt(1+z2);
-    
-  // printf("f_springel = %1.12e\n", fspringel);
-  
-  *vel_prefac_lam = fspringel; // velocity prefactor from Lam's code in Springel units is stored in new global variable.
-  
-  Dplus=1.0/d2;
-  
-  // printf("Growth factor for Springel Code (Dplus): %1.12e\n", Dplus);
   
   free_darkenergy();
+  *err = ret;
   
-  return Dplus;
+  return fspringel;
+
 }

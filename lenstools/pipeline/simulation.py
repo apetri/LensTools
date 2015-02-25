@@ -351,9 +351,14 @@ class SimulationIC(SimulationCollection):
 			#Initial redshift
 			paramfile.write("Redshift 			{0:.6f}\n".format(settings.Redshift))
 
-			#TODO: prefactors
-			paramfile.write("GrowthFactor			{0:.6f}\n".format(settings.GrowthFactor))
-			paramfile.write("VelocityPrefactor			{0:.6f}\n".format(settings.VelocityPrefactor))
+			#Computation of the prefactors
+			OmegaK = 1.0 - self.cosmology.Om0 - self.cosmology.Ode0 - self.cosmology.Onu0
+			ret,d1,d2 = _darkenergy.f77main(self.cosmology.h,self.cosmology.Om0,self.cosmology.Onu0,OmegaK,self.cosmology.Ode0,self.cosmology.w0,self.cosmology.wa,0.0,settings.Redshift,settings._zmaxact,settings._zminact,settings._iwmode)
+			ret,d1,d2minus = _darkenergy.f77main(self.cosmology.h,self.cosmology.Om0,self.cosmology.Onu0,OmegaK,self.cosmology.Ode0,self.cosmology.w0,self.cosmology.wa,0.0,settings.Redshift-settings._delz,settings._zmaxact,settings._zminact,settings._iwmode)
+			vel_prefactor = _prefactors.velocity(settings.Redshift,self.cosmology.Om0,self.cosmology.Ode0,self.cosmology.Onu0,self.cosmology.w0,self.cosmology.wa,self.cosmology.h,d2,d2minus,settings._delz,settings._zmaxact,settings._zminact,settings._iwmode)
+
+			paramfile.write("GrowthFactor			{0:.6f}\n".format(1.0/d2))
+			paramfile.write("VelocityPrefactor			{0:.6f}\n".format(vel_prefactor))
 
 			#Sigma8
 			paramfile.write("Sigma8				{0:.6f}\n".format(self.cosmology.sigma8))
