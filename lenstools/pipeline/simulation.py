@@ -11,6 +11,12 @@ from astropy.cosmology import FLRW,WMAP9
 from .settings import EnvironmentSettings,NGenICSettings
 from ..simulations import Gadget2Settings,Gadget2Snapshot,Nicaea 
 
+try:
+	from ..extern import _darkenergy,_prefactors
+	_darkenergy = _darkenergy
+except ImportError:
+	_darkenergy = None
+
 name2attr = dict()
 name2attr["Om"] = "Om0"
 name2attr["Ol"] = "Ode0"
@@ -301,6 +307,9 @@ class SimulationIC(SimulationCollection):
 		:type settings: NGenICSettings
 
 		"""
+
+		if _darkenergy is None:
+			raise ImportError("F77 sources in cextern/darkEnergy are not compiled!!")
 
 		#Safety check
 		assert isinstance(settings,NGenICSettings)
