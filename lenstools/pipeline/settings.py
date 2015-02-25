@@ -80,4 +80,25 @@ class NGenICSettings(object):
 			setattr(self,key,kwargs[key])
 
 
+#################################################
+###########NGenICSettings class##################
+#################################################
+
+class PlaneSettings(object):
+
+	"""
+	Class handler of plane generation settings
+
+	"""
+
+	def __init__(self,**kwargs):
+
+		self.directory_name = "Planes"
+		self.format = "fits"
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+
 

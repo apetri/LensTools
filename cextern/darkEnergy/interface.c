@@ -103,7 +103,7 @@ double fvel_Interface(double z1, double z2, double omegamI, double omegaQI, doub
   if (w0>-1.00001 && w0<-0.99999 && wa > -0.00001 && wa < 0.00001)
   {
 	DE=1.0;
-	fprintf(stderr,"[*]: Setting DE contribution hard to DE=1 (LCDM) to avoid wiggles in spline for insufficiently sampled constant integral by odeint. This is only an accuracy improvement measure.\n");
+	fprintf(stderr,"[*] Setting DE contribution hard to DE=1 (LCDM) to avoid wiggles in spline for insufficiently sampled constant integral by odeint. This is only an accuracy improvement measure.\n");
   }
   else DE=DarkEnergy(1.0/(z2+1.0));
   Hz=H0*sqrt( OM*(z2+1.0)*(z2+1.0)*(z2+1.0) + OK*(z2+1.0)*(z2+1.0) + OL*DE); // need to extend for w(z) by an integrator!

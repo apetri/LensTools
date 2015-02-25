@@ -8,7 +8,7 @@ import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
 
-from .settings import EnvironmentSettings,NGenICSettings
+from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings
 from ..simulations import Gadget2Settings,Gadget2Snapshot,Nicaea 
 
 try:
@@ -142,6 +142,7 @@ class SimulationModel(object):
 				os.mkdir(d)
 				print("[+] {0} created".format(d))
 
+	################################################################################################################################
 
 	def newCollection(self,box_size=240.0*u.Mpc,nside=512):
 
@@ -160,6 +161,20 @@ class SimulationModel(object):
 
 
 		return newSimulation
+
+	################################################################################################################################
+
+	def getCollection(self,box_size,nside):
+
+		#See if the collection exists
+		collection = SimulationCollection(self.cosmology,self.environment,self.parameters,box_size,nside)
+		if not(os.path.isdir(collection.storage_subdir) and os.path.isdir(collection.home_subdir)):
+			return None
+
+		#If it exists, return the SimulationCollection instance
+		return collection
+
+	################################################################################################################################
 
 
 	@property
@@ -215,13 +230,15 @@ class SimulationCollection(SimulationModel):
 
 	def __repr__(self):
 
-		return super(SimulationCollection,self).__repr__() + " ; box={0},nside={1}".format(self.box_size,self.nside)
+		return super(SimulationCollection,self).__repr__() + " | box={0},nside={1}".format(self.box_size,self.nside)
 
 
 	def newCollection(self):
 		raise TypeError("This method should be called on SimulationModel instances!")
 
-	def newInitialCondition(self,seed=0):
+	################################################################################################################################
+
+	def newRealization(self,seed=0):
 		
 		#Check if there are already generated initial conditions in there
 		ics_present = glob.glob(os.path.join(self.storage_subdir,"ic*"))
@@ -242,12 +259,29 @@ class SimulationCollection(SimulationModel):
 
 		return newIC
 
+	################################################################################################################################
+
+	def getRealization(self,n):
+
+		#Check if this particular realization exists
+		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,n,seed=0)
+		if not(os.path.isdir(newIC.storage_subdir)):
+			return None
+
+		#Read the seed number
+		seed_filename = os.path.basename(glob.glob(os.path.join(newIC.storage_subdir,"seed*"))[0])
+		newIC.seed = int(seed_filename.strip("seed"))
+
+		#Return the SimulationIC instance
+		return newIC
+
+	################################################################################################################################
 
 	@property
-	def ics(self):
+	def realizations(self):
 
 		"""
-		List the available initial conditions (or independent simulations) for the current collection
+		List the available realizations (or independent simulations) for the current collection
 
 		:returns: list.
 		:rtype: SimulationIC
@@ -277,7 +311,7 @@ class SimulationIC(SimulationCollection):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase="ics",SnapshotFileBase="snapshot"):
 
 		super(SimulationIC,self).__init__(cosmology,environment,parameters,box_size,nside)
 
@@ -289,12 +323,66 @@ class SimulationIC(SimulationCollection):
 		self.home_subdir = os.path.join(self.home_subdir,"ic{0}".format(ic_index))
 		self.storage_subdir = os.path.join(self.storage_subdir,"ic{0}".format(ic_index))
 
+		#Useful to keep track of
+		self.ICFilebase = ICFilebase
+		self.SnapshotFileBase = SnapshotFileBase
+
 	def __repr__(self):
 
-		return super(SimulationIC,self).__repr__() + " ; ic={0},seed={1}".format(self.ic_index,self.seed)
+		#Check if snapshots and/or initial conditions are present
+		ics_on_disk = glob.glob(os.path.join(self.storage_subdir,self.ICFilebase+"*"))
+		snap_on_disk = glob.glob(os.path.join(self.storage_subdir,self.SnapshotFileBase+"*"))
+
+		return super(SimulationIC,self).__repr__() + " | ic={0},seed={1} | IC files on disk: {2} | Snapshot files on disk: {3}".format(self.ic_index,self.seed,len(ics_on_disk),len(snap_on_disk))
 
 	def newInitialCondition(self,seed):
 		raise TypeError("This method should be called on SimulationCollection instances!")
+
+	####################################################################################################################################
+
+	def newPlaneSet(self,settings):
+
+		#Safety check
+		assert isinstance(settings,PlaneSettings)
+
+		#Instantiate a SimulationPlanes object
+		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
+
+		#Create the dedicated directory if not present already
+		d = new_plane_set.storage_subdir
+		if not(os.path.isdir(d)):
+			os.mkdir(d)
+			print("[+] {0} created".format(d))
+
+		#Return the created instance
+		return new_plane_set
+
+	####################################################################################################################################
+
+	def getPlaneSet(self,setname):
+
+		"""
+		Instantiate a SimulationPlanes object that handles a specific plane set; returns None if the plane set does not exist
+
+		:param setname: name of the plane set
+		:type setname: str.
+
+		:rtype: SimulationPlanes
+
+		"""
+
+		if not(os.path.isdir(os.path.join(self.storage_subdir,setname))):
+			return None
+
+		#Create new PlaneSettings instance
+		settings = PlaneSettings(directory_name=setname)
+
+		#TODO: auto detect format etc...
+
+		#Instantiat the SimulationPlanes object
+		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
+
+
 
 	####################################################################################################################################
 
@@ -328,7 +416,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("Box 			{0:.1f}\n".format(self.box_size.to(self.kpc_over_h).value))
 
 			#Base names for outputs
-			paramfile.write("Filebase			ics_{0}_ic{1}\n".format(self.cosmo_id,self.ic_index))
+			paramfile.write("Filebase			{0}\n".format(self.ICFilebase))
 			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.storage_subdir)))
 
 			#Glass file
@@ -408,9 +496,15 @@ class SimulationIC(SimulationCollection):
 		with open(filename,"w") as paramfile:
 
 			#File names for initial condition and outputs
-			initial_condition_file = os.path.join(os.path.abspath(self.storage_subdir),"ics_{0}_ic{1}".format(self.cosmo_id,self.ic_index))
+			initial_condition_file = os.path.join(os.path.abspath(self.storage_subdir),self.ICFilebase)
 			paramfile.write("InitCondFile			{0}\n".format(initial_condition_file))
 			paramfile.write("OutputDir			{0}{1}\n".format(self.storage_subdir,os.path.sep))
+			paramfile.write("EnergyFile			{0}\n".format(settings.EnergyFile))
+			paramfile.write("InfoFile			{0}\n".format(settings.InfoFile))
+			paramfile.write("TimingsFile			{0}\n".format(settings.TimingsFile))
+			paramfile.write("CpuFile			{0}\n".format(settings.CpuFile))
+			paramfile.write("RestartFile			{0}\n".format(settings.RestartFile))
+			paramfile.write("SnapshotFileBase			{0}\n".format(self.SnapshotFileBase))
 
 			#Use outputs in the settings to write the OutputListFilename, and set this as the output list of the code
 			outputs_filename = os.path.join(self.storage_subdir,"outputs.txt")
@@ -469,6 +563,44 @@ class SimulationIC(SimulationCollection):
 
 		#Log and exit
 		print("[+] Gadget2 parameter file {0} written".format(filename))
+
+
+##############################################################
+##############SimulationPlanes class##########################
+##############################################################
+
+class SimulationPlanes(SimulationIC):
+
+	"""
+	Class handler of a set of lens planes belonging to a particular simulation
+
+	"""
+
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,settings):
+
+		#Safety check
+		assert isinstance(settings,PlaneSettings)
+
+		#Call parent constructor
+		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase)
+		self.settings = settings
+
+		#Build the name of the dedicated plane directory
+		self.storage_subdir = os.path.join(self.storage_subdir,settings.directory_name)
+
+	def __repr__(self):
+
+		#Old representation string
+		parent_repr = super(SimulationPlanes,self).__repr__().split("|")
+		for i in range(2):
+			parent_repr.pop(-1)
+
+		#Count the number of plane files on disk
+		planes_on_disk = glob.glob(os.path.join(self.storage_subdir,"*"))
+
+		#Build the new representation string
+		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
+		return " | ".join(parent_repr)
 
 
 

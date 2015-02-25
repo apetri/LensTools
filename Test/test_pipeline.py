@@ -1,7 +1,7 @@
 try:
 	
 	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
-	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings
+	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
@@ -10,7 +10,7 @@ except ImportError:
 	import sys
 	sys.path.append("..")
 	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
-	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings
+	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
@@ -25,7 +25,7 @@ seeds = [0,11,222]
 #Check environment settings
 env = EnvironmentSettings(home=home,storage=storage)
 
-def test_directoryTree():
+def test_directory_tree():
 
 	#Create two simulation models
 	for cosmo in cosmologies:
@@ -38,7 +38,22 @@ def test_directoryTree():
 			collection = simulation_model.newCollection(box_size=box_size*simulation_model.Mpc_over_h,nside=part[i])
 			
 			for seed in seeds:
-				ic = collection.newInitialCondition(seed)
+				
+				ic = collection.newRealization(seed)
+				pln_settings = PlaneSettings()
+				pln = ic.newPlaneSet(pln_settings)
+
+
+
+def test_present():
+
+	for model in SimulationModel.available(env):
+		for collection in model.collections:
+			for ic in collection.realizations:
+				
+				print(ic)
+				pln = ic.getPlaneSet("Planes")
+				print(pln)
 
 
 def test_NGenICParam():
@@ -48,7 +63,7 @@ def test_NGenICParam():
 
 	for model in SimulationModel.available(env):
 		for collection in model.collections:
-			for ic in collection.ics:
+			for ic in collection.realizations:
 				ic.writeNGenIC(settings)
 
 
@@ -59,5 +74,5 @@ def test_Gadget2Param():
 
 	for model in SimulationModel.available(env):
 		for collection in model.collections:
-			for ic in collection.ics:
+			for ic in collection.realizations:
 				ic.writeGadget2(settings)
