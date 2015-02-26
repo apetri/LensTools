@@ -1,5 +1,7 @@
 import os
 
+from distutils import config
+
 import numpy as np
 import astropy.units as u
 
@@ -37,6 +39,26 @@ class EnvironmentSettings(object):
 
 		if not os.path.isdir(storage):
 			os.mkdir(storage)
+
+
+	@classmethod
+	def read(cls,config_file):
+
+		#Read the options from the ini file
+		options = config.ConfigParser()
+		options.read([config_file])
+
+		#Check that the config file has the appropriate section
+		section = "EnvironmentSettings"
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+
+		#Fill in the appropriate fields
+		settings = cls()
+		settings.home = options.get(section,"home")
+		settings.storage = options.get(section,"storage")
+
+		#Return to user
+		return settings
 
 #################################################
 ###########NGenICSettings class##################
@@ -104,11 +126,48 @@ class PlaneSettings(object):
 		self.last_snapshot = 58
 		self.cut_points = np.array([7.5/0.7]) * u.Mpc
 		self.thickness = (2.5/0.7) * u.Mpc 
+		self.length_unit = u.Mpc
 		self.normals = range(3)
 
 		#Allow for kwargs override
 		for key in kwargs.keys():
 			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def read(cls,config_file):
+
+		#Read the options from the ini file
+		options = config.ConfigParser()
+		options.read([config_file])
+
+		#Check that the config file has the appropriate section
+		section = "PlaneSettings"
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+
+		#Fill in the appropriate fields
+		settings = cls()
+		
+		settings.directory_name = options.get(section,"directory_name")
+		settings.format = options.get(section,"format")
+		settings.plane_resolution = options.getint(section,"plane_resolution")
+		settings.first_snapshot = options.getint(section,"first_snapshot")
+		settings.last_snapshot = options.getint(section,"last_snapshot")
+
+		#Length units
+		settings.length_unit = getattr(u,options.get(section,"length_unit"))
+
+		#Cut points
+		settings.cut_points = np.array([ float(p) for p in options.get(section,"cut_points").split(",") ]) * settings.length_unit
+		settings.thickness = options.getfloat(section,"thickness") * settings.length_unit
+
+		#Normals
+		settings.normals = [ int(n) for n in options.get(section,"normals").split(",") ]
+
+		#Return to user
+		return settings
+
+
+
 
 
 
