@@ -1,5 +1,9 @@
 import os
 
+import numpy as np
+import astropy.units as u
+
+
 ############################################################
 #############EnvironmentSettings class######################
 ############################################################
@@ -95,6 +99,12 @@ class PlaneSettings(object):
 
 		self.directory_name = "Planes"
 		self.format = "fits"
+		self.plane_resolution = 128
+		self.first_snapshot = 46
+		self.last_snapshot = 58
+		self.cut_points = np.array([7.5/0.7]) * u.Mpc
+		self.thickness = (2.5/0.7) * u.Mpc 
+		self.normals = range(3)
 
 		#Allow for kwargs override
 		for key in kwargs.keys():

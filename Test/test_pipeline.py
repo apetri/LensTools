@@ -30,7 +30,7 @@ def test_directory_tree():
 	#Create two simulation models
 	for cosmo in cosmologies:
 	
-		simulation_model = SimulationModel(cosmology=cosmo,environment=env,parameters=["Om","Ol","w","wa"])
+		simulation_model = SimulationModel(cosmology=cosmo,environment=env,parameters=["Om","Ol","w","si","ns"])
 
 		#Create two different collections, three initial conditions per collection
 		for i,box_size in enumerate(box_sizes):

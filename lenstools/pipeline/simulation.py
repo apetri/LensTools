@@ -90,6 +90,53 @@ class SimulationModel(object):
 		#Return the list with the available models
 		return models
 
+	##############################################################################################################################
+
+	@classmethod
+	def getModel(cls,environment,cosmo_id):
+
+		"""
+		Instantiate a SimulationModel object corresponding to the cosmo_id provided
+
+		:param environment: environment settings
+		:type environment: EnvironmentSettings
+
+		:param cosmo_id: cosmo_id of the model
+		:type cosmo_id: str.
+
+		:rtype: SimulationModel
+
+		"""
+
+		#Safety check
+		assert isinstance(environment,EnvironmentSettings)
+
+		#Useful regular expression
+		parmatch = re.compile(r"([a-zA-Z]+)([0-9.-]+)")
+		
+		if not(os.path.isdir(os.path.join(environment.home,cosmo_id))) or not(os.path.isdir(os.path.join(environment.home,cosmo_id))):
+			return None
+
+		#Parse the cosmological parameters
+		parameters_dict = dict()
+		parameters_list = list()
+		parameters = cosmo_id.split("_")
+			
+		for parameter in parameters:
+				
+			par,val = parmatch.match(parameter).groups()
+			parameters_list.append(par)
+			parameters_dict[name2attr[par]] = float(val)
+
+		#Instantiate the cosmological model
+		cosmoModel = Nicaea(**parameters_dict)
+
+		#Return the SimulationModel instance
+		return cls(cosmology=cosmoModel,environment=environment,parameters=parameters_list)
+
+
+	##############################################################################################################################
+
 	def __repr__(self):
 
 		representation_parameters = []
