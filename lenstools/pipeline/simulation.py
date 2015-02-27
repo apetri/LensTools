@@ -459,10 +459,10 @@ class SimulationIC(SimulationCollection):
 		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
 
 		#Create the dedicated directory if not present already
-		d = new_plane_set.storage_subdir
-		if not(os.path.isdir(d)):
-			os.mkdir(d)
-			print("[+] {0} created".format(d))
+		for d in [new_plane_set.home_subdir,new_plane_set.storage_subdir]:
+			if not(os.path.isdir(d)):
+				os.mkdir(d)
+				print("[+] {0} created".format(d))
 
 		#Return the created instance
 		return new_plane_set
@@ -696,6 +696,7 @@ class SimulationPlanes(SimulationIC):
 		self.settings = settings
 
 		#Build the name of the dedicated plane directory
+		self.home_subdir = os.path.join(self.home_subdir,settings.directory_name)
 		self.storage_subdir = os.path.join(self.storage_subdir,settings.directory_name)
 
 	def __repr__(self):
