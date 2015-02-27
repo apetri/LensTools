@@ -43,7 +43,7 @@ def main(pool,environment,settings,id):
 
 	#Instantiate the appropriate SimulationIC object
 	realization = model.getCollection(box_size,nside).getRealization(ic)
-	snapshot_path = realization.storage_subdir
+	snapshot_path = realization.snapshot_subdir
 	
 
 	#Base name of the snapshot files

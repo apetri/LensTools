@@ -6,3 +6,5 @@ import os
 
 class JobScheduler(object):
 
+	def __init__(self):
+		return

@@ -300,6 +300,12 @@ class SimulationCollection(SimulationModel):
 		os.mkdir(newIC.storage_subdir)
 		print("[+] {0} created".format(newIC.storage_subdir))
 
+		#Make dedicated directories for ics and snapshots
+		os.mkdir(newIC.ics_subdir)
+		print("[+] {0} created".format(newIC.ics_subdir))
+		os.mkdir(newIC.snapshot_subdir)
+		print("[+] {0} created".format(newIC.snapshot_subdir))
+
 		#Make new file with the number of the seed
 		seedfile = open(os.path.join(newIC.storage_subdir,"seed"+str(seed)),"w")
 		seedfile.close()
@@ -370,6 +376,10 @@ class SimulationIC(SimulationCollection):
 		self.home_subdir = os.path.join(self.home_subdir,"ic{0}".format(ic_index))
 		self.storage_subdir = os.path.join(self.storage_subdir,"ic{0}".format(ic_index))
 
+		#Save also snapshots and initial conditions dedicated sub-directories names
+		self.ics_subdir = os.path.join(self.storage_subdir,"ics")
+		self.snapshot_subdir = os.path.join(self.storage_subdir,"snapshots")
+
 		#Useful to keep track of
 		self.ICFilebase = ICFilebase
 		self.SnapshotFileBase = SnapshotFileBase
@@ -377,8 +387,8 @@ class SimulationIC(SimulationCollection):
 	def __repr__(self):
 
 		#Check if snapshots and/or initial conditions are present
-		ics_on_disk = glob.glob(os.path.join(self.storage_subdir,self.ICFilebase+"*"))
-		snap_on_disk = glob.glob(os.path.join(self.storage_subdir,self.SnapshotFileBase+"*"))
+		ics_on_disk = glob.glob(os.path.join(self.ics_subdir,self.ICFilebase+"*"))
+		snap_on_disk = glob.glob(os.path.join(self.snapshot_subdir,self.SnapshotFileBase+"*"))
 
 		return super(SimulationIC,self).__repr__() + " | ic={0},seed={1} | IC files on disk: {2} | Snapshot files on disk: {3}".format(self.ic_index,self.seed,len(ics_on_disk),len(snap_on_disk))
 
@@ -464,7 +474,7 @@ class SimulationIC(SimulationCollection):
 
 			#Base names for outputs
 			paramfile.write("Filebase			{0}\n".format(self.ICFilebase))
-			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.storage_subdir)))
+			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.ics_subdir)))
 
 			#Glass file
 			paramfile.write("GlassFile			{0}\n".format(os.path.abspath(settings.GlassFile)))
@@ -543,9 +553,9 @@ class SimulationIC(SimulationCollection):
 		with open(filename,"w") as paramfile:
 
 			#File names for initial condition and outputs
-			initial_condition_file = os.path.join(os.path.abspath(self.storage_subdir),self.ICFilebase)
+			initial_condition_file = os.path.join(os.path.abspath(self.ics_subdir),self.ICFilebase)
 			paramfile.write("InitCondFile			{0}\n".format(initial_condition_file))
-			paramfile.write("OutputDir			{0}{1}\n".format(self.storage_subdir,os.path.sep))
+			paramfile.write("OutputDir			{0}{1}\n".format(self.snapshot_subdir,os.path.sep))
 			paramfile.write("EnergyFile			{0}\n".format(settings.EnergyFile))
 			paramfile.write("InfoFile			{0}\n".format(settings.InfoFile))
 			paramfile.write("TimingsFile			{0}\n".format(settings.TimingsFile))
@@ -554,7 +564,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("SnapshotFileBase			{0}\n".format(self.SnapshotFileBase))
 
 			#Use outputs in the settings to write the OutputListFilename, and set this as the output list of the code
-			outputs_filename = os.path.join(self.storage_subdir,"outputs.txt")
+			outputs_filename = os.path.join(self.snapshot_subdir,"outputs.txt")
 			np.savetxt(outputs_filename,settings.OutputScaleFactor)
 			paramfile.write("OutputListFilename			{0}\n\n".format(os.path.abspath(outputs_filename)))
 
