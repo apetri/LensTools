@@ -2,6 +2,7 @@ from __future__ import division
 
 import os,glob
 import re
+import cPickle
 
 import numpy as np
 import astropy.units as u
@@ -378,6 +379,10 @@ class SimulationCollection(SimulationModel):
 				os.mkdir(d)
 				print("[+] {0} created".format(d))
 
+		#Save a picked copy of the settings to use for future reference
+		with open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
+			cPickle.dump(settings,settingsfile)
+
 		#Return to user
 		return map_set
 
@@ -397,9 +402,9 @@ class SimulationCollection(SimulationModel):
 		if (not os.path.isdir(os.path.join(self.storage_subdir,setname))) or (not os.path.isdir(os.path.join(self.home_subdir,setname))):
 			return None
 
-		settings = MapSettings(directory_name=setname)
-
-		#TODO: auto detect format etc...
+		#Read the settings from the pickled file
+		with open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+			settings = cPickle.load(settingsfile) 
 
 		#Return to user
 		return SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings)
@@ -464,6 +469,10 @@ class SimulationIC(SimulationCollection):
 				os.mkdir(d)
 				print("[+] {0} created".format(d))
 
+		#Save a pickled copy of the settings for future reference
+		with open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
+			cPickle.dump(settings,settingsfile)
+
 		#Return the created instance
 		return new_plane_set
 
@@ -484,10 +493,9 @@ class SimulationIC(SimulationCollection):
 		if not(os.path.isdir(os.path.join(self.storage_subdir,setname))):
 			return None
 
-		#Create new PlaneSettings instance
-		settings = PlaneSettings(directory_name=setname)
-
-		#TODO: auto detect format etc...
+		#Read plane settings from pickled file
+		with open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+			settings = cPickle.load(settingsfile)
 
 		#Instantiate the SimulationPlanes object
 		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
@@ -581,6 +589,10 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("UnitMass_in_g			{0:.6e}\n".format(settings.UnitMass_in_g))
 			paramfile.write("UnitVelocity_in_cm_per_s 			{0:.6e}\n".format(settings.UnitVelocity_in_cm_per_s))
 
+		#Save a pickled copy of the settings for future reference
+		with open(os.path.join(self.home_subdir,"ngenic.p"),"w") as settingsfile:
+			cPickle.dump(settings,settingsfile)
+
 		#Log and return
 		print("[+] NGenIC parameter file {0} written".format(filename))
 
@@ -670,6 +682,10 @@ class SimulationIC(SimulationCollection):
 
 			#Softening lengths section
 			paramfile.write(settings.writeSection("softening"))
+
+		#Save a pickled copy of the settings for future reference
+		with open(os.path.join(self.home_subdir,"gadget2.p"),"w") as settingsfile:
+			cPickle.dump(settings,settingsfile)
 
 		#Log and exit
 		print("[+] Gadget2 parameter file {0} written".format(filename))
