@@ -107,6 +107,9 @@ def main(pool,environment,settings,id):
 		#Close the snapshot
 		snap.close()
 
+	#Safety barrier sync
+	if pool is not None:
+		pool.comm.Barrier()
 
 	if pool is None or pool.is_master():
 		logging.info("DONE!!")
