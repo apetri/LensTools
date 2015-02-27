@@ -52,13 +52,8 @@ class EnvironmentSettings(object):
 		section = "EnvironmentSettings"
 		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
 
-		#Fill in the appropriate fields
-		settings = cls()
-		settings.home = options.get(section,"home")
-		settings.storage = options.get(section,"storage")
-
-		#Return to user
-		return settings
+		#Fill in the appropriate fields and return to user
+		return cls(home=options.get(section,"home"),storage=options.get(section,"storage"))
 
 #################################################
 ###########NGenICSettings class##################
