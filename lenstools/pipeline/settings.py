@@ -179,11 +179,40 @@ class MapSettings(object):
 		self.format = "fits"
 		self.map_resolution = 128
 		self.map_angle = 1.6 * u.deg
+		self.angle_unit = u.deg
 		self.source_redshift = 2.0
 
 		#Allow for kwargs override
 		for key in kwargs.keys():
 			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def read(cls,config_file):
+
+		#Read the options from the ini file
+		options = config.ConfigParser()
+		options.read([config_file])
+
+		#Check that the config file has the appropriate section
+		section = "MapSettings"
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+
+		#Fill in the appropriate fields
+		settings = cls()
+
+		settings.directory_name = options.get(section,"directory_name")
+		settings.format = options.get(section,"format")
+		settings.map_resolution = options.getint(section,"map_resolution")
+		
+		settings.angle_unit = getattr(u,options.get(section,"angle_unit"))
+		settings.map_angle = options.getfloat(section,"map_angle") * settings.angle_unit
+		
+		settings.source_redshift = options.getfloat(section,"source_redshift")
+
+		#Return to user
+		return settings
+
+
 
 
 
