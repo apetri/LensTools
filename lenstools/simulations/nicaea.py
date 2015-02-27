@@ -208,9 +208,8 @@ class Nicaea(w0waCDM):
 		pieces = astropy_string.split(",")
 		si8_piece = u" sigma8={0}".format(self.sigma8)
 		ns_piece = u" ns={0}".format(self.ns)
-		Ob0_piece = u" Ob0={0}".format(self.Ob0)
 
-		return ",".join(pieces[:3] + [si8_piece,ns_piece,Ob0_piece] + pieces[3:])
+		return ",".join(pieces[:3] + [si8_piece,ns_piece] + pieces[3:])
 
 	@classmethod
 	def fromCosmology(cls,cosmo):

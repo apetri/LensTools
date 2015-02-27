@@ -102,7 +102,7 @@ class NGenICSettings(object):
 
 
 #################################################
-###########NGenICSettings class##################
+###########PlaneSettings class###################
 #################################################
 
 class PlaneSettings(object):
@@ -160,6 +160,30 @@ class PlaneSettings(object):
 
 		#Return to user
 		return settings
+
+
+#################################################
+###########MapSettings class#####################
+#################################################
+
+class MapSettings(object):
+
+	"""
+	Class handler of map generation settings
+
+	"""
+
+	def __init__(self,**kwargs):
+
+		self.directory_name = "Maps"
+		self.format = "fits"
+		self.map_resolution = 128
+		self.map_angle = 1.6 * u.deg
+		self.source_redshift = 2.0
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
 
 
 

@@ -11,7 +11,7 @@ url = "http://www.columbia.edu/~ap3020/LensTools/html"
 default_cfg = "setup.cfg"
 
 #Sub-packages
-sub_package_names = ["simulations","observations","pipeline","scripts"]
+sub_package_names = ["simulations","observations","pipeline","scripts","extern"]
 packages = [ name ]
 for sub_name in sub_package_names:
 	packages.append("{0}.{1}".format(name,sub_name))

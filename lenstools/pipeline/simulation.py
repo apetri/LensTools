@@ -8,7 +8,7 @@ import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
 
-from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings
+from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
 from ..simulations import Gadget2Settings,Gadget2Snapshot,Nicaea 
 
 try:
@@ -352,6 +352,59 @@ class SimulationCollection(SimulationModel):
 		return ic_list
 
 
+	################################################################################################################################
+
+	def newMapSet(self,settings):
+
+		"""
+		Create a new map set with the provided settings
+
+		:param settings: settings for the new map set
+		:type settings: MapSettings
+
+		:rtype: SimulationMaps
+
+		"""
+
+		#Safety check
+		assert isinstance(settings,MapSettings)
+
+		#Instantiate SimulationMaps object
+		map_set = SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings)
+
+		#Create dedicated directories
+		for d in [ map_set.home_subdir,map_set.storage_subdir ]:
+			if not os.path.isdir(d):
+				os.mkdir(d)
+				print("[+] {0} created".format(d))
+
+		#Return to user
+		return map_set
+
+	#################################################################################################################################
+
+	def getMapSet(self,setname):
+
+		"""
+		Get access to a pre-existing map set
+
+		:param setname: name of the map set to access
+		:type setname: str.
+
+		"""
+
+		#Check if the map set exists
+		if (not os.path.isdir(os.path.join(self.storage_subdir,setname))) or (not os.path.isdir(os.path.join(self.home_subdir,setname))):
+			return None
+
+		settings = MapSettings(directory_name=setname)
+
+		#TODO: auto detect format etc...
+
+		#Return to user
+		return SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings)
+
+
 
 ##########################################################
 ##############SimulationIC class##########################
@@ -436,7 +489,7 @@ class SimulationIC(SimulationCollection):
 
 		#TODO: auto detect format etc...
 
-		#Instantiat the SimulationPlanes object
+		#Instantiate the SimulationPlanes object
 		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
 
 
@@ -658,6 +711,42 @@ class SimulationPlanes(SimulationIC):
 		#Build the new representation string
 		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
 		return " | ".join(parent_repr)
+
+
+##############################################################
+##############SimulationMaps class############################
+##############################################################
+
+class SimulationMaps(SimulationCollection):
+
+	"""
+	Class handler of a set of lensing maps, which are the final products of the lensing pipeline
+
+	"""
+
+	def __init__(self,cosmology,environment,parameters,box_size,nside,settings):
+
+		#Safety check
+		assert isinstance(settings,MapSettings)
+
+		#Call parent constructor
+		super(SimulationMaps,self).__init__(cosmology,environment,parameters,box_size,nside)
+		self.settings = settings
+
+		#Build the name of the dedicated map directory
+		self.home_subdir = os.path.join(self.home_subdir,settings.directory_name)
+		self.storage_subdir = os.path.join(self.storage_subdir,settings.directory_name)
+
+
+	def __repr__(self):
+
+		#Count the number of map files on disk
+		maps_on_disk = glob.glob(os.path.join(self.storage_subdir,"*"))
+
+		#Build the new representation string
+		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
+
+
 
 
 
