@@ -1,0 +1,56 @@
+#!/usr/bin/env python-mpi
+
+import sys
+import argparse
+
+import lenstools.scripts.cutplanes
+from lenstools.pipeline.settings import EnvironmentSettings,PlaneSettings
+
+import logging
+
+#MPI
+from mpi4py import MPI
+from lenstools.utils import MPIWhirlPool
+
+#Parse command line options
+parser = argparse.ArgumentParser()
+parser.add_argument("-v","--verbose",dest="verbose",action="store_true",default=False,help="turn output verbosity")
+parser.add_argument("-c","--config",dest="config_file",action="store",type=str,help="configuration file")
+parser.add_argument("id",nargs="*")
+
+#Parse command arguments
+cmd_args = parser.parse_args()
+
+#Verbosity level
+if cmd_args.verbose:
+	logging.basicConfig(level=logging.DEBUG)
+else:
+	logging.basicConfig(level=logging.INFO)
+
+#Initialize MPIWhirlPool
+comm = MPI.COMM_WORLD
+
+try:
+	pool = MPIWhirlPool(comm=comm)
+except:
+	pool = None
+	logging.debug("Couldn't initialize MPI Pool, running in series")
+
+#check that all provided options are available
+if (len(cmd_args.id)==0) or (cmd_args.config_file is None):
+	
+	if (pool is None) or (pool.is_master()):
+		parser.print_help()
+	
+	sys.exit(0)
+
+#Parse relevant options
+if (pool is None) or (pool.is_master()):
+	logging.info("Reading configuration from {0}".format(cmd_args.config_file))
+
+environment_settings = EnvironmentSettings.read(cmd_args.config_file)
+plane_settings = PlaneSettings.read(cmd_args.config_file)
+
+#Cycle over ids to produce the planes
+for batch_id in cmd_args.id:
+	lenstools.scripts.cutplanes.main(pool=pool,environment=environment_settings,settings=plane_settings,id=batch_id)
