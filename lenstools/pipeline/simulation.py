@@ -442,6 +442,19 @@ class SimulationIC(SimulationCollection):
 		self.ICFilebase = ICFilebase
 		self.SnapshotFileBase = SnapshotFileBase
 
+		#Try to load in the simulation settings, if any are present
+		try:
+			with open(os.path.join(self.home_subdir,"ngenic.p"),"r") as settingsfile:
+				self.ngenic_settings = cPickle.load(settingsfile)
+		except IOError:
+			pass
+
+		try:
+			with open(os.path.join(self.home_subdir,"gadget2.p"),"r") as settingsfile:
+				self.gadget_settings = cPickle.load(settingsfile)
+		except IOError:
+			pass
+
 	def __repr__(self):
 
 		#Check if snapshots and/or initial conditions are present
