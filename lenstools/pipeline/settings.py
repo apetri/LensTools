@@ -182,6 +182,20 @@ class MapSettings(object):
 		self.angle_unit = u.deg
 		self.source_redshift = 2.0
 
+		#Random seed used to generate multiple map realizations
+		self.seed = 0
+
+		#Set of lens planes to be used during ray tracing
+		self.plane_set = "Planes"
+
+		#N-body simulation realizations that need to be mixed
+		self.mix_nbody_realizations = [1]
+
+		#Which lensing quantities do we need?
+		self.convergence = True
+		self.shear = False
+		self.omega = False
+
 		#Allow for kwargs override
 		for key in kwargs.keys():
 			setattr(self,key,kwargs[key])
@@ -208,6 +222,14 @@ class MapSettings(object):
 		settings.map_angle = options.getfloat(section,"map_angle") * settings.angle_unit
 		
 		settings.source_redshift = options.getfloat(section,"source_redshift")
+
+		settings.seed = options.getint(section,"seed")
+		settings.plane_set = options.get(section,"plane_set")
+		settings.mix_nbody_realizations = [ int(n) for n in options.get(section,"mix_nbody_realizations").split(",") ]
+
+		settings.convergence = options.getboolean(section,"convergence")
+		settings.shear = options.getboolean(section,"shear")
+		settings.omega = options.getboolean(section,"omega")
 
 		#Return to user
 		return settings
