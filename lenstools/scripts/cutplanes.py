@@ -50,12 +50,18 @@ def main(pool,environment,settings,id):
 	SnapshotFileBase = realization.SnapshotFileBase + "_"
 
 	#Log to user
-	logging.info("Reading snapshots from {0}".format(os.path.join(snapshot_path,SnapshotFileBase+"*")))
+	if (pool is None) or (pool.is_master()):
+		logging.info("Reading snapshots from {0}".format(os.path.join(snapshot_path,SnapshotFileBase+"*")))
 
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
 	plane_batch = realization.getPlaneSet(settings.directory_name)
 	save_path = plane_batch.storage_subdir
-	logging.info("Planes will be saved to {0}".format(save_path))
+
+	if (pool is None) or (pool.is_master()):
+		
+		logging.info("Planes will be saved to {0}".format(save_path))
+		#Open the info file to save the planes information
+		infofile = open(os.path.join(save_path,"info.txt"),"w")
 
 	#Read from PlaneSettings
 	plane_resolution = settings.plane_resolution
@@ -86,6 +92,7 @@ def main(pool,environment,settings,id):
 
 				#Do the cutting
 				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,plane_resolution=plane_resolution,thickness_resolution=1,smooth=1,kind="potential")
+				plane_file = os.path.join(save_path,"snap{0}_potentialPlane{1}_normal{2}.{3}".format(n,cut,normal,settings.format))
 
 				if pool is None or pool.is_master():
 			
@@ -93,9 +100,11 @@ def main(pool,environment,settings,id):
 					potential_plane = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=snap.header["redshift"],cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
 
 					#Save the result
-					plane_file = os.path.join(save_path,"snap{0}_potentialPlane{1}_normal{2}.{3}".format(n,cut,normal,settings.format))
 					logging.info("Saving plane to {0}".format(plane_file))
 					potential_plane.save(plane_file)
+
+					#Update the summary info file
+					infofile.write("pln={0},n={1},d={2},z={3}\n".format(n,normal,potential_plane.comoving_distance,potential_plane.redshift))
 			
 			
 				if pool is not None:
@@ -110,6 +119,10 @@ def main(pool,environment,settings,id):
 	#Safety barrier sync
 	if pool is not None:
 		pool.comm.Barrier()
+
+	#Close the infofile
+	if (pool is None) or (pool.is_master()):
+		infofile.close()
 
 	if pool is None or pool.is_master():
 		logging.info("DONE!!")

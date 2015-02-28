@@ -190,6 +190,7 @@ class MapSettings(object):
 
 		#N-body simulation realizations that need to be mixed
 		self.mix_nbody_realizations = [1]
+		self.lens_map_realizations = 4
 
 		#Which lensing quantities do we need?
 		self.convergence = True
@@ -226,6 +227,7 @@ class MapSettings(object):
 		settings.seed = options.getint(section,"seed")
 		settings.plane_set = options.get(section,"plane_set")
 		settings.mix_nbody_realizations = [ int(n) for n in options.get(section,"mix_nbody_realizations").split(",") ]
+		settings.lens_map_realizations = options.getint(section,"lens_map_realizations")
 
 		settings.convergence = options.getboolean(section,"convergence")
 		settings.shear = options.getboolean(section,"shear")
