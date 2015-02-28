@@ -71,7 +71,7 @@ def main(pool,environment,settings,id):
 		snap = Gadget2Snapshot.open(os.path.join(snapshot_path,SnapshotFileBase+"{0:03d}".format(n)),pool=pool)
 
 		if pool is not None:
-			logging.info("Rank {0} reading snapshot from {1}".format(comm.rank,snap.header["files"][0]))
+			logging.info("Rank {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
 
 		#Get the positions of the particles
 		snap.getPositions()
