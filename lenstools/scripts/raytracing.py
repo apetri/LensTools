@@ -2,7 +2,7 @@
 ############Ray Tracing scripts#########################
 ########################################################
 
-simport os
+import os
 import logging
 import time
 
