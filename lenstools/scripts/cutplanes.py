@@ -82,6 +82,9 @@ def main(pool,environment,settings,id):
 		#Get the positions of the particles
 		snap.getPositions()
 
+		#Update the summary info file
+		if (pool is None) or (pool.is_master()):
+			infofile.write("s={0},d={1},z={2}\n".format(n,snap.header["comoving_distance"],snap.header["redshift"]))
 
 		#Cut the lens planes
 		for cut,pos in enumerate(cut_points):
@@ -102,9 +105,6 @@ def main(pool,environment,settings,id):
 					#Save the result
 					logging.info("Saving plane to {0}".format(plane_file))
 					potential_plane.save(plane_file)
-
-					#Update the summary info file
-					infofile.write("pln={0},n={1},d={2},z={3}\n".format(n,normal,potential_plane.comoving_distance,potential_plane.redshift))
 			
 			
 				if pool is not None:
