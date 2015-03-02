@@ -1,7 +1,7 @@
 ########################################################
 ############Ray Tracing scripts#########################
 ########################################################
-from __future__ import with_statement
+from __future__ import division,with_statement
 
 import os
 import logging
@@ -71,9 +71,16 @@ def singleRedshift(pool,environment,settings,id):
 	map_realizations = settings.lens_map_realizations
 
 	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
-	#TODO: adapt in case we are running multiple MPI tasks
-	first_map_realization = 0
-	last_map_realization = settings.lens_map_realizations
+	if pool is None:
+		first_map_realization = 0
+		last_map_realization = map_realizations
+		logging.debug("Generating lensing map realizations from {0} to {1}".format(first_map_realization+1,last_map_realization))
+	else:
+		assert map_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, map_realizations must be a multiple of the number of MPI tasks!"
+		realizations_per_task = map_realizations//(pool.size+1)
+		first_map_realization = realizations_per_task*pool.rank
+		last_map_realization = realizations_per_task*(pool.rank+1)
+		logging.debug("Task {0} will generate lensing map realizations from {1} to {2}".format(pool.rank,first_map_realization+1,last_map_realization))
 
 	#Planes will be read from this path
 	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
@@ -137,11 +144,9 @@ def singleRedshift(pool,environment,settings,id):
 			lens_redshift = float(line[2].split("=")[1])
 
 			#Add the lens to the system only if its redshift is < than the one of the source
-			#TODO: fix this in the future
-			if True:
-				logging.info("Adding lens at redshift {0}".format(lens_redshift))
-				plane_name = os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]]))
-				tracer.addLens((plane_name,distance,lens_redshift))
+			logging.info("Adding lens at redshift {0}".format(lens_redshift))
+			plane_name = os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]]))
+			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
 		infofile.close()
@@ -198,6 +203,11 @@ def singleRedshift(pool,environment,settings,id):
 		now = time.time()
 		logging.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
 	
-	now = time.time()
-	logging.info("Total runtime {0:.3f}s".format(now-begin))
+	#Safety sync barrier
+	if pool is not None:
+		pool.comm.Barrier()
+
+	if (pool is None) or (pool.is_master()):	
+		now = time.time()
+		logging.info("Total runtime {0:.3f}s".format(now-begin))
 
