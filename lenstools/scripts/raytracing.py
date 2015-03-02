@@ -69,12 +69,12 @@ def singleRedshift(pool,environment,settings,id):
 	normals = settings.mix_normals
 	map_realizations = settings.lens_map_realizations
 
-	#Instantiate the RayTracer
-	tracer = RayTracer()
+	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
+	#TODO: adapt in case we are running multiple MPI tasks
+	first_map_realization = 0
+	last_map_realization = settings.lens_map_realizations
 
-	start = time.time()
-	last_timestamp = start
-
+	#Planes will be read from this path
 	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
 	logging.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
 
@@ -82,97 +82,111 @@ def singleRedshift(pool,environment,settings,id):
 	save_path = os.path.join(map_batch.storage_subdir)
 	logging.info("Lensing maps will be saved to {0}".format(save_path))
 
+	begin = time.time()
 
-	#Add the lenses to the system 
-	#TODO: add randomization of cut points, normals and nbody ics
+	#We need one of these for cycles for each map random realization
+	for r in range(first_map_realization,last_map_realization):
 
-	#Open the info file to read the lens specifications (assume the info file is the same for all nbody realizations)
-	infofile = open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r")
+		#Instantiate the RayTracer
+		tracer = RayTracer()
 
-	#Read the info file line by line, and decide if we should add the particular lens corresponding to that line or not
-	while True:
+		start = time.time()
+		last_timestamp = start
 
-		#Read the line
-		line = infofile.readline().strip("\n")
+		#############################################################
+		###############Add the lenses to the system##################
+		#############################################################
 
-		#Stop if there is nothing more to read
-		if line=="":
-			break
+		#Open the info file to read the lens specifications (assume the info file is the same for all nbody realizations)
+		infofile = open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r")
 
-		#Split the line in snapshot,distance,redshift
-		line = line.split(",")
+		#Read the info file line by line, and decide if we should add the particular lens corresponding to that line or not
+		while True:
 
-		snapshot_number = int(line[0].split("=")[1])
+			#Read the line
+			line = infofile.readline().strip("\n")
+
+			#Stop if there is nothing more to read
+			if line=="":
+				break
+
+			#Split the line in snapshot,distance,redshift
+			line = line.split(",")
+
+			snapshot_number = int(line[0].split("=")[1])
 		
-		distance,unit = line[1].split("=")[1].split(" ")
-		if unit=="Mpc/h":
-			distance = float(distance)*model.Mpc_over_h
-		else:
-			distance = float(distance)*getattr(u,"unit")
+			distance,unit = line[1].split("=")[1].split(" ")
+			if unit=="Mpc/h":
+				distance = float(distance)*model.Mpc_over_h
+			else:
+				distance = float(distance)*getattr(u,"unit")
 
-		lens_redshift = float(line[2].split("=")[1])
+			lens_redshift = float(line[2].split("=")[1])
 
-		#Add the lens to the system only if its redshift is < than the one of the source
-		#TODO: fix this in the future
-		if True:
+			#Add the lens to the system only if its redshift is < than the one of the source
+			#TODO: fix this in the future
+			if True:
 	
-			logging.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = os.path.join(plane_path.format(nbody_realizations[0]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[0],normals[0]))
-			tracer.addLens((plane_name,distance,lens_redshift))
+				logging.info("Adding lens at redshift {0}".format(lens_redshift))
+				#TODO: add randomization of cut points, normals and nbody ics
+				plane_name = os.path.join(plane_path.format(nbody_realizations[0]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[0],normals[0]))
+				tracer.addLens((plane_name,distance,lens_redshift))
 
-	#Close the infofile
-	infofile.close()
+		#Close the infofile
+		infofile.close()
 
-	now = time.time()
-	logging.info("Plane specification reading completed in {0:.3f}s".format(now-start))
-	last_timestamp = now
+		now = time.time()
+		logging.info("Plane specification reading completed in {0:.3f}s".format(now-start))
+		last_timestamp = now
 
-	#Rearrange the lenses according to redshift and roll them randomly along the axes
-	tracer.reorderLenses()
+		#Rearrange the lenses according to redshift and roll them randomly along the axes
+		tracer.reorderLenses()
 
-	now = time.time()
-	logging.info("Reordering completed in {0:.3f}s".format(now-last_timestamp))
-	last_timestamp = now
+		now = time.time()
+		logging.info("Reordering completed in {0:.3f}s".format(now-last_timestamp))
+		last_timestamp = now
 
-	#Start a bucket of light rays from a regular grid of initial positions
-	b = np.linspace(0.0,map_angle.value,resolution)
-	xx,yy = np.meshgrid(b,b)
-	pos = np.array([xx,yy]) * map_angle.unit
+		#Start a bucket of light rays from a regular grid of initial positions
+		b = np.linspace(0.0,map_angle.value,resolution)
+		xx,yy = np.meshgrid(b,b)
+		pos = np.array([xx,yy]) * map_angle.unit
 
-	#Trace the ray deflections
-	jacobian = tracer.shoot(pos,z=source_redshift,kind="jacobians")
+		#Trace the ray deflections
+		jacobian = tracer.shoot(pos,z=source_redshift,kind="jacobians")
 
-	now = time.time()
-	logging.info("Jacobian ray tracing completed in {0:.3f}s".format(now-last_timestamp))
-	last_timestamp = now
+		now = time.time()
+		logging.info("Jacobian ray tracing for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+		last_timestamp = now
 
-	#Compute shear,convergence and omega from the jacobians
-	if settings.convergence:
+		#Compute shear,convergence and omega from the jacobians
+		if settings.convergence:
 		
-		conv = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
-		savename = os.path.join(save_path,"WLconv_0001r.{0}".format(settings.format))
-		logging.info("Saving convergence map to {0}".format(savename)) 
-		conv.save(savename)
+			conv = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
+			savename = os.path.join(save_path,"WLconv_{0:04d}r.{1}".format(r+1,settings.format))
+			logging.info("Saving convergence map to {0}".format(savename)) 
+			conv.save(savename)
 
-	##############################################################################################################################
+		##############################################################################################################################
 	
-	if settings.shear:
+		if settings.shear:
 		
-		shear = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
-		savename = os.path.join(save_path,"WLshear_0001r.{0}".format(settings.format))
-		logging.info("Saving shear map to {0}".format(savename))
-		shear.save(savename) 
+			shear = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
+			savename = os.path.join(save_path,"WLshear_{0:04d}r.{1}".format(r+1,settings.format))
+			logging.info("Saving shear map to {0}".format(savename))
+			shear.save(savename) 
 
-	##############################################################################################################################
+		##############################################################################################################################
 	
-	if settings.omega:
+		if settings.omega:
 		
-		omega = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
-		savename = os.path.join(save_path,"WLomega_0001r.{0}".format(settings.format))
-		logging.info("Saving omega map to {0}".format(savename))
-		omega.save(savename)
+			omega = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
+			savename = os.path.join(save_path,"WLomega_{0:04d}r.{1}".format(r+1,settings.format))
+			logging.info("Saving omega map to {0}".format(savename))
+			omega.save(savename)
 
+		now = time.time()
+		logging.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+	
 	now = time.time()
-	logging.info("Weak lensing calculations completed in {0:.3f}s".format(now-last_timestamp))
-	logging.info("Total runtime {0:.3f}s".format(now-start))
+	logging.info("Total runtime {0:.3f}s".format(now-begin))
 
