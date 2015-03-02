@@ -47,15 +47,16 @@ except ImportError:
 class Plane(Spin0):
 
 
-	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
+	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False,filename=None):
 
 		#Sanity check
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
-		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
+		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles,filename=filename)
 		self.redshift = redshift
 		self.cosmology = cosmology
 		self.unit = unit
+		self.filename = filename
 
 		if num_particles is not None:
 			self.num_particles = num_particles
@@ -77,6 +78,10 @@ class Plane(Spin0):
 			self.space = "fourier"
 		else:
 			raise TypeError("data type not supported!")
+
+
+	def __del__(self):
+		logging.debug("Plane {0} deleted from memory".format(self.filename))
 
 
 	def angular(self,length_scale):
@@ -280,16 +285,16 @@ class Plane(Spin0):
 			if fitsio is not None:
 
 				if len(hdu)==1:
-					new_plane = cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
+					new_plane = cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles,filename=filename)
 				else:
-					new_plane = cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
+					new_plane = cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles,filename=filename)
 
 			else:
 			
 				if len(hdu)==1:
-					new_plane = cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
+					new_plane = cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles,filename=filename)
 				else:
-					new_plane = cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
+					new_plane = cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles,filename=filename)
 
 			#Close the FITS file and return
 			hdu.close()
@@ -1158,6 +1163,10 @@ class RayTracer(object):
 			#Log timestamp to cross lens
 			now = time.time()
 			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+
+			#Force delete of the current lens
+			if type(lens[k])==str:
+				del(current_lens)
 
 		#Return the final positions of the light rays (or jacobians)
 		if kind=="positions":
