@@ -1,6 +1,7 @@
 ########################################################
 ############Ray Tracing scripts#########################
 ########################################################
+from __future__ import with_statement
 
 import os
 import logging
@@ -78,6 +79,18 @@ def singleRedshift(pool,environment,settings,id):
 	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
 	logging.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
 
+	#Read how many snapshots are available
+	with open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r") as infofile:
+		num_snapshots = len(infofile.readlines())
+
+	#Construct the randomization matrix that will differentiate between realizations; this needs to have shape map_realizations x num_snapshots x 3 (ic+cut_points+normals)
+	randomizer = np.zeros((map_realizations,num_snapshots,3),dtype=np.int)
+	randomizer[:,:,0] = np.random.randint(low=0,high=len(nbody_realizations),size=(map_realizations,num_snapshots))
+	randomizer[:,:,1] = np.random.randint(low=0,high=len(cut_points),size=(map_realizations,num_snapshots))
+	randomizer[:,:,2] = np.random.randint(low=0,high=len(normals),size=(map_realizations,num_snapshots))
+
+	logging.debug("Randomization matrix has shape {0}".format(randomizer.shape))
+
 	#Save path for the maps
 	save_path = os.path.join(map_batch.storage_subdir)
 	logging.info("Lensing maps will be saved to {0}".format(save_path))
@@ -101,7 +114,7 @@ def singleRedshift(pool,environment,settings,id):
 		infofile = open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r")
 
 		#Read the info file line by line, and decide if we should add the particular lens corresponding to that line or not
-		while True:
+		for s in range(num_snapshots):
 
 			#Read the line
 			line = infofile.readline().strip("\n")
@@ -126,10 +139,8 @@ def singleRedshift(pool,environment,settings,id):
 			#Add the lens to the system only if its redshift is < than the one of the source
 			#TODO: fix this in the future
 			if True:
-	
 				logging.info("Adding lens at redshift {0}".format(lens_redshift))
-				#TODO: add randomization of cut points, normals and nbody ics
-				plane_name = os.path.join(plane_path.format(nbody_realizations[0]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[0],normals[0]))
+				plane_name = os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]]))
 				tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
