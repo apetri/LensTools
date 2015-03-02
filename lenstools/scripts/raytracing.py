@@ -161,28 +161,28 @@ def singleRedshift(pool,environment,settings,id):
 		#Compute shear,convergence and omega from the jacobians
 		if settings.convergence:
 		
-			conv = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
+			convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
 			savename = os.path.join(save_path,"WLconv_{0:04d}r.{1}".format(r+1,settings.format))
 			logging.info("Saving convergence map to {0}".format(savename)) 
-			conv.save(savename)
+			convMap.save(savename)
 
 		##############################################################################################################################
 	
 		if settings.shear:
 		
-			shear = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
+			shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
 			savename = os.path.join(save_path,"WLshear_{0:04d}r.{1}".format(r+1,settings.format))
 			logging.info("Saving shear map to {0}".format(savename))
-			shear.save(savename) 
+			shearMap.save(savename) 
 
 		##############################################################################################################################
 	
 		if settings.omega:
 		
-			omega = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
+			omegaMap = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
 			savename = os.path.join(save_path,"WLomega_{0:04d}r.{1}".format(r+1,settings.format))
 			logging.info("Saving omega map to {0}".format(savename))
-			omega.save(savename)
+			omegaMap.save(savename)
 
 		now = time.time()
 		logging.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
