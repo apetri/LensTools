@@ -897,6 +897,10 @@ class RayTracer(object):
 		if type(lens_specification)==tuple:
 
 			filename,distance,redshift = lens_specification
+
+			assert type(filename)==str
+			assert distance.unit.physical_type=="length"
+			assert type(redshift)==float
 			
 			self.lens.append(filename)
 			self.distance.append(distance)
@@ -1048,7 +1052,10 @@ class RayTracer(object):
 			if type(lens[k])==PotentialPlane:
 				current_lens = lens[k]
 			elif type(lens[k])==str:
+				logging.info("Reading plane from {0}...".format(lens[k]))
 				current_lens = PotentialPlane.load(lens[k])
+				logging.info("Randomly rolling lens {0} along its axes...".format(k))
+				current_lens.randomRoll()
 			else:
 				raise TypeError("Lens format not recognized!")
 

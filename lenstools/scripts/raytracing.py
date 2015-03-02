@@ -62,7 +62,7 @@ def singleRedshift(pool,environment,settings,id):
 
 	#Read map angle,redshift and resolution from the settings
 	map_angle = settings.map_angle
-	redshift = settings.source_redshift
+	source_redshift = settings.source_redshift
 	resolution = settings.map_resolution
 	nbody_realizations = settings.mix_nbody_realizations
 	cut_points = settings.mix_cut_points
@@ -84,17 +84,47 @@ def singleRedshift(pool,environment,settings,id):
 
 
 	#Add the lenses to the system 
-	#TODO: detect automatically which planes to load
 	#TODO: add randomization of cut points, normals and nbody ics
 
-	for i in range(11,59):
+	#Open the info file to read the lens specifications (assume the info file is the same for all nbody realizations)
+	infofile = open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r")
+
+	#Read the info file line by line, and decide if we should add the particular lens corresponding to that line or not
+	while True:
+
+		#Read the line
+		line = infofile.readline().strip("\n")
+
+		#Stop if there is nothing more to read
+		if line=="":
+			break
+
+		#Split the line in snapshot,distance,redshift
+		line = line.split(",")
+
+		snapshot_number = int(line[0].split("=")[1])
+		
+		distance,unit = line[1].split("=")[1].split(" ")
+		if unit=="Mpc/h":
+			distance = float(distance)*model.Mpc_over_h
+		else:
+			distance = float(distance)*getattr(u,"unit")
+
+		lens_redshift = float(line[2].split("=")[1])
+
+		#Add the lens to the system only if its redshift is < than the one of the source
+		#TODO: fix this in the future
+		if True:
 	
-		plane_name = os.path.join(plane_path.format(nbody_realizations[0]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(i,cut_points[0],normals[0]))
-		logging.info("Reading plane from {0}...".format(plane_name))
-		tracer.addLens(PotentialPlane.load(plane_name))
+			logging.info("Adding lens at redshift {0}".format(lens_redshift))
+			plane_name = os.path.join(plane_path.format(nbody_realizations[0]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[0],normals[0]))
+			tracer.addLens((plane_name,distance,lens_redshift))
+
+	#Close the infofile
+	infofile.close()
 
 	now = time.time()
-	logging.info("Plane loading completed in {0:.3f}s".format(now-start))
+	logging.info("Plane specification reading completed in {0:.3f}s".format(now-start))
 	last_timestamp = now
 
 	#Rearrange the lenses according to redshift and roll them randomly along the axes
@@ -104,19 +134,13 @@ def singleRedshift(pool,environment,settings,id):
 	logging.info("Reordering completed in {0:.3f}s".format(now-last_timestamp))
 	last_timestamp = now
 
-	tracer.randomRoll()
-
-	now = time.time()
-	logging.info("Rolling completed in {0:.3f}s".format(now-last_timestamp))
-	last_timestamp = now
-
 	#Start a bucket of light rays from a regular grid of initial positions
 	b = np.linspace(0.0,map_angle.value,resolution)
 	xx,yy = np.meshgrid(b,b)
 	pos = np.array([xx,yy]) * map_angle.unit
 
 	#Trace the ray deflections
-	jacobian = tracer.shoot(pos,z=redshift,kind="jacobians")
+	jacobian = tracer.shoot(pos,z=source_redshift,kind="jacobians")
 
 	now = time.time()
 	logging.info("Jacobian ray tracing completed in {0:.3f}s".format(now-last_timestamp))
