@@ -114,7 +114,12 @@ class PlaneSettings(object):
 
 	def __init__(self,**kwargs):
 
+		#Name of the planes batch
 		self.directory_name = "Planes"
+		
+		#Use the pickled options generated at the moment of the batch generation (advised)
+		self.override_with_local = True
+
 		self.format = "fits"
 		self.plane_resolution = 128
 		self.first_snapshot = 46
@@ -143,6 +148,7 @@ class PlaneSettings(object):
 		settings = cls()
 		
 		settings.directory_name = options.get(section,"directory_name")
+		settings.override_with_local = options.getboolean(section,"override_with_local")
 		settings.format = options.get(section,"format")
 		settings.plane_resolution = options.getint(section,"plane_resolution")
 		settings.first_snapshot = options.getint(section,"first_snapshot")
@@ -175,7 +181,12 @@ class MapSettings(object):
 
 	def __init__(self,**kwargs):
 
+		#Names of the map batch
 		self.directory_name = "Maps"
+
+		#Use the options generated at the moment of the batch generation (advised)
+		self.override_with_local = True
+
 		self.format = "fits"
 		self.map_resolution = 128
 		self.map_angle = 1.6 * u.deg
@@ -218,6 +229,7 @@ class MapSettings(object):
 		settings = cls()
 
 		settings.directory_name = options.get(section,"directory_name")
+		settings.override_with_local = options.getboolean(section,"override_with_local")
 		settings.format = options.get(section,"format")
 		settings.map_resolution = options.getint(section,"map_resolution")
 		

@@ -6,6 +6,7 @@ from __future__ import division
 
 import os
 import logging
+import cPickle
 
 from lenstools.pipeline.simulation import SimulationModel
 from lenstools.pipeline.settings import PlaneSettings,EnvironmentSettings
@@ -45,7 +46,6 @@ def main(pool,environment,settings,id):
 	realization = model.getCollection(box_size,nside).getRealization(ic)
 	snapshot_path = realization.snapshot_subdir
 	
-
 	#Base name of the snapshot files
 	SnapshotFileBase = realization.SnapshotFileBase + "_"
 
@@ -56,6 +56,19 @@ def main(pool,environment,settings,id):
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
 	plane_batch = realization.getPlaneSet(settings.directory_name)
 	save_path = plane_batch.storage_subdir
+
+	#Override with pickled options in storage subdir if prompted by user
+	if settings.override_with_local:
+		
+		local_settings_file = os.path.join(plane_batch.home_subdir,"settings.p")
+		
+		with open(local_settings_file,"r") as settingsfile:
+			settings = cPickle.load(settingsfile)
+			assert isinstance(settings,PlaneSettings)
+
+		if (pool is None) or (pool.is_master()):
+			logging.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
+
 
 	if (pool is None) or (pool.is_master()):
 		

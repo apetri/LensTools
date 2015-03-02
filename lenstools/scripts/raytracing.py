@@ -5,6 +5,7 @@
 import os
 import logging
 import time
+import cPickle
 
 from lenstools.utils import MPIWhirlPool
 
@@ -12,6 +13,7 @@ from lenstools.convergence import Spin0
 from lenstools import ConvergenceMap,ShearMap
 
 from lenstools.simulations.raytracing import RayTracer,PotentialPlane,DeflectionPlane
+from lenstools.pipeline.simulation import SimulationModel
 from lenstools.pipeline.settings import EnvironmentSettings,MapSettings
 
 import numpy as np
@@ -28,6 +30,33 @@ def singleRedshift(pool,environment,settings,id):
 	#Separate the id into cosmo_id and geometry_id
 	cosmo_id,geometry_id = id.split("|")
 
+	#Instantiate the SimulationModel
+	model = SimulationModel.getModel(environment,cosmo_id)
+
+	#Scale the box size to the correct units
+	nside,box_size = geometry_id.split("b")
+	box_size = float(box_size)*model.Mpc_over_h
+
+	#Get the corresponding simulation collection and map batch handlers
+	collection = model.getCollection(box_size,nside)
+	map_batch = collection.getMapSet(settings.directory_name)
+
+	#Override the settings with the previously pickled ones, if prompted by user
+	if settings.override_with_local:
+
+		local_settings_file = os.path.join(map_batch.home_subdir,"settings.p")
+
+		with open(local_settings_file,"r") as settingsfile:
+			settings = cPickle.load(settingsfile)
+			assert isinstance(settings,MapSettings)
+
+		if (pool is None) or (pool.is_master()):
+			logging.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
+
+	##################################################################
+	##################Settings read###################################
+	##################################################################
+
 	#Set random seed to generate the realizations
 	np.random.seed(settings.seed)
 
@@ -35,6 +64,10 @@ def singleRedshift(pool,environment,settings,id):
 	map_angle = settings.map_angle
 	redshift = settings.source_redshift
 	resolution = settings.map_resolution
+	nbody_realizations = settings.mix_nbody_realizations
+	cut_points = settings.mix_cut_points
+	normals = settings.mix_normals
+	map_realizations = settings.lens_map_realizations
 
 	#Instantiate the RayTracer
 	tracer = RayTracer()
@@ -42,21 +75,21 @@ def singleRedshift(pool,environment,settings,id):
 	start = time.time()
 	last_timestamp = start
 
-	#TODO: for now we are mixing only one N-body realization, fix in the future
-	plane_path = os.path.join(environment.storage,cosmo_id,geometry_id,"ic{0}".format(settings.mix_nbody_realizations[0]),settings.plane_set)
-	logging.info("Reading planes from {0}".format(plane_path))
+	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
+	logging.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
 
 	#Save path for the maps
-	save_path = os.path.join(environment.storage,cosmo_id,geometry_id,settings.directory_name)
+	save_path = os.path.join(map_batch.storage_subdir)
 	logging.info("Lensing maps will be saved to {0}".format(save_path))
 
 
 	#Add the lenses to the system 
-
 	#TODO: detect automatically which planes to load
+	#TODO: add randomization of cut points, normals and nbody ics
+
 	for i in range(11,59):
 	
-		plane_name = os.path.join(plane_path,"snap{0}_potentialPlane{1}_normal{2}.fits".format(i,0,0))
+		plane_name = os.path.join(plane_path.format(nbody_realizations[0]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(i,cut_points[0],normals[0]))
 		logging.info("Reading plane from {0}...".format(plane_name))
 		tracer.addLens(PotentialPlane.load(plane_name))
 
