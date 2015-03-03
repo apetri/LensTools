@@ -85,7 +85,9 @@ def singleRedshift(pool,environment,settings,id):
 
 	#Planes will be read from this path
 	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
-	logging.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
+
+	if (pool is None) or (pool.is_master()):
+		logging.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
 
 	#Read how many snapshots are available
 	with open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r") as infofile:
@@ -97,11 +99,14 @@ def singleRedshift(pool,environment,settings,id):
 	randomizer[:,:,1] = np.random.randint(low=0,high=len(cut_points),size=(map_realizations,num_snapshots))
 	randomizer[:,:,2] = np.random.randint(low=0,high=len(normals),size=(map_realizations,num_snapshots))
 
-	logging.debug("Randomization matrix has shape {0}".format(randomizer.shape))
+	if (pool is None) or (pool.is_master()):
+		logging.debug("Randomization matrix has shape {0}".format(randomizer.shape))
 
 	#Save path for the maps
 	save_path = os.path.join(map_batch.storage_subdir)
-	logging.info("Lensing maps will be saved to {0}".format(save_path))
+
+	if (pool is None) or (pool.is_master()):
+		logging.info("Lensing maps will be saved to {0}".format(save_path))
 
 	begin = time.time()
 
