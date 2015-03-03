@@ -7,6 +7,7 @@ import os
 import logging
 import time
 import cPickle
+import resource
 
 from lenstools.utils import MPIWhirlPool
 
@@ -202,6 +203,7 @@ def singleRedshift(pool,environment,settings,id):
 
 		now = time.time()
 		logging.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+		logging.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
 	
 	#Safety sync barrier
 	if pool is not None:
