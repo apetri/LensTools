@@ -4,6 +4,7 @@ from ..shear import Spin1,Spin2,ShearMap
 import time
 import logging
 import re
+import gc
 
 from operator import mul
 from functools import reduce
@@ -38,6 +39,11 @@ try:
 except ImportError:
 	from astropy.io import fits
 	fitsio = None
+
+
+#Enable garbage collection if not active already
+if not gc.isenabled():
+	gc.enable()
 
 
 ###########################################################
@@ -1164,9 +1170,6 @@ class RayTracer(object):
 			now = time.time()
 			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
 
-			#Force delete of the current lens
-			if type(lens[k])==str:
-				del(current_lens)
 
 		#Return the final positions of the light rays (or jacobians)
 		if kind=="positions":
