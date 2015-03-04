@@ -139,6 +139,7 @@ class SimulationModel(object):
 
 				#Follow with the realizations
 				for r in collection.realizations:
+					
 					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index] = dict()
 					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"] = dict()
 
@@ -164,7 +165,7 @@ class SimulationModel(object):
 
 					except IOError:
 						pass
-		
+
 
 		#Return to user
 		return info_dict
