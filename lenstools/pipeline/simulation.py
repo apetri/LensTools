@@ -54,6 +54,8 @@ class SimulationModel(object):
 
 		"""
 
+		assert isinstance(environment,EnvironmentSettings)
+
 		models = list()
 
 		#Useful regular expression
@@ -90,6 +92,84 @@ class SimulationModel(object):
 
 		#Return the list with the available models
 		return models
+
+	##############################################################################################################################
+
+	@classmethod
+	def info(cls,environment):
+
+		"""
+		Returns summary info of the simulation batch corresponding to the current environment
+
+		:param environment: environment settings
+		:type environment: EnvironmentSettings
+
+		:returns: info in dictionary format
+
+		"""
+
+		#Information will be returned in dictionary format
+		info_dict = dict()
+
+		#Start with the available models
+		available_models = cls.available(environment)
+		for model in available_models:
+			info_dict[model.cosmo_id] = dict()
+
+			#Follow with the collections 
+			for collection in model.collections:
+				info_dict[model.cosmo_id][collection.geometry_id] = dict()
+				info_dict[model.cosmo_id][collection.geometry_id]["map_sets"] = dict()
+
+				#Check if there are any map sets present
+				try:
+					
+					with open(os.path.join(collection.home_subdir,"sets.txt"),"r") as setsfile:
+						
+						for line in setsfile.readlines():
+							if line=="":
+								continue
+							map_set = collection.getMapSet(line.strip("\n"))
+							maps_on_disk = glob.glob(os.path.join(map_set.storage_subdir,"*"))
+							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name] = dict() 
+							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name]["num_maps"] = len(maps_on_disk)
+
+				except IOError:
+					pass
+
+				#Follow with the realizations
+				for r in collection.realizations:
+					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index] = dict()
+					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"] = dict()
+
+					#Make number of ics and snapshots on disk available to user
+					ics_on_disk = glob.glob(os.path.join(r.ics_subdir,r.ICFilebase+"*"))
+					snap_on_disk = glob.glob(os.path.join(r.snapshot_subdir,r.SnapshotFileBase+"*"))
+					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["ics"] =  len(ics_on_disk)
+					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["snapshots"] = len(snap_on_disk)
+
+					#Check if there are any plane sets present
+					try:
+
+						with open(os.path.join(r.home_subdir,"sets.txt"),"r") as setsfile:
+
+							for line in setsfile.readlines():
+								if line=="":
+									continue
+								
+								plane_set = r.getPlaneSet(line.strip("\n"))
+								planes_on_disk = glob.glob(os.path.join(plane_set.storage_subdir,"*plane*"))
+								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name] = dict()
+								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name]["num_planes"] = len(planes_on_disk)
+
+					except IOError:
+						pass
+		
+
+		#Return to user
+		return info_dict
+
+
 
 	##############################################################################################################################
 
@@ -383,6 +463,10 @@ class SimulationCollection(SimulationModel):
 		with open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
 			cPickle.dump(settings,settingsfile)
 
+		#Append the name of the map batch to a summary file
+		with open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
+			setsfile.write("{0}\n".format(settings.directory_name))
+
 		#Return to user
 		return map_set
 
@@ -485,6 +569,10 @@ class SimulationIC(SimulationCollection):
 		#Save a pickled copy of the settings for future reference
 		with open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
 			cPickle.dump(settings,settingsfile)
+
+		#Append the name of the plane batch to a summary file
+		with open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
+			setsfile.write("{0}\n".format(settings.directory_name))
 
 		#Return the created instance
 		return new_plane_set
