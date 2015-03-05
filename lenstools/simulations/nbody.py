@@ -82,6 +82,9 @@ class NbodySnapshot(object):
 	def write(self,filename,files=1):
 		pass
 
+	###################################################################################
+	######################Default, non--abstract methods###############################
+	###################################################################################
 
 	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
 
