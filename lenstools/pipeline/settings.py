@@ -253,6 +253,40 @@ class MapSettings(object):
 		return settings
 
 
+##################################################
+###############JobSettings class##################
+##################################################
+
+class JobSettings(object):
+
+	"""
+	Class handler of batch job submission settings
+
+	"""
+
+	def __init__(self,**kwargs):
+
+		#Personal settings
+		self.email = "apetri@phys.columbia.edu"
+		self.charge_account = "TG-AST140041"
+
+		#Name of the job, output
+		self.job_name = "job"
+		self.redirect_stdout = "job.out"
+		self.redirect_stderr = "job.out"
+
+		#Resources
+		self.num_cores = 16
+		self.num_nodes = 1
+		self.tasks_per_node = 16
+		self.queue = "development"
+		self.wallclock_time = "02:00:00"
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+
 
 
 
