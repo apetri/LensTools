@@ -92,7 +92,7 @@ class JobHandler(object):
 
 		s.write("""
 {0} {1} {2}
-{0} {3} {4}
+{0} {3}{4}
 
 {0} {5}={6}
 {0} {7}
@@ -161,7 +161,7 @@ SLURMspecs = {
 "num_nodes_switch" : "-N ",
 "tasks_per_node_switch" : None,
 "queue_type_switch" : "-p",
-"wallclock_time_switch" : "-t",
+"wallclock_time_switch" : "-t ",
 "user_email_switch" : "--mail-user=",
 "user_email_type" : "--mail-type=all",
 }
