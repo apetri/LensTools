@@ -1,5 +1,5 @@
-#ifndef __READ_GADGET_H
-#define __READ_GADGET_H
+#ifndef __READ_GADGET2_H
+#define __READ_GADGET2_H
 
 #include <stdio.h>
 

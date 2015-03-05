@@ -262,7 +262,7 @@ class Gadget2Snapshot(NbodySnapshot):
 	###############################################################################################
 
 	def getHeader(self):
-		self._header = Gadget2Header(ext._gadget.getHeader(self.fp))
+		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
 		return self._header 
 
 	############################################################################################
@@ -314,9 +314,9 @@ class Gadget2Snapshot(NbodySnapshot):
 
 		#Read in the particles positions and return the corresponding array
 		try:
-			positions = (ext._gadget.getPosVel(self.fp,offset,numPart) * self.kpc_over_h).to(self.Mpc_over_h)
+			positions = (ext._gadget2.getPosVel(self.fp,offset,numPart) * self.kpc_over_h).to(self.Mpc_over_h)
 		except AttributeError:
-			positions = ext._gadget.getPosVel(self.fp,offset,numPart) * kpc
+			positions = ext._gadget2.getPosVel(self.fp,offset,numPart) * kpc
 
 		if save:
 			self.positions = positions
@@ -378,7 +378,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 
 		#Read in the particles positions and return the corresponding array
-		velocities = ext._gadget.getPosVel(self.fp,offset,numPart)
+		velocities = ext._gadget2.getPosVel(self.fp,offset,numPart)
 
 		#Scale units
 		velocities *= self._velocity_unit
@@ -450,7 +450,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 
 		#Read in the particles positions and return the corresponding array
-		ids = ext._gadget.getID(self.fp,offset,numPart)
+		ids = ext._gadget2.getID(self.fp,offset,numPart)
 		if save:
 			self.id = ids
 		
@@ -521,7 +521,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 				#Write it!
 				filename_with_extension = "{0}.{1}".format(filename,n)
-				ext._gadget.write(_header_bare,_positions_converted[n*particles_per_file:(n+1)*particles_per_file],_velocities_converted[n*particles_per_file:(n+1)*particles_per_file],n*particles_per_file+1,filename_with_extension,writeVel)
+				ext._gadget2.write(_header_bare,_positions_converted[n*particles_per_file:(n+1)*particles_per_file],_velocities_converted[n*particles_per_file:(n+1)*particles_per_file],n*particles_per_file+1,filename_with_extension,writeVel)
 
 			
 			#The last file might have a different number of particles
@@ -534,7 +534,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 			#Write it!
 			filename_with_extension = "{0}.{1}".format(filename,files-1)
-			ext._gadget.write(_header_bare,_positions_converted[particles_per_file*(files-1):],_velocities_converted[particles_per_file*(files-1):],(files-1)*particles_per_file+1,filename_with_extension,writeVel)
+			ext._gadget2.write(_header_bare,_positions_converted[particles_per_file*(files-1):],_velocities_converted[particles_per_file*(files-1):],(files-1)*particles_per_file+1,filename_with_extension,writeVel)
 
 		else:
 
@@ -546,7 +546,7 @@ class Gadget2Snapshot(NbodySnapshot):
 			self.header["files"] = [ filename ]
 			
 			#Write it!!
-			ext._gadget.write(_header_bare,_positions_converted,_velocities_converted,1,filename,writeVel)
+			ext._gadget2.write(_header_bare,_positions_converted,_velocities_converted,1,filename,writeVel)
 
 	############################################################################################
 	###########################Extra methods####################################################

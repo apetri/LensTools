@@ -421,7 +421,7 @@ class NbodySnapshot(object):
 
 		#Compute the number count histogram
 		assert positions.value.dtype==np.float32
-		density = ext._gadget.grid3d(positions.value,(xi,yi,zi))
+		density = ext._nbody.grid3d(positions.value,(xi,yi,zi))
 
 		#Accumulate from the other processors
 		if self.pool is not None:
@@ -547,7 +547,7 @@ class NbodySnapshot(object):
 
 		#Now use gridding to compute the density along the slab
 		assert positions.value.dtype==np.float32
-		density = ext._gadget.grid3d(positions.value,tuple(binning))
+		density = ext._nbody.grid3d(positions.value,tuple(binning))
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:
@@ -779,7 +779,7 @@ class NbodySnapshot(object):
 		assert (rp>0).all()
 
 		#Compute the adaptive smoothing
-		density = (3.0/np.pi)*ext._gadget.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
+		density = (3.0/np.pi)*ext._nbody.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:
@@ -968,7 +968,7 @@ class NbodySnapshot(object):
 
 		#Now use grid3d to compute the angular density on the lens plane
 		assert positions.dtype==np.float32
-		density = ext._gadget.grid3d(positions,tuple(binning))
+		density = ext._nbody.grid3d(positions,tuple(binning))
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:
