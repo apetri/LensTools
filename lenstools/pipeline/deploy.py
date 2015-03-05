@@ -137,6 +137,7 @@ class JobHandler(object):
 
 """)
 
+		#TODO: handle the splitting between multiple executables
 		for executable in executables:
 			s.write("{0} {1}\n".format(self.cluster_specs.job_starter,executable))
 
@@ -167,6 +168,7 @@ SLURMspecs = {
 
 StampedeClusterSpecs = {
 "shell_prefix" : "#!/bin/bash",
+"execution_preamble" : None,
 "job_starter" : "ibrun",
 "cores_per_node" : 16,
 "memory_per_node" : 32.0*u.Gbyte,
