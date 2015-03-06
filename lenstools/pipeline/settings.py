@@ -273,7 +273,7 @@ class JobSettings(object):
 		#Name of the job, output
 		self.job_name = "job"
 		self.redirect_stdout = "job.out"
-		self.redirect_stderr = "job.out"
+		self.redirect_stderr = "job.err"
 
 		#Resources
 		self.num_cores = 16
