@@ -167,6 +167,9 @@ class JobHandler(object):
 
 """)
 
+		if self.cluster_specs.execution_preamble is not None:
+			s.write("{0}\n\n".format(self.cluster_specs.execution_preamble))
+
 		offset = 0
 		for n,executable in enumerate(executables):
 
