@@ -9,7 +9,8 @@ import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
 
-from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
+from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings,JobSettings
+from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2Snapshot,Nicaea 
 
 try:
@@ -52,6 +53,14 @@ class SimulationBatch(object):
 		#Type check
 		assert isinstance(environment,EnvironmentSettings)
 		self.environment = environment
+
+		#Create directories if they do not exist yet
+		for d in [environment.home,environment.storage]:
+			
+			if not os.path.isdir(d):
+				os.mkdir(d)
+				print("[+] {0} created")
+
 
 	##############################################################################################################################
 
@@ -173,7 +182,7 @@ class SimulationBatch(object):
 		return info_dict
 
 
-	##############################################################################################################################
+	##############################################################################################################################################
 
 	def newModel(self,cosmology,parameters):
 
@@ -201,7 +210,7 @@ class SimulationBatch(object):
 		#Return to user
 		return newModel
 
-	##############################################################################################################################
+	###########################################################################################################################################
 
 	def getModel(self,cosmo_id):
 
@@ -237,6 +246,76 @@ class SimulationBatch(object):
 
 		#Return the SimulationModel instance
 		return SimulationModel(cosmology=cosmoModel,environment=self.environment,parameters=parameters_list)
+
+	###########################################################################################################################################
+	##########################################Job submission scripts###########################################################################
+	###########################################################################################################################################
+
+	def writeNGenICSubmission(self,realization_list,job_settings,job_handler):
+
+		"""
+		Writes NGenIC submission script
+
+		:param ic_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
+		:type ic_list: list. of str.
+
+		:param job_settings: settings for the job (resources, etc...)
+		:type job_settings: JobSettings
+
+		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
+		:type job_handler: JobHandler
+
+		"""
+
+		#Type safety check
+		assert isinstance(job_settings,JobSettings)
+		assert isinstance(job_handler,JobHandler)
+		
+		#First separate the ic_list in cosmo_id,geometry_id,ic number
+		exec_args = list()
+
+		for realization in realization_list:
+			
+			cosmo_id,geometry_id,ic_number = realization.split("|")
+
+			#Get the corresponding SimulationXXX instances
+			model = self.getModel(cosmo_id)
+
+			nside,box_size = geometry_id.split("b")
+			nside = int(nside)
+			box_size = float(box_size) * model.Mpc_over_h
+			collection = model.getCollection(box_size=box_size,nside=nside)
+
+			r = collection.getRealization(int(ic_number.strip("ic")))
+
+			parameter_file = os.path.join(r.home_subdir,"ngenic.param")
+			if not(os.path.exists(parameter_file)):
+				raise IOError("NGenIC parameter file at {0} does not exist yet!".format(parameter_file))
+
+			exec_args.append(parameter_file)
+
+		executable = job_settings.path_to_executable + " " + " ".join(exec_args)
+
+		#Write the script
+		script_filename = job_settings.job_script_file
+
+		with open(script_filename,"w") as scriptfile:
+			scriptfile.write(job_handler.writePreamble(job_settings))
+			scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
+
+		#Log to user and return
+		print("[+] {0} written".format(script_filename))
+
+
+	def writeGadget2Submission(self):
+		pass
+
+	def writePlaneSubmission(self):
+		pass
+
+	def writeRaySubmission(self):
+		pass
+
 
 
 
@@ -651,7 +730,7 @@ class SimulationIC(SimulationCollection):
 		assert isinstance(settings,NGenICSettings)
 
 		#The filename is automatically generated from the class instance
-		filename = os.path.join(self.home_subdir,"ngeinc.param")
+		filename = os.path.join(self.home_subdir,"ngenic.param")
 
 		#Write the parameter file
 		with open(filename,"w") as paramfile:

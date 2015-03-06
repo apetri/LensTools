@@ -33,13 +33,6 @@ class EnvironmentSettings(object):
 		self.home = home
 		self.storage = storage
 
-		#Create directories if they do not exist yet
-		if not os.path.isdir(home):
-			os.mkdir(home)
-
-		if not os.path.isdir(storage):
-			os.mkdir(storage)
-
 
 	@classmethod
 	def read(cls,config_file):
@@ -270,6 +263,9 @@ class JobSettings(object):
 		self.email = "apetri@phys.columbia.edu"
 		self.charge_account = "TG-AST140041"
 
+		#Path to executable
+		self.path_to_executable = "Gadget2"
+
 		#Name of the job, output
 		self.job_name = "job"
 		self.redirect_stdout = "job.out"
@@ -281,6 +277,9 @@ class JobSettings(object):
 		self.tasks_per_node = 16
 		self.queue = "development"
 		self.wallclock_time = "02:00:00"
+
+		#Script name
+		self.job_script_file = "job.sh"
 
 		#Allow for kwargs override
 		for key in kwargs.keys():
@@ -304,6 +303,9 @@ class JobSettings(object):
 		settings.email = options.get(section,"email")
 		settings.charge_account = options.get(section,"charge_account")
 
+		#Path to executable
+		settings.path_to_executable = options.get(section,"path_to_executable")
+
 		#Name of the job, output
 		settings.job_name = options.get(section,"job_name")
 		settings.redirect_stdout = options.get(section,"redirect_stdout")
@@ -315,6 +317,11 @@ class JobSettings(object):
 		settings.tasks_per_node = options.getint(section,"tasks_per_node")
 		settings.queue = options.get(section,"queue")
 		settings.wallclock_time = options.get(section,"wallclock_time")
+
+		#Script name
+		settings.job_script_file = options.get(section,"job_script_file")
+
+		return settings
 
 
 
