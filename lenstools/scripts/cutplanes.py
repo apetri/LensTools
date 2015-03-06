@@ -8,7 +8,7 @@ import os
 import logging
 import cPickle
 
-from lenstools.pipeline.simulation import SimulationModel
+from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings,EnvironmentSettings
 
 from lenstools.simulations import Gadget2Snapshot,PotentialPlane
@@ -32,8 +32,9 @@ def main(pool,environment,settings,id):
 	#Split the id into the model,collection and realization parts
 	cosmo_id,geometry_id,realization_id = id.split("|")
 
-	#Instantiate the SimulationModel
-	model = SimulationModel.getModel(environment,cosmo_id)
+	#Instantiate the SimulationBatch and get the correspinding model
+	batch = SimulationBatch(environment)
+	model = batch.getModel(cosmo_id)
 
 	#Scale the box size to the correct units
 	nside,box_size = geometry_id.split("b")

@@ -1,6 +1,6 @@
 try:
 	
-	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
+	from lenstools.pipeline import SimulationBatch
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
@@ -9,7 +9,7 @@ except ImportError:
 	
 	import sys
 	sys.path.append("..")
-	from lenstools.pipeline import SimulationModel,SimulationCollection,SimulationIC
+	from lenstools.pipeline import SimulationBatch
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
@@ -25,12 +25,15 @@ seeds = [0,11,222]
 #Check environment settings
 env = EnvironmentSettings(home=home,storage=storage)
 
+#Instantiate a batch of simulations
+batch = SimulationBatch(env)
+
 def test_directory_tree():
 
 	#Create two simulation models
 	for cosmo in cosmologies:
 	
-		simulation_model = SimulationModel(cosmology=cosmo,environment=env,parameters=["Om","Ol","w","si","ns"])
+		simulation_model = batch.newModel(cosmology=cosmo,parameters=["Om","Ol","w","si","ns"])
 
 		#Create two different collections, three initial conditions per collection
 		for i,box_size in enumerate(box_sizes):
@@ -49,7 +52,7 @@ def test_directory_tree():
 
 def test_present():
 
-	for model in SimulationModel.available(env):
+	for model in batch.available():
 		for collection in model.collections:
 
 			mp = collection.getMapSet("Maps")
@@ -67,7 +70,7 @@ def test_NGenICParam():
 	#Create a parameter file for all the initial conditions present in the batch
 	settings = NGenICSettings(GlassFile=data("dummy_glass_little_endian.dat"))
 
-	for model in SimulationModel.available(env):
+	for model in batch.available():
 		for collection in model.collections:
 			for ic in collection.realizations:
 				ic.writeNGenIC(settings)
@@ -78,7 +81,7 @@ def test_Gadget2Param():
 	#Create a parameter file for all the initial conditions present in the batch
 	settings = Gadget2Settings()
 
-	for model in SimulationModel.available(env):
+	for model in batch.available():
 		for collection in model.collections:
 			for ic in collection.realizations:
 				ic.writeGadget2(settings)

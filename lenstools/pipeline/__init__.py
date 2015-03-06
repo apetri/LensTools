@@ -9,5 +9,4 @@
 
 """
 
-from .settings import EnvironmentSettings
-from .simulation import SimulationModel,SimulationCollection,SimulationIC
+from .simulation import SimulationBatch

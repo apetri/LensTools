@@ -15,7 +15,7 @@ from lenstools.convergence import Spin0
 from lenstools import ConvergenceMap,ShearMap
 
 from lenstools.simulations.raytracing import RayTracer,PotentialPlane,DeflectionPlane
-from lenstools.pipeline.simulation import SimulationModel
+from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import EnvironmentSettings,MapSettings
 
 import numpy as np
@@ -32,8 +32,9 @@ def singleRedshift(pool,environment,settings,id):
 	#Separate the id into cosmo_id and geometry_id
 	cosmo_id,geometry_id = id.split("|")
 
-	#Instantiate the SimulationModel
-	model = SimulationModel.getModel(environment,cosmo_id)
+	#Instantiate the SimulationBatch and the corresponding SimulationModel
+	batch = SimulationBatch(environment)
+	model = batch.getModel(cosmo_id)
 
 	#Scale the box size to the correct units
 	nside,box_size = geometry_id.split("b")

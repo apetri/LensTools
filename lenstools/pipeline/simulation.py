@@ -28,44 +28,50 @@ name2attr["Ob"] = "Ob0"
 name2attr["si"] = "sigma8"
 name2attr["ns"] = "ns"
 
-
 #####################################################
-##############SimulationModel class##################
+##############SimulationBatch class##################
 #####################################################
 
-class SimulationModel(object):
+class SimulationBatch(object):
 
 	"""
-	Class handler of a weak lensing simulation model, defined by a set of cosmological parameters
+	Class handler of a batch of weak lensing simulations that share the same environment settings
 
 	"""
 
-	@classmethod
-	def available(cls,environment):
+	def __init__(self,environment):
+
+		"""
+		Gets the handler instance of a batch of simulations residing in the provided environment
+
+		:param environment: environment settings
+		:type environment: EnvironmentSettings
+
+		"""
+
+		#Type check
+		assert isinstance(environment,EnvironmentSettings)
+		self.environment = environment
+
+	##############################################################################################################################
+
+	def available(self):
 
 		"""
 		Lists all currently available models in the home and storage directories
-
-		:param environment: environment settings of the current machine
-		:type environment: EnvironmentSettings
 
 		:returns: list.
 		:rtype: SimulationModel
 
 		"""
 
-		assert isinstance(environment,EnvironmentSettings)
-
 		models = list()
 
 		#Useful regular expression
 		parmatch = re.compile(r"([a-zA-Z]+)([0-9.-]+)")
 
-		if not(os.path.isdir(environment.home)) or not(os.path.isdir(environment.storage)):
-			return models
-
 		#Check all available models in the home directory
-		dirnames = [ os.path.basename(n) for n in glob.glob(os.path.join(environment.home,"*")) ]
+		dirnames = [ os.path.basename(n) for n in glob.glob(os.path.join(self.environment.home,"*")) ]
 
 		#Decide which of the directories actually correspond to cosmological models
 		for dirname in dirnames:
@@ -86,7 +92,7 @@ class SimulationModel(object):
 
 			try:
 				cosmoModel = Nicaea(**parameters_dict)
-				models.append(cls(cosmology=cosmoModel,environment=environment,parameters=parameters_list))
+				models.append(SimulationModel(cosmology=cosmoModel,environment=self.environment,parameters=parameters_list))
 			except TypeError:
 				pass
 
@@ -95,14 +101,10 @@ class SimulationModel(object):
 
 	##############################################################################################################################
 
-	@classmethod
-	def info(cls,environment):
+	def info(self):
 
 		"""
 		Returns summary info of the simulation batch corresponding to the current environment
-
-		:param environment: environment settings
-		:type environment: EnvironmentSettings
 
 		:returns: info in dictionary format
 
@@ -112,7 +114,7 @@ class SimulationModel(object):
 		info_dict = dict()
 
 		#Start with the available models
-		available_models = cls.available(environment)
+		available_models = self.available()
 		for model in available_models:
 			info_dict[model.cosmo_id] = dict()
 
@@ -171,17 +173,40 @@ class SimulationModel(object):
 		return info_dict
 
 
+	##############################################################################################################################
+
+	def newModel(self,cosmology,parameters):
+
+		"""
+		Create a new simulation model, given a set of cosmological parameters
+
+		:param cosmology: cosmological model to simulate
+		:type cosmology: FLRW
+
+		:param parameters: cosmological parameters to keep track of
+		:type parameters: list.
+
+		:rtype: SimulationModel
+
+		"""
+
+		newModel = SimulationModel(cosmology=cosmology,environment=self.environment,parameters=parameters)
+
+		for d in [newModel.home_subdir,newModel.storage_subdir]:
+			if not os.path.isdir(d):
+				os.mkdir(d)
+				print("[+] {0} created".format(d))
+
+
+		#Return to user
+		return newModel
 
 	##############################################################################################################################
 
-	@classmethod
-	def getModel(cls,environment,cosmo_id):
+	def getModel(self,cosmo_id):
 
 		"""
 		Instantiate a SimulationModel object corresponding to the cosmo_id provided
-
-		:param environment: environment settings
-		:type environment: EnvironmentSettings
 
 		:param cosmo_id: cosmo_id of the model
 		:type cosmo_id: str.
@@ -190,13 +215,10 @@ class SimulationModel(object):
 
 		"""
 
-		#Safety check
-		assert isinstance(environment,EnvironmentSettings)
-
 		#Useful regular expression
 		parmatch = re.compile(r"([a-zA-Z]+)([0-9.-]+)")
 		
-		if not(os.path.isdir(os.path.join(environment.home,cosmo_id))) or not(os.path.isdir(os.path.join(environment.home,cosmo_id))):
+		if not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))) or not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))):
 			return None
 
 		#Parse the cosmological parameters
@@ -214,18 +236,20 @@ class SimulationModel(object):
 		cosmoModel = Nicaea(**parameters_dict)
 
 		#Return the SimulationModel instance
-		return cls(cosmology=cosmoModel,environment=environment,parameters=parameters_list)
+		return SimulationModel(cosmology=cosmoModel,environment=self.environment,parameters=parameters_list)
 
 
-	##############################################################################################################################
 
-	def __repr__(self):
+#####################################################
+##############SimulationModel class##################
+#####################################################
 
-		representation_parameters = []
-		for p in self.parameters:
-			representation_parameters.append("{0}={1:.3f}".format(p,getattr(self.cosmology,name2attr[p])))
+class SimulationModel(object):
 
-		return "<"+ " , ".join(representation_parameters) + ">"
+	"""
+	Class handler of a weak lensing simulation model, defined by a set of cosmological parameters
+
+	"""
 
 	def __init__(self,cosmology=WMAP9,environment=None,parameters=["Om","Ol","w","ns","si"]):
 
@@ -265,11 +289,15 @@ class SimulationModel(object):
 		#Create directories accordingly
 		self.home_subdir = os.path.join(self.environment.home,self.cosmo_id)
 		self.storage_subdir = os.path.join(self.environment.storage,self.cosmo_id)
+	
 
-		for d in [self.home_subdir,self.storage_subdir]:
-			if not os.path.isdir(d):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+	def __repr__(self):
+
+		representation_parameters = []
+		for p in self.parameters:
+			representation_parameters.append("{0}={1:.3f}".format(p,getattr(self.cosmology,name2attr[p])))
+
+		return "<"+ " , ".join(representation_parameters) + ">"
 
 	################################################################################################################################
 
