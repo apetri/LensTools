@@ -287,6 +287,43 @@ class JobSettings(object):
 			setattr(self,key,kwargs[key])
 
 
+	@classmethod
+	def read(cls,config_file,section):
+
+		#Read the options from the ini file
+		options = config.ConfigParser()
+		options.read([config_file])
+
+		#Check that the config file has the appropriate section
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+
+		#Fill in the appropriate fields
+		settings = cls()
+
+		#Personal settings
+		settings.email = options.get(section,"email")
+		settings.charge_account = options.get(section,"charge_account")
+
+		#Name of the job, output
+		settings.job_name = options.get(section,"job_name")
+		settings.redirect_stdout = options.get(section,"redirect_stdout")
+		settings.redirect_stderr = options.get(section,"redirect_stderr")
+
+		#Resources
+		settings.num_cores = options.getint(section,"num_cores")
+		settings.num_nodes = options.getint(section,"num_nodes")
+		settings.tasks_per_node = options.getint(section,"tasks_per_node")
+		settings.queue = options.get(section,"queue")
+		settings.wallclock_time = options.get(section,"wallclock_time")
+
+
+
+
+
+
+
+
+
 
 
 
