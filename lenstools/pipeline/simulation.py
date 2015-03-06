@@ -274,6 +274,13 @@ class SimulationBatch(object):
 		#First separate the ic_list in cosmo_id,geometry_id,ic number
 		exec_args = list()
 
+		#Create the dedicated Job and Logs directories if not existent already
+		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
+			
+			if not(os.path.isdir(d)):
+				os.mkdir(d)
+				print("[+] {0} created".format(d))
+
 		for realization in realization_list:
 			
 			cosmo_id,geometry_id,ic_number = realization.split("|")
@@ -297,7 +304,11 @@ class SimulationBatch(object):
 		executable = job_settings.path_to_executable + " " + " ".join(exec_args)
 
 		#Write the script
-		script_filename = job_settings.job_script_file
+		script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
+
+		#Override settings to make stdout and stderr go in the right places
+		job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
+		job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
 
 		with open(script_filename,"w") as scriptfile:
 			scriptfile.write(job_handler.writePreamble(job_settings))
