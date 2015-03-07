@@ -1110,7 +1110,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("Box 			{0:.1f}\n".format(self.box_size.to(self.kpc_over_h).value))
 
 			#Base names for outputs
-			paramfile.write("Filebase			{0}\n".format(self.ICFilebase))
+			paramfile.write("FileBase			{0}\n".format(self.ICFilebase))
 			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.ics_subdir)))
 
 			#Glass file

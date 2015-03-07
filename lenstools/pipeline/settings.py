@@ -73,7 +73,7 @@ class NGenICSettings(object):
 		self.ShapeGamma = 0.21
 		self.PrimordialIndex = 1.0
 
-		self.NumFilesWrittenInParallel = 1
+		self.NumFilesWrittenInParallel = 4
 
 		self.UnitLength_in_cm = 3.085678e21
 		self.UnitMass_in_g = 1.989e43
