@@ -3,10 +3,10 @@ from .deploy import JobHandler,Directives,ClusterSpecs
 import astropy.units as u
 
 ########################################################
-###########StampedeHandler class########################
+###########Job scheduler specs##########################
 ########################################################
 
-SLURMspecs = {
+_SLURMspecs = {
 "directive_prefix" : "#SBATCH",
 "charge_account_switch" : "-A ",
 "job_name_switch" : "-J ",
@@ -21,7 +21,11 @@ SLURMspecs = {
 "user_email_type" : "--mail-type=all",
 }
 
-StampedeClusterSpecs = {
+########################################################
+###########Cluster specs################################
+########################################################
+
+_StampedeClusterSpecs = {
 "shell_prefix" : "#!/bin/bash",
 "execution_preamble" : None,
 "job_starter" : "ibrun",
@@ -32,6 +36,10 @@ StampedeClusterSpecs = {
 "wait_switch" : "wait",
 "multiple_executables_on_node" : True
 } 
+
+########################################################
+###########StampedeHandler class########################
+########################################################
 
 class StampedeHandler(JobHandler):
 
@@ -45,9 +53,9 @@ class StampedeHandler(JobHandler):
 	#############################################
 
 	def setDirectives(self):
-		self._directives = Directives(**SLURMspecs)
+		self._directives = Directives(**_SLURMspecs)
 
 	def setClusterSpecs(self):
-		self._cluster_specs = ClusterSpecs(**StampedeClusterSpecs)
+		self._cluster_specs = ClusterSpecs(**_StampedeClusterSpecs)
 
 ########################################################################################################

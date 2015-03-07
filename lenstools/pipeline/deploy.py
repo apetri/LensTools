@@ -6,8 +6,6 @@ from functools import reduce
 
 from abc import ABCMeta,abstractproperty,abstractmethod
 
-import astropy.units as u
-
 from .settings import JobSettings
 
 ############################################################
