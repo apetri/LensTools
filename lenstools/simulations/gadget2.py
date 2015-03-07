@@ -74,8 +74,8 @@ class Gadget2Settings(object):
 		self.TimeOfFirstSnapshot = 0
 		self.CpuTimeBetRestartFile = 12.5*hour 
 		self.TimeBetStatistics = 0.05
-		self.NumFilesPerSnapshot = 1
-		self.NumFilesWrittenInParallel = 1
+		self.NumFilesPerSnapshot = 16
+		self.NumFilesWrittenInParallel = 8
 
 		#Accuracy of time integration
 		self.ErrTolIntAccuracy = 0.025 
@@ -100,8 +100,8 @@ class Gadget2Settings(object):
 		self.MinGasTemp = 50.0    
 
 		#Memory allocation
-		self.PartAllocFactor = 2    
-		self.TreeAllocFactor = 1 
+		self.PartAllocFactor = 1.3    
+		self.TreeAllocFactor = 0.7
 		self.BufferSize = 20*Mbyte 
 
 
