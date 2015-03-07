@@ -8,17 +8,20 @@ sys.modules["mpi4py"] = None
 from lenstools import data as lensData
 from lenstools.pipeline import SimulationBatch
 from lenstools.pipeline.settings import *
-from lenstools.pipeline.cluster import StampedeHandler
+from lenstools.pipeline.cluster import *
 
-#TODO: Replace with cluster specific settings
-job_handler = StampedeHandler()
-
-#Dictionary that converts command line arguments into the section name in the job specification file
+#Dictionary that converts command line argument into the section name in the job specification file
 type2section = {
 "ngenic" : "NGenIC",
 "gadget2" : "Gadget2",
 "planes" : "LensPlanes",
 "raytracing" : "RayTracing"
+}
+
+#Dictionary that converts command line argument into the appropriate job handler
+system2handler = {
+"stampede" : StampedeHandler,
+"edison" : EdisonHandler
 }
 
 #Parse command line options
@@ -28,19 +31,29 @@ parser.add_argument("-o","--options",dest="exec_options",action="store",type=str
 parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str,default=lensData("job_default.ini"),help="job specifications file")
 parser.add_argument("-t","--type",dest="job_type",action="store",type=str,default=None,help="type of job submission (Gadget,NGenIC,etc...)")
 parser.add_argument("-c","--chunks",dest="chunks",action="store",type=int,default=1,help="number of independent job submissions in which to split the workload")
+parser.add_argument("-s","--system",dest="system",action="store",type=str,default=None,help="name of the system on which we are running on")
 parser.add_argument("model_file",nargs="?",default=None,help="text file that contains all the IDs of the models to include in the job submission")
 
 #Parse command arguments and check that all provided options are available
 cmd_args = parser.parse_args()
 
 #Check that all the required command line arguments are provided
-if (cmd_args.job_type is None) or (cmd_args.model_file is None):
+if (cmd_args.job_type is None) or (cmd_args.model_file is None) or (cmd_args.system is None):
 	parser.print_help()
 	sys.exit(0)
 
 #Log to user
 print("[*] Environment settings for current batch read from {0}".format(cmd_args.env_file))
 environment = EnvironmentSettings.read(cmd_args.env_file)
+print("[*] Using job handler for system: {0}".format(cmd_args.system))
+
+#Instantiate handler
+if cmd_args.system in system2handler.keys():
+	job_handler = system2handler[cmd_args.system]()
+else:
+	print("[*] You selected {0} system, only {1} systems implemented so far".format(cmd_args.system,",".join(system2handler.keys())))
+	sys.exit(0)
+
 print("[*] Current batch home directory: {0}".format(environment.home))
 print("[*] Current batch mass storage: {0}".format(environment.storage))
 
