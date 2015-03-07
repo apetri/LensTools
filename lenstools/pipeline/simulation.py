@@ -47,7 +47,7 @@ def string2cosmo(s):
 				
 		try:
 			par,val = parmatch.match(parameter).groups()
-		except TypeError:
+		except AttributeError:
 			return None
 				
 		parameters_list.append(par)
@@ -69,7 +69,7 @@ def string2cosmo(s):
 ############CAMB --> NGenIC power spectrum conversion##############
 ###################################################################
 
-def camb2ngenic(k,P):
+def _camb2ngenic(k,P):
 
 	lgk = np.log(k) / np.log(10)
 	lgP = np.log((k**3)*P/(2.0*(np.pi**2))) / np.log(10)
@@ -779,6 +779,28 @@ class SimulationModel(object):
 		return collection_list
 
 
+	################################################################################################################################
+
+	def camb2ngenic(self):
+
+		"""
+		Read CAMB power spectrum file and convert it in a N-GenIC readable format
+
+		"""
+
+		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,"camb_PS.dat")
+		if not(os.path.exists(camb_ps_file)):
+			raise IOError("CAMB matter power spectrum file {0} does not exist yet!!")
+
+		k,Pk = np.loadtxt(camb_ps_file,unpack=True)
+		lgk,lgP = _camb2ngenic(k,Pk)
+
+		ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_PS.txt")
+		np.savetxt(ngenic_ps_file,np.array([lgk,lgP]).T)
+
+		print("[+] CAMB power spectrum at {0} converted into N-GenIC readable format at {1}".format(camb_ps_file,ngenic_ps_file))
+
+
 ##########################################################
 ##############SimulationCollection class##################
 ##########################################################
@@ -1126,7 +1148,15 @@ class SimulationIC(SimulationCollection):
 			#Power Spectrum settings
 			paramfile.write("SphereMode			{0}\n".format(settings.SphereMode))
 			paramfile.write("WhichSpectrum			{0}\n".format(settings.WhichSpectrum))
-			paramfile.write("FileWithInputSpectrum			{0}\n".format(settings.FileWithInputSpectrum))
+			
+			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_PS.txt")
+
+			#Check if NGen-IC power spectrum file exists, if not throw exception
+			if not(os.path.exists(ngenic_ps_file)) and settings.WhichSpectrum==2:
+				raise IOError("NGen-IC power spectrum file {0} does not exist yet!")
+
+			paramfile.write("FileWithInputSpectrum			{0}\n".format(ngenic_ps_file))
+			
 			paramfile.write("InputSpectrum_UnitLength_in_cm			{0:.6e}\n".format(settings.InputSpectrum_UnitLength_in_cm))
 			paramfile.write("ReNormalizeInputSpectrum		{0}\n".format(settings.ReNormalizeInputSpectrum))
 			paramfile.write("ShapeGamma			{0:.2f}\n".format(settings.ShapeGamma))
