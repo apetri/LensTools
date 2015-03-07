@@ -51,7 +51,11 @@ def string2cosmo(s):
 			return None
 				
 		parameters_list.append(par)
-		parameters_dict[name2attr[par]] = float(val)
+
+		try:
+			parameters_dict[name2attr[par]] = float(val)
+		except ValueError:
+			return None
 
 	try:
 		cosmoModel = CosmoDefault(**parameters_dict)
@@ -726,6 +730,9 @@ class SimulationModel(object):
 				os.mkdir(d)
 				print("[+] {0} created".format(d))
 
+		#Keep track of the fact we created a new collection
+		with open(os.path.join(self.environment.home,"collections.txt"),"a") as logfile:
+			logfile.write("{0}|{1}\n".format(self.cosmo_id,newSimulation.geometry_id))
 
 		return newSimulation
 
@@ -829,6 +836,10 @@ class SimulationCollection(SimulationModel):
 		#Make new file with the number of the seed
 		seedfile = open(os.path.join(newIC.storage_subdir,"seed"+str(seed)),"w")
 		seedfile.close()
+
+		#Keep track of the fact that we created a new nbody realization
+		with open(os.path.join(self.environment.home,"realizations.txt"),"a") as logfile:
+			logfile.write("{0}|{1}|ic{2}\n".format(self.cosmo_id,self.geometry_id,new_ic_index))
 
 		return newIC
 
