@@ -11,7 +11,9 @@ from astropy.cosmology import FLRW,WMAP9
 
 from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings,JobSettings
 from .deploy import JobHandler
-from ..simulations import Gadget2Settings,Gadget2Snapshot,Nicaea 
+from ..simulations import Gadget2Settings,Gadget2Snapshot
+
+from ..simulations import Nicaea as CosmoDefault 
 
 try:
 	from ..extern import _darkenergy,_prefactors
@@ -28,6 +30,36 @@ name2attr["h"] = "h"
 name2attr["Ob"] = "Ob0"
 name2attr["si"] = "sigma8"
 name2attr["ns"] = "ns"
+
+#####################################################
+############Parse cosmology from string##############
+#####################################################
+
+def string2cosmo(s):
+
+	parmatch = re.compile(r"([a-zA-Z]+)([0-9.-]+)")
+
+	parameters_dict = dict()
+	parameters_list = list()
+	parameters = s.split("_")
+
+	for parameter in parameters:
+				
+		try:
+			par,val = parmatch.match(parameter).groups()
+		except TypeError:
+			return None
+				
+		parameters_list.append(par)
+		parameters_dict[name2attr[par]] = float(val)
+
+	try:
+		cosmoModel = CosmoDefault(**parameters_dict)
+	except TypeError:
+		return None
+
+	return cosmoModel,parameters_list
+
 
 #####################################################
 ##############SimulationBatch class##################
@@ -76,34 +108,14 @@ class SimulationBatch(object):
 
 		models = list()
 
-		#Useful regular expression
-		parmatch = re.compile(r"([a-zA-Z]+)([0-9.-]+)")
-
 		#Check all available models in the home directory
 		dirnames = [ os.path.basename(n) for n in glob.glob(os.path.join(self.environment.home,"*")) ]
 
 		#Decide which of the directories actually correspond to cosmological models
 		for dirname in dirnames:
-			
-			parameters_dict = dict()
-			parameters_list = list()
-			parameters = dirname.split("_")
-			
-			for parameter in parameters:
-				
-				try:
-					par,val = parmatch.match(parameter).groups()
-				except TypeError:
-					pass
-				
-				parameters_list.append(par)
-				parameters_dict[name2attr[par]] = float(val)
-
-			try:
-				cosmoModel = Nicaea(**parameters_dict)
-				models.append(SimulationModel(cosmology=cosmoModel,environment=self.environment,parameters=parameters_list))
-			except TypeError:
-				pass
+			cosmo_parsed = string2cosmo(dirname)
+			if cosmo_parsed is not None:
+				models.append(SimulationModel(cosmology=cosmo_parsed[0],environment=self.environment,parameters=cosmo_parsed[1]))
 
 		#Return the list with the available models
 		return models
@@ -223,9 +235,6 @@ class SimulationBatch(object):
 		:rtype: SimulationModel
 
 		"""
-
-		#Useful regular expression
-		parmatch = re.compile(r"([a-zA-Z]+)([0-9.-]+)")
 		
 		if not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))) or not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))):
 			return None
@@ -241,11 +250,14 @@ class SimulationBatch(object):
 			parameters_list.append(par)
 			parameters_dict[name2attr[par]] = float(val)
 
-		#Instantiate the cosmological model
-		cosmoModel = Nicaea(**parameters_dict)
+		#Parse the cosmological model from the directory name
+		cosmo_parsed = string2cosmo(cosmo_id)
 
 		#Return the SimulationModel instance
-		return SimulationModel(cosmology=cosmoModel,environment=self.environment,parameters=parameters_list)
+		if cosmo_parsed is not None:
+			return SimulationModel(cosmology=cosmo_parsed[0],environment=self.environment,parameters=cosmo_parsed[1])
+		else:
+			return None
 
 	###########################################################################################################################################
 	##########################################Job submission scripts###########################################################################
