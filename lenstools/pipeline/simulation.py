@@ -106,7 +106,7 @@ class SimulationBatch(object):
 			
 			if not os.path.isdir(d):
 				os.mkdir(d)
-				print("[+] {0} created")
+				print("[+] {0} created".format(d))
 
 
 	##############################################################################################################################
