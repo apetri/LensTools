@@ -196,7 +196,7 @@ class Nicaea(w0waCDM):
 
 	"""
 
-	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.798,ns=0.960,name=None):
+	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.800,ns=0.960,name=None):
 
 		super(Nicaea,self).__init__(H0,Om0,Ode0,w0=w0,wa=wa,Ob0=Ob0,name=name)
 		self.sigma8=sigma8

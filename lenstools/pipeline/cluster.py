@@ -1,5 +1,7 @@
 from .deploy import JobHandler,Directives,ClusterSpecs
 
+import astropy.units as u
+
 ########################################################
 ###########StampedeHandler class########################
 ########################################################
