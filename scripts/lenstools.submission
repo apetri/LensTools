@@ -5,6 +5,7 @@ import argparse
 #Don't need MPI here
 sys.modules["mpi4py"] = None
 
+import lenstools.data
 from lenstools.pipeline import SimulationBatch
 from lenstools.pipeline.settings import *
 from lenstools.pipeline.cluster import StampedeHandler
@@ -22,9 +23,9 @@ type2section = {
 
 #Parse command line options
 parser = argparse.ArgumentParser()
-parser.add_argument("-e","--environment",dest="env_file",action="store",type=str,default="env.ini",help="environment option file")
-parser.add_argument("-o","--options",dest="exec_options",action="store",type=str,default="options.ini",help="configuration file to pass to the executable (planes or raytracing)")
-parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str,default="job.ini",help="job specifications file")
+parser.add_argument("-e","--environment",dest="env_file",action="store",type=str,default=lenstools.data("environment_default.ini"),help="environment option file")
+parser.add_argument("-o","--options",dest="exec_options",action="store",type=str,default=lenstools.data("lens_default.ini"),help="configuration file to pass to the executable (planes or raytracing)")
+parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str,default=lenstools.data("job_default.ini"),help="job specifications file")
 parser.add_argument("-t","--type",dest="job_type",action="store",type=str,default=None,help="type of job submission (Gadget,NGenIC,etc...)")
 parser.add_argument("-c","--chunks",dest="chunks",action="store",type=int,default=1,help="number of independent job submissions in which to split the workload")
 parser.add_argument("model_file",nargs="?",default=None,help="text file that contains all the IDs of the models to include in the job submission")
