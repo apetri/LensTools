@@ -535,8 +535,105 @@ class SimulationBatch(object):
 
 	############################################################################################################################################
 
-	def writeRaySubmission(self):
-		pass
+	def writeRaySubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+		
+		"""
+		Writes raytracing submission script
+
+		:param ic_list: list of ics to generate in the form "cosmo_id|geometry_id"
+		:type ic_list: list. of str.
+
+		:param chunks: number of independent jobs in which to split the submission (one script per job will be written)
+		:type chunks: int. 
+
+		:param job_settings: settings for the job (resources, etc...)
+		:type job_settings: JobSettings
+
+		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
+		:type job_handler: JobHandler
+
+		:param kwargs: keyword arguments accepted are "raytracing_config_file" to specify a configuration file for plane generation script
+		:type kwargs: dict.
+
+		"""
+
+		#Type safety check
+		assert isinstance(job_settings,JobSettings)
+		assert isinstance(job_handler,JobHandler)
+		assert len(realization_list)%chunks==0,"Perfect load balancing enforced, each job will process the same number of realizations!"
+
+		#Create the dedicated Job and Logs directories if not existent already
+		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
+			
+			if not(os.path.isdir(d)):
+				os.mkdir(d)
+				print("[+] {0} created".format(d))
+
+		#Split realizations between independent jobs
+		realizations_per_chunk = len(realization_list)//chunks
+
+		#Override job settings to make sure requested resources are enough
+		job_settings.num_cores = job_settings.cores_per_simulation*realizations_per_chunk
+
+		for c in range(chunks):
+
+			#Find the realizations this chunk must process
+			realizations_in_chunk = realization_list[realizations_per_chunk*c:realizations_per_chunk*(c+1)]
+
+			#Find in how many executables we should split the realizations in this chunk
+			num_executables = len(realizations_in_chunk)
+
+			#Find how many realizations per executable
+			executables = list()
+			cores = [job_settings.cores_per_simulation] * num_executables
+			
+			for e in range(num_executables):
+			
+				#Separate the cosmo_id,geometry_id,realization number
+				cosmo_id,geometry_id = realizations_in_chunk[e].split("|")
+
+				#Get the corresponding SimulationXXX instances
+				model = self.getModel(cosmo_id)
+
+				nside,box_size = geometry_id.split("b")
+				nside = int(nside)
+				box_size = float(box_size) * model.Mpc_over_h
+				collection = model.getCollection(box_size=box_size,nside=nside)
+
+				#Figure out the correct configuration file
+				if "raytracing_config_file" in kwargs.keys():
+					config_file = kwargs["raytracing_config_file"]
+				else:
+					config_file = "config.ini"
+
+				#Make sure that there will be perfect load balancing at execution
+				raytracing_settings = MapSettings.read(config_file)
+				assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
+
+				executables.append(job_settings.path_to_executable + " " + """-c {0} "{1}" """.format(config_file,realization_list[realizations_per_chunk*c+e]))
+
+			#Write the script
+			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
+			script_filename_split = script_filename.split(".")
+			script_filename_split[-2] += "{0}".format(c+1)
+			script_filename = ".".join(script_filename_split)
+
+			#Override settings to make stdout and stderr go in the right places
+			job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
+			job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
+
+			#Inform user where logs will be directed
+			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
+			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
+
+			with open(script_filename,"w") as scriptfile:
+				scriptfile.write(job_handler.writePreamble(job_settings))
+				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
+
+			#Log to user and return
+			print("[+] {0} written".format(script_filename))
+
+	############################################################################################################################################	
 
 
 
