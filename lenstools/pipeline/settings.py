@@ -275,6 +275,7 @@ class JobSettings(object):
 		self.num_cores = 16
 		self.num_nodes = 1
 		self.tasks_per_node = 16
+		self.cores_per_simulation = 16
 		self.queue = "development"
 		self.wallclock_time = "02:00:00"
 
@@ -315,6 +316,7 @@ class JobSettings(object):
 		settings.num_cores = options.getint(section,"num_cores")
 		settings.num_nodes = options.getint(section,"num_nodes")
 		settings.tasks_per_node = options.getint(section,"tasks_per_node")
+		settings.cores_per_simulation = options.getint(section,"cores_per_simulation")
 		settings.queue = options.get(section,"queue")
 		settings.wallclock_time = options.get(section,"wallclock_time")
 
