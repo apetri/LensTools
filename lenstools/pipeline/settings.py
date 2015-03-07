@@ -1,6 +1,7 @@
 import os
 
 from distutils import config
+from ConfigParser import NoOptionError
 
 import numpy as np
 import astropy.units as u
@@ -313,9 +314,24 @@ class JobSettings(object):
 		settings.redirect_stderr = options.get(section,"redirect_stderr")
 
 		#Resources
-		settings.num_cores = options.getint(section,"num_cores")
-		settings.num_nodes = options.getint(section,"num_nodes")
-		settings.tasks_per_node = options.getint(section,"tasks_per_node")
+		
+		#These do not need to be provided necessarily
+		try:
+			settings.num_cores = options.getint(section,"num_cores")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.num_nodes = options.getint(section,"num_nodes")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.tasks_per_node = options.getint(section,"tasks_per_node")
+		except NoOptionError:
+			pass
+
+		#These need to be provided
 		settings.cores_per_simulation = options.getint(section,"cores_per_simulation")
 		settings.queue = options.get(section,"queue")
 		settings.wallclock_time = options.get(section,"wallclock_time")

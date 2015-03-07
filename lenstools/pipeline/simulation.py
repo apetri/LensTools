@@ -254,17 +254,6 @@ class SimulationBatch(object):
 		if not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))) or not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))):
 			return None
 
-		#Parse the cosmological parameters
-		parameters_dict = dict()
-		parameters_list = list()
-		parameters = cosmo_id.split("_")
-			
-		for parameter in parameters:
-				
-			par,val = parmatch.match(parameter).groups()
-			parameters_list.append(par)
-			parameters_dict[name2attr[par]] = float(val)
-
 		#Parse the cosmological model from the directory name
 		cosmo_parsed = string2cosmo(cosmo_id)
 
@@ -354,9 +343,12 @@ class SimulationBatch(object):
 			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
 			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
 
+			#Override settings
+			job_settings.num_cores = job_settings.cores_per_simulation
+
 			with open(script_filename,"w") as scriptfile:
 				scriptfile.write(job_handler.writePreamble(job_settings))
-				scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
+				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
 
 			#Log to user and return
 			print("[+] {0} written".format(script_filename))

@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+import sys
+import argparse
+
+#Don't need MPI here
+sys.modules["mpi4py"] = None
+
+from lenstools.pipeline import SimulationBatch
+from lenstools.pipeline.settings import *
+from lenstools.pipeline.cluster import StampedeHandler
+
+#TODO: Replace with cluster specific settings
+job_handler = StampedeHandler()
+
+#Dictionary that converts command line arguments into the section name in the job specification file
+type2section = {
+"ngenic" : "NGenIC",
+"gadget2" : "Gadget2",
+"planes" : "LensPlanes",
+"raytracing" : "RayTracing"
+}
+
+#Parse command line options
+parser = argparse.ArgumentParser()
+parser.add_argument("-e","--environment",dest="env_file",action="store",type=str,default="env.ini",help="environment option file")
+parser.add_argument("-o","--options",dest="exec_options",action="store",type=str,default="options.ini",help="configuration file to pass to the executable (planes or raytracing)")
+parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str,default="job.ini",help="job specifications file")
+parser.add_argument("-t","--type",dest="job_type",action="store",type=str,default=None,help="type of job submission (Gadget,NGenIC,etc...)")
+parser.add_argument("-c","--chunks",dest="chunks",action="store",type=int,default=1,help="number of independent job submissions in which to split the workload")
+parser.add_argument("model_file",nargs="?",default=None,help="text file that contains all the IDs of the models to include in the job submission")
+
+#Parse command arguments and check that all provided options are available
+cmd_args = parser.parse_args()
+
+#Check that all the required command line arguments are provided
+if (cmd_args.job_type is None) or (cmd_args.model_file is None):
+	parser.print_help()
+	sys.exit(0)
+
+#Log to user
+print("[*] Environment settings for current batch read from {0}".format(cmd_args.env_file))
+environment = EnvironmentSettings.read(cmd_args.env_file)
+print("[*] Current batch home directory: {0}".format(environment.home))
+print("[*] Current batch mass storage: {0}".format(environment.storage))
+
+#Instantiate the simulation batch
+batch = SimulationBatch(environment)
+
+#Read the realizations to include in the job submission
+print("[*] Realizations to include in this submission will be read from {0}".format(cmd_args.model_file))
+with open(cmd_args.model_file,"r") as modelfile:
+	realizations = [ l.strip("\n") for l in modelfile.readlines() if l!="" ]
+
+print("[+] Found {0} realizations to include in job submission, to be split in {1} chunks".format(len(realizations),cmd_args.chunks))
+
+#Now decide which type of submission are we generating, and generate the script
+job_type = cmd_args.job_type.lower() 
+assert job_type in type2section.keys(),"job_type needs to be specified between one of the following: {0}".format(",".join(type2section.keys()))
+
+if job_type=="ngenic":
+
+	section = type2section[job_type]
+	print("[+] Generating N-GenIC submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	batch.writeNGenICSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks)
+
+elif job_type=="gadget2":
+
+	section = type2section[job_type]
+	print("[+] Generating Gadget2 submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	batch.writeGadget2Submission(realizations,job_settings,job_handler,chunks=cmd_args.chunks)
+
+elif job_type=="planes":
+
+	section = type2section[job_type]
+	print("[+] Generating lensing planes submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	print("[*] Using plane specifications found in {0}".format(cmd_args.exec_options))
+	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,plane_config_file=cmd_args.exec_options)
+
+elif job_type=="raytracing":
+
+	section = type2section[job_type]
+	print("[+] Generating ray tracing submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	print("[*] Using ray tracing specifications found in {0}".format(cmd_args.exec_options))
+	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,raytracing_config_file=cmd_args.exec_options)
+
+
+
+
+
+
+
