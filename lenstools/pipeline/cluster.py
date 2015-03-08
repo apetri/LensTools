@@ -33,7 +33,7 @@ _PBSspecs = {
 "queue_type_switch" : "-q ",
 "wallclock_time_switch" : "-l walltime=",
 "user_email_switch" : "-M ",
-"user_email_type" : "-m=abe",
+"user_email_type" : "-m abe",
 }
 
 ########################################################
