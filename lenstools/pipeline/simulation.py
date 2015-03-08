@@ -197,7 +197,7 @@ class SimulationBatch(object):
 									continue
 								
 								plane_set = r.getPlaneSet(line.strip("\n"))
-								planes_on_disk = glob.glob(os.path.join(plane_set.storage_subdir,"*plane*"))
+								planes_on_disk = glob.glob(os.path.join(plane_set.storage_subdir,"*Plane*"))
 								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name] = dict()
 								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name]["num_planes"] = len(planes_on_disk)
 
