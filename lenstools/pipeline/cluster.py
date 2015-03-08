@@ -71,7 +71,7 @@ _EdisonClusterSpecs = {
 class StampedeHandler(JobHandler):
 
 	"""
-	Handler class for SLURM jobs
+	Job handler for the TACC Stampede cluster
 
 	"""
 
@@ -91,6 +91,11 @@ class StampedeHandler(JobHandler):
 ########################################################
 
 class EdisonHandler(JobHandler):
+
+	"""
+	Job handler for the NERSC Edison cluster
+
+	"""
 
 	#############################################
 	######Abstract method definitions############

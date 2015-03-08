@@ -71,8 +71,8 @@ Indexing
 
 .. autoclass:: lenstools.index.MinkowskiSingle
 
-Simulation suites
-=================
+Existing Simulation suites
+==========================
 
 .. automodule:: lenstools.simulations
 
@@ -107,9 +107,6 @@ Gadget2 snapshot handling
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
 
-.. autoclass:: lenstools.simulations.Gadget2Settings
-	:inherited-members:
-
 Ray tracing simulations
 =======================
 
@@ -129,6 +126,68 @@ Ray tracing simulations
 
 .. autoclass:: lenstools.simulations.RayTracer
 	:inherited-members:
+
+Weak Lensing Simulation Pipeline
+================================
+
+Directory tree handling
+-----------------------
+
+.. autoclass:: lenstools.pipeline.SimulationBatch
+	:members: available,info,newModel,getModel,writeNGenICSubmission,writeGadget2Submission,writePlaneSubmission,writeRaySubmission
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationModel
+	:members: newCollection,getColection,collections,camb2ngenic
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationCollection
+	:members: newRealization,getRealization,realizations,newMapSet,getMapSet
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationIC
+	:members: newPlaneSet,getPlaneSet,writeNGenIC,writeGadget2
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationPlanes
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationMaps
+
+Tunable settings
+----------------
+
+.. autoclass:: lenstools.pipeline.settings.EnvironmentSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.NGenICSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.simulations.Gadget2Settings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.PlaneSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.MapSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.JobSettings
+	:inherited-members:
+
+Cluster deployment
+------------------
+
+.. autoclass:: lenstools.pipeline.deploy.JobHandler
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.deploy.Directives
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.deploy.ClusterSpecs
+	:inherited-members:
+
+Cluster specific settings
+-------------------------
+
+.. autoclass:: lenstools.pipeline.cluster.StampedeHandler
+
+.. autoclass:: lenstools.pipeline.cluster.EdisonHandler
 
 
 Observation sets
