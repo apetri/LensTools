@@ -60,7 +60,7 @@ else:
 
 if system in system2handler.keys():
 	print("[+] Using job handler for system {0}".format(system))
-	job_handler = system2handler[cmd_args.system]()
+	job_handler = system2handler[system]()
 else:
 	print("[-] Job handler not available for selected system {0}, only {1} systems implemented so far".format(system,",".join(system2handler.keys())))
 	sys.exit(1)
@@ -105,7 +105,7 @@ elif job_type=="planes":
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using plane specifications found in {0}".format(cmd_args.exec_options))
-	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,plane_config_file=cmd_args.exec_options)
+	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,plane_config_file=os.path.abspath(cmd_args.exec_options))
 
 elif job_type=="raytracing":
 
@@ -114,7 +114,7 @@ elif job_type=="raytracing":
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using ray tracing specifications found in {0}".format(cmd_args.exec_options))
-	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,raytracing_config_file=cmd_args.exec_options)
+	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,raytracing_config_file=os.path.abspath(cmd_args.exec_options))
 
 
 
