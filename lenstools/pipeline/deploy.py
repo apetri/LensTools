@@ -123,7 +123,7 @@ class JobHandler(object):
 		if self.directives.num_nodes_switch is not None:
 			s.write("{0} {1}{2}\n".format(self.directives.directive_prefix,self.directives.num_nodes_switch,num_nodes))
 
-		if self.directives.tasks_per_node_switch is not None:
+		if (self.directives.tasks_per_node_switch is not None) and (hasattr(settings,"tasks_per_node")):
 			s.write("{0} {1}{2}\n\n\n".format(self.directives.directive_prefix,self.directives.tasks_per_node_switch,settings.tasks_per_node))
 
 
