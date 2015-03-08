@@ -1313,6 +1313,25 @@ class SimulationPlanes(SimulationIC):
 		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
 		return " | ".join(parent_repr)
 
+	def path(self,filename):
+
+		"""
+		Returns the complete path to the lens plane corresponding to filename; returns None if no resource is found
+
+		:param filename: name of the resource
+		:type filename: str.
+
+		:returns: full path to the resource
+		:rtype: str.
+
+		"""
+
+		full_path = os.path.join(self.storage_subdir,filename)
+		if not(os.path.exists(full_path)):
+			return None
+
+		return full_path
+
 
 ##############################################################
 ##############SimulationMaps class############################
@@ -1346,6 +1365,26 @@ class SimulationMaps(SimulationCollection):
 
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
+
+
+	def path(self,filename):
+
+		"""
+		Returns the complete path to the lens map corresponding to filename; returns None if no resource is found
+
+		:param filename: name of the resource
+		:type filename: str.
+
+		:returns: full path to the resource
+		:rtype: str.
+
+		"""
+
+		full_path = os.path.join(self.storage_subdir,filename)
+		if not(os.path.exists(full_path)):
+			return None
+
+		return full_path
 
 
 
