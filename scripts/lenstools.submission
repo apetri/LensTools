@@ -100,6 +100,11 @@ elif job_type=="gadget2":
 
 elif job_type=="planes":
 
+	#Assert the fact that the lens option file is present
+	if not(os.path.exists(cmd_args.exec_options)):
+		print("[-] Lens option file {0} does not exist!".format(cmd_args.exec_options))
+		sys.exit(1)
+
 	section = type2section[job_type]
 	print("[+] Generating lensing planes submission script")
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
@@ -108,6 +113,12 @@ elif job_type=="planes":
 	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,plane_config_file=os.path.abspath(cmd_args.exec_options))
 
 elif job_type=="raytracing":
+
+	#Assert the fact that the lens option file is present
+	if not(os.path.exists(cmd_args.exec_options)):
+		print("[-] Lens option file {0} does not exist!".format(cmd_args.exec_options))
+		sys.exit(1)
+
 
 	section = type2section[job_type]
 	print("[+] Generating ray tracing submission script")
