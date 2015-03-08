@@ -72,7 +72,7 @@ class JobHandler(object):
 		s.write("{0}\n".format(self.cluster_specs.shell_prefix))
 		
 		#Write allocation-ID, if any
-		if settings.charge_account is not None:
+		if self.directives.charge_account_switch is not None:
 			s.write("""
 ################################
 ######Allocation ID#############
