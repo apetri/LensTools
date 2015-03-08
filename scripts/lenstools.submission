@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+import os
 import sys
 import argparse
 
@@ -38,21 +40,30 @@ parser.add_argument("model_file",nargs="?",default=None,help="text file that con
 cmd_args = parser.parse_args()
 
 #Check that all the required command line arguments are provided
-if (cmd_args.job_type is None) or (cmd_args.model_file is None) or (cmd_args.system is None):
+if (cmd_args.job_type is None) or (cmd_args.model_file is None):
 	parser.print_help()
 	sys.exit(0)
 
 #Log to user
 print("[*] Environment settings for current batch read from {0}".format(cmd_args.env_file))
 environment = EnvironmentSettings.read(cmd_args.env_file)
-print("[*] Using job handler for system: {0}".format(cmd_args.system))
 
 #Instantiate handler
-if cmd_args.system in system2handler.keys():
+if cmd_args.system is not None:
+	system = cmd_args.system.lower()
+else:
+	print("[*] No system option provided, reading system type from $THIS environment variable")
+	system = os.getenv("THIS").lower()
+	if system=="":
+		print("[-] $THIS environment variable is not set, cannot continue")
+		sys.exit(1)
+
+if system in system2handler.keys():
+	print("[+] Using job handler for system {0}".format(system))
 	job_handler = system2handler[cmd_args.system]()
 else:
-	print("[*] You selected {0} system, only {1} systems implemented so far".format(cmd_args.system,",".join(system2handler.keys())))
-	sys.exit(0)
+	print("[-] Job handler not available for selected system {0}, only {1} systems implemented so far".format(system,",".join(system2handler.keys())))
+	sys.exit(1)
 
 print("[*] Current batch home directory: {0}".format(environment.home))
 print("[*] Current batch mass storage: {0}".format(environment.storage))

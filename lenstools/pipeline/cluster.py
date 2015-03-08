@@ -29,7 +29,7 @@ _PBSspecs = {
 "stderr_switch" : "-e ",
 "num_cores_switch" : "-l mppwidth=",
 "num_nodes_switch" : None,
-"tasks_per_node_switch" : None,
+"tasks_per_node_switch" : "-lmppnppn=",
 "queue_type_switch" : "-q ",
 "wallclock_time_switch" : "-l walltime=",
 "user_email_switch" : "-M ",
