@@ -1,13 +1,13 @@
 try:
 	
-	from lenstools import LimberIntegrator
+	from lenstools.simulations.limber import LimberIntegrator
 	from lenstools.defaults import load_power_default
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
-	from lenstools import LimberIntegrator
+	from lenstools.simulations.limber import LimberIntegrator
 	from lenstools.defaults import load_power_default
 
 import numpy as np
