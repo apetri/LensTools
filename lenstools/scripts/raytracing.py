@@ -185,7 +185,7 @@ def singleRedshift(pool,environment,settings,id):
 		if settings.convergence:
 		
 			convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
-			savename = os.path.join(save_path,"WLconv_{0:04d}r.{1}".format(r+1,settings.format))
+			savename = os.path.join(save_path,"WLconv_{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
 			logging.info("Saving convergence map to {0}".format(savename)) 
 			convMap.save(savename)
 
@@ -194,7 +194,7 @@ def singleRedshift(pool,environment,settings,id):
 		if settings.shear:
 		
 			shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
-			savename = os.path.join(save_path,"WLshear_{0:04d}r.{1}".format(r+1,settings.format))
+			savename = os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
 			logging.info("Saving shear map to {0}".format(savename))
 			shearMap.save(savename) 
 
@@ -203,7 +203,7 @@ def singleRedshift(pool,environment,settings,id):
 		if settings.omega:
 		
 			omegaMap = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
-			savename = os.path.join(save_path,"WLomega_{0:04d}r.{1}".format(r+1,settings.format))
+			savename = os.path.join(save_path,"WLomega_{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
 			logging.info("Saving omega map to {0}".format(savename))
 			omegaMap.save(savename)
 
