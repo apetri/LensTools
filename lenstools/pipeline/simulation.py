@@ -808,31 +808,6 @@ class SimulationModel(object):
 		return collection_list
 
 
-	################################################################################################################################
-
-	def camb2ngenic(self,z):
-
-		"""
-		Read CAMB power spectrum file and convert it in a N-GenIC readable format
-
-		:param z: redshift of the matter power spectrum file to convert
-		:type z: float.
-
-		"""
-
-		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,"camb_matterpower_z{0:.6f}.dat".format(z))
-		if not(os.path.exists(camb_ps_file)):
-			raise IOError("CAMB matter power spectrum file {0} does not exist yet!!")
-
-		k,Pk = np.loadtxt(camb_ps_file,unpack=True)
-		lgk,lgP = _camb2ngenic(k,Pk)
-
-		ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_matterpower_z{0:.6f}.txt".format(z))
-		np.savetxt(ngenic_ps_file,np.array([lgk,lgP]).T)
-
-		print("[+] CAMB power spectrum at {0} converted into N-GenIC readable format at {1}".format(camb_ps_file,ngenic_ps_file))
-
-
 ##########################################################
 ##############SimulationCollection class##################
 ##########################################################
@@ -1032,6 +1007,31 @@ class SimulationCollection(SimulationModel):
 			cPickle.dump(settings,settingsfile)
 
 
+	################################################################################################################################
+
+	def camb2ngenic(self,z):
+
+		"""
+		Read CAMB power spectrum file and convert it in a N-GenIC readable format
+
+		:param z: redshift of the matter power spectrum file to convert
+		:type z: float.
+
+		"""
+
+		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"camb_matterpower_z{0:.6f}.dat".format(z))
+		if not(os.path.exists(camb_ps_file)):
+			raise IOError("CAMB matter power spectrum file {0} does not exist yet!!".format(camb_ps_file))
+
+		k,Pk = np.loadtxt(camb_ps_file,unpack=True)
+		lgk,lgP = _camb2ngenic(k,Pk)
+
+		ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"ngenic_matterpower_z{0:.6f}.txt".format(z))
+		np.savetxt(ngenic_ps_file,np.array([lgk,lgP]).T)
+
+		print("[+] CAMB matter power spectrum at {0} converted into N-GenIC readable format at {1}".format(camb_ps_file,ngenic_ps_file))
+
+
 
 ##########################################################
 ##############SimulationIC class##########################
@@ -1212,7 +1212,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("SphereMode			{0}\n".format(settings.SphereMode))
 			paramfile.write("WhichSpectrum			{0}\n".format(settings.WhichSpectrum))
 			
-			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_matterpower_z{0:.6f}.txt".format(settings.Redshift))
+			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"ngenic_matterpower_z{0:.6f}.txt".format(settings.Redshift))
 
 			#Check if NGen-IC power spectrum file exists, if not throw exception
 			if not(os.path.exists(ngenic_ps_file)) and settings.WhichSpectrum==2:

@@ -29,11 +29,11 @@ class CAMBSettings(object):
 		#####################################
 
 		self.helium_fraction = 0.24
-		self.massless_neutrinos = 3.04
-		self.massive_neutrinos = 0
+		self.massive_neutrinos = 1
 		self.nu_mass_eigenstates = 1
 		self.nu_mass_degeneracies = 0
 		self.nu_mass_fractions = 1
+		self.share_delta_neff = True
 
 		self.pivot_scalar = 0.002 * u.Mpc**-1
 		self.pivot_tensor = 0.002 * u.Mpc**-1
@@ -166,11 +166,12 @@ class CAMBSettings(object):
 		s.write("\n\n#####################################\n\n")
 			
 		s.write('helium_fraction = {0}\n'.format(self.helium_fraction))
-		s.write('massless_neutrinos = {0}\n'.format(self.massless_neutrinos))
+		s.write('massless_neutrinos = {0}\n'.format(cosmology.Neff-self.massive_neutrinos))
 		s.write('massive_neutrinos = {0}\n'.format(self.massive_neutrinos))
 		s.write('nu_mass_eigenstates = {0}\n'.format(self.nu_mass_eigenstates))
 		s.write('nu_mass_degeneracies = {0}\n'.format(self.nu_mass_degeneracies))
 		s.write('nu_mass_fractions = {0}\n'.format(self.nu_mass_fractions))
+		s.write('share_delta_neff = {0}\n'.format(self.share_delta_neff.__str__()[0]))
 
 		s.write("\n\n#####################################\n\n")
 
