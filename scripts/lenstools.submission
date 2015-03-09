@@ -14,6 +14,7 @@ from lenstools.pipeline.cluster import *
 
 #Dictionary that converts command line argument into the section name in the job specification file
 type2section = {
+"camb" : "CAMB",
 "ngenic" : "NGenIC",
 "gadget2" : "Gadget2",
 "planes" : "LensPlanes",
@@ -82,7 +83,15 @@ print("[+] Found {0} realizations to include in job submission, to be split in {
 job_type = cmd_args.job_type.lower() 
 assert job_type in type2section.keys(),"job_type needs to be specified between one of the following: {0}".format(",".join(type2section.keys()))
 
-if job_type=="ngenic":
+if job_type=="camb":
+
+	section = type2section[job_type]
+	print("[+] Generating CAMB submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	batch.writeCAMBSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks)
+
+elif job_type=="ngenic":
 
 	section = type2section[job_type]
 	print("[+] Generating N-GenIC submission script")
