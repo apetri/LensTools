@@ -28,8 +28,7 @@ class CAMBSettings(object):
 		#####################################
 
 		self.helium_fraction = 0.24
-		self.massive_neutrinos = 1
-		self.nu_mass_eigenstates = 1
+		self.nu_mass_eigenstates = 0
 		self.nu_mass_degeneracies = 0
 		self.nu_mass_fractions = 1
 		self.share_delta_neff = True
@@ -150,17 +149,27 @@ class CAMBSettings(object):
 		#######Cosmological parameters###############
 		#############################################
 
+		#Baryon and dark matter densities
 		s.write("ombh2 = {0:.6f}\n".format(cosmology.Ob0*(cosmology.h**2)))
 		s.write("omch2 = {0:.6f}\n".format((cosmology.Om0 - cosmology.Ob0)*(cosmology.h**2)))
-		s.write("omnuh2 = {0:.6f}\n".format(cosmology.Onu0*(cosmology.h**2)))
+
+		#Neutrino density
+		if cosmology._nmassivenu==0:
+			omnuh2 = 0.0
+		else:
+			omnuh2 = cosmology.Onu0 * (cosmology.h**2)
+		s.write("omnuh2 = {0:.6f}\n".format(omnuh2))
+		
+		#Curvature parameter
 		s.write("omk = {0:.6f}\n".format(cosmology.Ok0))
+
+		#Hubble constant
 		s.write("hubble = {0:.6f}\n".format(cosmology.h * 100))
 
 		if hasattr(cosmology,"w0"):
 			w0 = cosmology.w0
 		else:
 			w0 = -1.0
-
 		s.write("w = {0:.6f}\n".format(w0))
 
 		s.write("\n\n#####################################\n\n")
@@ -171,8 +180,8 @@ class CAMBSettings(object):
 		s.write("\n\n#####################################\n\n")
 			
 		s.write('helium_fraction = {0}\n'.format(self.helium_fraction))
-		s.write('massless_neutrinos = {0}\n'.format(cosmology.Neff-self.massive_neutrinos))
-		s.write('massive_neutrinos = {0}\n'.format(self.massive_neutrinos))
+		s.write('massless_neutrinos = {0}\n'.format(cosmology.Neff-cosmology._nmassivenu))
+		s.write('massive_neutrinos = {0}\n'.format(cosmology._nmassivenu))
 		s.write('nu_mass_eigenstates = {0}\n'.format(self.nu_mass_eigenstates))
 		s.write('nu_mass_degeneracies = {0}\n'.format(self.nu_mass_degeneracies))
 		s.write('nu_mass_fractions = {0}\n'.format(self.nu_mass_fractions))
