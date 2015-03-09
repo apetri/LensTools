@@ -24,7 +24,6 @@ class CAMBSettings(object):
 		#####################################
 		
 		self.cs2_lam = 1
-		self.temp_cmb = 2.726 * u.K
 
 		#####################################
 
@@ -167,7 +166,7 @@ class CAMBSettings(object):
 		s.write("\n\n#####################################\n\n")
 
 		s.write('cs2_lam = {0}\n'.format(self.cs2_lam))
-		s.write('temp_cmb = {0:.3f}\n'.format(self.temp_cmb.to(u.K).value))
+		s.write('temp_cmb = {0:.3f}\n'.format(cosmology.Tcmb0.to(u.K).value))
 
 		s.write("\n\n#####################################\n\n")
 			
