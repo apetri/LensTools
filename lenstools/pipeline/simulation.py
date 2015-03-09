@@ -88,6 +88,24 @@ class SimulationBatch(object):
 
 	"""
 
+	@classmethod
+	def current(cls):
+
+		"""
+		This method looks in the current directory and looks for a configuration file named "environment.ini"; if it finds one, it returns a SimulationBatch instance that corresponds to the one pointed to by "environment.ini"
+
+		:returns: Simulation batch pointed to by "environment.ini", or None
+		:rtype: SimulationBatch
+
+		"""
+
+		if not(os.path.exists("environment.ini")):
+			return None
+
+		env = EnvironmentSettings.read("environment.ini")
+		return cls(env)
+
+
 	def __init__(self,environment):
 
 		"""
