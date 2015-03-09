@@ -160,8 +160,8 @@ class CAMBSettings(object):
 			omnuh2 = cosmology.Onu0 * (cosmology.h**2)
 		s.write("omnuh2 = {0:.6f}\n".format(omnuh2))
 		
-		#Curvature parameter
-		s.write("omk = {0:.6f}\n".format(cosmology.Ok0))
+		#Curvature parameter (enforce Om+Ol=1-Ok)
+		s.write("omk = {0:.6f}\n".format(1-cosmology.Om0-cosmology.Ode0))
 
 		#Hubble constant
 		s.write("hubble = {0:.6f}\n".format(cosmology.h * 100))
