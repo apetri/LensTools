@@ -13,6 +13,7 @@ from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettin
 from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2Snapshot
 
+from ..simulations.camb import CAMBSettings
 from ..simulations import Nicaea as CosmoDefault 
 
 try:
@@ -267,13 +268,41 @@ class SimulationBatch(object):
 	##########################################Job submission scripts###########################################################################
 	###########################################################################################################################################
 
+	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,chunks=1):
+
+		"""
+		Writes CAMB submission script
+
+		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
+		:type realization_list: list. of str.
+
+		:param chunks: number of independent jobs in which to split the submission (one script per job will be written)
+		:type chunks: int. 
+
+		:param job_settings: settings for the job (resources, etc...)
+		:type job_settings: JobSettings
+
+		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
+		:type job_handler: JobHandler
+
+		"""
+
+		#Type safety check
+		assert isinstance(job_settings,JobSettings)
+		assert isinstance(job_handler,JobHandler)
+		assert len(realization_list)%chunks==0,"Perfect load balancing enforced, each job will process the same number of realizations!"
+
+		pass
+
+	############################################################################################################################################
+
 	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,chunks=1):
 
 		"""
 		Writes NGenIC submission script
 
-		:param ic_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
-		:type ic_list: list. of str.
+		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
+		:type realization_list: list. of str.
 
 		:param chunks: number of independent jobs in which to split the submission (one script per job will be written)
 		:type chunks: int. 
@@ -362,8 +391,8 @@ class SimulationBatch(object):
 		"""
 		Writes Gadget2 submission script
 
-		:param ic_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
-		:type ic_list: list. of str.
+		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
+		:type realization_list: list. of str.
 
 		:param chunks: number of independent jobs in which to split the submission (one script per job will be written)
 		:type chunks: int. 
@@ -455,8 +484,8 @@ class SimulationBatch(object):
 		"""
 		Writes lens plane generation submission script
 
-		:param ic_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
-		:type ic_list: list. of str.
+		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
+		:type realization_list: list. of str.
 
 		:param chunks: number of independent jobs in which to split the submission (one script per job will be written)
 		:type chunks: int. 
@@ -559,8 +588,8 @@ class SimulationBatch(object):
 		"""
 		Writes raytracing submission script
 
-		:param ic_list: list of ics to generate in the form "cosmo_id|geometry_id"
-		:type ic_list: list. of str.
+		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id"
+		:type realization_list: list. of str.
 
 		:param chunks: number of independent jobs in which to split the submission (one script per job will be written)
 		:type chunks: int. 
@@ -781,21 +810,24 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
-	def camb2ngenic(self):
+	def camb2ngenic(self,z):
 
 		"""
 		Read CAMB power spectrum file and convert it in a N-GenIC readable format
 
+		:param z: redshift of the matter power spectrum file to convert
+		:type z: float.
+
 		"""
 
-		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,"camb_PS.dat")
+		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,"camb_matterpower_z{0:.6f}.dat".format(z))
 		if not(os.path.exists(camb_ps_file)):
 			raise IOError("CAMB matter power spectrum file {0} does not exist yet!!")
 
 		k,Pk = np.loadtxt(camb_ps_file,unpack=True)
 		lgk,lgP = _camb2ngenic(k,Pk)
 
-		ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_PS.txt")
+		ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_matterpower_z{0:.6f}.txt".format(z))
 		np.savetxt(ngenic_ps_file,np.array([lgk,lgP]).T)
 
 		print("[+] CAMB power spectrum at {0} converted into N-GenIC readable format at {1}".format(camb_ps_file,ngenic_ps_file))
@@ -967,6 +999,37 @@ class SimulationCollection(SimulationModel):
 
 		#Return to user
 		return SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings)
+
+	#################################################################################################################################
+
+	def writeCAMB(self,z,settings):
+
+		"""
+		Generates the parameter file that CAMB needs to read to evolve the current initial condition in time
+
+		:param settings: CAMB tunable settings
+		:type settings: CAMBSettings
+
+		:param z: redshifts at which CAMB needs to compute the matter power spectrum
+		:type z: array.
+
+		"""
+
+		#Safety type check
+		assert isinstance(settings,CAMBSettings)
+		if type(z)==np.float:
+			z = np.array([z])
+
+		#Write the parameter file
+		camb_filename = os.path.join(self.home_subdir,"camb.param") 
+		with open(camb_filename,"w") as paramfile:
+			paramfile.write(settings.write(output_root=os.path.join(self.home_subdir,"camb"),cosmology=self.cosmology,redshifts=z))
+
+		print("[+] {0} written".format(camb_filename))
+
+		#Save a pickled copy of the settings
+		with open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
+			cPickle.dump(settings,settingsfile)
 
 
 
@@ -1149,7 +1212,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("SphereMode			{0}\n".format(settings.SphereMode))
 			paramfile.write("WhichSpectrum			{0}\n".format(settings.WhichSpectrum))
 			
-			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_PS.txt")
+			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,"ngenic_matterpower_z{0:.6f}.txt".format(settings.Redshift))
 
 			#Check if NGen-IC power spectrum file exists, if not throw exception
 			if not(os.path.exists(ngenic_ps_file)) and settings.WhichSpectrum==2:
