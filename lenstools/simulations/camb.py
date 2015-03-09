@@ -238,8 +238,8 @@ class CAMBSettings(object):
 		s.write("transfer_num_redshifts = {0}\n\n".format(len(z)))
 		for n in range(len(z)):
 			s.write("transfer_redshift({0}) = {1:.6f}\n".format(n+1,z[n]))
-			s.write("transfer_filename({0}) = {1}_transferfunc_z{2:.6f}.dat\n".format(n+1,os.path.basename(output_root),z[n]))
-			s.write("transfer_matterpower({0}) = {1}_matterpower_z{2:.6f}.dat\n".format(n+1,os.path.basename(output_root),z[n]))
+			s.write("transfer_filename({0}) = transferfunc_z{1:.6f}.dat\n".format(n+1,z[n]))
+			s.write("transfer_matterpower({0}) = matterpower_z{1:.6f}.dat\n".format(n+1,z[n]))
 
 		s.write("\n\n#####################################\n\n")
 
