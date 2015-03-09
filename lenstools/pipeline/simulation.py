@@ -1280,7 +1280,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("Redshift 			{0:.6f}\n".format(settings.Redshift))
 
 			#Computation of the prefactors
-			if self.cosmology._nmassivenu=0:
+			if self.cosmology._nmassivenu==0:
 				Onu0 = 0.0
 			else:
 				Onu0 = self.cosmology.Onu0
