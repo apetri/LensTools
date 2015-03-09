@@ -1277,7 +1277,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("SphereMode			{0}\n".format(settings.SphereMode))
 			paramfile.write("WhichSpectrum			{0}\n".format(settings.WhichSpectrum))
 			
-			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"ngenic_matterpower_z{0:.6f}.txt".format(settings.Redshift))
+			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"ngenic_matterpower_z{0:.6f}.txt".format(0.0))
 
 			#Check if NGen-IC power spectrum file exists, if not throw exception
 			if not(os.path.exists(ngenic_ps_file)) and settings.WhichSpectrum==2:
