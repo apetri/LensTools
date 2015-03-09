@@ -291,7 +291,7 @@ class SimulationBatch(object):
 		"""
 		Writes CAMB submission script
 
-		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
+		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id"
 		:type realization_list: list. of str.
 
 		:param chunks: number of independent jobs in which to split the submission (one script per job will be written)

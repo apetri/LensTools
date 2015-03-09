@@ -7,7 +7,7 @@ from astropy.cosmology import FLRW
 
 class CAMBSettings(object):
 
-	def __init__(self):
+	def __init__(self,**kwargs):
 
 		self.get_scalar_cls = True
 		self.get_vector_cls = False
@@ -93,6 +93,12 @@ class CAMBSettings(object):
 		self.accuracy_boost = 3
 		self.l_accuracy_boost = 3
 		self.l_sample_boost = 3
+
+		###############################################################
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
 
 
 	def write(self,output_root,cosmology,redshifts):
