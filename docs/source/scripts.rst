@@ -37,6 +37,9 @@ confidencecontour
 npyinfo
 -------
 
+lenstools.view
+--------------
+
 
 LensTools pipeline scripts
 ==========================
