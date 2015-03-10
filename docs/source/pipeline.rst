@@ -1,4 +1,6 @@
 The LensTools Weak Lensing Simulation pipeline
 **********************************************
 
-Documentation under construction..........
+.. figure:: flow.png
+
+	Scheme of the pipeline  
