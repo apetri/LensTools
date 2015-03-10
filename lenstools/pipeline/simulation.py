@@ -171,7 +171,7 @@ class SimulationBatch(object):
 		info_dict = dict()
 
 		#Start with the available models
-		available_models = self.available()
+		available_models = self.available
 		for model in available_models:
 			info_dict[model.cosmo_id] = dict()
 
