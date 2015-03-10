@@ -52,7 +52,7 @@ def test_directory_tree():
 
 def test_present():
 
-	for model in batch.available():
+	for model in batch.available:
 		for collection in model.collections:
 
 			mp = collection.getMapSet("Maps")
@@ -70,7 +70,7 @@ def test_NGenICParam():
 	#Create a parameter file for all the initial conditions present in the batch
 	settings = NGenICSettings(GlassFile=data("dummy_glass_little_endian.dat"))
 
-	for model in batch.available():
+	for model in batch.available:
 		for collection in model.collections:
 			for ic in collection.realizations:
 				ic.writeNGenIC(settings)
@@ -81,7 +81,7 @@ def test_Gadget2Param():
 	#Create a parameter file for all the initial conditions present in the batch
 	settings = Gadget2Settings()
 
-	for model in batch.available():
+	for model in batch.available:
 		for collection in model.collections:
 			for ic in collection.realizations:
 				ic.writeGadget2(settings)
