@@ -114,7 +114,7 @@ def main(pool,environment,settings,id):
 				if pool is None or pool.is_master():
 			
 					#Wrap the plane in a PotentialPlane object
-					potential_plane = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=snap.header["redshift"],cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
+					potential_plane = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=snap.header["redshift"],comoving_distance=snap.header["comoving_distance"],cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
 
 					#Save the result
 					logging.info("Saving plane to {0}".format(plane_file))
