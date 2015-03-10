@@ -268,9 +268,6 @@ class JobSettings(object):
 		self.redirect_stderr = "job.err"
 
 		#Resources
-		self.num_cores = 16
-		self.num_nodes = 1
-		self.tasks_per_node = 16
 		self.cores_per_simulation = 16
 		self.queue = "development"
 		self.wallclock_time = "02:00:00"
