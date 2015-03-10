@@ -30,7 +30,6 @@ class CAMBSettings(object):
 		self.helium_fraction = 0.24
 		self.nu_mass_eigenstates = 0
 		self.nu_mass_degeneracies = 0
-		self.nu_mass_fractions = 1
 		self.share_delta_neff = True
 
 		self.pivot_scalar = 0.002 * u.Mpc**-1
@@ -51,7 +50,7 @@ class CAMBSettings(object):
 
 		###########################################################
 		
-		self.initial_vector = np.array([-1, 0, 0, 0, 0])
+		self.initial_vector = np.array([-1,0,0,0,0])
 
 		###########################################################
 
@@ -184,7 +183,14 @@ class CAMBSettings(object):
 		s.write('massive_neutrinos = {0}\n'.format(cosmology._nmassivenu))
 		s.write('nu_mass_eigenstates = {0}\n'.format(self.nu_mass_eigenstates))
 		s.write('nu_mass_degeneracies = {0}\n'.format(self.nu_mass_degeneracies))
-		s.write('nu_mass_fractions = {0}\n'.format(self.nu_mass_fractions))
+		
+		#Compute the mass fractions of the massive species
+		if cosmology._nmassivenu:
+			fractions = (cosmology.m_nu / cosmology.m_nu.sum()).decompose().value
+		else:
+			fractions = 1
+		s.write('nu_mass_fractions = {0}\n'.format(fractions.__str__().strip("[").strip("]")))
+		
 		s.write('share_delta_neff = {0}\n'.format(self.share_delta_neff.__str__()[0]))
 
 		s.write("\n\n#####################################\n\n")
@@ -228,7 +234,7 @@ class CAMBSettings(object):
 		s.write("\n\n#####################################\n\n")
 			
 		s.write('initial_condition = {0}\n'.format(self.initial_condition))
-		s.write('initial_vector = {0}\n'.format(self.initial_vector.__str__().replace("[","").replace("]","").replace(",","")))
+		s.write('initial_vector = {0}\n'.format(self.initial_vector.__str__().strip("[").strip("]")))
 
 		s.write("\n\n#####################################\n\n")
 			
