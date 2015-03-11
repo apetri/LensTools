@@ -950,7 +950,10 @@ class SimulationCollection(SimulationModel):
 		os.mkdir(newIC.snapshot_subdir)
 		print("[+] {0} created".format(newIC.snapshot_subdir))
 
-		#Make new file with the number of the seed
+		#Make new file with the number of the seed (both in home and storage)
+		seedfile = open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w")
+		seedfile.close()
+
 		seedfile = open(os.path.join(newIC.storage_subdir,"seed"+str(seed)),"w")
 		seedfile.close()
 
@@ -966,11 +969,11 @@ class SimulationCollection(SimulationModel):
 
 		#Check if this particular realization exists
 		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,n,seed=0)
-		if not(os.path.isdir(newIC.storage_subdir)):
+		if not(os.path.isdir(newIC.home_subdir)) or not(os.path.isdir(newIC.storage_subdir)):
 			return None
 
 		#Read the seed number
-		seed_filename = os.path.basename(glob.glob(os.path.join(newIC.storage_subdir,"seed*"))[0])
+		seed_filename = os.path.basename(glob.glob(os.path.join(newIC.home_subdir,"seed*"))[0])
 		newIC.seed = int(seed_filename.strip("seed"))
 
 		#Return the SimulationIC instance
@@ -990,12 +993,15 @@ class SimulationCollection(SimulationModel):
 		"""
 
 		ic_list = list()
-		ic_numbers = [ os.path.basename(d).strip("ic") for d in glob.glob(os.path.join(self.storage_subdir,"ic*")) ]
+		ic_numbers = [ os.path.basename(d).strip("ic") for d in glob.glob(os.path.join(self.home_subdir,"ic*")) ]
 
 		for ic in ic_numbers:
 
-			seed = int(os.path.basename(glob.glob(os.path.join(self.storage_subdir,"ic"+ic,"seed*"))[0]).strip("seed"))
+			seed = int(os.path.basename(glob.glob(os.path.join(self.home_subdir,"ic"+ic,"seed*"))[0]).strip("seed"))
 			ic_list.append(SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,int(ic),seed))
+
+		#Sort according to ic_index
+		ic_list.sort(key=lambda r:r.ic_index)
 
 		return ic_list
 
@@ -1059,6 +1065,29 @@ class SimulationCollection(SimulationModel):
 
 		#Return to user
 		return SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings)
+
+	#################################################################################################################################
+
+	@property
+	def mapsets(self):
+
+		"""
+		Build a list with all the available map sets
+
+		:returns: list of SimulationMaps
+
+		"""
+
+		map_sets = list()
+		
+		try:
+			with open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
+				for set_name in setsfile.readlines():
+					map_sets.append(self.getMapSet(set_name.strip("\n")))
+		except IOError:
+			pass
+		finally:
+			return map_sets
 
 	#################################################################################################################################
 
@@ -1224,6 +1253,30 @@ class SimulationIC(SimulationCollection):
 		#Instantiate the SimulationPlanes object
 		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
 
+	####################################################################################################################################
+
+	@property
+	def planesets(self):
+
+		"""
+		Build a list with all the available plane sets in the current realization
+
+		:returns: list of SimulationMaps
+
+		"""
+
+		plane_sets = list()
+		
+		try:
+			with open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
+				for set_name in setsfile.readlines():
+					plane_sets.append(self.getPlaneSet(set_name.strip("\n")))
+		
+		except IOError:
+			pass
+
+		finally:
+			return plane_sets
 
 
 	####################################################################################################################################

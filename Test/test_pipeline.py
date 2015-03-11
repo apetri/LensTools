@@ -1,5 +1,6 @@
 try:
 	
+	import os
 	from lenstools.pipeline import SimulationBatch
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
@@ -9,6 +10,8 @@ except ImportError:
 	
 	import sys
 	sys.path.append("..")
+
+	import os
 	from lenstools.pipeline import SimulationBatch
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
@@ -39,6 +42,11 @@ def test_directory_tree():
 		for i,box_size in enumerate(box_sizes):
 			
 			collection = simulation_model.newCollection(box_size=box_size*simulation_model.Mpc_over_h,nside=part[i])
+
+			#Create dummy ngenic power spectrum file
+			fp = open(os.path.join(collection.home_subdir,"ngenic_matterpower_z{0:.6f}.txt".format(0.0)),"w")
+			fp.close()
+
 			map_settings = MapSettings()
 			map_set = collection.newMapSet(map_settings)
 			
