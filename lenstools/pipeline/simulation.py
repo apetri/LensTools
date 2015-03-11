@@ -1572,6 +1572,7 @@ class SimulationMaps(SimulationCollection):
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
 
+	####################################################################################################################################
 
 	def path(self,filename):
 
@@ -1591,6 +1592,36 @@ class SimulationMaps(SimulationCollection):
 			return None
 
 		return full_path
+
+	####################################################################################################################################
+
+	def execute(self,filename,callback=None,**kwargs):
+
+		"""
+		Calls a user defined function on the map file pointed to by filename; if None is provided, returns the full path to the map
+
+		:param filename: name of the file on which to call the callback
+		:type filename: str.
+
+		:param callback: user defined function that takes filename as first argument
+		:type callback: callable
+
+		:param kwargs: key word arguments to be passed to callback
+		:type kwargs: dict.
+
+		:returns: the result of callback
+
+		"""
+
+		full_path = self.path(filename)
+		if full_path is None:
+			raise IOError("{0} does not exist!".format(filename))
+
+		if callback is None:
+			return full_path
+
+		#Call the function
+		return callback(filename,**kwargs)
 
 
 
