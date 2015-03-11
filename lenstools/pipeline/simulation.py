@@ -1627,7 +1627,7 @@ class SimulationMaps(SimulationCollection):
 			return full_path
 
 		#Call the function
-		return callback(filename,**kwargs)
+		return callback(full_path,**kwargs)
 
 
 
