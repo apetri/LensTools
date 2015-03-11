@@ -1506,6 +1506,7 @@ class SimulationPlanes(SimulationIC):
 		#Call parent constructor
 		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase)
 		self.settings = settings
+		self.name = settings.directory_name
 
 		#Build the name of the dedicated plane directory
 		self.home_subdir = os.path.join(self.home_subdir,settings.directory_name)
@@ -1564,6 +1565,7 @@ class SimulationMaps(SimulationCollection):
 		#Call parent constructor
 		super(SimulationMaps,self).__init__(cosmology,environment,parameters,box_size,nside)
 		self.settings = settings
+		self.name = settings.directory_name
 
 		#Build the name of the dedicated map directory
 		self.home_subdir = os.path.join(self.home_subdir,settings.directory_name)
