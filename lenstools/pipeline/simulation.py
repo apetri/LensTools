@@ -1419,7 +1419,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("SnapshotFileBase			{0}\n".format(self.SnapshotFileBase))
 
 			#Use outputs in the settings to write the OutputListFilename, and set this as the output list of the code
-			outputs_filename = os.path.join(self.snapshot_subdir,"outputs.txt")
+			outputs_filename = os.path.join(self.home_subdir,"outputs.txt")
 			np.savetxt(outputs_filename,settings.OutputScaleFactor)
 			paramfile.write("OutputListFilename			{0}\n\n".format(os.path.abspath(outputs_filename)))
 
@@ -1437,8 +1437,14 @@ class SimulationIC(SimulationCollection):
 				paramfile.write("TimeBegin			{0}\n".format(ic_snapshot.header["scale_factor"]))
 				ic_snapshot.close()
 			except IndexError:
-				#TODO Dirty,make this better in the future
-				paramfile.write("TimeBegin			{0}\n".format(1.0/101.0))
+				
+				#Read the initial redshift of the simulation from the NGenIC settings
+				with open(os.path.join(self.home_subdir,"ngenic.p"),"r") as ngenicfile:
+					ngenic_settings = cPickle.load(ngenicfile)
+					assert isinstance(ngenic_settings,NGenICSettings)
+
+				#Write the corresponding section of the Gadget parameter file
+				paramfile.write("TimeBegin			{0:.6f}\n".format(1.0/(1+ngenic_settings.Redshift)))
 
 			#Characteristics of run section
 			paramfile.write(settings.writeSection("characteristics_of_run"))
