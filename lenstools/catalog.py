@@ -43,6 +43,8 @@ class Catalog(tbl.Table):
 		self.setSpatialInfo()
 
 
+	########################################################################################
+
 	def setSpatialInfo(self,field_x="x",field_y="y",unit=u.deg):
 
 		"""
@@ -61,6 +63,9 @@ class Catalog(tbl.Table):
 		self._field_x = field_x
 		self._field_y = field_y
 		self._position_unit = unit
+
+
+	########################################################################################
 
 	
 	def pixelize(self,map_size,npixel,field_quantity=None,origin=np.zeros(2)*u.deg,smooth=None):
@@ -132,6 +137,9 @@ class Catalog(tbl.Table):
 		return scalar_map
 
 
+
+	########################################################################################
+
 	
 	def visualize(self,map_size,npixel,field_quantity=None,origin=np.zeros(2)*u.deg,smooth=None,fig=None,ax=None,colorbar=False):
 
@@ -184,6 +192,11 @@ class Catalog(tbl.Table):
 			cbar = plt.colorbar(ax0,ax=self.ax)
 			if field_quantity is not None:
 				cbar.set_label(field_quantity)
+			else:
+				cbar.set_label(r"$n$")
+
+
+	########################################################################################
 
 
 	def savefig(self,filename):
