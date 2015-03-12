@@ -7,7 +7,6 @@
 
 __version__ = "0.3dev"
 
-from .limber import LimberIntegrator
 from .convergence import ConvergenceMap,Mask
 from .shear import ShearMap
 from .statistics import Ensemble
@@ -30,4 +29,11 @@ def data(name=None):
 
 		#If no name provided just list all available resources
 		full_path = pkg_resources.resource_filename("lenstools","data")
-		return os.listdir(full_path)		
+		return os.listdir(full_path)
+
+
+def showData(name):
+	
+	path = data(name)
+	with open(path,"r") as datafile:
+		print(datafile.read())		

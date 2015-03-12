@@ -3,7 +3,7 @@ from ..shear import Spin1,Spin2,ShearMap
 
 import time
 import logging
-import re
+import gc
 
 from operator import mul
 from functools import reduce
@@ -25,19 +25,13 @@ try:
 except ImportError:
 	from ..utils import rfftfreq
 
-from astropy.cosmology import w0waCDM
-import astropy.units 
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
-#Try to import the FITSIO library for optimal FITS images reading
-try:
-	from fitsio import FITS as fitsio
-	fitsio = fitsio
-	from astropy.io import fits
+from .io import readFITS,saveFITS
 
-except ImportError:
-	from astropy.io import fits
-	fitsio = None
+#Enable garbage collection if not active already
+if not gc.isenabled():
+	gc.enable()
 
 
 ###########################################################
@@ -47,15 +41,16 @@ except ImportError:
 class Plane(Spin0):
 
 
-	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
+	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False,filename=None):
 
 		#Sanity check
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
-		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
+		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles,filename=filename)
 		self.redshift = redshift
 		self.cosmology = cosmology
 		self.unit = unit
+		self.filename = filename
 
 		if num_particles is not None:
 			self.num_particles = num_particles
@@ -77,6 +72,10 @@ class Plane(Spin0):
 			self.space = "fourier"
 		else:
 			raise TypeError("data type not supported!")
+
+
+	def __del__(self):
+		logging.debug("Plane {0} deleted from memory".format(self.filename))
 
 
 	def angular(self,length_scale):
@@ -126,56 +125,8 @@ class Plane(Spin0):
 			else:
 				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
-
 		if format=="fits":
-
-			#A cosmology instance should be available in order to save in FITS format
-			assert self.cosmology is not None
-		
-			#Create the hdu
-			if self.space=="real":
-				
-				if double_precision:
-					hdu = fits.PrimaryHDU(self.data)
-				else:
-					hdu = fits.PrimaryHDU(self.data.astype(np.float32))
-			
-			elif self.space=="fourier":
-				
-				hdu = fits.PrimaryHDU(self.data.real)
-				hdu1 = fits.ImageHDU(self.data.imag)
-			
-			else:
-				raise TypeError("data type not supported!")
-
-
-			#Generate a header
-			hdu.header["H0"] = (self.cosmology.H0.to(km/(s*Mpc)).value,"Hubble constant in km/s*Mpc")
-			hdu.header["h"] = (self.cosmology.h,"Dimensionless Hubble constant")
-			hdu.header["OMEGA_M"] = (self.cosmology.Om0,"Dark Matter density")
-			hdu.header["OMEGA_L"] = (self.cosmology.Ode0,"Dark Energy density")
-			hdu.header["W0"] = (self.cosmology.w0,"Dark Energy equation of state")
-			hdu.header["WA"] = (self.cosmology.wa,"Dark Energy running equation of state")
-
-			hdu.header["Z"] = (self.redshift,"Redshift of the lens plane")
-			hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
-
-			if self.side_angle.unit.physical_type=="angle":
-				hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
-			elif self.side_angle.unit.physical_type=="length":
-				hdu.header["SIDE"] = (self.side_angle.to(Mpc).value*self.cosmology.h,"Side length in Mpc/h")
-
-			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane")
-			hdu.header["UNIT"] = (self.unit.to_string(),"Measure units of the pixel values") 
-
-			#Save the plane
-			if self.space=="real":
-				hdulist = fits.HDUList([hdu])
-			else:
-				hdulist = fits.HDUList([hdu,hdu1])
-
-			hdulist.writeto(filename,clobber=True)
-
+			saveFITS(self,filename=filename,double_precision=double_precision)
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
 
@@ -209,92 +160,7 @@ class Plane(Spin0):
 
 
 		if format=="fits":
-
-			#Read the FITS file with the plane information (if there are two HDU's the second one is the imaginary part)
-			if fitsio is not None:
-				hdu = fitsio(filename)
-			else:
-				hdu = fits.open(filename)
-			
-			if len(hdu)>2:
-				raise ValueError("There are more than 2 HDUs, file format unknown")
-
-			if fitsio is not None:
-				header = hdu[0].read_header()
-			else:
-				header = hdu[0].header
-
-			#Retrieve the info from the header (handle old FITS header format too)
-			try:
-				hubble = header["H0"] * (km/(s*Mpc))
-				h = header["h"]
-			except:
-				hubble = header["H_0"] * (km/(s*Mpc))
-				h = hubble.value / 100
-
-			Om0 = header["OMEGA_M"]
-			Ode0 = header["OMEGA_L"]
-
-			try:
-				w0 = header["W0"]
-				wa = header["WA"]
-			except:
-				w0 = header["W_0"]
-				wa = header["W_A"]
-			
-			redshift = header["Z"]
-			comoving_distance = (header["CHI"] / h) * Mpc
-
-			if "SIDE" in header.keys():
-				angle = header["SIDE"] * Mpc / h
-			elif "ANGLE" in header.keys():
-				angle = header["ANGLE"] * deg
-			else:
-				angle = ((header["RES_X"] * header["NAXIS1"] / header["CHI"]) * rad).to(deg)
-
-			#Build the cosmology object if options directs
-			if init_cosmology:
-				cosmology = w0waCDM(H0=hubble,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
-			else:
-				cosmology = None
-
-			#Read the number of particles, if present
-			try:
-				num_particles = header["NPART"]
-			except:
-				num_particles = None
-
-			#Read the units if present
-			try:
-				unit_string = header["UNIT"]
-				name,exponent = re.match(r"([a-zA-Z]+)([0-9])?",unit_string).groups()
-				unit = getattr(astropy.units,name)
-				if exponent is not None:
-					unit **= exponent
-			except AttributeError:
-				unit = dimensionless_unscaled
-			except (ValueError,KeyError):
-				unit = rad**2
-
-			#Instantiate the new PotentialPlane instance
-			if fitsio is not None:
-
-				if len(hdu)==1:
-					new_plane = cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-				else:
-					new_plane = cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-
-			else:
-			
-				if len(hdu)==1:
-					new_plane = cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-				else:
-					new_plane = cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-
-			#Close the FITS file and return
-			hdu.close()
-			return new_plane
-
+			return readFITS(cls,filename=filename,init_cosmology=init_cosmology)
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
 
@@ -897,6 +763,10 @@ class RayTracer(object):
 		if type(lens_specification)==tuple:
 
 			filename,distance,redshift = lens_specification
+
+			assert type(filename)==str
+			assert distance.unit.physical_type=="length"
+			assert type(redshift)==float
 			
 			self.lens.append(filename)
 			self.distance.append(distance)
@@ -1048,7 +918,10 @@ class RayTracer(object):
 			if type(lens[k])==PotentialPlane:
 				current_lens = lens[k]
 			elif type(lens[k])==str:
+				logging.info("Reading plane from {0}...".format(lens[k]))
 				current_lens = PotentialPlane.load(lens[k])
+				logging.info("Randomly rolling lens {0} along its axes...".format(k))
+				current_lens.randomRoll()
 			else:
 				raise TypeError("Lens format not recognized!")
 
@@ -1151,6 +1024,7 @@ class RayTracer(object):
 			#Log timestamp to cross lens
 			now = time.time()
 			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+
 
 		#Return the final positions of the light rays (or jacobians)
 		if kind=="positions":

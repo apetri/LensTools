@@ -5,4 +5,5 @@ try:
 except ImportError:
 	pass
 
-from . import _gadget
+from . import _gadget2
+from . import _nbody

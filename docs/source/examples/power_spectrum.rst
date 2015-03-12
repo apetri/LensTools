@@ -27,7 +27,7 @@ Snipped from lenstools.defaults
 
 		logging.debug("Processing {0} power".format(filename))
 
-		conv_map = ConvergenceMap.fromfilename(filename,loader=load_fits_default_convergence)
+		conv_map = ConvergenceMap.load(filename)
 		l,Pl = conv_map.powerSpectrum(l_edges)
 		return Pl
 

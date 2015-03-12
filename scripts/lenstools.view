@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+import sys,os
+import code
+import argparse
+
+#LensTools
+from lenstools.convergence import Spin0
+from lenstools.shear import Spin1
+from lenstools.simulations.raytracing import Plane
+
+#Matplotlib
+import matplotlib.pyplot as plt
+
+#Read command line options
+parser = argparse.ArgumentParser(prog=os.path.split(sys.argv[0])[-1])
+parser.add_argument("filename",nargs="+")
+parser.add_argument("-s","--spin",dest="spin",type=int,default=0,help="Spin of the lensing field to visualize, must be 0 (scalar) or 1 (vector/tensor)")
+parser.add_argument("-p","--plane",dest="plane",action="store_true",default=False,help="Enable if the image you are loading is a lensing plane (these have extra info in the header)")
+parser.add_argument("-f","--format",dest="img_format",type=str,default=None,help="Format of the image to save on disk; if None, no image is saved")
+parser.add_argument("-i","--interactive",dest="interactive",action="store_true",default=True,help="Switch to interactive mode after plotting")
+
+cmd_args = parser.parse_args()
+
+#Check that we have at least one image to display
+if cmd_args.filename is None:
+	parser.print_help()
+	sys.exit(0)
+
+#Cycle over filenames
+for filename in cmd_args.filename:
+
+	if cmd_args.img_format is not None:
+		savename = os.path.split(filename)[-1].split(".")[0]
+		savename += ".{0}".format(cmd_args.img_format)
+	else:
+		savename = None 
+
+	if cmd_args.plane:
+		img = Plane.load(filename)
+	elif cmd_args.spin==0:
+		img = Spin0.load(filename)
+	else:
+		img = Spin1.load(filename)
+	
+	img.visualize(colorbar=True)
+
+	if cmd_args.interactive:
+		
+		plt.ion()
+		plt.show()
+		code.interact(banner="[{0}]".format(filename),local=locals())
+
+	if savename is not None:
+		img.savefig(savename)
+

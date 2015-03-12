@@ -89,14 +89,15 @@ Gallery
 
    gallery
 
-Weak lensing simulations
+Weak Lensing simulations
 ------------------------
 
 .. toctree::
    :maxdepth: 2
 
-   simulations
+   pipeline
    raytracing
+   simulations
 
 Command line scripts
 --------------------

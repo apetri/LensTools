@@ -9,22 +9,23 @@ me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
 url = "http://www.columbia.edu/~ap3020/LensTools/html"
 default_cfg = "setup.cfg"
+
+#Sub-packages
+sub_package_names = ["simulations","observations","pipeline","scripts","extern"]
+packages = [ name ]
+for sub_name in sub_package_names:
+	packages.append("{0}.{1}".format(name,sub_name))
+
+#External sub-packages
 external_dir = "extern"
 external_support_dir = "cextern"
-simulations_dir = "simulations"
-observations_dir = "observations"
 
 try:
 	import numpy.distutils.misc_util 
+	from numpy.distutils.core import setup,Extension
 except ImportError:
 	print("Please install numpy!")
 	sys.exit(1)
-
-
-try:
-	from setuptools import setup,Extension
-except ImportError:
-	from distutils.core import setup,Extension
 
 def rd(filename):
 	
@@ -161,9 +162,25 @@ classifiers = [
 external_sources = dict()
 external_support = dict()
 
+#Includes
+lenstools_includes = list()
+
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
-external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c","grid.c","coordinates.c"]
+external_sources["_gadget2"] = ["_gadget2.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c"]
+external_sources["_nbody"] = ["_nbody.c","grid.c","coordinates.c"]
+
+#Decide if we can install the pipeline bindings (requires some external F77 sources)
+if conf.has_section("pipeline"):
+	if conf.getboolean("pipeline","install_pipeline"):
+		
+		lenstools_includes.append(os.path.join(external_support_dir,"darkEnergy"))
+
+		external_sources["_darkenergy"] = []
+		external_support["_darkenergy"] = [ f for f in glob.glob(os.path.join(external_support_dir,"darkEnergy","*")) if f.split(".")[-1] in "f" ]
+
+		external_sources["_prefactors"] = ["_prefactors.c"]
+		external_support["_prefactors"] = [ f for f in glob.glob(os.path.join(external_support_dir,"darkEnergy","*")) if f.split(".")[-1] in "c" ]
 
 ######################################################################################################################################
 
@@ -172,12 +189,11 @@ gsl_location = check_gsl(conf)
 
 if gsl_location is not None:
 	print("[OK] Checked GSL installation, the Design feature will be installed")
-	lenstools_includes = [ os.path.join(gsl_location,"include") ]
+	lenstools_includes.append(os.path.join(gsl_location,"include")) 
 	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
 	raw_input("[FAIL] GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
-	lenstools_includes = list()
 	lenstools_link = ["-lm"]
 
 
@@ -249,7 +265,6 @@ if platform.system() in ["Darwin","darwin"]:
 
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
-scripts_dir = "scripts"
 
 #################################################################################################
 #############################Setup###############################################################
@@ -260,9 +275,8 @@ setup(
 	version=version,
 	author=me,
 	author_email=email,
-	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir),"{0}.{1}".format(name,observations_dir),"{0}.{1}".format(name,scripts_dir)],
+	packages=packages,
 	package_data=package_data,
-	install_requires=["numpy","scipy","astropy","emcee"],
 	url=url,
 	license="MIT",
 	description="Toolkit for Weak Gravitational Lensing analysis",
@@ -272,5 +286,4 @@ setup(
 	ext_package=os.path.join(name,external_dir),
 	ext_modules=ext,
 	include_dirs=lenstools_includes,
-	zip_safe=False,
 )

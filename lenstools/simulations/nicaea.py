@@ -196,10 +196,7 @@ class Nicaea(w0waCDM):
 
 	"""
 
-	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.798,ns=0.960,name=None):
-
-		if _nicaea is None:
-			raise ImportError("The Nicaea bindings were not installed, check your GSL/FFTW3 installations!")
+	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.800,ns=0.960,name=None):
 
 		super(Nicaea,self).__init__(H0,Om0,Ode0,w0=w0,wa=wa,Ob0=Ob0,name=name)
 		self.sigma8=sigma8
@@ -211,9 +208,8 @@ class Nicaea(w0waCDM):
 		pieces = astropy_string.split(",")
 		si8_piece = u" sigma8={0}".format(self.sigma8)
 		ns_piece = u" ns={0}".format(self.ns)
-		Ob0_piece = u" Ob0={0}".format(self.Ob0)
 
-		return ",".join(pieces[:3] + [si8_piece,ns_piece,Ob0_piece] + pieces[3:])
+		return ",".join(pieces[:3] + [si8_piece,ns_piece] + pieces[3:])
 
 	@classmethod
 	def fromCosmology(cls,cosmo):
@@ -284,6 +280,9 @@ class Nicaea(w0waCDM):
 
 		"""
 
+		if _nicaea is None:
+			raise ImportError("You need to install the Nicaea bindings to use this routine! Check your GSL/FFTW3 installations!")
+
 		assert isinstance(ell,np.ndarray)
 
 		#If no settings provided, use the default ones
@@ -332,6 +331,9 @@ class Nicaea(w0waCDM):
 		:returns: ( NtxNz array ) computed two point function at the selected angles (when computing the cross components these are returned in row major C ordering)
 
 		"""
+
+		if _nicaea is None:
+			raise ImportError("You need to install the Nicaea bindings to use this routine! Check your GSL/FFTW3 installations!")
 
 		assert isinstance(theta,np.ndarray)
 
