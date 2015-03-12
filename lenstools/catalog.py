@@ -13,6 +13,7 @@
 import numpy as np
 import astropy.table as tbl
 import astropy.units as u
+import extern as ext
 
 ##########################################################
 ################Catalog class#############################
@@ -57,7 +58,7 @@ class Catalog(tbl.Table):
 	def pixelize(self,map_size,npixel,field_quantity,origin=np.zeros(2)*u.deg):
 
 		"""
-		Constructs a two dimensional square pixelized map version of the catalog by assigning its objects on a grid
+		Constructs a two dimensional square pixelized map version of one of the scalar properties in the catalog by assigning its objects on a grid
 
 		:param map_size: spatial size of the map
 		:type map_size: quantity
@@ -89,6 +90,11 @@ class Catalog(tbl.Table):
 		y = self.columns[self._field_y] - origin[1].to(self._position_unit).value
 		scalar = self.columns[field_quantity].astype(np.float)
 
-		#TODO: Perform the pixelization
+		assert len(x)==len(y) and len(y)==len(scalar)
 
-		raise NotImplementedError
+		#Perform the pixelization
+		scalar_map = np.zeros((npixel,npixel))
+		scalar_map.fill(np.nan)
+		ext._pixelize.grid2d(x,y,scalar,map_size.to(self._position_unit).value,scalar_map)
+
+		return scalar_map
