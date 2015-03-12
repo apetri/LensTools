@@ -14,26 +14,25 @@ from lenstools.utils import MPIWhirlPool
 from lenstools.convergence import Spin0
 from lenstools import ConvergenceMap,ShearMap
 
-from lenstools.simulations.raytracing import RayTracer,PotentialPlane,DeflectionPlane
+from lenstools.simulations.raytracing import RayTracer
 from lenstools.pipeline.simulation import SimulationBatch
-from lenstools.pipeline.settings import EnvironmentSettings,MapSettings
+from lenstools.pipeline.settings import MapSettings
 
 import numpy as np
 import astropy.units as u
 
 
-def singleRedshift(pool,environment,settings,id):
+def singleRedshift(pool,batch,settings,id):
 
 	#Safety check
 	assert isinstance(pool,MPIWhirlPool) or (pool is None)
-	assert isinstance(environment,EnvironmentSettings)
+	assert isinstance(batch,SimulationBatch)
 	assert isinstance(settings,MapSettings)
 
 	#Separate the id into cosmo_id and geometry_id
 	cosmo_id,geometry_id = id.split("|")
 
-	#Instantiate the SimulationBatch and the corresponding SimulationModel
-	batch = SimulationBatch(environment)
+	#Get a handle on the model
 	model = batch.getModel(cosmo_id)
 
 	#Scale the box size to the correct units

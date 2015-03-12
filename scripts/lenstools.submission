@@ -119,7 +119,7 @@ elif job_type=="planes":
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using plane specifications found in {0}".format(cmd_args.exec_options))
-	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,plane_config_file=os.path.abspath(cmd_args.exec_options))
+	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),plane_config_file=os.path.abspath(cmd_args.exec_options))
 
 elif job_type=="raytracing":
 
@@ -134,7 +134,7 @@ elif job_type=="raytracing":
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using ray tracing specifications found in {0}".format(cmd_args.exec_options))
-	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,raytracing_config_file=os.path.abspath(cmd_args.exec_options))
+	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),raytracing_config_file=os.path.abspath(cmd_args.exec_options))
 
 
 

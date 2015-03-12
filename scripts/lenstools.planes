@@ -4,6 +4,7 @@ import sys
 import argparse
 
 import lenstools.scripts.cutplanes
+from lenstools.pipeline import SimulationBatch
 from lenstools.pipeline.settings import EnvironmentSettings,PlaneSettings
 
 import logging
@@ -11,13 +12,14 @@ import logging
 #Parse command line options
 parser = argparse.ArgumentParser()
 parser.add_argument("-v","--verbose",dest="verbose",action="store_true",default=False,help="turn output verbosity")
-parser.add_argument("-c","--config",dest="config_file",action="store",type=str,help="configuration file")
+parser.add_argument("-e","--environment",dest="environment",action="store",type=str,help="environment configuration file")
+parser.add_argument("-c","--config",dest="config_file",action="store",type=str,help="lensing configuration file")
 parser.add_argument("id",nargs="*")
 
 #Parse command arguments and check that all provided options are available
 cmd_args = parser.parse_args()
 
-if (len(cmd_args.id)==0) or (cmd_args.config_file is None):
+if (len(cmd_args.id)==0) or (cmd_args.config_file is None) or (cmd_args.environment is None):
 	parser.print_help()
 	sys.exit(0)
 
@@ -28,10 +30,15 @@ else:
 	logging.basicConfig(level=logging.INFO)
 
 #Parse relevant options
-logging.info("Reading configuration from {0}".format(cmd_args.config_file))
-environment_settings = EnvironmentSettings.read(cmd_args.config_file)
+logging.info("Reading environment from {0}".format(cmd_args.environment))
+environment_settings = EnvironmentSettings.read(cmd_args.environment)
+
+#Get a handle on the simulation batch
+batch = SimulationBatch(environment_settings)
+
+logging.info("Reading lensing configuration from {0}".format(cmd_args.config_file))
 plane_settings = PlaneSettings.read(cmd_args.config_file)
 
 #Cycle over ids to produce the planes
 for batch_id in cmd_args.id:
-	lenstools.scripts.cutplanes.main(pool=None,environment=environment_settings,settings=plane_settings,id=batch_id)
+	lenstools.scripts.cutplanes.main(pool=None,batch=batch,settings=plane_settings,id=batch_id)

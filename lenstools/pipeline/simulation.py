@@ -581,7 +581,7 @@ class SimulationBatch(object):
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
 
-		:param kwargs: keyword arguments accepted are "plane_config_file" to specify a configuration file for plane generation script
+		:param kwargs: keyword arguments accepted are "environment_file" to specify the environment settings for the current batch and "plane_config_file" to specify the lensing option for plane generation script
 		:type kwargs: dict.
 
 		"""
@@ -637,13 +637,19 @@ class SimulationBatch(object):
 
 				assert gadget_settings.NumFilesPerSnapshot==job_settings.cores_per_simulation,"In the current implementation of plane generation, the number of MPI tasks must be the same as the number of files per snapshot!"
 
+				#Figure out the correct environment file
+				if "environment_file" in kwargs.keys():
+					environment_file = kwargs["environment_file"]
+				else:
+					environment_file = "environment.ini"
+
 				#Figure out the correct configuration file
 				if "plane_config_file" in kwargs.keys():
 					config_file = kwargs["plane_config_file"]
 				else:
-					config_file = "config.ini"
+					config_file = "lens.ini"
 
-				executables.append(job_settings.path_to_executable + " " + """-c {0} "{1}" """.format(config_file,realization_list[realizations_per_chunk*c+e]))
+				executables.append(job_settings.path_to_executable + " " + """-e {0} -c {1} "{2}" """.format(environment_file,config_file,realization_list[realizations_per_chunk*c+e]))
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
@@ -685,7 +691,7 @@ class SimulationBatch(object):
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
 
-		:param kwargs: keyword arguments accepted are "raytracing_config_file" to specify a configuration file for plane generation script
+		:param kwargs: keyword arguments accepted are "environment_file" to specify the environment settings for the current batch and "raytracing_config_file" to specify the lensing option for the ray tracing
 		:type kwargs: dict.
 
 		"""
@@ -733,6 +739,12 @@ class SimulationBatch(object):
 				box_size = float(box_size) * model.Mpc_over_h
 				collection = model.getCollection(box_size=box_size,nside=nside)
 
+				#Figure out the correct environment file
+				if "environment_file" in kwargs.keys():
+					environment_file = kwargs["environment_file"]
+				else:
+					environment_file = "environment.ini"
+
 				#Figure out the correct configuration file
 				if "raytracing_config_file" in kwargs.keys():
 					config_file = kwargs["raytracing_config_file"]
@@ -743,7 +755,7 @@ class SimulationBatch(object):
 				raytracing_settings = MapSettings.read(config_file)
 				assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
 
-				executables.append(job_settings.path_to_executable + " " + """-c {0} "{1}" """.format(config_file,realization_list[realizations_per_chunk*c+e]))
+				executables.append(job_settings.path_to_executable + " " + """-e {0} -c {1} "{2}" """.format(environment_file,config_file,realization_list[realizations_per_chunk*c+e]))
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)

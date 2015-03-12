@@ -9,7 +9,7 @@ import logging
 import cPickle
 
 from lenstools.pipeline.simulation import SimulationBatch
-from lenstools.pipeline.settings import PlaneSettings,EnvironmentSettings
+from lenstools.pipeline.settings import PlaneSettings
 
 from lenstools.simulations import Gadget2Snapshot,PotentialPlane
 from lenstools.utils import MPIWhirlPool
@@ -22,18 +22,17 @@ import numpy as np
 #######################################################
 
 
-def main(pool,environment,settings,id):
+def main(pool,batch,settings,id):
 
 	#Safety check
 	assert isinstance(pool,MPIWhirlPool) or (pool is None)
-	assert isinstance(environment,EnvironmentSettings)
+	assert isinstance(batch,SimulationBatch)
 	assert isinstance(settings,PlaneSettings)
 
 	#Split the id into the model,collection and realization parts
 	cosmo_id,geometry_id,realization_id = id.split("|")
 
-	#Instantiate the SimulationBatch and get the correspinding model
-	batch = SimulationBatch(environment)
+	#Get a handle on the simulation model
 	model = batch.getModel(cosmo_id)
 
 	#Scale the box size to the correct units
