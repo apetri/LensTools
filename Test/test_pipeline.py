@@ -57,6 +57,9 @@ def test_directory_tree():
 				pln = ic.newPlaneSet(pln_settings)
 
 
+def test_copy():
+	bCopy = batch.copyTree("../SimTest/Copy")
+
 
 def test_present():
 
