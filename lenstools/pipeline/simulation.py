@@ -114,7 +114,7 @@ class SimulationBatch(object):
 
 		"""
 
-		if not(self.syshandler.exists("environment.ini")):
+		if not(os.path.exists("environment.ini")):
 			return None
 
 		env = EnvironmentSettings.read("environment.ini")
