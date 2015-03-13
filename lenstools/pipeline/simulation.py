@@ -248,7 +248,7 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
-	def copyTree(self,path):
+	def copyTree(self,path,syshandler=syshandler):
 
 		"""
 		Copies the current batch directory tree into a separate path
@@ -256,11 +256,14 @@ class SimulationBatch(object):
 		:param path: path into which to copy the current batch directory tree
 		:type path: str.
 
+		:param syshander: system handler (can be a remote)
+		:type syshander: SystemHandler
+
 		"""
 
 		#Instantiate new SimulationBatch object (home and storage will be the same)
 		environment = EnvironmentSettings(home=path,storage=path)
-		batchCopy = SimulationBatch(environment)
+		batchCopy = SimulationBatch(environment,syshandler)
 
 		#Walk down the directory tree and create the copied directories on the go (only if non existent already)
 
