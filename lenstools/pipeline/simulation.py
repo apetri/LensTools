@@ -232,6 +232,69 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
+	def copyTree(self,path):
+
+		"""
+		Copies the current batch directory tree into a separate path
+
+		:param path: path into which to copy the current batch directory tree
+		:type path: str.
+
+		"""
+
+		#Instantiate new SimulationBatch object (home and storage will be the same)
+		environment = EnvironmentSettings(home=path,storage=path)
+		batchCopy = SimulationBatch(environment)
+
+		#Walk down the directory tree and create the copied directories on the go (only if non existent already)
+
+		#Model
+		for model in self.available:
+
+			modelCopy = batchCopy.getModel(model.cosmo_id)
+
+			if modelCopy is None:
+				modelCopy = batchCopy.newModel(model.cosmology,model.parameters)
+
+			#Collection
+			for coll in model.collections:
+
+				collCopy = modelCopy.getCollection(box_size=coll.box_size,nside=coll.nside)
+
+				if collCopy is None: 
+					collCopy = modelCopy.newCollection(box_size=coll.box_size,nside=coll.nside)
+
+				#Maps
+				for map_set in coll.mapsets:
+
+					map_setCopy = collCopy.getMapSet(map_set.name)
+
+					if map_setCopy is None:
+						map_setCopy = collCopy.newMapSet(map_set.settings)
+
+				#Realizations
+				for r in coll.realizations:
+
+					rCopy = collCopy.getRealization(r.ic_index)
+
+					if rCopy is None:
+						rCopy = collCopy.newRealization(seed=r.seed)
+
+					#Planes
+					for plane_set in r.planesets:
+
+						plane_setCopy = rCopy.getPlaneSet(plane_set.name)
+
+						if plane_setCopy is None:
+							plane_setCopy = rCopy.newPlaneSet(plane_set.settings)
+
+
+		#Return handle on the copied diretory tree
+		return batchCopy
+
+
+	##############################################################################################################################################
+
 	def newModel(self,cosmology,parameters):
 
 		"""
@@ -251,9 +314,10 @@ class SimulationBatch(object):
 
 		for d in [newModel.home_subdir,newModel.storage_subdir]:
 			if not os.path.isdir(d):
+
 				os.mkdir(d)
 				print("[+] {0} created".format(d))
-
+				
 
 		#Return to user
 		return newModel
@@ -856,8 +920,10 @@ class SimulationModel(object):
 		#Make the corresponding directory if not already present
 		for d in [newSimulation.home_subdir,newSimulation.storage_subdir]:
 			if not os.path.isdir(d):
+
 				os.mkdir(d)
 				print("[+] {0} created".format(d))
+				
 
 		#Keep track of the fact we created a new collection
 		with open(os.path.join(self.environment.home,"collections.txt"),"a") as logfile:
@@ -950,17 +1016,12 @@ class SimulationCollection(SimulationModel):
 		#Generate the new initial condition
 		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed)
 
-		#Make dedicated directory for new initial condition
-		os.mkdir(newIC.home_subdir)
-		print("[+] {0} created".format(newIC.home_subdir))
-		os.mkdir(newIC.storage_subdir)
-		print("[+] {0} created".format(newIC.storage_subdir))
+		#Make dedicated directories for new initial condition,ics and snapshots
+		for d in [newIC.home_subdir,newIC.storage_subdir,newIC.ics_subdir,newIC.snapshot_subdir]:
 
-		#Make dedicated directories for ics and snapshots
-		os.mkdir(newIC.ics_subdir)
-		print("[+] {0} created".format(newIC.ics_subdir))
-		os.mkdir(newIC.snapshot_subdir)
-		print("[+] {0} created".format(newIC.snapshot_subdir))
+			if not os.path.isdir(d):
+				os.mkdir(d)
+				print("[+] {0} created".format(d))
 
 		#Make new file with the number of the seed (both in home and storage)
 		seedfile = open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w")
@@ -1211,7 +1272,7 @@ class SimulationIC(SimulationCollection):
 
 		return super(SimulationIC,self).__repr__() + " | ic={0},seed={1} | IC files on disk: {2} | Snapshot files on disk: {3}".format(self.ic_index,self.seed,len(ics_on_disk),len(snap_on_disk))
 
-	def newInitialCondition(self,seed):
+	def newRealization(self,seed):
 		raise TypeError("This method should be called on SimulationCollection instances!")
 
 	####################################################################################################################################
