@@ -1524,7 +1524,7 @@ class SimulationIC(SimulationCollection):
 				ic_snapshot = Gadget2Snapshot.open(ic_filenames[0])
 				paramfile.write("TimeBegin			{0}\n".format(ic_snapshot.header["scale_factor"]))
 				ic_snapshot.close()
-			except IndexError:
+			except (IndexError,IOError):
 				
 				#Read the initial redshift of the simulation from the NGenIC settings
 				with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as ngenicfile:

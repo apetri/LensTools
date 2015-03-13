@@ -9,10 +9,9 @@ class SystemHandler(object):
 
 	__metaclass__ = ABCMeta
 
-	"""
-	SystemHandler class
-
-	"""
+	##################################
+	######Abstract methods############
+	##################################
 
 	@abstractmethod
 	def mkdir(self,d):
@@ -37,7 +36,23 @@ class SystemHandler(object):
 
 class LocalSystem(SystemHandler):
 
+	"""
+	Local system handler
+
+	"""
+
+	def __init__(self,readonly=False):
+		self.readonly = readonly
+
+	#############################################
+	######Abstract method definitions############
+	#############################################
+
 	def mkdir(self,d):
+
+		if self.readonly:
+			raise IOError("Simulation batch is read only!")
+
 		os.mkdir(d)
 
 	def exists(self,d):
@@ -47,4 +62,8 @@ class LocalSystem(SystemHandler):
 		return glob.glob(n)
 
 	def open(self,f,mode):
+
+		if (self.readonly) and ("w" in mode or "a" in mode):
+			raise IOError("Simulation batch is read only!")
+
 		return open(f,mode)
