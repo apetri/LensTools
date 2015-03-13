@@ -1,6 +1,6 @@
 from __future__ import division
 
-import os,glob
+import os
 import re
 import cPickle
 
@@ -8,7 +8,7 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
-
+from .remote import SystemHandler,LocalSystem
 from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings,JobSettings
 from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2Snapshot
@@ -35,15 +35,6 @@ name2attr["ns"] = "ns"
 #####################################################
 #########Local filesystem handling###################
 #####################################################
-
-class LocalSystem(object):
-
-	def __init__(self):
-		
-		self.mkdir = os.mkdir
-		self.exists = os.path.exists
-		self.glob = glob.glob
-		self.open = open
 
 syshandler = LocalSystem()
 
@@ -133,6 +124,8 @@ class SimulationBatch(object):
 
 		#Type check
 		assert isinstance(environment,EnvironmentSettings)
+		assert isinstance(syshandler,SystemHandler)
+		
 		self.environment = environment
 		self.syshandler = syshandler
 
