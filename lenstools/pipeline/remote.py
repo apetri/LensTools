@@ -117,9 +117,6 @@ class UnixSSH(SystemHandler):
 		if SSHClient is None:
 			raise ImportError("paramiko needs to be installed to use remote SSH functionality!")
 
-		if not readonly:
-			raise NotImplementedError
-
 		assert isinstance(client,SSHClient)
 		self.client = client
 		self.readonly = readonly
@@ -133,7 +130,7 @@ class UnixSSH(SystemHandler):
 		self.sftp = self.client.open_sftp()
 
 	def mkdir(self,d):
-		raise NotImplementedError
+		stdin,stdout,stderr = self.client.exec_command("mkdir {0}".format(d))
 
 	def exists(self,d):
 
@@ -155,14 +152,12 @@ class UnixSSH(SystemHandler):
 		if (self.readonly) and ("w" in mode or "a" in mode):
 			raise IOError("Simulation batch is read only!") 
 
-		if "w" in mode or "a" in mode:
-			raise NotImplementedError
-
 		return self.sftp.file(f,mode)
 
 	def pickleload(self,fp):
 		return cPickle.loads(fp.read())
 
 	def pickledump(self,obj,fp):
-		raise NotImplementedError
+		fp.write(cPickle.dumps(obj))
+		
 
