@@ -14,6 +14,10 @@ class SystemHandler(object):
 	##################################
 
 	@abstractmethod
+	def __init__(self):
+		pass
+
+	@abstractmethod
 	def mkdir(self,d):
 		pass
 
@@ -41,12 +45,13 @@ class LocalSystem(SystemHandler):
 
 	"""
 
-	def __init__(self,readonly=False):
-		self.readonly = readonly
-
 	#############################################
 	######Abstract method definitions############
 	#############################################
+
+	def __init__(self,readonly=False):
+		self.name = "localhost"
+		self.readonly = readonly
 
 	def mkdir(self,d):
 

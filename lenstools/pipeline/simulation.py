@@ -134,7 +134,7 @@ class SimulationBatch(object):
 			
 			if not self.syshandler.exists(d):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 
 	##############################################################################################################################
@@ -328,7 +328,7 @@ class SimulationBatch(object):
 			if not self.syshandler.exists(d):
 
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 				
 
 		#Return to user
@@ -399,7 +399,7 @@ class SimulationBatch(object):
 			
 			if not(self.syshandler.exists(d)):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -452,7 +452,7 @@ class SimulationBatch(object):
 				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################
@@ -486,7 +486,7 @@ class SimulationBatch(object):
 			
 			if not(self.syshandler.exists(d)):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -541,7 +541,7 @@ class SimulationBatch(object):
 				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################
@@ -576,7 +576,7 @@ class SimulationBatch(object):
 			
 			if not(self.syshandler.exists(d)):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -636,7 +636,7 @@ class SimulationBatch(object):
 				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 	############################################################################################################################################
 
@@ -672,7 +672,7 @@ class SimulationBatch(object):
 			
 			if not(self.syshandler.exists(d)):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -746,7 +746,7 @@ class SimulationBatch(object):
 				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 	############################################################################################################################################
 
@@ -782,7 +782,7 @@ class SimulationBatch(object):
 			
 			if not(self.syshandler.exists(d)):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -852,7 +852,7 @@ class SimulationBatch(object):
 				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 	############################################################################################################################################	
 
@@ -937,7 +937,7 @@ class SimulationModel(object):
 			if not self.syshandler.exists(d):
 
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 				
 
 		#Keep track of the fact we created a new collection
@@ -1036,7 +1036,7 @@ class SimulationCollection(SimulationModel):
 
 			if not self.syshandler.exists(d):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Make new file with the number of the seed (both in home and storage)
 		seedfile = self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w")
@@ -1118,7 +1118,7 @@ class SimulationCollection(SimulationModel):
 		for d in [ map_set.home_subdir,map_set.storage_subdir ]:
 			if not self.syshandler.exists(d):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Save a picked copy of the settings to use for future reference
 		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
@@ -1202,7 +1202,7 @@ class SimulationCollection(SimulationModel):
 		with self.syshandler.open(camb_filename,"w") as paramfile:
 			paramfile.write(settings.write(output_root=os.path.join(self.home_subdir,"camb"),cosmology=self.cosmology,redshifts=z))
 
-		print("[+] {0} written".format(camb_filename))
+		print("[+] {0} written on {1}".format(camb_filename,self.syshandler.name))
 
 		#Save a pickled copy of the settings
 		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
@@ -1304,7 +1304,7 @@ class SimulationIC(SimulationCollection):
 		for d in [new_plane_set.home_subdir,new_plane_set.storage_subdir]:
 			if not(self.syshandler.exists(d)):
 				self.syshandler.mkdir(d)
-				print("[+] {0} created".format(d))
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Save a pickled copy of the settings for future reference
 		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
@@ -1472,7 +1472,7 @@ class SimulationIC(SimulationCollection):
 			cPickle.dump(settings,settingsfile)
 
 		#Log and return
-		print("[+] NGenIC parameter file {0} written".format(filename))
+		print("[+] NGenIC parameter file {0} written on {1}".format(filename,self.syshandler.name))
 
 	####################################################################################################################################
 
@@ -1572,7 +1572,7 @@ class SimulationIC(SimulationCollection):
 			cPickle.dump(settings,settingsfile)
 
 		#Log and exit
-		print("[+] Gadget2 parameter file {0} written".format(filename))
+		print("[+] Gadget2 parameter file {0} written on {1}".format(filename,self.syshandler.name))
 
 
 ##############################################################
