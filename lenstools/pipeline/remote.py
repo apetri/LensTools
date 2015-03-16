@@ -1,5 +1,6 @@
 from abc import ABCMeta,abstractproperty,abstractmethod
 import os,glob
+import cPickle
 
 try:
 	from paramiko import SSHClient
@@ -37,6 +38,14 @@ class SystemHandler(object):
 
 	@abstractmethod
 	def open(self,f,mode):
+		pass
+
+	@abstractmethod
+	def pickleload(self,fp):
+		pass
+
+	@abstractmethod
+	def pickledump(self,obj,fp):
 		pass
 
 
@@ -80,6 +89,13 @@ class LocalSystem(SystemHandler):
 
 		return open(f,mode)
 
+	def pickleload(self,fp):
+		return cPickle.load(fp)
+
+	def pickledump(self,obj,fp):
+		cPickle.dump(obj,fp)
+
+
 
 ##########################################################
 #########Remote Unix filesystem via SSH###################
@@ -101,7 +117,7 @@ class UnixSSH(SystemHandler):
 		if SSHClient is None:
 			raise ImportError("paramiko needs to be installed to use remote SSH functionality!")
 
-		if not(readonly):
+		if not readonly:
 			raise NotImplementedError
 
 		assert isinstance(client,SSHClient)
@@ -143,4 +159,10 @@ class UnixSSH(SystemHandler):
 			raise NotImplementedError
 
 		return self.sftp.file(f,mode)
+
+	def pickleload(self,fp):
+		return cPickle.loads(fp.read())
+
+	def pickledump(self,obj,fp):
+		raise NotImplementedError
 

@@ -2,7 +2,6 @@ from __future__ import division
 
 import os
 import re
-import cPickle
 
 import numpy as np
 import astropy.units as u
@@ -709,7 +708,7 @@ class SimulationBatch(object):
 
 				#Check that the cores per simulation matches the number of files per snapshot
 				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p")) as settingsfile:
-					gadget_settings = cPickle.load(settingsfile)
+					gadget_settings = self.syshandler.pickleload(settingsfile)
 
 				assert gadget_settings.NumFilesPerSnapshot==job_settings.cores_per_simulation,"In the current implementation of plane generation, the number of MPI tasks must be the same as the number of files per snapshot!"
 
@@ -1122,7 +1121,7 @@ class SimulationCollection(SimulationModel):
 
 		#Save a picked copy of the settings to use for future reference
 		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
-			cPickle.dump(settings,settingsfile)
+			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
 		with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
@@ -1149,7 +1148,7 @@ class SimulationCollection(SimulationModel):
 
 		#Read the settings from the pickled file
 		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
-			settings = cPickle.load(settingsfile) 
+			settings = self.syshandler.pickleload(settingsfile) 
 
 		#Return to user
 		return SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings,syshandler=self.syshandler)
@@ -1206,7 +1205,7 @@ class SimulationCollection(SimulationModel):
 
 		#Save a pickled copy of the settings
 		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
-			cPickle.dump(settings,settingsfile)
+			self.syshandler.pickledump(settings,settingsfile)
 
 
 	################################################################################################################################
@@ -1269,13 +1268,13 @@ class SimulationIC(SimulationCollection):
 		#Try to load in the simulation settings, if any are present
 		try:
 			with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as settingsfile:
-				self.ngenic_settings = cPickle.load(settingsfile)
+				self.ngenic_settings = self.syshandler.pickleload(settingsfile)
 		except IOError:
 			pass
 
 		try:
 			with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"r") as settingsfile:
-				self.gadget_settings = cPickle.load(settingsfile)
+				self.gadget_settings = self.syshandler.pickleload(settingsfile)
 		except IOError:
 			pass
 
@@ -1308,7 +1307,7 @@ class SimulationIC(SimulationCollection):
 
 		#Save a pickled copy of the settings for future reference
 		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
-			cPickle.dump(settings,settingsfile)
+			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the plane batch to a summary file
 		with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
@@ -1336,7 +1335,7 @@ class SimulationIC(SimulationCollection):
 
 		#Read plane settings from pickled file
 		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
-			settings = cPickle.load(settingsfile)
+			settings = self.syshandler.pickleload(settingsfile)
 
 		#Instantiate the SimulationPlanes object
 		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
@@ -1469,7 +1468,7 @@ class SimulationIC(SimulationCollection):
 
 		#Save a pickled copy of the settings for future reference
 		with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"w") as settingsfile:
-			cPickle.dump(settings,settingsfile)
+			self.syshandler.pickledump(settings,settingsfile)
 
 		#Log and return
 		print("[+] NGenIC parameter file {0} written on {1}".format(filename,self.syshandler.name))
@@ -1528,7 +1527,7 @@ class SimulationIC(SimulationCollection):
 				
 				#Read the initial redshift of the simulation from the NGenIC settings
 				with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as ngenicfile:
-					ngenic_settings = cPickle.load(ngenicfile)
+					ngenic_settings = self.syshandler.pickleload(ngenicfile)
 					assert isinstance(ngenic_settings,NGenICSettings)
 
 				#Write the corresponding section of the Gadget parameter file
@@ -1569,7 +1568,7 @@ class SimulationIC(SimulationCollection):
 
 		#Save a pickled copy of the settings for future reference
 		with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"w") as settingsfile:
-			cPickle.dump(settings,settingsfile)
+			self.syshandler.pickledump(settings,settingsfile)
 
 		#Log and exit
 		print("[+] Gadget2 parameter file {0} written on {1}".format(filename,self.syshandler.name))
