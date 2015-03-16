@@ -13,6 +13,18 @@ import logging
 from mpi4py import MPI
 from lenstools.utils import MPIWhirlPool
 
+################################################
+###########Loggers##############################
+################################################
+
+console = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
+console.setFormatter(formatter)
+
+logpreamble = logging.getLogger("lenstools.preamble")
+logpreamble.addHandler(console)
+logpreamble.propagate = False
+
 #Parse command line options
 parser = argparse.ArgumentParser()
 parser.add_argument("-v","--verbose",dest="verbose",action="store_true",default=False,help="turn output verbosity")
@@ -36,7 +48,7 @@ try:
 	pool = MPIWhirlPool(comm=comm)
 except:
 	pool = None
-	logging.debug("Couldn't initialize MPI Pool, running in series")
+	logpreamble.debug("Couldn't initialize MPI Pool, running in series")
 
 #check that all provided options are available
 if (len(cmd_args.id)==0) or (cmd_args.config_file is None) or (cmd_args.environment is None):
@@ -48,8 +60,8 @@ if (len(cmd_args.id)==0) or (cmd_args.config_file is None) or (cmd_args.environm
 
 #Parse relevant options
 if (pool is None) or (pool.is_master()):
-	logging.info("Reading environment from {0}".format(cmd_args.environment))
-	logging.info("Reading lensing configuration from {0}".format(cmd_args.config_file))
+	logpreamble.info("Reading environment from {0}".format(cmd_args.environment))
+	logpreamble.info("Reading lensing configuration from {0}".format(cmd_args.config_file))
 
 #Environment 
 environment_settings = EnvironmentSettings.read(cmd_args.environment)

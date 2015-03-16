@@ -3,7 +3,7 @@
 ########################################################
 from __future__ import division,with_statement
 
-import os
+import sys,os
 import logging
 import time
 import cPickle
@@ -21,6 +21,21 @@ from lenstools.pipeline.settings import MapSettings
 import numpy as np
 import astropy.units as u
 
+################################################
+###########Loggers##############################
+################################################
+
+console = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
+console.setFormatter(formatter)
+
+logdriver = logging.getLogger("lenstools.driver")
+logdriver.addHandler(console)
+logdriver.propagate = False
+
+################################################
+#######Single redshift ray tracing##############
+################################################
 
 def singleRedshift(pool,batch,settings,id):
 
@@ -53,7 +68,7 @@ def singleRedshift(pool,batch,settings,id):
 			assert isinstance(settings,MapSettings)
 
 		if (pool is None) or (pool.is_master()):
-			logging.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
+			logdriver.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
 
 	##################################################################
 	##################Settings read###################################
@@ -75,19 +90,19 @@ def singleRedshift(pool,batch,settings,id):
 	if pool is None:
 		first_map_realization = 0
 		last_map_realization = map_realizations
-		logging.debug("Generating lensing map realizations from {0} to {1}".format(first_map_realization+1,last_map_realization))
+		logdriver.debug("Generating lensing map realizations from {0} to {1}".format(first_map_realization+1,last_map_realization))
 	else:
 		assert map_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, map_realizations must be a multiple of the number of MPI tasks!"
 		realizations_per_task = map_realizations//(pool.size+1)
 		first_map_realization = realizations_per_task*pool.rank
 		last_map_realization = realizations_per_task*(pool.rank+1)
-		logging.debug("Task {0} will generate lensing map realizations from {1} to {2}".format(pool.rank,first_map_realization+1,last_map_realization))
+		logdriver.debug("Task {0} will generate lensing map realizations from {1} to {2}".format(pool.rank,first_map_realization+1,last_map_realization))
 
 	#Planes will be read from this path
 	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
 
 	if (pool is None) or (pool.is_master()):
-		logging.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
+		logdriver.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
 
 	#Read how many snapshots are available
 	with open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r") as infofile:
@@ -100,13 +115,13 @@ def singleRedshift(pool,batch,settings,id):
 	randomizer[:,:,2] = np.random.randint(low=0,high=len(normals),size=(map_realizations,num_snapshots))
 
 	if (pool is None) or (pool.is_master()):
-		logging.debug("Randomization matrix has shape {0}".format(randomizer.shape))
+		logdriver.debug("Randomization matrix has shape {0}".format(randomizer.shape))
 
 	#Save path for the maps
 	save_path = os.path.join(map_batch.storage_subdir)
 
 	if (pool is None) or (pool.is_master()):
-		logging.info("Lensing maps will be saved to {0}".format(save_path))
+		logdriver.info("Lensing maps will be saved to {0}".format(save_path))
 
 	begin = time.time()
 
@@ -150,7 +165,7 @@ def singleRedshift(pool,batch,settings,id):
 			lens_redshift = float(line[2].split("=")[1])
 
 			#Add the lens to the system only if its redshift is < than the one of the source
-			logging.info("Adding lens at redshift {0}".format(lens_redshift))
+			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
 			plane_name = os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]]))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
@@ -158,14 +173,14 @@ def singleRedshift(pool,batch,settings,id):
 		infofile.close()
 
 		now = time.time()
-		logging.info("Plane specification reading completed in {0:.3f}s".format(now-start))
+		logdriver.info("Plane specification reading completed in {0:.3f}s".format(now-start))
 		last_timestamp = now
 
 		#Rearrange the lenses according to redshift and roll them randomly along the axes
 		tracer.reorderLenses()
 
 		now = time.time()
-		logging.info("Reordering completed in {0:.3f}s".format(now-last_timestamp))
+		logdriver.info("Reordering completed in {0:.3f}s".format(now-last_timestamp))
 		last_timestamp = now
 
 		#Start a bucket of light rays from a regular grid of initial positions
@@ -177,7 +192,7 @@ def singleRedshift(pool,batch,settings,id):
 		jacobian = tracer.shoot(pos,z=source_redshift,kind="jacobians")
 
 		now = time.time()
-		logging.info("Jacobian ray tracing for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+		logdriver.info("Jacobian ray tracing for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
 		last_timestamp = now
 
 		#Compute shear,convergence and omega from the jacobians
@@ -185,7 +200,7 @@ def singleRedshift(pool,batch,settings,id):
 		
 			convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
 			savename = os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
-			logging.info("Saving convergence map to {0}".format(savename)) 
+			logdriver.info("Saving convergence map to {0}".format(savename)) 
 			convMap.save(savename)
 
 		##############################################################################################################################
@@ -194,7 +209,7 @@ def singleRedshift(pool,batch,settings,id):
 		
 			shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
 			savename = os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
-			logging.info("Saving shear map to {0}".format(savename))
+			logdriver.info("Saving shear map to {0}".format(savename))
 			shearMap.save(savename) 
 
 		##############################################################################################################################
@@ -203,12 +218,12 @@ def singleRedshift(pool,batch,settings,id):
 		
 			omegaMap = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
 			savename = os.path.join(save_path,"WLomega_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
-			logging.info("Saving omega map to {0}".format(savename))
+			logdriver.info("Saving omega map to {0}".format(savename))
 			omegaMap.save(savename)
 
 		now = time.time()
-		logging.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logging.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
+		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+		logdriver.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
 	
 	#Safety sync barrier
 	if pool is not None:
@@ -216,5 +231,5 @@ def singleRedshift(pool,batch,settings,id):
 
 	if (pool is None) or (pool.is_master()):	
 		now = time.time()
-		logging.info("Total runtime {0:.3f}s".format(now-begin))
+		logdriver.info("Total runtime {0:.3f}s".format(now-begin))
 

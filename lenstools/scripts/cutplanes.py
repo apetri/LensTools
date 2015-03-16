@@ -4,7 +4,7 @@
 
 from __future__ import division
 
-import os
+import sys,os
 import logging
 import cPickle
 
@@ -15,6 +15,18 @@ from lenstools.simulations import Gadget2Snapshot,PotentialPlane
 from lenstools.utils import MPIWhirlPool
 
 import numpy as np
+
+################################################
+###########Loggers##############################
+################################################
+
+console = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
+console.setFormatter(formatter)
+
+logdriver = logging.getLogger("lenstools.driver")
+logdriver.addHandler(console)
+logdriver.propagate = False
 
 
 #######################################################
@@ -51,7 +63,7 @@ def main(pool,batch,settings,id):
 
 	#Log to user
 	if (pool is None) or (pool.is_master()):
-		logging.info("Reading snapshots from {0}".format(os.path.join(snapshot_path,SnapshotFileBase+"*")))
+		logdriver.info("Reading snapshots from {0}".format(os.path.join(snapshot_path,SnapshotFileBase+"*")))
 
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
 	plane_batch = realization.getPlaneSet(settings.directory_name)
@@ -67,12 +79,12 @@ def main(pool,batch,settings,id):
 			assert isinstance(settings,PlaneSettings)
 
 		if (pool is None) or (pool.is_master()):
-			logging.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
+			logdriver.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
 
 
 	if (pool is None) or (pool.is_master()):
 		
-		logging.info("Planes will be saved to {0}".format(save_path))
+		logdriver.info("Planes will be saved to {0}".format(save_path))
 		#Open the info file to save the planes information
 		infofile = open(os.path.join(save_path,"info.txt"),"w")
 
@@ -90,7 +102,7 @@ def main(pool,batch,settings,id):
 		snap = Gadget2Snapshot.open(os.path.join(snapshot_path,SnapshotFileBase+"{0:03d}".format(n)),pool=pool)
 
 		if pool is not None:
-			logging.info("Rank {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
+			logdriver.info("Rank {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
 
 		#Get the positions of the particles
 		snap.getPositions()
@@ -104,7 +116,7 @@ def main(pool,batch,settings,id):
 			for normal in normals:
 
 				if pool is not None and pool.is_master():
-					logging.info("Cutting plane at {0} with normal {1},thickness {2}, of size {3} x {3}".format(pos,normal,thickness,snap.header["box_size"]))
+					logdriver.info("Cutting plane at {0} with normal {1},thickness {2}, of size {3} x {3}".format(pos,normal,thickness,snap.header["box_size"]))
 
 				#Do the cutting
 				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,plane_resolution=plane_resolution,thickness_resolution=1,smooth=1,kind="potential")
@@ -116,7 +128,7 @@ def main(pool,batch,settings,id):
 					potential_plane = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=snap.header["redshift"],comoving_distance=snap.header["comoving_distance"],cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
 
 					#Save the result
-					logging.info("Saving plane to {0}".format(plane_file))
+					logdriver.info("Saving plane to {0}".format(plane_file))
 					potential_plane.save(plane_file)
 			
 			
@@ -138,4 +150,4 @@ def main(pool,batch,settings,id):
 		infofile.close()
 
 	if pool is None or pool.is_master():
-		logging.info("DONE!!")
+		logdriver.info("DONE!!")

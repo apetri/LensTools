@@ -1,6 +1,6 @@
 from __future__ import division
 
-import os,glob
+import os
 import re
 import cPickle
 
@@ -8,7 +8,7 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
-
+from .remote import SystemHandler,LocalSystem
 from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings,JobSettings
 from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2Snapshot
@@ -31,6 +31,12 @@ name2attr["h"] = "h"
 name2attr["Ob"] = "Ob0"
 name2attr["si"] = "sigma8"
 name2attr["ns"] = "ns"
+
+#####################################################
+#########Local filesystem handling###################
+#####################################################
+
+syshandler = LocalSystem()
 
 #####################################################
 ############Parse cosmology from string##############
@@ -106,7 +112,7 @@ class SimulationBatch(object):
 		return cls(env)
 
 
-	def __init__(self,environment):
+	def __init__(self,environment,syshandler=syshandler):
 
 		"""
 		Gets the handler instance of a batch of simulations residing in the provided environment
@@ -118,14 +124,17 @@ class SimulationBatch(object):
 
 		#Type check
 		assert isinstance(environment,EnvironmentSettings)
+		assert isinstance(syshandler,SystemHandler)
+		
 		self.environment = environment
+		self.syshandler = syshandler
 
 		#Create directories if they do not exist yet
 		for d in [environment.home,environment.storage]:
 			
-			if not os.path.isdir(d):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not self.syshandler.exists(d):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 
 	##############################################################################################################################
@@ -144,13 +153,13 @@ class SimulationBatch(object):
 		models = list()
 
 		#Check all available models in the home directory
-		dirnames = [ os.path.basename(n) for n in glob.glob(os.path.join(self.environment.home,"*")) ]
+		dirnames = [ os.path.basename(n) for n in self.syshandler.glob(os.path.join(self.environment.home,"*")) ]
 
 		#Decide which of the directories actually correspond to cosmological models
 		for dirname in dirnames:
 			cosmo_parsed = string2cosmo(dirname)
 			if cosmo_parsed is not None:
-				models.append(SimulationModel(cosmology=cosmo_parsed[0],environment=self.environment,parameters=cosmo_parsed[1]))
+				models.append(SimulationModel(cosmology=cosmo_parsed[0],environment=self.environment,parameters=cosmo_parsed[1],syshandler=self.syshandler))
 
 		#Return the list with the available models
 		return models
@@ -183,13 +192,13 @@ class SimulationBatch(object):
 				#Check if there are any map sets present
 				try:
 					
-					with open(os.path.join(collection.home_subdir,"sets.txt"),"r") as setsfile:
+					with self.syshandler.open(os.path.join(collection.home_subdir,"sets.txt"),"r") as setsfile:
 						
 						for line in setsfile.readlines():
 							if line=="":
 								continue
 							map_set = collection.getMapSet(line.strip("\n"))
-							maps_on_disk = glob.glob(os.path.join(map_set.storage_subdir,"*"))
+							maps_on_disk = self.syshandler.glob(os.path.join(map_set.storage_subdir,"WL*"))
 							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name] = dict() 
 							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name]["num_maps"] = len(maps_on_disk)
 
@@ -203,22 +212,22 @@ class SimulationBatch(object):
 					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"] = dict()
 
 					#Make number of ics and snapshots on disk available to user
-					ics_on_disk = glob.glob(os.path.join(r.ics_subdir,r.ICFilebase+"*"))
-					snap_on_disk = glob.glob(os.path.join(r.snapshot_subdir,r.SnapshotFileBase+"*"))
+					ics_on_disk = self.syshandler.glob(os.path.join(r.ics_subdir,r.ICFilebase+"*"))
+					snap_on_disk = self.syshandler.glob(os.path.join(r.snapshot_subdir,r.SnapshotFileBase+"*"))
 					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["ics"] =  len(ics_on_disk)
 					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["snapshots"] = len(snap_on_disk)
 
 					#Check if there are any plane sets present
 					try:
 
-						with open(os.path.join(r.home_subdir,"sets.txt"),"r") as setsfile:
+						with self.syshandler.open(os.path.join(r.home_subdir,"sets.txt"),"r") as setsfile:
 
 							for line in setsfile.readlines():
 								if line=="":
 									continue
 								
 								plane_set = r.getPlaneSet(line.strip("\n"))
-								planes_on_disk = glob.glob(os.path.join(plane_set.storage_subdir,"*Plane*"))
+								planes_on_disk = self.syshandler.glob(os.path.join(plane_set.storage_subdir,"*Plane*"))
 								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name] = dict()
 								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name]["num_planes"] = len(planes_on_disk)
 
@@ -228,6 +237,72 @@ class SimulationBatch(object):
 
 		#Return to user
 		return info_dict
+
+
+	##############################################################################################################################################
+
+	def copyTree(self,path,syshandler=syshandler):
+
+		"""
+		Copies the current batch directory tree into a separate path
+
+		:param path: path into which to copy the current batch directory tree
+		:type path: str.
+
+		:param syshander: system handler (can be a remote)
+		:type syshander: SystemHandler
+
+		"""
+
+		#Instantiate new SimulationBatch object (home and storage will be the same)
+		environment = EnvironmentSettings(home=path,storage=path)
+		batchCopy = SimulationBatch(environment,syshandler)
+
+		#Walk down the directory tree and create the copied directories on the go (only if non existent already)
+
+		#Model
+		for model in self.available:
+
+			modelCopy = batchCopy.getModel(model.cosmo_id)
+
+			if modelCopy is None:
+				modelCopy = batchCopy.newModel(model.cosmology,model.parameters)
+
+			#Collection
+			for coll in model.collections:
+
+				collCopy = modelCopy.getCollection(box_size=coll.box_size,nside=coll.nside)
+
+				if collCopy is None: 
+					collCopy = modelCopy.newCollection(box_size=coll.box_size,nside=coll.nside)
+
+				#Maps
+				for map_set in coll.mapsets:
+
+					map_setCopy = collCopy.getMapSet(map_set.name)
+
+					if map_setCopy is None:
+						map_setCopy = collCopy.newMapSet(map_set.settings)
+
+				#Realizations
+				for r in coll.realizations:
+
+					rCopy = collCopy.getRealization(r.ic_index)
+
+					if rCopy is None:
+						rCopy = collCopy.newRealization(seed=r.seed)
+
+					#Planes
+					for plane_set in r.planesets:
+
+						plane_setCopy = rCopy.getPlaneSet(plane_set.name)
+
+						if plane_setCopy is None:
+							plane_setCopy = rCopy.newPlaneSet(plane_set.settings)
+
+
+		#Return handle on the copied diretory tree
+		return batchCopy
 
 
 	##############################################################################################################################################
@@ -247,13 +322,14 @@ class SimulationBatch(object):
 
 		"""
 
-		newModel = SimulationModel(cosmology=cosmology,environment=self.environment,parameters=parameters)
+		newModel = SimulationModel(cosmology=cosmology,environment=self.environment,parameters=parameters,syshandler=self.syshandler)
 
 		for d in [newModel.home_subdir,newModel.storage_subdir]:
-			if not os.path.isdir(d):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not self.syshandler.exists(d):
 
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+				
 
 		#Return to user
 		return newModel
@@ -272,7 +348,7 @@ class SimulationBatch(object):
 
 		"""
 		
-		if not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))) or not(os.path.isdir(os.path.join(self.environment.home,cosmo_id))):
+		if not(self.syshandler.exists(os.path.join(self.environment.home,cosmo_id))) or not(self.syshandler.exists(os.path.join(self.environment.home,cosmo_id))):
 			return None
 
 		#Parse the cosmological model from the directory name
@@ -280,7 +356,7 @@ class SimulationBatch(object):
 
 		#Return the SimulationModel instance
 		if cosmo_parsed is not None:
-			return SimulationModel(cosmology=cosmo_parsed[0],environment=self.environment,parameters=cosmo_parsed[1])
+			return SimulationModel(cosmology=cosmo_parsed[0],environment=self.environment,parameters=cosmo_parsed[1],syshandler=self.syshandler)
 		else:
 			return None
 
@@ -321,9 +397,9 @@ class SimulationBatch(object):
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
 			
-			if not(os.path.isdir(d)):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not(self.syshandler.exists(d)):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -347,7 +423,7 @@ class SimulationBatch(object):
 				collection = model.getCollection(box_size=box_size,nside=nside)
 
 				parameter_file = os.path.join(collection.home_subdir,"camb.param")
-				if not(os.path.exists(parameter_file)):
+				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("CAMB parameter file at {0} does not exist yet!".format(parameter_file))
 
 				exec_args.append(parameter_file)
@@ -371,12 +447,12 @@ class SimulationBatch(object):
 			#Override settings
 			job_settings.num_cores = job_settings.cores_per_simulation
 
-			with open(script_filename,"w") as scriptfile:
+			with self.syshandler.open(script_filename,"w") as scriptfile:
 				scriptfile.write(job_handler.writePreamble(job_settings))
 				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################
@@ -408,9 +484,9 @@ class SimulationBatch(object):
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
 			
-			if not(os.path.isdir(d)):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not(self.syshandler.exists(d)):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -436,7 +512,7 @@ class SimulationBatch(object):
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
 				parameter_file = os.path.join(r.home_subdir,"ngenic.param")
-				if not(os.path.exists(parameter_file)):
+				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("NGenIC parameter file at {0} does not exist yet!".format(parameter_file))
 
 				exec_args.append(parameter_file)
@@ -460,12 +536,12 @@ class SimulationBatch(object):
 			#Override settings
 			job_settings.num_cores = job_settings.cores_per_simulation
 
-			with open(script_filename,"w") as scriptfile:
+			with self.syshandler.open(script_filename,"w") as scriptfile:
 				scriptfile.write(job_handler.writePreamble(job_settings))
 				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################
@@ -498,9 +574,9 @@ class SimulationBatch(object):
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
 			
-			if not(os.path.isdir(d)):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not(self.syshandler.exists(d)):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -536,7 +612,7 @@ class SimulationBatch(object):
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
 				parameter_file = os.path.join(r.home_subdir,"gadget2.param")
-				if not(os.path.exists(parameter_file)):
+				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("Gadget2 parameter file at {0} does not exist yet!".format(parameter_file))
 
 				executables.append(job_settings.path_to_executable + " " + "{0} {1} {2}".format(1,job_settings.cores_per_simulation,parameter_file))
@@ -555,12 +631,12 @@ class SimulationBatch(object):
 			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
 			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
 
-			with open(script_filename,"w") as scriptfile:
+			with self.syshandler.open(script_filename,"w") as scriptfile:
 				scriptfile.write(job_handler.writePreamble(job_settings))
 				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 	############################################################################################################################################
 
@@ -594,9 +670,9 @@ class SimulationBatch(object):
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
 			
-			if not(os.path.isdir(d)):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not(self.syshandler.exists(d)):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -632,7 +708,7 @@ class SimulationBatch(object):
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
 				#Check that the cores per simulation matches the number of files per snapshot
-				with open(os.path.join(r.home_subdir,"gadget2.p")) as settingsfile:
+				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p")) as settingsfile:
 					gadget_settings = cPickle.load(settingsfile)
 
 				assert gadget_settings.NumFilesPerSnapshot==job_settings.cores_per_simulation,"In the current implementation of plane generation, the number of MPI tasks must be the same as the number of files per snapshot!"
@@ -665,12 +741,12 @@ class SimulationBatch(object):
 			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
 			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
 
-			with open(script_filename,"w") as scriptfile:
+			with self.syshandler.open(script_filename,"w") as scriptfile:
 				scriptfile.write(job_handler.writePreamble(job_settings))
 				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 	############################################################################################################################################
 
@@ -704,9 +780,9 @@ class SimulationBatch(object):
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
 			
-			if not(os.path.isdir(d)):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not(self.syshandler.exists(d)):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
@@ -771,12 +847,12 @@ class SimulationBatch(object):
 			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
 			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
 
-			with open(script_filename,"w") as scriptfile:
+			with self.syshandler.open(script_filename,"w") as scriptfile:
 				scriptfile.write(job_handler.writePreamble(job_settings))
 				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
-			print("[+] {0} written".format(script_filename))
+			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 	############################################################################################################################################	
 
@@ -794,7 +870,7 @@ class SimulationModel(object):
 
 	"""
 
-	def __init__(self,cosmology=WMAP9,environment=None,parameters=["Om","Ol","w","ns","si"]):
+	def __init__(self,cosmology=WMAP9,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
 
 		"""
 		Set the base for the simulation
@@ -832,6 +908,9 @@ class SimulationModel(object):
 		#Create directories accordingly
 		self.home_subdir = os.path.join(self.environment.home,self.cosmo_id)
 		self.storage_subdir = os.path.join(self.environment.storage,self.cosmo_id)
+
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
 	
 
 	def __repr__(self):
@@ -851,16 +930,18 @@ class SimulationModel(object):
 
 		"""
 
-		newSimulation = SimulationCollection(self.cosmology,self.environment,self.parameters,box_size,nside)
+		newSimulation = SimulationCollection(self.cosmology,self.environment,self.parameters,box_size,nside,syshandler=self.syshandler)
 
 		#Make the corresponding directory if not already present
 		for d in [newSimulation.home_subdir,newSimulation.storage_subdir]:
-			if not os.path.isdir(d):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not self.syshandler.exists(d):
+
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+				
 
 		#Keep track of the fact we created a new collection
-		with open(os.path.join(self.environment.home,"collections.txt"),"a") as logfile:
+		with self.syshandler.open(os.path.join(self.environment.home,"collections.txt"),"a") as logfile:
 			logfile.write("{0}|{1}\n".format(self.cosmo_id,newSimulation.geometry_id))
 
 		return newSimulation
@@ -870,8 +951,8 @@ class SimulationModel(object):
 	def getCollection(self,box_size,nside):
 
 		#See if the collection exists
-		collection = SimulationCollection(self.cosmology,self.environment,self.parameters,box_size,nside)
-		if not(os.path.isdir(collection.storage_subdir) and os.path.isdir(collection.home_subdir)):
+		collection = SimulationCollection(self.cosmology,self.environment,self.parameters,box_size,nside,syshandler=self.syshandler)
+		if not(self.syshandler.exists(collection.storage_subdir) and self.syshandler.exists(collection.home_subdir)):
 			return None
 
 		#If it exists, return the SimulationCollection instance
@@ -891,14 +972,14 @@ class SimulationModel(object):
 
 		"""
 
-		collection_names = [ os.path.basename(d) for d in glob.glob(os.path.join(self.home_subdir,"*")) ]
+		collection_names = [ os.path.basename(d) for d in self.syshandler.glob(os.path.join(self.home_subdir,"*")) ]
 		collection_list = list()
 
 		for name in collection_names:
 			
 			try:
 				nside,box = name.split("b")
-				collection_list.append(SimulationCollection(self.cosmology,self.environment,self.parameters,box_size=float(box)*self.Mpc_over_h,nside=int(nside)))
+				collection_list.append(SimulationCollection(self.cosmology,self.environment,self.parameters,box_size=float(box)*self.Mpc_over_h,nside=int(nside),syshandler=self.syshandler))
 			except ValueError:
 				pass
 
@@ -917,9 +998,9 @@ class SimulationCollection(SimulationModel):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,**kwargs):
 
-		super(SimulationCollection,self).__init__(cosmology,environment,parameters)
+		super(SimulationCollection,self).__init__(cosmology,environment,parameters,**kwargs)
 		self.box_size = box_size
 		self.nside = nside
 
@@ -944,33 +1025,28 @@ class SimulationCollection(SimulationModel):
 	def newRealization(self,seed=0):
 		
 		#Check if there are already generated initial conditions in there
-		ics_present = glob.glob(os.path.join(self.storage_subdir,"ic*"))
+		ics_present = self.syshandler.glob(os.path.join(self.storage_subdir,"ic*"))
 		new_ic_index = len(ics_present) + 1
 
 		#Generate the new initial condition
-		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed)
+		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed,syshandler=self.syshandler)
 
-		#Make dedicated directory for new initial condition
-		os.mkdir(newIC.home_subdir)
-		print("[+] {0} created".format(newIC.home_subdir))
-		os.mkdir(newIC.storage_subdir)
-		print("[+] {0} created".format(newIC.storage_subdir))
+		#Make dedicated directories for new initial condition,ics and snapshots
+		for d in [newIC.home_subdir,newIC.storage_subdir,newIC.ics_subdir,newIC.snapshot_subdir]:
 
-		#Make dedicated directories for ics and snapshots
-		os.mkdir(newIC.ics_subdir)
-		print("[+] {0} created".format(newIC.ics_subdir))
-		os.mkdir(newIC.snapshot_subdir)
-		print("[+] {0} created".format(newIC.snapshot_subdir))
+			if not self.syshandler.exists(d):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Make new file with the number of the seed (both in home and storage)
-		seedfile = open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w")
+		seedfile = self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w")
 		seedfile.close()
 
-		seedfile = open(os.path.join(newIC.storage_subdir,"seed"+str(seed)),"w")
+		seedfile = self.syshandler.open(os.path.join(newIC.storage_subdir,"seed"+str(seed)),"w")
 		seedfile.close()
 
 		#Keep track of the fact that we created a new nbody realization
-		with open(os.path.join(self.environment.home,"realizations.txt"),"a") as logfile:
+		with self.syshandler.open(os.path.join(self.environment.home,"realizations.txt"),"a") as logfile:
 			logfile.write("{0}|{1}|ic{2}\n".format(self.cosmo_id,self.geometry_id,new_ic_index))
 
 		return newIC
@@ -980,12 +1056,12 @@ class SimulationCollection(SimulationModel):
 	def getRealization(self,n):
 
 		#Check if this particular realization exists
-		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,n,seed=0)
-		if not(os.path.isdir(newIC.home_subdir)) or not(os.path.isdir(newIC.storage_subdir)):
+		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,n,seed=0,syshandler=self.syshandler)
+		if not(self.syshandler.exists(newIC.home_subdir)) or not(self.syshandler.exists(newIC.storage_subdir)):
 			return None
 
 		#Read the seed number
-		seed_filename = os.path.basename(glob.glob(os.path.join(newIC.home_subdir,"seed*"))[0])
+		seed_filename = os.path.basename(self.syshandler.glob(os.path.join(newIC.home_subdir,"seed*"))[0])
 		newIC.seed = int(seed_filename.strip("seed"))
 
 		#Return the SimulationIC instance
@@ -1005,12 +1081,12 @@ class SimulationCollection(SimulationModel):
 		"""
 
 		ic_list = list()
-		ic_numbers = [ os.path.basename(d).strip("ic") for d in glob.glob(os.path.join(self.home_subdir,"ic*")) ]
+		ic_numbers = [ os.path.basename(d).strip("ic") for d in self.syshandler.glob(os.path.join(self.home_subdir,"ic*")) ]
 
 		for ic in ic_numbers:
 
-			seed = int(os.path.basename(glob.glob(os.path.join(self.home_subdir,"ic"+ic,"seed*"))[0]).strip("seed"))
-			ic_list.append(SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,int(ic),seed))
+			seed = int(os.path.basename(self.syshandler.glob(os.path.join(self.home_subdir,"ic"+ic,"seed*"))[0]).strip("seed"))
+			ic_list.append(SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,int(ic),seed,syshandler=self.syshandler))
 
 		#Sort according to ic_index
 		ic_list.sort(key=lambda r:r.ic_index)
@@ -1036,20 +1112,20 @@ class SimulationCollection(SimulationModel):
 		assert isinstance(settings,MapSettings)
 
 		#Instantiate SimulationMaps object
-		map_set = SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings)
+		map_set = SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings,syshandler=self.syshandler)
 
 		#Create dedicated directories
 		for d in [ map_set.home_subdir,map_set.storage_subdir ]:
-			if not os.path.isdir(d):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not self.syshandler.exists(d):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Save a picked copy of the settings to use for future reference
-		with open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
 			cPickle.dump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
-		with open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
 			setsfile.write("{0}\n".format(settings.directory_name))
 
 		#Return to user
@@ -1068,15 +1144,15 @@ class SimulationCollection(SimulationModel):
 		"""
 
 		#Check if the map set exists
-		if (not os.path.isdir(os.path.join(self.storage_subdir,setname))) or (not os.path.isdir(os.path.join(self.home_subdir,setname))):
+		if (not self.syshandler.exists(os.path.join(self.storage_subdir,setname))) or (not self.syshandler.exists(os.path.join(self.home_subdir,setname))):
 			return None
 
 		#Read the settings from the pickled file
-		with open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
 			settings = cPickle.load(settingsfile) 
 
 		#Return to user
-		return SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings)
+		return SimulationMaps(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings,syshandler=self.syshandler)
 
 	#################################################################################################################################
 
@@ -1093,7 +1169,7 @@ class SimulationCollection(SimulationModel):
 		map_sets = list()
 		
 		try:
-			with open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
 				for set_name in setsfile.readlines():
 					map_sets.append(self.getMapSet(set_name.strip("\n")))
 		except IOError:
@@ -1123,13 +1199,13 @@ class SimulationCollection(SimulationModel):
 
 		#Write the parameter file
 		camb_filename = os.path.join(self.home_subdir,"camb.param") 
-		with open(camb_filename,"w") as paramfile:
+		with self.syshandler.open(camb_filename,"w") as paramfile:
 			paramfile.write(settings.write(output_root=os.path.join(self.home_subdir,"camb"),cosmology=self.cosmology,redshifts=z))
 
-		print("[+] {0} written".format(camb_filename))
+		print("[+] {0} written on {1}".format(camb_filename,self.syshandler.name))
 
 		#Save a pickled copy of the settings
-		with open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
 			cPickle.dump(settings,settingsfile)
 
 
@@ -1146,7 +1222,7 @@ class SimulationCollection(SimulationModel):
 		"""
 
 		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"camb_matterpower_z{0:.6f}.dat".format(z))
-		if not(os.path.exists(camb_ps_file)):
+		if not(self.syshandler.exists(camb_ps_file)):
 			raise IOError("CAMB matter power spectrum file {0} does not exist yet!!".format(camb_ps_file))
 
 		k,Pk = np.loadtxt(camb_ps_file,unpack=True)
@@ -1170,9 +1246,9 @@ class SimulationIC(SimulationCollection):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase="ics",SnapshotFileBase="snapshot"):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase="ics",SnapshotFileBase="snapshot",**kwargs):
 
-		super(SimulationIC,self).__init__(cosmology,environment,parameters,box_size,nside)
+		super(SimulationIC,self).__init__(cosmology,environment,parameters,box_size,nside,**kwargs)
 
 		#Save random seed information as attribute
 		self.ic_index = ic_index
@@ -1192,13 +1268,13 @@ class SimulationIC(SimulationCollection):
 
 		#Try to load in the simulation settings, if any are present
 		try:
-			with open(os.path.join(self.home_subdir,"ngenic.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as settingsfile:
 				self.ngenic_settings = cPickle.load(settingsfile)
 		except IOError:
 			pass
 
 		try:
-			with open(os.path.join(self.home_subdir,"gadget2.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"r") as settingsfile:
 				self.gadget_settings = cPickle.load(settingsfile)
 		except IOError:
 			pass
@@ -1206,12 +1282,12 @@ class SimulationIC(SimulationCollection):
 	def __repr__(self):
 
 		#Check if snapshots and/or initial conditions are present
-		ics_on_disk = glob.glob(os.path.join(self.ics_subdir,self.ICFilebase+"*"))
-		snap_on_disk = glob.glob(os.path.join(self.snapshot_subdir,self.SnapshotFileBase+"*"))
+		ics_on_disk = self.syshandler.glob(os.path.join(self.ics_subdir,self.ICFilebase+"*"))
+		snap_on_disk = self.syshandler.glob(os.path.join(self.snapshot_subdir,self.SnapshotFileBase+"*"))
 
 		return super(SimulationIC,self).__repr__() + " | ic={0},seed={1} | IC files on disk: {2} | Snapshot files on disk: {3}".format(self.ic_index,self.seed,len(ics_on_disk),len(snap_on_disk))
 
-	def newInitialCondition(self,seed):
+	def newRealization(self,seed):
 		raise TypeError("This method should be called on SimulationCollection instances!")
 
 	####################################################################################################################################
@@ -1222,20 +1298,20 @@ class SimulationIC(SimulationCollection):
 		assert isinstance(settings,PlaneSettings)
 
 		#Instantiate a SimulationPlanes object
-		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
+		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
 
 		#Create the dedicated directory if not present already
 		for d in [new_plane_set.home_subdir,new_plane_set.storage_subdir]:
-			if not(os.path.isdir(d)):
-				os.mkdir(d)
-				print("[+] {0} created".format(d))
+			if not(self.syshandler.exists(d)):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Save a pickled copy of the settings for future reference
-		with open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
 			cPickle.dump(settings,settingsfile)
 
 		#Append the name of the plane batch to a summary file
-		with open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
 			setsfile.write("{0}\n".format(settings.directory_name))
 
 		#Return the created instance
@@ -1255,15 +1331,15 @@ class SimulationIC(SimulationCollection):
 
 		"""
 
-		if not(os.path.isdir(os.path.join(self.storage_subdir,setname))):
+		if not(self.syshandler.exists(os.path.join(self.storage_subdir,setname))):
 			return None
 
 		#Read plane settings from pickled file
-		with open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
 			settings = cPickle.load(settingsfile)
 
 		#Instantiate the SimulationPlanes object
-		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings)
+		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
 
 	####################################################################################################################################
 
@@ -1280,7 +1356,7 @@ class SimulationIC(SimulationCollection):
 		plane_sets = list()
 		
 		try:
-			with open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
 				for set_name in setsfile.readlines():
 					plane_sets.append(self.getPlaneSet(set_name.strip("\n")))
 		
@@ -1313,7 +1389,7 @@ class SimulationIC(SimulationCollection):
 		filename = os.path.join(self.home_subdir,"ngenic.param")
 
 		#Write the parameter file
-		with open(filename,"w") as paramfile:
+		with self.syshandler.open(filename,"w") as paramfile:
 
 			#Mesh and grid size
 			paramfile.write("Nmesh			{0}\n".format(2*self.nside))
@@ -1370,7 +1446,7 @@ class SimulationIC(SimulationCollection):
 			ngenic_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"ngenic_matterpower_z{0:.6f}.txt".format(0.0))
 
 			#Check if NGen-IC power spectrum file exists, if not throw exception
-			if not(os.path.exists(ngenic_ps_file)) and settings.WhichSpectrum==2:
+			if not(self.syshandler.exists(ngenic_ps_file)) and settings.WhichSpectrum==2:
 				raise IOError("NGen-IC power spectrum file {0} does not exist yet!")
 
 			paramfile.write("FileWithInputSpectrum			{0}\n".format(ngenic_ps_file))
@@ -1392,11 +1468,11 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("UnitVelocity_in_cm_per_s 			{0:.6e}\n".format(settings.UnitVelocity_in_cm_per_s))
 
 		#Save a pickled copy of the settings for future reference
-		with open(os.path.join(self.home_subdir,"ngenic.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"w") as settingsfile:
 			cPickle.dump(settings,settingsfile)
 
 		#Log and return
-		print("[+] NGenIC parameter file {0} written".format(filename))
+		print("[+] NGenIC parameter file {0} written on {1}".format(filename,self.syshandler.name))
 
 	####################################################################################################################################
 
@@ -1417,7 +1493,7 @@ class SimulationIC(SimulationCollection):
 		filename = os.path.join(self.home_subdir,"gadget2.param")
 
 		#Write the parameter file
-		with open(filename,"w") as paramfile:
+		with self.syshandler.open(filename,"w") as paramfile:
 
 			#File names for initial condition and outputs
 			initial_condition_file = os.path.join(os.path.abspath(self.ics_subdir),self.ICFilebase)
@@ -1442,16 +1518,16 @@ class SimulationIC(SimulationCollection):
 			paramfile.write(settings.writeSection("code_options"))
 
 			#Initial scale factor time
-			ic_filenames = glob.glob(initial_condition_file+"*")
+			ic_filenames = self.syshandler.glob(initial_condition_file+"*")
 
 			try:
 				ic_snapshot = Gadget2Snapshot.open(ic_filenames[0])
 				paramfile.write("TimeBegin			{0}\n".format(ic_snapshot.header["scale_factor"]))
 				ic_snapshot.close()
-			except IndexError:
+			except (IndexError,IOError):
 				
 				#Read the initial redshift of the simulation from the NGenIC settings
-				with open(os.path.join(self.home_subdir,"ngenic.p"),"r") as ngenicfile:
+				with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as ngenicfile:
 					ngenic_settings = cPickle.load(ngenicfile)
 					assert isinstance(ngenic_settings,NGenICSettings)
 
@@ -1492,11 +1568,11 @@ class SimulationIC(SimulationCollection):
 			paramfile.write(settings.writeSection("softening"))
 
 		#Save a pickled copy of the settings for future reference
-		with open(os.path.join(self.home_subdir,"gadget2.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"w") as settingsfile:
 			cPickle.dump(settings,settingsfile)
 
 		#Log and exit
-		print("[+] Gadget2 parameter file {0} written".format(filename))
+		print("[+] Gadget2 parameter file {0} written on {1}".format(filename,self.syshandler.name))
 
 
 ##############################################################
@@ -1510,13 +1586,13 @@ class SimulationPlanes(SimulationIC):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,settings):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,settings,**kwargs):
 
 		#Safety check
 		assert isinstance(settings,PlaneSettings)
 
 		#Call parent constructor
-		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase)
+		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,**kwargs)
 		self.settings = settings
 		self.name = settings.directory_name
 
@@ -1532,7 +1608,7 @@ class SimulationPlanes(SimulationIC):
 			parent_repr.pop(-1)
 
 		#Count the number of plane files on disk
-		planes_on_disk = glob.glob(os.path.join(self.storage_subdir,"*"))
+		planes_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"*"))
 
 		#Build the new representation string
 		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
@@ -1552,7 +1628,7 @@ class SimulationPlanes(SimulationIC):
 		"""
 
 		full_path = os.path.join(self.storage_subdir,filename)
-		if not(os.path.exists(full_path)):
+		if not(self.syshandler.exists(full_path)):
 			return None
 
 		return full_path
@@ -1569,13 +1645,13 @@ class SimulationMaps(SimulationCollection):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,settings):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,settings,**kwargs):
 
 		#Safety check
 		assert isinstance(settings,MapSettings)
 
 		#Call parent constructor
-		super(SimulationMaps,self).__init__(cosmology,environment,parameters,box_size,nside)
+		super(SimulationMaps,self).__init__(cosmology,environment,parameters,box_size,nside,**kwargs)
 		self.settings = settings
 		self.name = settings.directory_name
 
@@ -1583,11 +1659,10 @@ class SimulationMaps(SimulationCollection):
 		self.home_subdir = os.path.join(self.home_subdir,settings.directory_name)
 		self.storage_subdir = os.path.join(self.storage_subdir,settings.directory_name)
 
-
 	def __repr__(self):
 
 		#Count the number of map files on disk
-		maps_on_disk = glob.glob(os.path.join(self.storage_subdir,"*"))
+		maps_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"WL*"))
 
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
@@ -1608,7 +1683,7 @@ class SimulationMaps(SimulationCollection):
 		"""
 
 		full_path = os.path.join(self.storage_subdir,filename)
-		if not(os.path.exists(full_path)):
+		if not(self.syshandler.exists(full_path)):
 			return None
 
 		return full_path
