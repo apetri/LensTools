@@ -9,6 +9,18 @@ from lenstools.pipeline.settings import EnvironmentSettings,PlaneSettings
 
 import logging
 
+################################################
+###########Loggers##############################
+################################################
+
+console = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(name)-12s:%(levelname)-4s: %(message)s")
+console.setFormatter(formatter)
+
+logpreamble = logging.getLogger("lenstools.preamble")
+logpreamble.addHandler(console)
+logpreamble.propagate = False
+
 #Parse command line options
 parser = argparse.ArgumentParser()
 parser.add_argument("-v","--verbose",dest="verbose",action="store_true",default=False,help="turn output verbosity")
@@ -30,13 +42,13 @@ else:
 	logging.basicConfig(level=logging.INFO)
 
 #Parse relevant options
-logging.info("Reading environment from {0}".format(cmd_args.environment))
+logpreamble.info("Reading environment from {0}".format(cmd_args.environment))
 environment_settings = EnvironmentSettings.read(cmd_args.environment)
 
 #Get a handle on the simulation batch
 batch = SimulationBatch(environment_settings)
 
-logging.info("Reading lensing configuration from {0}".format(cmd_args.config_file))
+logpreamble.info("Reading lensing configuration from {0}".format(cmd_args.config_file))
 plane_settings = PlaneSettings.read(cmd_args.config_file)
 
 #Cycle over ids to produce the planes

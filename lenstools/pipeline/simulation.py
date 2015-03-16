@@ -198,7 +198,7 @@ class SimulationBatch(object):
 							if line=="":
 								continue
 							map_set = collection.getMapSet(line.strip("\n"))
-							maps_on_disk = self.syshandler.glob(os.path.join(map_set.storage_subdir,"*"))
+							maps_on_disk = self.syshandler.glob(os.path.join(map_set.storage_subdir,"WL*"))
 							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name] = dict() 
 							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name]["num_maps"] = len(maps_on_disk)
 
@@ -1662,7 +1662,7 @@ class SimulationMaps(SimulationCollection):
 	def __repr__(self):
 
 		#Count the number of map files on disk
-		maps_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"*"))
+		maps_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"WL*"))
 
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))

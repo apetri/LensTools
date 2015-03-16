@@ -1,6 +1,7 @@
 from ..convergence import Spin0,ConvergenceMap
 from ..shear import Spin1,Spin2,ShearMap
 
+import sys
 import time
 import logging
 import gc
@@ -32,6 +33,23 @@ from .io import readFITS,saveFITS
 #Enable garbage collection if not active already
 if not gc.isenabled():
 	gc.enable()
+
+
+################################################
+###########Loggers##############################
+################################################
+
+console = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(name)-12s:%(levelname)-4s: %(message)s")
+console.setFormatter(formatter)
+
+logplanes = logging.getLogger("lenstools.planes")
+logplanes.addHandler(console)
+logplanes.propagate = False
+
+logray = logging.getLogger("lenstools.raytracing")
+logray.addHandler(console)
+logray.propagate = False
 
 
 ###########################################################
@@ -75,7 +93,7 @@ class Plane(Spin0):
 
 
 	def __del__(self):
-		logging.debug("Plane {0} deleted from memory".format(self.filename))
+		logplanes.debug("Plane {0} deleted from memory".format(self.filename))
 
 
 	def angular(self,length_scale):
@@ -199,7 +217,7 @@ class Plane(Spin0):
 
 			#Timestamp
 			now = time.time()
-			logging.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 			random_shift = np.random.randint(0,self.data.shape[0],size=2)
@@ -207,7 +225,7 @@ class Plane(Spin0):
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Phase multiplication completed in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("Phase multiplication completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 
@@ -402,14 +420,14 @@ class PotentialPlane(Plane):
 
 			#Timestamp
 			now = time.time()
-			logging.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 			ft_deflection = 2.0*np.pi*1.0j * l * self.data
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Phase multiplications completed in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("Phase multiplications completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 			#Go back in real space
@@ -417,7 +435,7 @@ class PotentialPlane(Plane):
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Inverse FFTs completed in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("Inverse FFTs completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 		else:
@@ -546,13 +564,13 @@ class PotentialPlane(Plane):
 				x = x.to(rad).value * self.comoving_distance
 				y = y.to(rad).value * self.comoving_distance			
 			
-			logging.debug("Computing hessian...")
+			logplanes.debug("Computing hessian...")
 			hessian_xx,hessian_yy,hessian_xy = self.hessian(x,y)
 			
-			logging.debug("Computing laplacian...")
+			logplanes.debug("Computing laplacian...")
 			laplacian = hessian_xx + hessian_yy
 			
-			logging.debug("Laplacian calculation completed")
+			logplanes.debug("Laplacian calculation completed")
 
 		elif self.space=="fourier":
 
@@ -782,7 +800,7 @@ class RayTracer(object):
 			self.Nlenses += 1
 
 		#If completed correctly, log info to the user
-		logging.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
+		logray.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
 
 	def randomRoll(self,seed=None):
 
@@ -918,15 +936,15 @@ class RayTracer(object):
 			if type(lens[k])==PotentialPlane:
 				current_lens = lens[k]
 			elif type(lens[k])==str:
-				logging.info("Reading plane from {0}...".format(lens[k]))
+				logray.info("Reading plane from {0}...".format(lens[k]))
 				current_lens = PotentialPlane.load(lens[k])
-				logging.info("Randomly rolling lens {0} along its axes...".format(k))
+				logray.info("Randomly rolling lens {0} along its axes...".format(k))
 				current_lens.randomRoll()
 			else:
 				raise TypeError("Lens format not recognized!")
 
 			#Log
-			logging.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
+			logray.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
 			start = time.time()
 			last_timestamp = start
 
@@ -937,7 +955,7 @@ class RayTracer(object):
 				deflections = current_lens.deflectionAngles(current_positions[0],current_positions[1])
 
 			now = time.time()
-			logging.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#If we are tracing jacobians we need to retrieve the shear matrices too
@@ -949,7 +967,7 @@ class RayTracer(object):
 					shear_tensors = current_lens.shearMatrix(current_positions[0],current_positions[1])
 
 				now = time.time()
-				logging.debug("Shear matrices retrieved in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("Shear matrices retrieved in {0:.3f}s".format(now-last_timestamp))
 				last_timestamp = now
 			
 			#####################################################################################
@@ -961,13 +979,13 @@ class RayTracer(object):
 			#Compute the position on the next lens and log timestamp
 			current_deflection *= (Ak-1) 
 			now = time.time()
-			logging.debug("Geometrical weight factors calculations and deflection scaling completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Geometrical weight factors calculations and deflection scaling completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Add deflections and log timestamp
 			current_deflection += Ck * deflections 
 			now = time.time()
-			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#If we are tracing jacobians we need to compute the matrix product with the shear matrix
@@ -979,7 +997,7 @@ class RayTracer(object):
 				current_jacobian_deflection += Ck * (np.tensordot(dotter,current_jacobian,axes=([2],[0])) * shear_tensors).sum(1)
 				
 				now = time.time()
-				logging.debug("Shear matrix products computed in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("Shear matrix products computed in {0:.3f}s".format(now-last_timestamp))
 				last_timestamp = now
 
 			###########################################################################################
@@ -1010,7 +1028,7 @@ class RayTracer(object):
 						current_jacobian += current_jacobian_deflection * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 			now = time.time()
-			logging.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Save the intermediate positions if option was specified
@@ -1023,7 +1041,7 @@ class RayTracer(object):
 
 			#Log timestamp to cross lens
 			now = time.time()
-			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
 
 
 		#Return the final positions of the light rays (or jacobians)
@@ -1106,7 +1124,7 @@ class RayTracer(object):
 
 			#Extract the density at the ray positions
 			now = time.time()
-			logging.debug("Extracting density values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
+			logray.debug("Extracting density values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
 			last_timestamp = now
 
 			#Compute full density plane
@@ -1114,7 +1132,7 @@ class RayTracer(object):
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Cumulate on the convergence
@@ -1124,7 +1142,7 @@ class RayTracer(object):
 				current_convergence += 0.5 * density * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 			now = time.time()
-			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
 			last_timestamp = now
 
 			#Save the intermediate convergence values if option is enabled
@@ -1179,7 +1197,7 @@ class RayTracer(object):
 		final_grid = self.shoot(initial_grid,z=z,save_intermediate=save_intermediate)
 
 		now = time.time()
-		logging.debug("Ray tracing in {0:.3f}s".format(now-last_timestamp))
+		logray.debug("Ray tracing in {0:.3f}s".format(now-last_timestamp))
 		last_timestamp = now
 
 		if save_intermediate:
@@ -1195,14 +1213,14 @@ class RayTracer(object):
 				tree = KDTree(final_grid[n].transpose())
 
 				now = time.time()
-				logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
 				last_timestamp = now
 
 				#Query the tree and retrieve the apparent positions
 				distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
 
 				now = time.time()
-				logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
 				last_timestamp = now
 
 				apparent_positions[n] = initial_grid[:,apparent_position_index].reshape(source_positions.shape).copy()
@@ -1214,14 +1232,14 @@ class RayTracer(object):
 			tree = KDTree(final_grid.transpose())
 
 			now = time.time()
-			logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Query the tree and retrieve the apparent positions
 			distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
 
 			now = time.time()
-			logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			apparent_positions = initial_grid[:,apparent_position_index].reshape(source_positions.shape)
