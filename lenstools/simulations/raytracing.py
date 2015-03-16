@@ -40,7 +40,7 @@ if not gc.isenabled():
 ################################################
 
 console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(name)-12s:%(levelname)-4s: %(message)s")
+formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
 console.setFormatter(formatter)
 
 logplanes = logging.getLogger("lenstools.planes")
