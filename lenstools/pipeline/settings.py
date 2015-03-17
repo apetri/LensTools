@@ -241,6 +241,85 @@ class MapSettings(object):
 		#Return to user
 		return settings
 
+#####################################################
+###########CatalogSettings class#####################
+#####################################################
+
+class CatalogSettings(object):
+
+	"""
+	Class handler of simulated catalog generation settings
+
+	"""
+
+	def __init__(self,**kwargs):
+	
+		#Name of catalog batch
+		self.directory_name = "Catalog"
+		self.input_files = "galaxy_positions.fits"
+
+		#Use the options generated at the moment of the batch generation (advised)
+		self.override_with_local = True
+
+		#Format of the simulated catalog files
+		self.format = "fits"
+
+		#Random seed used to generate multiple catalog realizations
+		self.seed = 0
+
+		#Set of lens planes to be used during ray tracing
+		self.plane_set = "Planes"
+
+		#N-body simulation realizations that need to be mixed
+		self.mix_nbody_realizations = [1]
+		self.mix_cut_points = [0]
+		self.mix_normals = [0]
+		self.lens_catalog_realizations = 1
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+
+	@classmethod
+	def read(cls,config_file):
+
+		#Read the options from the ini file
+		options = config.ConfigParser()
+		options.read([config_file])
+
+		#Check that the config file has the appropriate section
+		section = "CatalogSettings"
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+
+		#Fill in the appropriate fields
+		settings = cls()
+
+		#Name of catalog batch
+		settings.directory_name = options.get(section,"directory_name")
+		settings.input_files = options.get(section,"input_files")
+
+		#Use the options generated at the moment of the batch generation (advised)
+		settings.override_with_local = options.getboolean(section,"override_with_local")
+
+		#Format of the simulated catalog files
+		settings.format = options.get(section,"format")
+
+		#Set of lens planes to be used during ray tracing
+		settings.seed = options.getint(section,"seed")
+
+		#Set of lens planes to be used during ray tracing
+		settings.plane_set = options.get(section,"plane_set")
+
+		#N-body simulation realizations that need to be mixed
+		settings.mix_nbody_realizations = [ int(n) for n in options.get(section,"mix_nbody_realizations").split(",") ]
+		settings.lens_map_realizations = options.getint(section,"lens_map_realizations")
+		settings.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
+		settings.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ]
+
+		#Return to user
+		return settings
+
 
 ##################################################
 ###############JobSettings class##################

@@ -2,7 +2,7 @@ try:
 	
 	import os
 	from lenstools.pipeline import SimulationBatch
-	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
+	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,CatalogSettings,MapSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
@@ -13,7 +13,7 @@ except ImportError:
 
 	import os
 	from lenstools.pipeline import SimulationBatch
-	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
+	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,CatalogSettings,MapSettings
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
@@ -49,6 +49,9 @@ def test_directory_tree():
 
 			map_settings = MapSettings()
 			map_set = collection.newMapSet(map_settings)
+
+			catalog_settings = CatalogSettings()
+			catalog = collection.newCatalog(catalog_settings)
 			
 			for seed in seeds:
 				
@@ -68,6 +71,9 @@ def test_present():
 
 			mp = collection.getMapSet("Maps")
 			print(mp)
+
+			ct = collection.getCatalog("Catalog")
+			print(ct)
 
 			for ic in collection.realizations:
 				
