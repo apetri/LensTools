@@ -16,7 +16,7 @@ from lenstools import ConvergenceMap,ShearMap
 
 from lenstools.simulations.raytracing import RayTracer
 from lenstools.pipeline.simulation import SimulationBatch
-from lenstools.pipeline.settings import MapSettings
+from lenstools.pipeline.settings import MapSettings,CatalogSettings
 
 import numpy as np
 import astropy.units as u
@@ -232,4 +232,19 @@ def singleRedshift(pool,batch,settings,id):
 	if (pool is None) or (pool.is_master()):	
 		now = time.time()
 		logdriver.info("Total runtime {0:.3f}s".format(now-begin))
+
+
+
+###############################################
+#######Galaxy catalog ray tracing##############
+###############################################
+
+def simulatedCatalog(pool,batch,settings,id):
+
+	#Safety check
+	assert isinstance(pool,MPIWhirlPool) or (pool is None)
+	assert isinstance(batch,SimulationBatch)
+	assert isinstance(settings,CatalogSettings)
+
+	raise NotImplementedError
 
