@@ -707,7 +707,7 @@ class SimulationBatch(object):
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
 				#Check that the cores per simulation matches the number of files per snapshot
-				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p")) as settingsfile:
+				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p"),"r") as settingsfile:
 					gadget_settings = self.syshandler.pickleload(settingsfile)
 
 				assert gadget_settings.NumFilesPerSnapshot==job_settings.cores_per_simulation,"In the current implementation of plane generation, the number of MPI tasks must be the same as the number of files per snapshot!"
