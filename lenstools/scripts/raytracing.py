@@ -13,6 +13,7 @@ from lenstools.utils import MPIWhirlPool
 
 from lenstools.convergence import Spin0
 from lenstools import ConvergenceMap,ShearMap
+from lenstools.catalog import Catalog,ShearCatalog
 
 from lenstools.simulations.raytracing import RayTracer
 from lenstools.pipeline.simulation import SimulationBatch

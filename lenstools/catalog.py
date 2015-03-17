@@ -37,7 +37,7 @@ class Catalog(tbl.Table):
 	def __init__(self,*args,**kwargs):
 
 		#Call parent constructor
-		super(self.__class__,self).__init__(*args,**kwargs)
+		super(Catalog,self).__init__(*args,**kwargs)
 
 		#Set spatial information
 		self.setSpatialInfo()
@@ -210,6 +210,18 @@ class Catalog(tbl.Table):
 		"""
 
 		self.fig.savefig(filename)
+
+
+##########################################################
+################ShearCatalog class########################
+##########################################################
+
+class ShearCatalog(Catalog):
+
+	"""
+	Class handler of a galaxy shear catalog, inherits all the functionality from the Catalog class
+
+	"""
 
 
 
