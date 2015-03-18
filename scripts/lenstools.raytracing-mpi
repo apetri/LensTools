@@ -71,7 +71,7 @@ lens_settings.read([cmd_args.config_file])
 if not(lens_settings.has_section("MapSettings")^lens_settings.has_section("CatalogSettings")):
 	
 	if (pool is None) or (pool.is_master()):
-		logpreamble.error("Lens configuration files should have only one between the MapSettings and CatalogSettings sections!")
+		logpreamble.error("Lens configuration file {0} should have only one between the MapSettings and CatalogSettings sections!".format(cmd_args.config_file))
 	
 	sys.exit(1)
 

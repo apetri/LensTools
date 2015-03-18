@@ -297,7 +297,7 @@ class CatalogSettings(object):
 
 		#Name of catalog batch
 		settings.directory_name = options.get(section,"directory_name")
-		settings.input_files = options.get(section,"input_files")
+		settings.input_files = options.get(section,"input_files").split(",")
 
 		#Use the options generated at the moment of the batch generation (advised)
 		settings.override_with_local = options.getboolean(section,"override_with_local")

@@ -282,18 +282,30 @@ def simulatedCatalog(pool,batch,settings,id):
 	#Set random seed to generate the realizations
 	np.random.seed(settings.seed)
 
-	#Read from the settings
+	#Read the catalog save path from the settings
 	catalog_save_path = catalog.storage_subdir
-
-	#TODO: handle more catalogs at once
-	galaxy_position_file = settings.input_files
-	
-	#Read the galaxy positions and redshifts from the position catalog
 	if (pool is None) or (pool.is_master()):
-		logdriver.info("Reading galaxy positions and redshifts from {0}".format(galaxy_position_file))
-	
-	position_catalog = Catalog.read(galaxy_position_file)
+		logdriver.info("Lensing catalogs will be saved to {0}".format(catalog_save_path))
 
+	#TODO: handle more catalogs per foreground realization at once
+	for n,galaxy_position_file in enumerate(settings.input_files):
+	
+		#Read the galaxy positions and redshifts from the position catalog
+		if (pool is None) or (pool.is_master()):
+			logdriver.info("Reading galaxy positions and redshifts from {0}".format(galaxy_position_file))
+	
+		position_catalog = Catalog.read(galaxy_position_file)
+
+		if (pool is None) or (pool.is_master()):
+			#Save a copy of the position catalog to the simulated catalogs directory
+			position_catalog.write(os.path.join(catalog_save_path,os.path.basename(galaxy_position_file)),overwrite=True)
+
+		#Start a bucket of light rays from the positions indicated in the catalog
+		#TODO: Enforce that the units are correct
+		initial_positions = np.array([position_catalog["x"].data.astype(np.float),position_catalog["y"].data.astype(np.float)]) * position_catalog._position_unit
+		galaxy_redshift = position_catalog["z"].data.astype(np.float)
+
+	#Read the randomization information from the settings
 	nbody_realizations = settings.mix_nbody_realizations
 	cut_points = settings.mix_cut_points
 	normals = settings.mix_normals
@@ -332,10 +344,6 @@ def simulatedCatalog(pool,batch,settings,id):
 	if (pool is None) or (pool.is_master()):
 		logdriver.debug("Randomization matrix has shape {0}".format(randomizer.shape))
 
-	if (pool is None) or (pool.is_master()):
-		logdriver.info("Lensing catalogs will be saved to {0}".format(catalog_save_path))
-		#Save a copy of the position catalog to the simulated catalogs directory
-		position_catalog.write(os.path.join(catalog_save_path,os.path.basename(galaxy_position_file)),overwrite=True)
 
 	begin = time.time()
 
@@ -397,12 +405,6 @@ def simulatedCatalog(pool,batch,settings,id):
 		logdriver.info("Reordering completed in {0:.3f}s".format(now-last_timestamp))
 		last_timestamp = now
 
-		#Start a bucket of light rays from the positions indicated in the catalog
-		#TODO: Enforce that the units are correct
-
-		initial_positions = np.array([position_catalog["x"].data.astype(np.float),position_catalog["y"].data.astype(np.float)]) * position_catalog._position_unit
-		galaxy_redshift = position_catalog["z"].data.astype(np.float)
-
 		#Trace the ray deflections through the lenses
 		jacobian = tracer.shoot(initial_positions,z=galaxy_redshift,kind="jacobians")
 
@@ -412,6 +414,8 @@ def simulatedCatalog(pool,batch,settings,id):
 
 		#Build the shear catalog and save it to disk
 		shear_catalog = ShearCatalog([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])],names=("shear1","shear2"))
+
+		#TODO:Split the catalog in the same number of pieces the input was fed in
 		shear_catalog_savename = os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
 		logdriver.info("Saving simulated shear catalog to {0}".format(shear_catalog_savename))
 		shear_catalog.write(shear_catalog_savename,overwrite=True)
