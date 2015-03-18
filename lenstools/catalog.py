@@ -232,5 +232,12 @@ class ShearCatalog(Catalog):
 
 	"""
 
+	########################################################################################
+
+	def write(self,filename,**kwargs):
+
+		self.meta["NGAL"] = len(self)
+		super(Catalog,self).write(filename,**kwargs)
+
 
 
