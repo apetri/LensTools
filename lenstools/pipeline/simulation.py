@@ -1040,8 +1040,8 @@ class SimulationCollection(SimulationModel):
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Make new file with the number of the seed
-		seedfile = self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w")
-		seedfile.close()
+		with self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w") as seedfile:
+			pass
 
 		#Keep track of the fact that we created a new nbody realization
 		with self.syshandler.open(os.path.join(self.environment.home,"realizations.txt"),"a") as logfile:

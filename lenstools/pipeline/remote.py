@@ -8,6 +8,13 @@ try:
 except ImportError:
 	SSHClient = None
 
+try:
+	import git 
+	from git import Repo as Repository
+	Repository = Repository
+except ImportError:
+	Repository = None
+
 ###################################################
 ###########SystemHandler class#####################
 ###################################################
@@ -179,5 +186,97 @@ class UnixSSH(SystemHandler):
 
 	def pickledump(self,obj,fp):
 		fp.write(cPickle.dumps(obj))
+
+
+
+######################################################################################################
+#########Make the Home directory tree of the Simulation Batch into a git repository###################
+######################################################################################################
+
+class LocalGit(SystemHandler):
+
+	"""
+	Git handler for making a simulation batch into a git repository
+
+	"""
+
+	#############################################
+	######Abstract method definitions############
+	#############################################
+
+	def __init__(self):
+
+		if Repository is None:
+			raise ImportError("GitPython needs to be installed to use git handling!")
+
+		self.name = "localhost"
+		self.readonly = False
+
+
+	def init(self,d):
+		self.repository = Repository.init(d)
+
+
+	def mkdir(self,d):
+		os.mkdir(d)
+
+
+	def isbatch(self,d):
+		
+		try:
+			repository = Repository(d)
+			return True
+		except (git.NoSuchPathError,git.InvalidGitRepositoryError):
+			return False
+
+	def exists(self,d):
+		return os.path.exists(d)
+
+	def glob(self,n):
+		return glob.glob(n)
+
+	def open(self,f,mode):
+		return GitFile(f,mode,repository=self.repository)
+
+	def pickleload(self,fp):
+		return cPickle.loads(fp.read())
+
+	def pickledump(self,obj,fp):
+		fp.write(cPickle.dumps(obj))
+
+
+
+#Make sure to commit to the repo after the file is closed
+class GitFile(file):
+
+	def __init__(self,*args,**kwargs):
+
+		super(GitFile,self).__init__(*args)
+		self.repository = kwargs["repository"]
+		assert self.repository is not None
+
+	def __exit__(self,type,value,traceback):
+
+		self.close()
+
+		#Commit to the repository on file closure
+		if ("w" in self.mode) or ("a" in self.mode):
+			added_filename = os.path.relpath(self.name,start=self.repository.working_dir)
+			self.repository.index.add([added_filename])
+			self.repository.index.commit("Added/modified {0}".format(added_filename))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		
 
