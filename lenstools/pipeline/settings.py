@@ -257,6 +257,8 @@ class CatalogSettings(object):
 		#Name of catalog batch
 		self.directory_name = "Catalog"
 		self.input_files = "galaxy_positions.fits"
+		self.total_num_galaxies = 1000
+		self.catalog_angle_unit = u.deg
 
 		#Use the options generated at the moment of the batch generation (advised)
 		self.override_with_local = True
@@ -298,6 +300,8 @@ class CatalogSettings(object):
 		#Name of catalog batch
 		settings.directory_name = options.get(section,"directory_name")
 		settings.input_files = options.get(section,"input_files").split(",")
+		settings.total_num_galaxies = options.getint(section,"total_num_galaxies")
+		settings.catalog_angle_unit = getattr(u,options.get(section,"catalog_angle_unit"))
 
 		#Use the options generated at the moment of the batch generation (advised)
 		settings.override_with_local = options.getboolean(section,"override_with_local")

@@ -9,6 +9,9 @@ import time
 import cPickle
 import resource
 
+from operator import add
+from functools import reduce
+
 from lenstools.utils import MPIWhirlPool
 
 from lenstools.convergence import Spin0
@@ -287,23 +290,54 @@ def simulatedCatalog(pool,batch,settings,id):
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Lensing catalogs will be saved to {0}".format(catalog_save_path))
 
-	#TODO: handle more catalogs per foreground realization at once
-	for n,galaxy_position_file in enumerate(settings.input_files):
+	#Read the total number of galaxies to raytrace from the settings
+	total_num_galaxies = settings.total_num_galaxies
+
+	#Pre-allocate numpy arrays
+	initial_positions = np.zeros((2,total_num_galaxies)) * settings.catalog_angle_unit
+	galaxy_redshift = np.zeros(total_num_galaxies)
+
+	#Keep track of the number of galaxies for each catalog
+	galaxies_in_catalog = list()
+
+	#Fill in initial positions and redshifts
+	for galaxy_position_file in settings.input_files:
+
+		try:
+			galaxies_before = reduce(add,galaxies_in_catalog)
+		except TypeError:
+			galaxies_before = 0
 	
 		#Read the galaxy positions and redshifts from the position catalog
 		if (pool is None) or (pool.is_master()):
 			logdriver.info("Reading galaxy positions and redshifts from {0}".format(galaxy_position_file))
-	
+		
 		position_catalog = Catalog.read(galaxy_position_file)
+
+		if (pool is None) or (pool.is_master()):
+			logdriver.info("Galaxy catalog {0} contains {1} galaxies".format(galaxy_position_file,len(position_catalog)))
+
+		#This is just to avoid confusion
+		assert position_catalog.meta["AUNIT"]==settings.catalog_angle_unit.to_string(),"Catalog angle units, {0}, do not match with the ones privided in the settings, {1}".format(position_catalog.meta["AUNIT"],settings.catalog_angle_unit.to_string())
+
+		#Keep track of the number of galaxies in the catalog
+		galaxies_in_catalog.append(len(position_catalog))
 
 		if (pool is None) or (pool.is_master()):
 			#Save a copy of the position catalog to the simulated catalogs directory
 			position_catalog.write(os.path.join(catalog_save_path,os.path.basename(galaxy_position_file)),overwrite=True)
 
-		#Start a bucket of light rays from the positions indicated in the catalog
-		#TODO: Enforce that the units are correct
-		initial_positions = np.array([position_catalog["x"].data.astype(np.float),position_catalog["y"].data.astype(np.float)]) * position_catalog._position_unit
-		galaxy_redshift = position_catalog["z"].data.astype(np.float)
+		#Fill in initial positions and redshifts
+		initial_positions[0,galaxies_before:galaxies_before+len(position_catalog)] = position_catalog["x"] * getattr(u,position_catalog.meta["AUNIT"])
+		initial_positions[1,galaxies_before:galaxies_before+len(position_catalog)] = position_catalog["y"] * getattr(u,position_catalog.meta["AUNIT"])
+		galaxy_redshift[galaxies_before:galaxies_before+len(position_catalog)] = position_catalog["z"]
+
+	#Make sure that the total number of galaxies matches, and units are correct
+	assert reduce(add,galaxies_in_catalog)==total_num_galaxies,"The total number of galaxies in the catalogs, {0}, does not match the number provided in the settings, {1}".format(reduce(add,galaxies_in_catalog),total_num_galaxies)
+
+	##########################################################################################################################################################
+	####################################Initial positions and redshifts of galaxies loaded####################################################################
+	##########################################################################################################################################################
 
 	#Read the randomization information from the settings
 	nbody_realizations = settings.mix_nbody_realizations
@@ -415,10 +449,16 @@ def simulatedCatalog(pool,batch,settings,id):
 		#Build the shear catalog and save it to disk
 		shear_catalog = ShearCatalog([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])],names=("shear1","shear2"))
 
-		#TODO:Split the catalog in the same number of pieces the input was fed in
-		shear_catalog_savename = os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
-		logdriver.info("Saving simulated shear catalog to {0}".format(shear_catalog_savename))
-		shear_catalog.write(shear_catalog_savename,overwrite=True)
+		for n,galaxy_position_file in enumerate(settings.input_files):
+
+			try:
+				galaxies_before = reduce(add,galaxies_in_catalog[:n])
+			except TypeError:
+				galaxies_before = 0
+		
+			shear_catalog_savename = os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
+			logdriver.info("Saving simulated shear catalog to {0}".format(shear_catalog_savename))
+			shear_catalog[galaxies_before:galaxies_before+galaxies_in_catalog[n]].write(shear_catalog_savename,overwrite=True)
 
 		now = time.time()
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))

@@ -212,6 +212,15 @@ class Catalog(tbl.Table):
 		self.fig.savefig(filename)
 
 
+	########################################################################################
+
+	def write(self,filename,**kwargs):
+
+		self.meta["NGAL"] = len(self)
+		self.meta["AUNIT"] = self._position_unit.to_string()
+		super(Catalog,self).write(filename,**kwargs)
+
+
 ##########################################################
 ################ShearCatalog class########################
 ##########################################################
