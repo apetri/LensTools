@@ -25,7 +25,15 @@ class SystemHandler(object):
 		pass
 
 	@abstractmethod
+	def init(self,d):
+		pass
+
+	@abstractmethod
 	def mkdir(self,d):
+		pass
+
+	@abstractmethod
+	def isbatch(self,d):
 		pass
 
 	@abstractmethod
@@ -69,12 +77,18 @@ class LocalSystem(SystemHandler):
 		self.name = "localhost"
 		self.readonly = readonly
 
+	def init(self,d):
+		self.mkdir(d)
+
 	def mkdir(self,d):
 
 		if self.readonly:
 			raise IOError("Simulation batch is read only!")
 
 		os.mkdir(d)
+
+	def isbatch(self,d):
+		return self.exists(d)
 
 	def exists(self,d):
 		return os.path.exists(d)
@@ -129,8 +143,14 @@ class UnixSSH(SystemHandler):
 		#Open SFTP session
 		self.sftp = self.client.open_sftp()
 
+	def init(self,d):
+		self.mkdir(d)
+
 	def mkdir(self,d):
 		stdin,stdout,stderr = self.client.exec_command("mkdir {0}".format(d))
+
+	def isbatch(self,d):
+		return self.exists(d)
 
 	def exists(self,d):
 

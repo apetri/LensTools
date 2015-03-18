@@ -129,11 +129,13 @@ class SimulationBatch(object):
 		self.syshandler = syshandler
 
 		#Create directories if they do not exist yet
-		for d in [environment.home,environment.storage]:
-			
-			if not self.syshandler.exists(d):
-				self.syshandler.mkdir(d)
-				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+		if not self.syshandler.isbatch(environment.home):
+			self.syshandler.init(environment.home)
+			print("[+] {0} created on {1}".format(environment.home,self.syshandler.name))
+
+		if not self.syshandler.exists(environment.storage):
+			self.syshandler.mkdir(environment.storage)
+			print("[+] {0} created on {1}".format(environment.storage,self.syshandler.name))
 
 
 	##############################################################################################################################
@@ -1037,11 +1039,8 @@ class SimulationCollection(SimulationModel):
 				self.syshandler.mkdir(d)
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
-		#Make new file with the number of the seed (both in home and storage)
+		#Make new file with the number of the seed
 		seedfile = self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w")
-		seedfile.close()
-
-		seedfile = self.syshandler.open(os.path.join(newIC.storage_subdir,"seed"+str(seed)),"w")
 		seedfile.close()
 
 		#Keep track of the fact that we created a new nbody realization
