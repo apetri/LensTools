@@ -101,15 +101,15 @@ class IGS1(FlatwCDM):
 	def squeezePower(self,power=0.5,with_ns=False):
 
 		"""
-		Same as squeeze, but returns the doublet (w0,si8 x Om0^p) where p can be specified
+		Same as squeeze, but returns the doublet (w0,si8 x Om0^power) where power can be specified
 
-		:param p: power at which to raise Om0 in the combination with sigma8
-		:type p: float.
+		:param power: power at which to raise Om0 in the combination with sigma8
+		:type power: float.
 
 		:param with_ns: if True returns also ns as the last parameter
 		:type with_ns: bool.
 
-		:returns: numpy array (w0,si8 x Om^p,ns--optionally)
+		:returns: numpy array (w0,si8 x Om^power,ns--optionally)
 
 		"""
 
