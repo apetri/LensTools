@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division,with_statement
 
 import os
 import re
@@ -119,6 +119,9 @@ class SimulationBatch(object):
 		:param environment: environment settings
 		:type environment: EnvironmentSettings
 
+		:param syshandler: system handler that allows to override the methods used to create directories and do I/O from files, must implement the abstract type SystemHandler
+		:type syshandler: SystemHandler
+
 		"""
 
 		#Type check
@@ -130,8 +133,16 @@ class SimulationBatch(object):
 
 		#Create directories if they do not exist yet
 		if not self.syshandler.isbatch(environment.home):
+			
 			self.syshandler.init(environment.home)
 			print("[+] {0} created on {1}".format(environment.home,self.syshandler.name))
+
+			#Create also an "environment.ini" file that provides easy access to the current simulation batch from Home
+			with self.syshandler.open(os.path.join(environment.home,"environment.ini"),"w") as envfile:
+				envfile.write("[EnvironmentSettings]\n\n")
+				envfile.write("home = {0}\n".format(os.path.abspath(environment.home)))
+				envfile.write("storage = {0}\n\n".format(os.path.abspath(environment.storage)))
+
 
 		if not self.syshandler.exists(environment.storage):
 			self.syshandler.mkdir(environment.storage)
