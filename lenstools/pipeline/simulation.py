@@ -7,7 +7,7 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
-from .remote import SystemHandler,LocalSystem
+from .remote import SystemHandler,LocalSystem,LocalGit
 from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings,JobSettings
 from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2Snapshot
@@ -137,6 +137,23 @@ class SimulationBatch(object):
 			self.syshandler.mkdir(environment.storage)
 			print("[+] {0} created on {1}".format(environment.storage,self.syshandler.name))
 
+
+	##############################################################################################################################
+
+	def commit(self,message):
+
+		"""
+		If the Simulation Batch is put under version control in a git repository, this method commits the newly added models,collections,realizations or map/plane sets
+
+		:param message: commit message
+		:type message: str.
+
+		"""
+
+		if isinstance(self.syshandler,LocalGit):
+			self.syshandler.repository.index.commit(message)
+		else:
+			raise TypeError("The system handler must be an instance of LocalGit to use this method!")
 
 	##############################################################################################################################
 

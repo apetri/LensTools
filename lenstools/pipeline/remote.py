@@ -224,7 +224,7 @@ class LocalGit(SystemHandler):
 	def isbatch(self,d):
 		
 		try:
-			repository = Repository(d)
+			self.repository = Repository(d)
 			return True
 		except (git.NoSuchPathError,git.InvalidGitRepositoryError):
 			return False
@@ -263,7 +263,6 @@ class GitFile(file):
 		if ("w" in self.mode) or ("a" in self.mode):
 			added_filename = os.path.relpath(self.name,start=self.repository.working_dir)
 			self.repository.index.add([added_filename])
-			self.repository.index.commit("Added/modified {0}".format(added_filename))
 
 
 

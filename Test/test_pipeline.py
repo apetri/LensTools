@@ -3,6 +3,7 @@ try:
 	import os
 	from lenstools.pipeline import SimulationBatch
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
+	from lenstools.pipeline.remote import LocalGit
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
@@ -14,6 +15,7 @@ except ImportError:
 	import os
 	from lenstools.pipeline import SimulationBatch
 	from lenstools.pipeline.settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings
+	from lenstools.pipeline.remote import LocalGit
 	from lenstools.simulations import Nicaea,Gadget2Settings
 	from lenstools import data
 
@@ -59,6 +61,15 @@ def test_directory_tree():
 
 def test_copy():
 	bCopy = batch.copyTree("../SimTest/Copy")
+
+def test_git():
+
+	try:
+		git = LocalGit()
+		bCopy = batch.copyTree("../SimTest/CopyGit",syshandler=git)
+		bCopy.commit("Initial directory tree")
+	except ImportError:
+		pass
 
 
 def test_present():
