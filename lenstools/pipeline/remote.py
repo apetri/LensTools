@@ -255,9 +255,9 @@ class GitFile(file):
 		self.repository = kwargs["repository"]
 		assert self.repository is not None
 
-	def __exit__(self,type,value,traceback):
+	def close(self):
 
-		self.close()
+		super(GitFile,self).close()
 
 		#Commit to the repository on file closure
 		if ("w" in self.mode) or ("a" in self.mode):
