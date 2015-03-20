@@ -1476,7 +1476,7 @@ class SimulationIC(SimulationCollection):
 
 			#Check if NGen-IC power spectrum file exists, if not throw exception
 			if not(self.syshandler.exists(ngenic_ps_file)) and settings.WhichSpectrum==2:
-				raise IOError("NGen-IC power spectrum file {0} does not exist yet!")
+				raise IOError("NGen-IC power spectrum file {0} does not exist yet!".format(ngenic_ps_file))
 
 			paramfile.write("FileWithInputSpectrum			{0}\n".format(ngenic_ps_file))
 			
