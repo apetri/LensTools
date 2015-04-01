@@ -106,7 +106,7 @@ elif job_type=="gadget2":
 	print("[+] Generating Gadget2 submission script")
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
-	batch.writeGadget2Submission(realizations,job_settings,job_handler,chunks=cmd_args.chunks)
+	batch.writeGadget2Submission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,one_script=cmd_args.one_script)
 
 elif job_type=="planes":
 

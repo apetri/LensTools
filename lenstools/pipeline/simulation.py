@@ -579,7 +579,7 @@ class SimulationBatch(object):
 	############################################################################################################################################
 
 
-	def writeGadget2Submission(self,realization_list,job_settings,job_handler,chunks=1):
+	def writeGadget2Submission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
 		
 		"""
 		Writes Gadget2 submission script
@@ -596,12 +596,21 @@ class SimulationBatch(object):
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
 
+		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
+		:type kwargs: dict.
+
 		"""
 
 		#Type safety check
 		assert isinstance(job_settings,JobSettings)
 		assert isinstance(job_handler,JobHandler)
 		assert len(realization_list)%chunks==0,"Perfect load balancing enforced, each job will process the same number of realizations!"
+
+		#Check if we need to collapse everyting in one script
+		if "one_script" in kwargs.keys():
+			one_script = kwargs["one_script"]
+		else:
+			one_script = False
 
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
@@ -651,24 +660,31 @@ class SimulationBatch(object):
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
-			script_filename_split = script_filename.split(".")
-			script_filename_split[-2] += "{0}".format(c+1)
-			script_filename = ".".join(script_filename_split)
+
+			if not one_script:
+				script_filename_split = script_filename.split(".")
+				script_filename_split[-2] += "{0}".format(c+1)
+				script_filename = ".".join(script_filename_split)
 
 			#Override settings to make stdout and stderr go in the right places
 			job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
 			job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
 
-			#Inform user where logs will be directed
-			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
-			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
+			if (not one_script) or (not c):
+			
+				#Inform user where logs will be directed
+				print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
+				print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
 
-			with self.syshandler.open(script_filename,"w") as scriptfile:
-				scriptfile.write(job_handler.writePreamble(job_settings))
+				with self.syshandler.open(script_filename,"w") as scriptfile:
+					scriptfile.write(job_handler.writePreamble(job_settings))
+			
+			with self.syshandler.open(script_filename,"a") as scriptfile:
 				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
-			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
+			if (not one_script) or (not c):	
+				print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 	############################################################################################################################################
 
