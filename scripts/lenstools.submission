@@ -31,6 +31,7 @@ system2handler = {
 parser = argparse.ArgumentParser()
 parser.add_argument("-e","--environment",dest="env_file",action="store",type=str,default=lensData("environment_default.ini"),help="environment option file")
 parser.add_argument("-o","--options",dest="exec_options",action="store",type=str,default=lensData("lens_default.ini"),help="configuration file to pass to the executable (planes or raytracing)")
+parser.add_argument("-O","--one",dest="one_script",action="store_true",default=False,help="Use to collapse all the lens planes and raytracing executables in a single job script")
 parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str,default=lensData("job_default.ini"),help="job specifications file")
 parser.add_argument("-t","--type",dest="job_type",action="store",type=str,default=None,help="type of job submission (Gadget,NGenIC,etc...)")
 parser.add_argument("-c","--chunks",dest="chunks",action="store",type=int,default=1,help="number of independent job submissions in which to split the workload")
@@ -119,7 +120,7 @@ elif job_type=="planes":
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using plane specifications found in {0}".format(cmd_args.exec_options))
-	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),plane_config_file=os.path.abspath(cmd_args.exec_options))
+	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),plane_config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script)
 
 elif job_type=="raytracing":
 
@@ -134,7 +135,7 @@ elif job_type=="raytracing":
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using ray tracing specifications found in {0}".format(cmd_args.exec_options))
-	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),raytracing_config_file=os.path.abspath(cmd_args.exec_options))
+	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),raytracing_config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script)
 
 
 
