@@ -31,6 +31,15 @@ from emcee.ensemble import _function_wrapper
 def _np_load(filename):
 	return np.load(filename)
 
+##########################################################################
+#########Useful for bootstrap estimates of the covariance matrix###########
+##########################################################################
+
+def _bsp_covariance(data):
+	sub = data - data.mean(0)[None]
+	return np.dot(sub.T,sub) / (data.shape[0] - 1.0)
+
+
 ##########################################
 ########Ensemble class####################
 ##########################################
@@ -429,10 +438,16 @@ class Ensemble(object):
 			return self.__class__.fromdata(transformed_data)
 
 
-	def covariance(self):
+	def covariance(self,bootstrap=False,**kwargs):
 
 		"""
 		Computes the ensemble covariance matrix
+
+		:param bootstrap: if True the covariance matrix is computed with a bootstrap estimate
+		:type bootstrap: bool.
+
+		:param kwargs: the keyword arguments are passed to the bootstrap method
+		:type kwargs: dict.
 
 		:returns: ndarray with the covariance matrix, has shape (self.data[0],self.data[0]) 
 
@@ -441,14 +456,19 @@ class Ensemble(object):
 		assert self.num_realizations>1, "I can't compute a covariance matrix with one realization only!!"
 		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
 
-		if not hasattr(self,"_mean"):
-			self.mean()
+		if bootstrap:
+			return self.bootstrap(_bsp_covariance,**kwargs)
+		
+		else:
+			if not hasattr(self,"_mean"):
+				self.mean()
 
-		subtracted = self.data - self._mean[np.newaxis,:]
-		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
+			subtracted = self.data - self._mean[np.newaxis,:]
+			return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
+			
 
 
-	def bootstrap(self,callback,boostrap_size=10,resample=10,seed=None):
+	def bootstrap(self,callback,bootstrap_size=10,resample=10,seed=None):
 
 		"""
 		Computes a custom statistic on the Ensemble using the bootstrap method
@@ -456,7 +476,7 @@ class Ensemble(object):
 		:param callback: statistic to compute on the ensemble; takes the resampled Ensemble data as an input
 		:type callback: callable
 
-		:param boostrap_size: size of the resampled ensembles used in the boostraping; must be less than or equal to the number of realizations in the Ensemble
+		:param bootstrap_size: size of the resampled ensembles used in the bootstraping; must be less than or equal to the number of realizations in the Ensemble
 		:type bootstrap_size: int.
 
 		:param resample: number of times the Ensemble is resampled
@@ -470,7 +490,7 @@ class Ensemble(object):
 		"""
 
 		#Safety check
-		assert boostrap_size<=self.num_realizations,"The size of the resampling cannot exceed the original number of realizations"
+		assert bootstrap_size<=self.num_realizations,"The size of the resampling cannot exceed the original number of realizations"
 
 		#Set the random seed
 		if seed is not None:
@@ -480,7 +500,7 @@ class Ensemble(object):
 		M = map
 
 		#Construct the randomization matrix
-		randomizer = np.random.randint(self.num_realizations,size=(resample,boostrap_size))
+		randomizer = np.random.randint(self.num_realizations,size=(resample,bootstrap_size))
 
 		#Compute the statistic with the callback
 		statistic = np.array(M(callback,self[randomizer]))
