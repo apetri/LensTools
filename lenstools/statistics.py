@@ -448,6 +448,48 @@ class Ensemble(object):
 		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
 
 
+	def bootstrap(self,callback,boostrap_size=10,resample=10,seed=None):
+
+		"""
+		Computes a custom statistic on the Ensemble using the bootstrap method
+
+		:param callback: statistic to compute on the ensemble; takes the resampled Ensemble data as an input
+		:type callback: callable
+
+		:param boostrap_size: size of the resampled ensembles used in the boostraping; must be less than or equal to the number of realizations in the Ensemble
+		:type bootstrap_size: int.
+
+		:param resample: number of times the Ensemble is resampled
+		:type resample: int.
+
+		:param seed: if not None, this is the random seed of the random resamples 
+		:type seed: int.
+
+		:returns: the bootstraped Ensemble statistic
+
+		"""
+
+		#Safety check
+		assert boostrap_size<=self.num_realizations,"The size of the resampling cannot exceed the original number of realizations"
+
+		#Set the random seed
+		if seed is not None:
+			np.random.seed(seed)
+
+		#TODO: Parallelize
+		M = map
+
+		#Construct the randomization matrix
+		randomizer = np.random.randint(self.num_realizations,size=(resample,boostrap_size))
+
+		#Compute the statistic with the callback
+		statistic = np.array(M(callback,self[randomizer]))
+
+		#Return the bootstraped statistic expectation value
+		return statistic.mean(0)
+
+
+
 	def principalComponents(self):
 
 		"""
