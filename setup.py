@@ -149,6 +149,7 @@ vre = re.compile("__version__ = \"(.*?)\"")
 m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     "lenstools", "__init__.py"))
 version = vre.findall(m)[0]
+download_url = "https://github.com/apetri/LensTools/archive/{0}.tar.gz".format(version)
 
 classifiers = [
 		"Development Status :: 3 - Alpha",
@@ -156,7 +157,7 @@ classifiers = [
 		"Operating System :: OS Independent",
 		"Programming Language :: Python",
 		"Programming Language :: C",
-		"License :: OSI approved:: MIT"
+		"License :: OSI Approved :: MIT License"
 	]
 
 external_sources = dict()
@@ -278,9 +279,10 @@ setup(
 	packages=packages,
 	package_data=package_data,
 	url=url,
+	download_url=download_url,
 	license="MIT",
 	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd(os.path.join("docs","source","index.rst")),
+	long_description=rd("README.md"),
 	scripts=scripts,
 	classifiers=classifiers,
 	ext_package=os.path.join(name,external_dir),
