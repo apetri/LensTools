@@ -20,7 +20,13 @@ from extern import _topology
 import numpy as np
 
 #FFT engines
-from numpy.fft import rfft2
+from numpy.fft import rfft2,irfft2,fftfreq
+
+#Check if rfftfreq is implemented (requires numpy>=1.8)
+try:
+	from numpy.fft import rfftfreq
+except ImportError:
+	from utils import rfftfreq
 
 from scipy.ndimage import filters
 
@@ -980,7 +986,7 @@ class Spin0(object):
 		:param scale_angle: size of the smoothing kernel (must have units)
 		:type scale_angle: float.
 
-		:param kind: type of smoothing to be performed (only implemented gaussian so far)
+		:param kind: type of smoothing to be performed. Select "gaussian" for regular Gaussian smoothing in real space or "gaussianFFT" if you want the smoothing to be performed via FFTs (advised for large scale_angle)
 		:type kind: str.
 
 		:param inplace: if set to True performs the smoothing in place overwriting the old convergence map
@@ -994,14 +1000,24 @@ class Spin0(object):
 		"""
 
 		assert not self._masked,"You cannot smooth a masked convergence map!!"
-		assert kind == "gaussian","Only gaussian smoothing implemented!!"
 		assert scale_angle.unit.physical_type==self.side_angle.unit.physical_type
 
 		#Compute the smoothing scale in pixel units
 		smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value
 
 		#Perform the smoothing
-		smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
+		if kind=="gaussian":
+			smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
+		
+		elif kind=="gaussianFFT":
+
+			lx = fftfreq(self.data.shape[0])
+			ly = rfftfreq(self.data.shape[1])
+			l_squared = lx[:,None]**2 + ly[None,:]**2
+			smoothed_data = irfft2(np.exp(-0.5*l_squared*(smoothing_scale_pixel**2))*rfft2(self.data))
+		
+		else:
+			raise NotImplementedError("Smoothing algorithm {0} not implemented!".format(kind))
 
 		#Return the result
 		if inplace:
