@@ -231,7 +231,7 @@ for ext_module in external_sources.keys():
 #Data files on which the package depends on
 package_data = dict()
 package_data[name] = [ os.path.join("data",filename) for filename in os.listdir(os.path.join(name,"data")) if os.path.isfile(os.path.join(name,"data",filename)) ]
-package_data["licenses"] = [ os.path.join("licenses","LICENSE.rst") ]
+package_data[name] += [ os.path.join("licenses","LICENSE.rst") ]
 
 #################################################################################################
 #############################Additional includes#################################################
@@ -239,6 +239,9 @@ package_data["licenses"] = [ os.path.join("licenses","LICENSE.rst") ]
 
 #Append numpy includes
 lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
+
+#Append also extern includes
+lenstools_includes += [ os.path.abspath(os.path.join(name,external_dir)) ]
 
 #Append system includes (fix OSX clang includes)
 if platform.system() in ["Darwin","darwin"]:
