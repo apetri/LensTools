@@ -156,7 +156,7 @@ classifiers = [
 		"Operating System :: OS Independent",
 		"Programming Language :: Python",
 		"Programming Language :: C",
-		"License :: OSI approved:: MIT License"
+		"License :: OSI Approved :: MIT License"
 	]
 
 external_sources = dict()
