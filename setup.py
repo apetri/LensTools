@@ -268,7 +268,7 @@ setup(
 	download_url=download_url,
 	license="MIT",
 	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd(os.path.join("docs","source","index.rst")),
+	long_description="",
 	scripts=scripts,
 	classifiers=classifiers,
 	ext_package=os.path.join(name,external_dir),
