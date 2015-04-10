@@ -30,11 +30,11 @@ This python add-on will handle basically every operation you will need to perfor
 Installation
 ------------
 
-The easiest way WILL be to install through pip (coming really soon, not available yet)::
+The easiest way is to install through pip ::
 
-	pip install LensTools
+	pip install lenstools
 
-In the meantime you can clone or fork the `github repository <https://github.com/apetri/LensTools>`_ to download the source and build it manually. 
+An alternative is to install from source by cloning or forking the `github repository <https://github.com/apetri/LensTools>`_ to download the source and build it manually. 
 First clone the repository (the original one, or your fork)::
    
    git clone https://github.com/apetri/LensTools

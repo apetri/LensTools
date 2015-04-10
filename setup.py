@@ -165,6 +165,7 @@ external_support = dict()
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
 external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c","grid.c","coordinates.c"]
+external_sources["_gadget2"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c","grid.c","coordinates.c"]
 
 ######################################################################################################################################
 
