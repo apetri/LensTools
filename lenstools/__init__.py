@@ -5,7 +5,7 @@
 
 """
 
-__version__ = "0.4.4"
+__version__ = "0.4.5"
 
 from .limber import LimberIntegrator
 from .convergence import ConvergenceMap,Mask
