@@ -5,7 +5,7 @@
 
 """
 
-__version__ = "0.3dev"
+__version__ = "0.5"
 
 from .convergence import ConvergenceMap,Mask
 from .shear import ShearMap
