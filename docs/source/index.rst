@@ -8,10 +8,6 @@ Welcome to LensTools!
 
 This python package collects together a suite of widely used analysis tools in Weak Gravitational Lensing
 
-.. warning::
-
-	This is still in pre-alpha stage, not tested yet on full scale! Use at your own risk!
-
 Summary
 -------
 
