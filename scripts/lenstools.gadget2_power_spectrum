@@ -4,6 +4,8 @@ import sys
 import argparse
 
 import lenstools.scripts.nbody 
+
+from lenstools.simulations.gadget2 import Gadget2Snapshot
 from lenstools.pipeline import SimulationBatch
 from lenstools.pipeline.settings import EnvironmentSettings,PowerSpectrumSettings
 
@@ -74,4 +76,4 @@ ps_settings = PowerSpectrumSettings.read(cmd_args.config_file)
 
 #Cycle over ids to produce the planes
 for batch_id in cmd_args.id:
-	lenstools.scripts.nbody.powerSpectrum(pool=pool,batch=batch,settings=ps_settings,id=batch_id)
+	lenstools.scripts.nbody.powerSpectrum(pool=pool,batch=batch,settings=ps_settings,id=batch_id,fmt=Gadget2Snapshot)

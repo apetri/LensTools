@@ -1381,9 +1381,13 @@ class SimulationIC(SimulationCollection):
 		"""
 
 		full_path = os.path.join(self.storage_subdir,"snapshots",self.gadget_settings.SnapshotFileBase+"_{0:03d}".format(n))
+
+		if sub is None:
+			return full_path
+
 		if self.gadget_settings.NumFilesPerSnapshot > 1:
 			full_path += ".{0}".format(sub)
-			
+
 		if not(self.syshandler.exists(full_path)):
 			return None
 
