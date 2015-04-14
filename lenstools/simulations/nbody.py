@@ -1088,7 +1088,7 @@ class NbodySnapshot(object):
 	#############################################################################################################################################
 
 
-	def powerSpectrum(self,k_edges,resolution=None):
+	def powerSpectrum(self,k_edges,resolution=None,return_num_modes=False):
 
 		"""
 		Computes the power spectrum of the relative density fluctuations in the snapshot at the wavenumbers specified by k_edges; a discrete particle number density is computed before hand to prepare the FFT grid
@@ -1098,6 +1098,9 @@ class NbodySnapshot(object):
 
 		:param resolution: optional, fix the grid resolution to some value; to be passed to the numberDensity method. If none this is computed automatically from the k_edges
 		:type resolution: float with units, int. or None
+
+		:param return_num_modes: if True returns the mode counting for each k bin as the last element in the return tuple
+		:type return_num_modes: bool.
 
 		:returns: tuple(k_values(bin centers),power spectrum at the specified k_values)
 
@@ -1141,7 +1144,12 @@ class NbodySnapshot(object):
 
 		#Return the result (normalize the power so it corresponds to the one of the density fluctuations)
 		k = 0.5*(k_edges[1:]+k_edges[:-1])
-		return k,(power_spectrum/hits) * (self._header["box_size"]**3) / (self._header["num_particles_total"]**2)
+		return_tuple = (k,(power_spectrum/hits) * (self._header["box_size"]**3) / (self._header["num_particles_total"]**2))
+
+		if return_num_modes:
+			return_tuple += (hits,)
+
+		return return_tuple
 
 
 

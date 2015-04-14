@@ -1364,6 +1364,33 @@ class SimulationIC(SimulationCollection):
 
 	####################################################################################################################################
 
+	def snapshotPath(self,n,sub=0):
+
+		"""
+		Returns the complete path to a Gadget2 snapshot saved on disk; returns None if the snapshot does not exist
+
+		:param n: number of the snapshot
+		:type n: int.
+
+		:param sub: number of the sub--file that contributes to the snapshot (if the snapshot has been split in multiple files) 
+		:type sub: int.
+
+		:returns: full path to snapshot
+		:rtype: str.
+
+		"""
+
+		full_path = os.path.join(self.storage_subdir,"snapshots",self.gadget_settings.SnapshotFileBase+"_{0:03d}".format(n))
+		if self.gadget_settings.NumFilesPerSnapshot > 1:
+			full_path += ".{0}".format(sub)
+			
+		if not(self.syshandler.exists(full_path)):
+			return None
+
+		return full_path
+
+	####################################################################################################################################
+
 	def newPlaneSet(self,settings):
 
 		#Safety check
