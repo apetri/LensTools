@@ -919,6 +919,36 @@ class Spin0(object):
 		#Output the power spectrum
 		return l,power_spectrum
 
+
+	def countModes(self,l_edges):
+
+		"""
+		Counts the available number of modes in multipole space available to each bin specified in l_edges
+
+		:param l_edges: Multipole bin edges
+		:type l_edges: array
+
+		:returns: number of modes available to each bin 
+		:rtype: array
+
+		:raises: AssertionError if l_edges are not provided
+
+		"""
+
+		assert l_edges is not None
+
+		#Determine the multipole values of each bin in the FFT grid
+		lx = fftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(rad).value
+		ly = rfftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(rad).value
+		l_squared = lx[:,None]**2 + ly[None,:]**2
+
+		#Count how many of these pixels fall inside each bin
+		num_modes = (l_squared[None] < l_edges[:,None,None]**2).sum((1,2)).astype(np.float)
+
+		return np.diff(num_modes)
+
+
+
 	def cross(self,other,statistic="power_spectrum",**kwargs):
 
 		"""
