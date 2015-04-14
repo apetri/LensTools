@@ -64,6 +64,11 @@ def powerSpectrum(pool,batch,settings,id,fmt):
 		logdriver.info("FFT grid size: {0}".format(settings.fft_grid_size))
 		logdriver.info("Number of bins: {0}".format(settings.num_k_bins))
 
+		#Create dedicated ensemble directory
+		ensemble_dir = os.path.join(collection.home_subdir,settings.ensemble_name)
+		if not os.path.isdir(ensemble_dir):
+			os.mkdir(ensemble_dir) 
+
 	#Construct the array of bin edges
 	k_egdes  = np.linspace(settings.kmin,settings.kmax,settings.num_k_bins+1).to(model.Mpc_over_h**-1)
 
@@ -104,18 +109,18 @@ def powerSpectrum(pool,batch,settings,id,fmt):
 		#Save the bin edges and mode counts
 		if n==settings.first_snapshot and (pool is None or pool.is_master()):
 
-			savename = os.path.join(collection.home_subdir,settings.ensemble_name+"_k.npy")
+			savename = os.path.join(collection.home_subdir,settings.ensemble_name,settings.ensemble_name+"_k.npy")
 			logdriver.info("Saving wavevectors ({0}) to {1}".format(k.unit.to_string(),savename))
 			np.save(savename,k.value)
 
-			savename = os.path.join(collection.home_subdir,settings.ensemble_name+"_num_modes.npy")
+			savename = os.path.join(collection.home_subdir,settings.ensemble_name,settings.ensemble_name+"_num_modes.npy")
 			logdriver.info("Saving number of modes to {0}".format(savename))
 			np.save(savename,hits)
 
 		#Save the ensemble
 		if (pool is None) or (pool.is_master()):
 			
-			savename = os.path.join(collection.home_subdir,settings.ensemble_name+"_snap{0:03d}.npy".format(n))
+			savename = os.path.join(collection.home_subdir,settings.ensemble_name,settings.ensemble_name+"_snap{0:03d}.npy".format(n))
 			logdriver.info("Saving power spectrum Ensemble ({0}) to {1}".format(power_ensemble.unit.to_string(),savename))
 			np.save(savename,power_ensemble.value)
 
