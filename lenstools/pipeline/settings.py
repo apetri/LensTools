@@ -89,6 +89,67 @@ class NGenICSettings(object):
 		for key in kwargs.keys():
 			setattr(self,key,kwargs[key])
 
+#################################################
+###########NGenICSettings class##################
+#################################################
+
+class PowerSpectrumSettings(object):
+
+	"""
+	Class handler of N-Body simulation power spectrum measurement settings
+
+	"""
+
+	def __init__(self,**kwargs):
+
+		#Tunable settings (resolution, etc...)
+		self.ensemble_name = "gadget2_ps"
+		self.nbody_realizations = [1]
+		self.first_snapshot = 46
+		self.last_snapshot = 58
+		self.fft_grid_size = 256
+		self.kmin = 0.003 * u.Mpc**-1
+		self.kmax = 1.536 * u.Mpc**-1
+		self.length_unit = u.Mpc
+		self.num_k_bins = 50
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def read(cls,config_file):
+
+		#Read the options from the ini file
+		options = config.ConfigParser()
+		options.read([config_file])
+
+		#Check that the config file has the appropriate section
+		section = "PowerSpectrumSettings"
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+
+		#Fill in the appropriate fields
+		settings = cls()
+
+		settings.ensemble_name = options.get(section,"ensemble_name")
+
+		settings.nbody_realizations = [ int(n) for n in options.get(section,"nbody_realizations").split(",") ]
+		settings.first_snapshot = options.getint(section,"first_snapshot")
+		settings.last_snapshot = options.getint(section,"last_snapshot")
+		
+		settings.fft_grid_size = options.getint(section,"fft_grid_size")
+
+		settings.length_unit = getattr(u,options.get(section,"length_unit"))
+		settings.kmin = options.getfloat(section,"kmin") * settings.length_unit**-1
+		settings.kmax = options.getfloat(section,"kmax") * settings.length_unit**-1
+		
+		settings.num_k_bins = options.getint(section,"num_k_bins")
+
+		#Return to user
+		return settings
+
+
+
 
 #################################################
 ###########PlaneSettings class###################
