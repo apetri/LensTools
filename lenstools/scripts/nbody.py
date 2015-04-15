@@ -5,14 +5,18 @@
 import sys,os
 import logging
 
+from distutils import config
+from ConfigParser import NoOptionError
+
 from lenstools.utils import MPIWhirlPool
 
 from lenstools.simulations.nbody import NbodySnapshot
+from lenstools.simulations.gadget2 import Gadget2Snapshot
 
 from lenstools.pipeline.simulation import SimulationBatch
-from lenstools.pipeline.settings import PowerSpectrumSettings
 
 import numpy as np
+import astropy.units as u
 
 ################################################
 ###########Loggers##############################
@@ -26,11 +30,20 @@ logdriver = logging.getLogger("lenstools.driver")
 logdriver.addHandler(console)
 logdriver.propagate = False
 
+#Orchestra director of the execution
+def powerSpectrumExecution():
+
+	script_to_execute = matterPowerSpectrum
+	settings_handler = PowerSpectrumSettings
+	kwargs = {"fmt":Gadget2Snapshot}
+
+	return script_to_execute,settings_handler,kwargs
+
 ################################################################
 ################Snapshot power spectrum#########################
 ################################################################
 
-def powerSpectrum(pool,batch,settings,id,**kwargs):
+def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
 
 	assert "fmt" in kwargs.keys()
 	fmt = kwargs["fmt"]
@@ -136,4 +149,74 @@ def powerSpectrum(pool,batch,settings,id,**kwargs):
 	#Completed
 	if pool is None or pool.is_master():
 		logdriver.info("DONE!!")
+
+
+
+########################################################
+###########PowerSpectrumSettings class##################
+########################################################
+
+class PowerSpectrumSettings(object):
+
+	"""
+	Class handler of N-Body simulation power spectrum measurement settings
+
+	"""
+
+	def __init__(self,**kwargs):
+
+		#Tunable settings (resolution, etc...)
+		self.ensemble_name = "gadget2_ps"
+		self.nbody_realizations = [1]
+		self.first_snapshot = 46
+		self.last_snapshot = 58
+		self.fft_grid_size = 256
+		self.kmin = 0.003 * u.Mpc**-1
+		self.kmax = 1.536 * u.Mpc**-1
+		self.length_unit = u.Mpc
+		self.num_k_bins = 50
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def read(cls,config_file):
+
+		#Read the options from the ini file
+		options = config.ConfigParser()
+		options.read([config_file])
+
+		#Check that the config file has the appropriate section
+		section = "PowerSpectrumSettings"
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+
+		#Fill in the appropriate fields
+		settings = cls()
+
+		settings.ensemble_name = options.get(section,"ensemble_name")
+
+		#Read in the nbody realizations that make up the ensemble
+		settings.nbody_realizations = list()
+		for r in options.get(section,"nbody_realizations").split(","): 
+			
+			try:
+				l,h = r.split("-")
+				settings.nbody_realizations.extend(range(int(l),int(h)+1))
+			except ValueError:
+				settings.nbody_realizations.extend([int(r)])
+		
+		settings.first_snapshot = options.getint(section,"first_snapshot")
+		settings.last_snapshot = options.getint(section,"last_snapshot")
+		
+		settings.fft_grid_size = options.getint(section,"fft_grid_size")
+
+		settings.length_unit = getattr(u,options.get(section,"length_unit"))
+		settings.kmin = options.getfloat(section,"kmin") * settings.length_unit**-1
+		settings.kmax = options.getfloat(section,"kmax") * settings.length_unit**-1
+		
+		settings.num_k_bins = options.getint(section,"num_k_bins")
+
+		#Return to user
+		return settings
 

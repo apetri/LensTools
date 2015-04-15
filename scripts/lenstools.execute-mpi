@@ -1,22 +1,17 @@
 #!/usr/bin/env python-mpi
+from importlib import import_module
 
 import sys
 import argparse
 
-import lenstools.scripts.nbody 
-
-from lenstools.simulations.gadget2 import Gadget2Snapshot
 from lenstools.pipeline import SimulationBatch
-from lenstools.pipeline.settings import EnvironmentSettings,PowerSpectrumSettings
+from lenstools.pipeline.settings import EnvironmentSettings
 
 import logging
 
 #MPI
 from mpi4py import MPI
 from lenstools.utils import MPIWhirlPool
-
-settings_handler = PowerSpectrumSettings
-script_to_execute = lenstools.scripts.nbody.powerSpectrum
 
 ################################################
 ###########Loggers##############################
@@ -35,6 +30,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-v","--verbose",dest="verbose",action="store_true",default=False,help="turn output verbosity")
 parser.add_argument("-e","--environment",dest="environment",action="store",type=str,help="environment configuration file")
 parser.add_argument("-c","--config",dest="config_file",action="store",type=str,help="configuration file")
+parser.add_argument("-m","--module",dest="module",action="store",type=str,default="lenstools.scripts.nbody",help="name of the module from which to import the job specifications")
+parser.add_argument("-p","--parser",dest="parser",action="store",type=str,default="powerSpectrumExecution",help="name of the method to call in cmd_args.module")
 parser.add_argument("id",nargs="*")
 
 #Parse command arguments
@@ -45,6 +42,7 @@ if cmd_args.verbose:
 	logging.basicConfig(level=logging.DEBUG)
 else:
 	logging.basicConfig(level=logging.INFO)
+
 
 #Initialize MPIWhirlPool
 comm = MPI.COMM_WORLD
@@ -63,6 +61,18 @@ if (len(cmd_args.id)==0) or (cmd_args.config_file is None) or (cmd_args.environm
 	
 	sys.exit(0)
 
+#Parse job specific handlers
+if (pool is None) or (pool.is_master()):
+	logpreamble.info("Importing {0}.{1}".format(cmd_args.module,cmd_args.parser))
+
+script_to_execute,settings_handler,kwargs = getattr(import_module(cmd_args.module),cmd_args.parser)()
+
+#Log to user
+if (pool is None) or (pool.is_master()):
+	logpreamble.info("Executing: {0}()".format(script_to_execute.__name__))
+	logpreamble.info("Job configuration handler: {0}".format(settings_handler.__name__))
+	logpreamble.info("Keyword arguments: {0}".format(kwargs))
+
 #Parse relevant options
 if (pool is None) or (pool.is_master()):
 	logpreamble.info("Reading environment from {0}".format(cmd_args.environment))
@@ -79,4 +89,4 @@ settings = settings_handler.read(cmd_args.config_file)
 
 #Cycle over ids to produce the planes
 for batch_id in cmd_args.id:
-	script_to_execute(pool=pool,batch=batch,settings=settings,id=batch_id,fmt=Gadget2Snapshot)
+	script_to_execute(pool=pool,batch=batch,settings=settings,id=batch_id,**kwargs)
