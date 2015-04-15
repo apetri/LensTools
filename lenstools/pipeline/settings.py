@@ -133,7 +133,16 @@ class PowerSpectrumSettings(object):
 
 		settings.ensemble_name = options.get(section,"ensemble_name")
 
-		settings.nbody_realizations = [ int(n) for n in options.get(section,"nbody_realizations").split(",") ]
+		#Read in the nbody realizations that make up the ensemble
+		settings.nbody_realizations = list()
+		for r in options.get(section,"nbody_realizations").split(","): 
+			
+			try:
+				l,h = r.split("-")
+				settings.nbody_realizations.extend(range(int(l),int(h)+1))
+			except ValueError:
+				settings.nbody_realizations.extend([int(r)])
+		
 		settings.first_snapshot = options.getint(section,"first_snapshot")
 		settings.last_snapshot = options.getint(section,"last_snapshot")
 		
