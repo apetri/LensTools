@@ -30,7 +30,10 @@ logdriver.propagate = False
 ################Snapshot power spectrum#########################
 ################################################################
 
-def powerSpectrum(pool,batch,settings,id,fmt):
+def powerSpectrum(pool,batch,settings,id,**kwargs):
+
+	assert "fmt" in kwargs.keys()
+	fmt = kwargs["fmt"]
 
 	#Safety type check
 	assert isinstance(pool,MPIWhirlPool) or (pool is None)
