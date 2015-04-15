@@ -81,8 +81,7 @@ with open(cmd_args.model_file,"r") as modelfile:
 print("[+] Found {0} realizations to include in job submission, to be split in {1} chunks".format(len(realizations),cmd_args.chunks))
 
 #Now decide which type of submission are we generating, and generate the script
-job_type = cmd_args.job_type.lower() 
-assert job_type in type2section.keys(),"job_type needs to be specified between one of the following: {0}".format(",".join(type2section.keys()))
+job_type = cmd_args.job_type.lower()
 
 if job_type=="camb":
 
@@ -136,6 +135,22 @@ elif job_type=="raytracing":
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using ray tracing specifications found in {0}".format(cmd_args.exec_options))
 	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),raytracing_config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script)
+
+else:
+
+	#Assert the fact that the job config file is present
+	if not(os.path.exists(cmd_args.exec_options)):
+		print("[-] Option file {0} required by {1} does not exist!".format(cmd_args.exec_options,job_type))
+		sys.exit(1)
+
+	section = job_type
+	print("[+] Generating submission script for {0}".format(job_type))
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	print("[*] Using specifications for {0} found in {1}".format(job_type,cmd_args.exec_options))
+	batch.writeSubmission(realizations,job_settings,job_handler,job_executable=job_type,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script)
+
+
 
 
 

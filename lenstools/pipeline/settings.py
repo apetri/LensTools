@@ -368,7 +368,10 @@ class JobSettings(object):
 		settings.charge_account = options.get(section,"charge_account")
 
 		#Path to executable
-		settings.path_to_executable = options.get(section,"path_to_executable")
+		try:
+			settings.path_to_executable = options.get(section,"path_to_executable")
+		except NoOptionError:
+			settings.path_to_executable = section
 
 		#Name of the job, output
 		settings.job_name = options.get(section,"job_name")
