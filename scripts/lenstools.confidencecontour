@@ -50,5 +50,5 @@ for filename in cmd_args.filename:
 		contour.window()
 		code.interact(banner="[{0}]".format(savename),local=locals())
 	
-	if savename is not None:
+	if cmd_args.figtype is not None:
 		contour.savefig(savename)
