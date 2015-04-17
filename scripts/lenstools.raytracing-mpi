@@ -5,7 +5,7 @@ import argparse
 
 import lenstools.scripts.raytracing
 from lenstools.pipeline import SimulationBatch
-from lenstools.pipeline.settings import EnvironmentSettings,MapSettings
+from lenstools.pipeline.settings import EnvironmentSettings,CatalogSettings,MapSettings
 
 import logging
 
@@ -60,8 +60,20 @@ if (len(cmd_args.id)==0) or (cmd_args.config_file is None) or (cmd_args.environm
 
 #Parse relevant options
 if (pool is None) or (pool.is_master()):
+	
 	logpreamble.info("Reading environment from {0}".format(cmd_args.environment))
 	logpreamble.info("Reading lensing configuration from {0}".format(cmd_args.config_file))
+
+#Check that the configuration file is valid
+lens_settings = config.ConfigParser()
+lens_settings.read([cmd_args.config_file])
+
+if not(lens_settings.has_section("MapSettings")^lens_settings.has_section("CatalogSettings")):
+	
+	if (pool is None) or (pool.is_master()):
+		logpreamble.error("Lens configuration file {0} should have only one between the MapSettings and CatalogSettings sections!".format(cmd_args.config_file))
+	
+	sys.exit(1)
 
 #Environment 
 environment_settings = EnvironmentSettings.read(cmd_args.environment)
@@ -69,9 +81,26 @@ environment_settings = EnvironmentSettings.read(cmd_args.environment)
 #Get a handle on the simulation batch
 batch = SimulationBatch(environment_settings)
 
-#Lensing
-map_settings = MapSettings.read(cmd_args.config_file)
+#########################################################################################################################################################################
 
-#Cycle over ids to produce the planes
-for batch_id in cmd_args.id:
-	lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,id=batch_id)
+#Proceed to main execution
+
+if lens_settings.has_section("MapSettings"):
+
+	if (pool is None) or (pool.is_master()):
+		logpreamble.info("Starting the production of weak lensing simulated Maps")
+	map_settings = MapSettings.read(cmd_args.config_file)
+
+	#Cycle over ids to produce the planes
+	for batch_id in cmd_args.id:
+		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,id=batch_id)
+
+elif lens_settings.has_section("CatalogSettings"):
+
+	if (pool is None) or (pool.is_master()):
+		logpreamble.info("Starting the production of weak lensing simulated Catalogs")
+	catalog_settings = CatalogSettings.read(cmd_args.config_file)
+
+	#Cycle over ids to produce the planes
+	for batch_id in cmd_args.id:
+		lenstools.scripts.raytracing.simulatedCatalog(pool=pool,batch=batch,settings=catalog_settings,id=batch_id)

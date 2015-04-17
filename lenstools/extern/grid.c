@@ -1,7 +1,54 @@
+#include <stdlib.h>
 #include <math.h>
 
 #include "coordinates.h"
 #include "grid.h"
+
+
+//Two dimensional pixelization of a galaxy catalog
+int grid2d(double *x,double *y,double *s,double *map,int Nobjects,int Npixel,double map_size){
+
+	int ip,jp,p,n;
+	double i,j;
+	unsigned char *discovered;
+	double resolution=map_size/Npixel;
+
+	//First allocate an array that keeps track if a pixel is discovered (if there is at least one object that falls into it) or not
+	if((discovered = (unsigned char *)malloc(sizeof(char)*Npixel*Npixel))==NULL){
+		return 1;
+	}
+
+	//initialize to 0
+	for(n=0;n<Npixel*Npixel;n++) discovered[n]=0;
+
+	//cycle over objects and assign to the pixels in the grid
+	for(n=0;n<Nobjects;n++){
+
+		//Compute the position on the grid in the fastest way
+		i = x[n] / resolution;
+		j = y[n] / resolution;
+
+		//If the particle lands on the grid, put it in the correct pixel
+		if(i>=0 && i<Npixel && j>=0 && j<Npixel){
+
+			ip = (int)i;
+			jp = (int)j;
+			p = ip*Npixel + jp;
+
+			if(!discovered[p]){
+				discovered[p]=1;
+				map[p] = 0.0;
+			}
+
+			map[p] += s[n];
+
+		}
+
+	}
+
+
+	return 0;
+}
 
 
 //Snap particles on a 3d regularly spaced grid

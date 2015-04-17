@@ -8,7 +8,8 @@ import astropy.units as u
 from astropy.cosmology import FLRW,WMAP9
 
 from .remote import SystemHandler,LocalSystem,LocalGit
-from .settings import EnvironmentSettings,NGenICSettings,PlaneSettings,MapSettings,JobSettings
+from .settings import *
+
 from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2Snapshot
 
@@ -220,8 +221,9 @@ class SimulationBatch(object):
 			for collection in model.collections:
 				info_dict[model.cosmo_id][collection.geometry_id] = dict()
 				info_dict[model.cosmo_id][collection.geometry_id]["map_sets"] = dict()
+				info_dict[model.cosmo_id][collection.geometry_id]["catalogs"] = dict()
 
-				#Check if there are any map sets present
+				#Check if there are any map sets or catalogs present
 				try:
 					
 					with self.syshandler.open(os.path.join(collection.home_subdir,"sets.txt"),"r") as setsfile:
@@ -233,6 +235,23 @@ class SimulationBatch(object):
 							maps_on_disk = self.syshandler.glob(os.path.join(map_set.storage_subdir,"WL*"))
 							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name] = dict() 
 							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name]["num_maps"] = len(maps_on_disk)
+
+				except IOError:
+					pass
+
+				
+				try:
+					
+					with self.syshandler.open(os.path.join(collection.home_subdir,"catalogs.txt"),"r") as setsfile:
+						
+						for line in setsfile.readlines():
+							if line=="":
+								continue
+							
+							catalog = collection.getCatalog(line.strip("\n"))
+							catalogs_on_disk = self.syshandler.glob(os.path.join(catalog.storage_subdir,"WL*"))
+							info_dict[model.cosmo_id][collection.geometry_id]["catalogs"][catalog.settings.directory_name] = dict() 
+							info_dict[model.cosmo_id][collection.geometry_id]["catalogs"][catalog.settings.directory_name]["num_catalogs"] = len(catalogs_on_disk)
 
 				except IOError:
 					pass
@@ -315,6 +334,14 @@ class SimulationBatch(object):
 
 					if map_setCopy is None:
 						map_setCopy = collCopy.newMapSet(map_set.settings)
+
+				#Catalogs
+				for catalog in coll.catalogs:
+
+					catalogCopy = collCopy.getCatalog(catalog.name)
+
+					if catalogCopy is None:
+						catalogCopy = collCopy.newCatalog(catalog.settings)
 
 				#Realizations
 				for r in coll.realizations:
@@ -1357,6 +1384,91 @@ class SimulationCollection(SimulationModel):
 
 	#################################################################################################################################
 
+	def newCatalog(self,settings):
+
+		"""
+		Create a new simulated catalog with the provided settings
+
+		:param settings: settings for the new simulated catalog
+		:type settings: CatalogSettings
+
+		:rtype: SimulationCatalog
+
+		"""
+
+		#Safety check
+		assert isinstance(settings,CatalogSettings)
+
+		#Instantiate SimulationMaps object
+		catalog = SimulationCatalog(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings,syshandler=self.syshandler)
+
+		#Create dedicated directories
+		for d in [ catalog.home_subdir,catalog.storage_subdir ]:
+			if not self.syshandler.exists(d):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+
+		#Save a picked copy of the settings to use for future reference
+		with self.syshandler.open(os.path.join(catalog.home_subdir,"settings.p"),"w") as settingsfile:
+			cPickle.dump(settings,settingsfile)
+
+		#Append the name of the map batch to a summary file
+		with self.syshandler.open(os.path.join(self.home_subdir,"catalogs.txt"),"a") as setsfile:
+			setsfile.write("{0}\n".format(settings.directory_name))
+
+		#Return to user
+		return catalog
+
+	#################################################################################################################################
+
+	def getCatalog(self,catalog_name):
+
+		"""
+		Get access to a pre-existing catalog
+
+		:param catalog_name: name of the catalog to access
+		:type catalog_name: str.
+
+		"""
+
+		#Check if the map set exists
+		if (not self.syshandler.exists(os.path.join(self.storage_subdir,catalog_name))) or (not self.syshandler.exists(os.path.join(self.home_subdir,catalog_name))):
+			return None
+
+		#Read the settings from the pickled file
+		with self.syshandler.open(os.path.join(self.home_subdir,catalog_name,"settings.p"),"r") as settingsfile:
+			settings = cPickle.load(settingsfile) 
+
+		#Return to user
+		return SimulationCatalog(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings,syshandler=self.syshandler)
+
+
+	#################################################################################################################################
+
+	@property
+	def catalogs(self):
+
+		"""
+		Builds a list with all the available catalogs
+
+		:returns: list of SimulationCatalog
+
+		"""
+
+		catalogs = list()
+		
+		try:
+			with self.syshandler.open(os.path.join(self.home_subdir,"catalogs.txt"),"r") as setsfile:
+				for catalog_name in setsfile.readlines():
+					catalogs.append(self.getCatalog(catalog_name.strip("\n")))
+		except IOError:
+			pass
+		finally:
+			return catalogs
+
+
+	#################################################################################################################################
+
 	def writeCAMB(self,z,settings):
 
 		"""
@@ -1926,6 +2038,94 @@ class SimulationMaps(SimulationCollection):
 
 		#Call the function
 		return callback(full_path,**kwargs)
+
+
+
+#################################################################
+##############SimulationCatalog class############################
+#################################################################
+
+class SimulationCatalog(SimulationCollection):
+
+	"""
+	Class handler of a simulated lensing catalog, which is the final products of the lensing pipeline
+
+	"""
+
+	def __init__(self,cosmology,environment,parameters,box_size,nside,settings,**kwargs):
+
+		#Safety check
+		assert isinstance(settings,CatalogSettings)
+
+		#Call parent constructor
+		super(SimulationCatalog,self).__init__(cosmology,environment,parameters,box_size,nside,**kwargs)
+		self.settings = settings
+		self.name = settings.directory_name
+
+		#Build the name of the dedicated map directory
+		self.home_subdir = os.path.join(self.home_subdir,settings.directory_name)
+		self.storage_subdir = os.path.join(self.storage_subdir,settings.directory_name)
+
+	def __repr__(self):
+
+		#Count the number of map files on disk
+		catalogs_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"WL*"))
+
+		#Build the new representation string
+		return super(SimulationCatalog,self).__repr__() + " | Catalog set: {0} | Catalog files on disk: {1} ".format(self.settings.directory_name,len(catalogs_on_disk))
+
+	####################################################################################################################################
+
+	def path(self,filename):
+
+		"""
+		Returns the complete path to the lens catalog corresponding to filename; returns None if no resource is found
+
+		:param filename: name of the resource
+		:type filename: str.
+
+		:returns: full path to the resource
+		:rtype: str.
+
+		"""
+
+		full_path = os.path.join(self.storage_subdir,filename)
+		if not(self.syshandler.exists(full_path)):
+			return None
+
+		return full_path
+
+	####################################################################################################################################
+
+	def execute(self,filename,callback=None,**kwargs):
+
+		"""
+		Calls a user defined function on the catalog file pointed to by filename; if None is provided, returns the full path to the map
+
+		:param filename: name of the file on which to call the callback
+		:type filename: str.
+
+		:param callback: user defined function that takes filename as first argument
+		:type callback: callable
+
+		:param kwargs: key word arguments to be passed to callback
+		:type kwargs: dict.
+
+		:returns: the result of callback
+
+		"""
+
+		full_path = self.path(filename)
+		if full_path is None:
+			raise IOError("{0} does not exist!".format(filename))
+
+		if callback is None:
+			return full_path
+
+		#Call the function
+		return callback(full_path,**kwargs)
+
+
 
 
 

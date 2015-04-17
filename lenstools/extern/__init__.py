@@ -7,3 +7,4 @@ except ImportError:
 
 from . import _gadget2
 from . import _nbody
+from . import _pixelize
