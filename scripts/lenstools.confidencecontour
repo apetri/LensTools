@@ -20,7 +20,7 @@ parser.add_argument("-l","--levels",dest="levels",action="store",default="0.684"
 parser.add_argument("-ff","--fill",dest="fill",action="store_true",default=False,help="Fill the contours")
 parser.add_argument("-p","--display_percentages",dest="display_percentages",action="store_true",default=False,help="Display the confidence percentages")
 parser.add_argument("-mm","--display_maximum",dest="display_maximum",action="store_true",default=False,help="Put a cross at the maximum of the likelihood")
-parser.add_argument("-t","--figtype",dest="figtype",action="store",default="png",help="Format in which to save the figure")
+parser.add_argument("-t","--figtype",dest="figtype",action="store",default=None,help="Format in which to save the figure")
 parser.add_argument("-T","--title",dest="title",action="store",default=None,help="Give a title to the contour plot")
 parser.add_argument("-i","--interactive",dest="interactive",action="store_true",default=False,help="Switch to interactive mode after plotting")
 
@@ -40,10 +40,15 @@ options.read(cmd_args.config_file)
 for filename in cmd_args.filename:
 	
 	contour = lenstools.scripts.confidencecontour.main(filename,cmd_args,options)
-	savename = os.path.split(filename)[-1].replace(".npy","."+cmd_args.figtype)
+
+	if cmd_args.figtype is not None:
+		savename = os.path.split(filename)[-1].replace(".npy","."+cmd_args.figtype)
+	else:
+		savename = os.path.split(filename)[-1].replace(".npy",".fig")
 	
 	if cmd_args.interactive:
 		contour.window()
 		code.interact(banner="[{0}]".format(savename),local=locals())
 	
-	contour.savefig(savename)
+	if savename is not None:
+		contour.savefig(savename)
