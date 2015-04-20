@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from importlib import import_module
 
 import os
 import sys
@@ -64,8 +65,12 @@ if system in system2handler.keys():
 	print("[+] Using job handler for system {0}".format(system))
 	job_handler = system2handler[system]()
 else:
-	print("[-] Job handler not available for selected system {0}, only {1} systems implemented so far".format(system,",".join(system2handler.keys())))
-	sys.exit(1)
+	parts = system.split(".")
+	module = ".".join(parts[:-1])
+	handler = parts[-1]
+	print("[+] Using job handler {0} from {1}".format(handler,module))
+	job_handler = getattr(import_module(module),handler)()
+
 
 print("[*] Current batch home directory: {0}".format(environment.home))
 print("[*] Current batch mass storage: {0}".format(environment.storage))
