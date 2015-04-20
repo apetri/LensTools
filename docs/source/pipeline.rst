@@ -32,8 +32,8 @@ You will need to choose where you want to store your files: in each simulation b
 
 ::
 
-	environment = EnvironmentSettings(home="SimTest/Home",storage="SimTest/Storage")
-	batch = SimulationBatch(environment)
+	>>> environment = EnvironmentSettings(home="SimTest/Home",storage="SimTest/Storage")
+	>>> batch = SimulationBatch(environment)
 
 You will need to specify the home and storage paths only once throughout the execution of the pipeline, lenstools will do the rest! If you want to build a git repository on top of your simulation batch, you will have to install `GitPython <https://gitpython.readthedocs.org>`_ and initiate the simulation batch as follows
 
@@ -318,6 +318,30 @@ Note that the IC file count increased from 0 to 256, but the snapshot count is s
 Gravitational evolution (Gadget2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The next step in the pipeline is to run Gadget2_ to evolve the initial conditions in time. Again, the Gadget2 tunable settings are handled by lenstools via the :py:class:`~lenstools.simulations.gadget2.Gadget2Settings`:
+
+::
+	
+	>>> from lenstools.simulations.gadget2 import Gadget2Settings
+	>>> gadget_settings = Gadget2Settings()
+
+In the gadget_settings instance, you may want to be especially careful in selecting the appropriate values for the OutputScaleFactor and NumFilesPerSnapshot attributes, which will direct which snapshots will be written to disk and in how many files each snapshot will be split. You can generate the Gadget2 parameter file just typing
+
+::
+
+	>>> for r in collection.realizations:
+		r.writeGadget2(gadget_settings)
+
+	[+] Gadget2 parameter file SimTest/Home/Om0.300_Ol0.700/512b240/ic1/gadget2.param written on localhost
+	[+] Gadget2 parameter file SimTest/Home/Om0.300_Ol0.700/512b240/ic2/gadget2.param written on localhost
+	[+] Gadget2 parameter file SimTest/Home/Om0.300_Ol0.700/512b240/ic3/gadget2.param written on localhost
+
+Now you can submit the Gadget2 runs following the directions in the jobs_ section. The basic command you have to run to generate the job submission scripts is, in a shell
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 SimTest/Home/realizations.txt
+
 Lens planes
 ~~~~~~~~~~~
 
@@ -373,13 +397,13 @@ the job submission will process the Om0.300_Ol0.700 model, collection of simulat
 
 ::
 
-	 lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt -c 3
+	 lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt --chunks 3
 
 will generate 3 job submission scripts, each of which will take care of one of the initial conditions
 
 ::
 
-	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt -c 3 --one-script
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt --chunks 3 --one-script
 
 will generate one job submission script, in which the 3 initial conditions are processed one after the other, starting with the first. This job will run on 256 cores
 
@@ -408,6 +432,11 @@ On Stampede you submit the jobs to the queue using the "sbatch" command:
 ::
 
 	sbatch SimTest/Home/Jobs/gadget1.sh
+
+Generic job submissions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+
 
 
 Post processing
