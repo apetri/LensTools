@@ -1,6 +1,8 @@
 The LensTools Weak Lensing Simulation pipeline
 **********************************************
 
+.. warning:: The lenstools pipeline functionality is not part of the 0.4.8 release that you install through pip. To use the lenstools pipeline you need to get a copy of the bleeding--edge lenstools github repository, and follow the subsequent steps. 1. git clone https://github.com/apetri/LensTools ; 2. git branch pipeline origin/pipeline ; 3. git checkout pipeline ; 4. Edit setup.cfg to enable the installation of the pipeline bindings ; 5. python setup.py install
+
 This document is a hands--on tutorial on how to deploy the lenstools weak lensing simulation pipeline on a computer cluster. This will enable you to run your own weak lensing simulations and produce simulated weak lensing fields (shear and convergence) starting from a set of cosmological parameters. 
 
 Pipeline workflow
@@ -63,8 +65,8 @@ Now we create a new simulation model that corresponds to the "cosmology" just sp
 
 	>>> model = batch.newModel(cosmology,parameters=["Om","Ol"])
 	
-	[+] SimTest/Home/Om0.300_Ol0.700 created
-	[+] SimTest/Storage/Om0.300_Ol0.700 created
+	[+] SimTest/Home/Om0.300_Ol0.700 created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700 created on localhost
 
 The argument "parameters" specifies which cosmological parameters you want to keep track of in your model; this is useful, for example, when you want to simulate different combinations of these parameters while keeping the other fixed to their default values. Note that lenstools informs you of the directories that are created on disk. You have access at any time to the models that are present in your simulation batch 
 
@@ -83,8 +85,8 @@ It is now time to specify the resolution of the :math:`N`--body simulations that
 
 	>>> collection = model.newCollection(box_size=240.0*model.Mpc_over_h,nside=512)
 	
-	[+] SimTest/Home/Om0.300_Ol0.700/512b240 created
-	[+] SimTest/Storage/Om0.300_Ol0.700/512b240 created
+	[+] SimTest/Home/Om0.300_Ol0.700/512b240 created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/512b240 created on localhost
 
 Again, you will have access at any time to the collections that are present in your model 
 
@@ -105,12 +107,12 @@ Each simulation collection can have multiple realizations of the density field; 
 	>>> for s in [1,22,333]:
 		collection.newRealization(seed=s)
 
-	[+] SimTest/Home/Om0.300_Ol0.700/ic1 created
-	[+] SimTest/Storage/Om0.300_Ol0.700/ic1 created
-	[+] SimTest/Home/Om0.300_Ol0.700/ic2 created
-	[+] SimTest/Storage/Om0.300_Ol0.700/ic2 created
-	[+] SimTest/Home/Om0.300_Ol0.700/ic3 created
-	[+] SimTest/Storage/Om0.300_Ol0.700/ic3 created 
+	[+] SimTest/Home/Om0.300_Ol0.700/ic1 created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/ic1 created on localhost
+	[+] SimTest/Home/Om0.300_Ol0.700/ic2 created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/ic2 created on localhost
+	[+] SimTest/Home/Om0.300_Ol0.700/ic3 created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/ic3 created on localhost
 
 At this point it should not be surprising that you can do this
 
@@ -154,12 +156,12 @@ Once you specified the plane configuration file, you can go ahead and create a l
 	>>> for r in collection.realizations:
 		r.newPlaneSet(plane_settings)
 
-	[+] SimTest/Home/Om0.300_Ol0.700/ic1/Planes created
-	[+] SimTest/Storage/Om0.300_Ol0.700/ic1/Planes created
-	[+] SimTest/Home/Om0.300_Ol0.700/ic2/Planes created
-	[+] SimTest/Storage/Om0.300_Ol0.700/ic2/Planes created
-	[+] SimTest/Home/Om0.300_Ol0.700/ic3/Planes created
-	[+] SimTest/Storage/Om0.300_Ol0.700/ic3/Planes created
+	[+] SimTest/Home/Om0.300_Ol0.700/ic1/Planes created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/ic1/Planes created on localhost
+	[+] SimTest/Home/Om0.300_Ol0.700/ic2/Planes created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/ic2/Planes created on localhost
+	[+] SimTest/Home/Om0.300_Ol0.700/ic3/Planes created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/ic3/Planes created on localhost
 
 To summarize what you just did, as usual you can type 
 
@@ -215,8 +217,8 @@ Different random realizations of the same weak lensing field can be obtained dra
 	>>> map_settings = MapSettings.read("lens.ini")
 	>>> map_set = collection.newMapSet(map_settings)
 
-	[+] SimTest/Home/Om0.300_Ol0.700/Maps created
-	[+] SimTest/Storage/Om0.300_Ol0.700/Maps created
+	[+] SimTest/Home/Om0.300_Ol0.700/Maps created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/Maps created on localhost
 
 And, of course, you can check what you just did 
 
@@ -231,11 +233,87 @@ Now that we layed down our directory tree in a logical and organized fashion, we
 Pipeline deployment
 -------------------
 
+.. _CAMB: http://camb.info
+.. _NGenIC: http://www.mpa-garching.mpg.de/gadget/n-genic.tar.gz
+.. _Gadget2: http://www.mpa-garching.mpg.de/gadget/gadget-2.0.7.tar.gz
+
+After the creation of the directory tree that will host the simulation products (which you can always update calling the appropriate functions on your SimulationBatch instance), it is time to start the production running the actual simulation codes. This implementation of the lensing pipeline relies on three publicly available codes (CAMB_ , NGenIC_ and Gadget2_) which you have to obtain on your own as the lenstools authors do not own publication rights on them. On the other hand, the lens plane generation and ray--tracing algorithms are part of the lenstools suite. In the remainder of the tutorial, we show how to deploy each step of the pipeline on a computer cluster. 
+
 Matter power spectra (CAMB)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The Einstein-Boltzmann code CAMB_ is used at the first step of the pipeline to compute the matter power spectra that are necessary to produce the initial conditions for the :math:`N`--body runs. CAMB needs its own parameter file to run, but in order to make things simpler, lenstools provides the :py:class:`~lenstools.simulations.camb.CAMBSettings` class. Typing 
+
+::
+
+	>>> import lenstools
+	>>> from lenstools.simulations.camb import CAMBSettings
+	>>> camb_settings = CAMBSettings()
+
+You will have access to the default settings of the CAMB code; you can edit these settings to fit your needs, and then generate the INI parameter file that CAMB will need to run 
+
+::
+	
+	>>> environment = EnvironmentSettings(home="SimTest/Home",storage="SimTest/Storage")
+	>>> batch = SimulationBatch(environment)
+	>>> collection = batch.available[0].collections[0]
+	>>> collection.writeCAMB(z=0.0,settings=camb_settings)
+
+	[+] SimTest/Home/Om0.300_Ol0.700/512b240/camb.param written on localhost
+
+This will generate a CAMB parameter file that can be used to compute the linear matter power spectrum at redshift :math:`z=0.0` (which NGenIC will later scale to the initial redshift of your :math:`N`--body simulation). You will now need to run the CAMB executable to compute the matter power spectrum as specified by the settings you chose. For how to run CAMB on your computer cluster please refer to the jobs_ section. The basic command you have to run to generate the job submission scripts is, in a shell
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t camb SimTest/Home/realizations.txt
+	
+
 Initial conditions (NGenIC)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After CAMB finished running, it is time to use the computed matter power spectra to generate the particle displacement field (corresponding to those power spectra) with NGenIC_. The NGenIC code needs its own parameter file to run, which can be quite a hassle to write down yourself. Luckily lenstools provides the :py:class:`~lenstools.pipeline.settings.NGenICSettings` class to make things easy:
+
+::
+
+	>>> from lenstools.pipeline.settings import NGenICSettings
+	>>> ngenic_settings = NGenICSettings()
+	>>> ngenic_settings.GlassFile = lenstools.data("dummy_glass_little_endian.dat")
+
+You can modify the attributes of the ngenic_settings object to change the settings to your own needs. There is an additional complication: NGenIC needs the tabulated matter power spectra in a slightly different format than CAMB outputs. Before generating the NGenIC parameter file we will need to make this format connversion
+
+::
+
+	>>> collection.camb2ngenic(z=0.0)
+	[+] CAMB matter power spectrum at SimTest/Home/Om0.300_Ol0.700/512b240/camb_matterpower_z0.000000.txt converted into N-GenIC readable format at SimTest/Home/Om0.300_Ol0.700/512b240/ngenic_matterpower_z0.000000.txt
+
+Next we can generate the NGenIC parameter file 
+
+::
+
+	>>> for r in collection.realizations:
+		r.writeNGenIC(ngenic_settings)
+
+	[+] NGenIC parameter file SimTest/Home/Om0.300_Ol0.700/512b240/ic1/ngenic.param written on localhost
+	[+] NGenIC parameter file SimTest/Home/Om0.300_Ol0.700/512b240/ic2/ngenic.param written on localhost
+	[+] NGenIC parameter file SimTest/Home/Om0.300_Ol0.700/512b240/ic3/ngenic.param written on localhost
+
+For directions on how to run NGenIC on a computer cluster you can refer to the jobs_ section. After the initial conditions files have been produced, you can check that they are indeed present on the storage portion of the directory tree
+
+::
+
+	>>> for r in collection.realizations:
+		print(r)
+
+	<Om=0.300 , Ol=0.700> | box=240.0 Mpc/h,nside=512 | ic=1,seed=1 | IC files on disk: 256 | Snapshot files on disk: 0
+ 	<Om=0.300 , Ol=0.700> | box=240.0 Mpc/h,nside=512 | ic=2,seed=22 | IC files on disk: 256 | Snapshot files on disk: 0
+ 	<Om=0.300 , Ol=0.700> | box=240.0 Mpc/h,nside=512 | ic=3,seed=333 | IC files on disk: 256 | Snapshot files on disk: 0
+
+Note that the IC file count increased from 0 to 256, but the snapshot count is still 0 (because we didn't run Gadget yet). We will explain how to run Gadget2 in the next section. The basic command you have to run to generate the job submission scripts is, in a shell
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t ngenic SimTest/Home/realizations.txt
+
 
 Gravitational evolution (Gadget2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,9 +324,112 @@ Lens planes
 Weak lensing fields :math:`\gamma,\kappa,\omega`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Generating job submission scripts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _jobs: 
+
+Each computer cluster comes with its own computing environment, its own job scheduler and its own job scheduler directives. To accomodate these differences, lenstools provides a platform--independent interface to generate your submission scripts. The job settings are read from a platform--independent INI configuration file, which is passed to a :py:class:`~lenstools.pipeline.deploy.JobHandler` instance. This job handler instance will translate the user provided settings into the machine specific job directives. This provides a platform--independent job deployment. Here is an example of the job submission options for a Gadget2 run, which we will call "job.ini"
+
+::
+
+	[Gadget2]
+
+	#Personal settings
+	email = apetri@phys.columbia.edu
+	charge_account = TG-AST140041
+
+	#Path to executable
+	path_to_executable = /my/cluster/path/to/the/Gadget2/executable
+
+	#Name of the job, output
+	job_name = Gadget2
+	redirect_stdout = gadget.out
+	redirect_stderr = gadget.err
+
+	#Resources
+	cores_per_simulation = 256
+	queue = development
+	wallclock_time = 02:00:00
+
+	#Script name
+	job_script_file = gadget.sh
+
+lenstools provides a command line script, lenstools.submission, that will take care of the script generation. The "-s" flag can be used to specify the system we are running on; if not specified, the system is detected automatically looking at the value of the "THIS" environment variable. For example the "-s stampede" option will generate the submission scripts for the `Stampede <https://portal.xsede.org/tacc-stampede>`_ computer cluster through the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` job handler. Here it is an example on how the script is generated: from the command line run
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt
+
+In short, the "-e" switch will make sure that we are pointing to the right simulation batch, the "-j" switch will point to the correct platform--independent job option file, the "-t" switch specifies which job submission script we are generating and the realizations.txt file contains a list of the realizations that the script will process. For example if the contents of "realizations.txt" are
+
+::
+
+	Om0.300_Ol0.700|512b240|ic1
+	Om0.300_Ol0.700|512b240|ic2
+	Om0.300_Ol0.700|512b240|ic3
+
+the job submission will process the Om0.300_Ol0.700 model, collection of simulations with :math:`512^3` particles and 240.0Mpc/h box size, initial conditions from 1 to 3. You can additionally specify the --chunks and --one-script options to change the number of simulations that are processed in parallel.
+
+::
+
+	 lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt -c 3
+
+will generate 3 job submission scripts, each of which will take care of one of the initial conditions
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt -c 3 --one-script
+
+will generate one job submission script, in which the 3 initial conditions are processed one after the other, starting with the first. This job will run on 256 cores
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt
+
+will generate one submission script, in which the 3 initial conditions are processed in parallel. This job will run on 768 cores. This is the output of this execution of lenstools.submission
+
+::
+
+	[*] Environment settings for current batch read from SimTest/Home/environment.ini
+	[+] Using job handler for system stampede
+	[*] Current batch home directory: SimTest/Home
+	[*] Current batch mass storage: SimTest/Storage	
+	[*] Realizations to include in this submission will be read from realizations.txt
+	[+] Found 3 realizations to include in job submission, to be split in 1 chunks
+	[+] Generating Gadget2 submission script
+	[*] Reading job specifications from jobs.ini section Gadget2
+	[+] Stdout will be directed to SimTest/Home/Logs/gadget.out
+	[+] Stderr will be directed to SimTest/Home/Logs/gadget.err
+	[+] SimTest/Home/Jobs/gadget1.sh written on localhost
+
+On Stampede you submit the jobs to the queue using the "sbatch" command:
+
+::
+
+	sbatch SimTest/Home/Jobs/gadget1.sh
+
 
 Post processing
 ---------------
+
+This section shows an example on how to do some post processing on the products of your simulation batch (for example measuring the :math:`N`--body simulations power spectra). The basic idea is to define a function with the signature
+
+::
+
+	>>> def methodThatMeasuresSomething(pool,batch,settings,id,**kwargs):
+		...
+
+where 
+
+- pool is a :py:class:`~lenstools.utils.MPIWhirlPool` instance that will take care of the parallelization of the code
+- batch is the simulation batch object, i.e. an instance of :py:class:`~lenstools.pipeline.SimulationBatch`
+- settings are the tunable settings of the code
+- id is the particular batch subset to process, for example "Om0.300_Ol0.700|512b240|ic1"
+- kwargs are any other keyword arguments you may want to pass to the methodThatMeasuresSomething method
+
+lenstools will take care of distributing the methodThatMeasuresSomething calls on the computer cluster you are running on. Below is a working example of how to measure the 3D matter power spectrum out of the simulation boxes. 
+
 
 Example: measure the 3D matter power spectrum
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -500,7 +681,26 @@ You deploy like this
 
 ::
 
-	lenstools.execute-mpi -e SimTest/environment.ini -c code_options.ini -m matter_power_spectrum -p powerSpectrumExecution "Om0.300_Ol0.700|512b240"
+	lenstools.execute-mpi -e SimTest/Home/environment.ini -c code_options.ini -m matter_power_spectrum -p powerSpectrumExecution "Om0.300_Ol0.700|512b240"
+
+
+Default settings
+----------------
+
+You can visualize the default INI configuration files for the different steps in the pipeline by typing in a python shell
+
+::
+
+	import lenstools
+
+	#Default job submission
+	lenstools.showData("job_default.ini")
+
+	#Default lensing options
+	lenstools.showData("lens_default.ini")
+
+	#Default catalog production options
+	lenstools.showData("catalog_default.ini")
 
 
 

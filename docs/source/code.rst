@@ -214,3 +214,9 @@ Limber integration
 
 .. autoclass:: lenstools.simulations.limber.LimberIntegrator
 	:inherited-members:
+
+MPI
+===
+
+.. autoclass:: lenstools.utils.MPIWhirlPool
+	:inherited-members:
