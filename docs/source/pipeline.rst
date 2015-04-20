@@ -436,6 +436,8 @@ On Stampede you submit the jobs to the queue using the "sbatch" command:
 Generic job submissions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+Job handlers for different clusters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
