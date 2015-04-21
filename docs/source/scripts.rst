@@ -31,11 +31,11 @@ The script can also read from standard input: to strip all the files in a direct
 	ls | gadgetstrip
 
 
-confidencecontour
------------------
-
 npyinfo
 -------
+
+lenstools.confidencecontour
+-----------------
 
 lenstools.view
 --------------
@@ -58,3 +58,6 @@ lenstools.raytracing
 
 lenstools.raytracing-mpi
 ------------------------
+
+lenstools.execute-mpi
+---------------------

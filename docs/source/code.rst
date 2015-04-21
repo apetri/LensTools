@@ -151,6 +151,9 @@ Directory tree handling
 .. autoclass:: lenstools.pipeline.simulation.SimulationMaps
 	:members: path
 
+.. autoclass:: lenstools.pipeline.simulation.SimulationCatalog
+	:members: path
+
 Tunable settings
 ----------------
 

@@ -11,7 +11,7 @@ This python package collects together a suite of widely used analysis tools in W
 Summary
 -------
 
-This python add-on will handle basically every operation you will need to perform on Weak Lensing survey data; the distribution includes a range of tools in image analysis, statistical processing and numerical theory predictions and supports multiprocessing using the `mpi4py <http://mpi4py.scipy.org>`_ module. This package includes many useful features, including:
+This python add-on will handle basically every operation you will need to perform on Weak Lensing survey data; the distribution includes a range of tools in image analysis, statistical processing and numerical theory predictions and supports multiprocessing using the mpi4py_ module. This package includes many useful features, including:
 
 - Measure units handling through astropy
 - Complete flexibility and easy customization of input/output formats
@@ -24,7 +24,7 @@ This python add-on will handle basically every operation you will need to perfor
 - Interfaces with existing simulation sets
 - Ray Tracing simulations (in development...)
 - CPU vectorization of expensive computations via numpy
-- Easy multiprocessing and cluster deployment via the mpi4py module
+- Easy multiprocessing and cluster deployment via the mpi4py_ module
 - *Future prospect*: taking advantage of numpy offload capabilities to Intel Xeon Phi coprocessors to boost performance (planned) 
 
 Installation
@@ -50,12 +50,25 @@ If you want to test the build before installing to your system, look to the inst
 Dependencies
 ------------
 
-The core features require the standard `numpy <http://www.numpy.org>`_, `scipy <http://www.scipy.org>`_ and the more unusual `astropy <http://www.astropy.org>`_ (mainly for the cosmology and measure units support) and `emcee <http://dan.iel.fm/emcee/current/>`_ (from which LensTools borrows the MPI Pool utility), and the Test suite requires additionally the `matplotlib <http://matplotlib.org>`_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to run the calculations in parallel on a computer cluster you will need to install `mpi4py <http://mpi4py.scipy.org>`_ (a python wrapper for the MPI library). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway). One of the lenstools features, namely the Design class, requires that you have a working version of `GSL <http://www.gnu.org/software/gsl/>`_ to link to; if you don't have one, just hit *enter* during the installation process and the package will work correctly without this additional feature. 
+.. _numpy: http://www.numpy.org
+.. _scipy: http://www.scipy.org
+.. _astropy: http://www.astropy.org
+.. _emcee: http://dan.iel.fm/emcee/current/
+.. _matplotlib: http://matplotlib.org
+.. _mpi4py: http://mpi4py.scipy.org
+.. _GSL: http://www.gnu.org/software/gsl/    
+.. _pytest: http://pytest.org/latest/
+.. _here: http://danishlaundromat.com/apetri/data.tar.gz
+.. _github: https://github.com/apetri/LensTools
+.. _NICAEA: http://www.cosmostat.org/software/nicaea/
+.. _fftw3: http://www.fftw.org
+
+The core features require the standard numpy_, scipy_ , and additionally  astropy_ (mainly for the cosmology and measure units support) and emcee_ (from which LensTools borrows the MPI Pool utility), and the Test suite requires additionally the matplotlib_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to run the calculations in parallel on a computer cluster you will need to install mpi4py_ (a python wrapper for the MPI library). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway). One of the lenstools features, namely the :py:class:`~lenstools.simulations.Design` class, requires that you have a working version of GSL_ to link to; if you don't have one, just hit *enter* during the installation process and the package will work correctly without this additional feature. The installation if the NICAEA_ bindings additionally requires a working installation of the fftw3_ library. 
 
 Test
 ----
 
-To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install `pytest <http://pytest.org/latest/>`_, then you need to download some data files (mainly FITS images) that the test suite depends on (you can find these data files `here <http://danishlaundromat.com/apetri/data.tar.gz>`_, the file is approximately 250MB). Once you downloaded it into the Test directory unpack it::
+To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install pytest_, then you need to download some data files (mainly FITS images) that the test suite depends on (you can find these data files here_, the file is approximately 250MB). Once you downloaded it into the Test directory unpack it::
 
    tar -xvf data.tar.gz
 
@@ -65,25 +78,6 @@ Then you're good to go! Just run::
 
 Each test, if successful, will produce some PNG plots.
 
-Issues
-------
-
-The code is maintained and developed on `github <https://github.com/apetri/LensTools>`_, pull requests are welcome!
-
-License
--------
-
-Copyright 2014 Andrea Petri and contributors; lenstools is free software made available under the MIT License. For details see the LICENSE file
-
-
-
-Gallery
--------
-
-.. toctree::
-   :maxdepth: 2
-
-   gallery
 
 Weak Lensing simulations
 ------------------------
@@ -103,6 +97,14 @@ Command line scripts
 
    scripts
 
+Gallery
+-------
+
+.. toctree::
+   :maxdepth: 2
+
+   gallery
+
 3D visualization with Mayavi
 ----------------------------
 
@@ -118,6 +120,17 @@ API
    :maxdepth: 2
 
    code
+
+Issues
+------
+
+The code is maintained and developed on github_, pull requests are welcome!
+
+License
+-------
+
+Copyright 2014 Andrea Petri and contributors; lenstools is free software made available under the MIT License. For details see the LICENSE file
+
 
 Indices and tables
 ==================

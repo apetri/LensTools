@@ -21,7 +21,7 @@ In the remainder of the document a detailed scheme of the pipeline is illustrate
 The directory tree
 ------------------
 
-lenstools provides a set of routines for managing the simulations directory tree, which is crucial for organizing the produced files in a sensible way. The first step in the process is creating a new batch of simulations. The way you accomplish this is through a SimulationBatch object. 
+lenstools provides a set of routines for managing the simulations directory tree, which is crucial for organizing the produced files in a sensible way. The first step in the process is creating a new batch of simulations. The way you accomplish this is through a :py:class:`~lenstools.pipeline.simulation.SimulationBatch` object. 
 
 ::
 	
@@ -130,6 +130,8 @@ Note that, at this step, we are only laying down the directory tree of the simul
 Lens planes
 ~~~~~~~~~~~
 
+.. _planes:  
+
 For each of the realizations in the collection, we have to create a set of lens planes, that will be necessary for the execution of the ray--tracing step via the multi--lens--plane algorithm. The settings for these lens plane set can be specified through a INI configuration file. Let's call this file "planes.ini"; it should have the following structure
 
 ::
@@ -172,11 +174,13 @@ To summarize what you just did, as usual you can type
 
 	[<Om=0.300 , Ol=0.700>  |  box=240.0 Mpc/h,nside=512  |  ic=1,seed=1  | Plane set: Planes , Plane files on disk: 0]
 	[<Om=0.300 , Ol=0.700>  |  box=240.0 Mpc/h,nside=512  |  ic=2,seed=22  | Plane set: Planes , Plane files on disk: 0]
-	[<Om=0.300 , Ol=0.700>  |  box=240.0 Mpc/h,nside=512  |  ic=3,seed=3333  | Plane set: Planes , Plane files on disk: 0]
+	[<Om=0.300 , Ol=0.700>  |  box=240.0 Mpc/h,nside=512  |  ic=3,seed=333  | Plane set: Planes , Plane files on disk: 0]
 
 
 Weak lensing fields
 ~~~~~~~~~~~~~~~~~~~
+
+.. _fields: 
 
 The last step in the pipeline is to run the multi--lens--plane algorithm through the sets of lens planes just created. This will compute all the ray deflections at each lens crossing and derive the corresponding weak lensing quantities. The ray tracing settings need to be specified in a INI configuration file, that for example we can call "lens.ini". The following configuration will allow you to create square weak lensing simulated maps assuming all the background sources have the same redshift 
 
@@ -342,11 +346,156 @@ Now you can submit the Gadget2 runs following the directions in the jobs_ sectio
 
 	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 SimTest/Home/realizations.txt
 
+If Gadget2 ran succesfully and produced the required snapshot, this should reflect on your :py:class:`~lenstools.pipeline.simulation.SimulationIC` instances
+
+::
+
+	>>> for r in collection.realizations
+		print(r)
+
+	<Om=0.300 , Ol=0.700> | box=240.0 Mpc/h,nside=512 | ic=1,seed=1 | IC files on disk: 256 | Snapshot files on disk: 976
+ 	<Om=0.300 , Ol=0.700> | box=240.0 Mpc/h,nside=512 | ic=2,seed=22 | IC files on disk: 256 | Snapshot files on disk: 976
+ 	<Om=0.300 , Ol=0.700> | box=240.0 Mpc/h,nside=512 | ic=3,seed=333 | IC files on disk: 256 | Snapshot files on disk: 976
+
+You have access to each of the :math:`N`--body simulation snapshots through the :py:class:`~lenstools.simulations.Gadget2Snapshot` class. 
+
+
 Lens planes
 ~~~~~~~~~~~
 
+Now that Gadget2 has finished the execution, we are ready to proceed in the next step in the pipeline. The multi--lens--plane algorithm approximates the matter distribution between the observer and the backround source as a sequence of parallel lens planes with a local surface density proportional to the density constrast measured from the 3D :math:`N`--body snapshots. lenstools provides an implementation of the density and lensing potential estimation algorithms. You will have to use the same INI configuration file used to create the planes_ section of the directory tree (in the former we called this file "planes.ini"). After filling the appropriate section of "job.ini" as outlined in jobs_ (using "lenstools.planes-mpi" as the executable name), run on the command line 
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -o planes.ini -j job.ini -t planes SimTest/Home/realizations.txt
+
+This will produce the plane generation execution script that, when executed, will submit your job on the queue. If lenstools.planes-mpi runs correctly, you should notice the presence of the new plane files 
+
+::
+
+	>>> for r in collection.realizations
+		print(r.planesets[0])
+
+	<Om=0.300 , Ol=0.700>  |  box=15.0 Mpc/h,nside=32  |  ic=1,seed=1  | Plane set: Planes , Plane files on disk: 178
+	<Om=0.300 , Ol=0.700>  |  box=15.0 Mpc/h,nside=32  |  ic=2,seed=22  | Plane set: Planes , Plane files on disk: 178
+	<Om=0.300 , Ol=0.700>  |  box=15.0 Mpc/h,nside=32  |  ic=3,seed=333  | Plane set: Planes , Plane files on disk: 178
+
+You can access each plane through the :py:class:`~lenstools.simulations.PotentialPlane` class.  
+	
+
+
 Weak lensing fields :math:`\gamma,\kappa,\omega`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once the lensing potential planes have been created, we are ready for the last step in the pipeline, namely the multi--lens--plane algorithm execution which will produce the simulated weak lensing fields. You will need to use the configuration file "lens.ini" that you used to create the maps section of the directory tree in the weak lensing fields_ section. Here is the relevant extract of the file
+
+::
+
+	[MapSettings]
+
+	directory_name = Maps
+	override_with_local = True
+	format = fits
+	map_resolution = 128
+	map_angle = 3.5
+	angle_unit = deg
+	source_redshift = 2.0
+
+	#Random seed used to generate multiple map realizations
+	seed = 0
+
+	#Set of lens planes to be used during ray tracing
+	plane_set = Planes
+
+	#N-body simulation realizations that need to be mixed
+	mix_nbody_realizations = 1,2,3
+	mix_cut_points = 0,1,2
+	mix_normals = 0,1,2
+	lens_map_realizations = 4
+
+	#Which lensing quantities do we need?
+	convergence = True
+	shear = True
+	omega = True
+
+Note the change "override_with_local=False", which became "override_with_local=True"; this is an optional simplification that you can take advantage of if you want. If this switch is set to true, the ray--tracing script will ignore everyting below the "override_with_local" line and read the remaining options from the "Maps" directory. This is a failsafe that guarantees that the weak lensing fields will be generated using the settings that were originally intended for them, i.e. the ones that you used to create the "Maps" directory in the tree.
+
+After filling the appropriate section of "job.ini" as outlined in jobs_ (using "lenstools.raytracing-mpi" as the executable name), run on the command line 
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -o lens.ini -j job.ini -t raytracing SimTest/Home/collections.txt 
+
+Where "collections.txt", in this case, should be a text file with only one line
+
+::
+
+	Om0.300_Ol0.700|512b240
+
+After lenstools.raytracing-mpi finished the execution, you will find your weak lensing maps in the "Maps" directory, and you can conveniently access them through the :py:class:`~lenstools.ConvergenceMap` and :py:class:`~lenstools.ShearMap` classes. 
+
+::
+
+	>>> from lenstools import ConvergenceMap
+	>>> collection.mapsets
+
+	[<Om=0.300 , Ol=0.700> | box=15.0 Mpc/h,nside=32 | Map set: Maps | Map files on disk: 12 ]
+
+	>>> mp = collection.mapsets[0]
+	>>> mp.path("WLconv_z2.00_0001r.fits")
+
+	"SimTest/Storage/Om0.300_Ol0.700/32b15/Maps/WLconv_z2.00_0001r.fits"
+
+	>>> c = ConvergenceMap.load(mp.path("WLconv_z2.00_0001r.fits"))
+	>>> c.info
+
+	Pixels on a side: 128
+	Pixel size: 98.4375 arcsec
+	Total angular size: 3.5 deg
+	lmin=1.0e+02 ; lmax=9.3e+03
+
+If you need to generate the weak lensing simulated fields not in image form but in catalog form, you can use the :py:class:`~lenstools.pipeline.simulation.SimulationCatalog` class instead of the :py:class:`~lenstools.pipeline.simulation.SimulationMaps` class
+
+::
+
+	>>> lenstools.showData("catalog_default.ini")
+
+	[CatalogSettings]
+
+	#Name of catalog batch
+	directory_name = Catalog
+	input_files = galaxy_positions.fits
+	total_num_galaxies = 1000
+	catalog_angle_unit = deg
+
+	#Use the options generated at the moment of the batch generation (advised)
+	override_with_local = True
+
+	#Format of the simulated catalog files
+	format = fits
+
+	#Random seed used to generate multiple catalog realizations
+	seed = 0
+
+	#Set of lens planes to be used during ray tracing
+	plane_set = Planes
+
+	#N-body simulation realizations that need to be mixed
+	mix_nbody_realizations = 1
+	mix_cut_points = 0
+	mix_normals = 0
+	lens_catalog_realizations = 1
+
+	>>> from lenstools.pipeline.settings import CatalogSettings
+	>>> catalog_settings = CatalogSettings.read(lenstools.data("catalog_default.ini"))
+	>>> collection.newCatalog(catalog_settings)
+
+	[+] SimTest/Home/Om0.300_Ol0.700/Catalog created on localhost
+	[+] SimTest/Storage/Om0.300_Ol0.700/Catalog created on localhost
+
+Computer cluster offload
+------------------------
+
 
 Generating job submission scripts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -436,9 +585,97 @@ On Stampede you submit the jobs to the queue using the "sbatch" command:
 Generic job submissions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+lenstools provides functionality to distribute execution of arbitrary code throughout all your simulation batch. Suppose that you compiled an executable "myexec" for your own purposes; if this executable accepts the "-e" and "-c" options, i.e. you can run it like this
+
+::
+
+	mpiexec -n 16 ./myexec -e SimTest/Home/environment.ini -c code_options.ini "Om0.300_0.700|512b240|ic1"
+
+Then lenstools.submission can help you distribute the myexec execution across your simulation batch: you just have to include the following section in your "job.ini"
+
+::
+
+	[/path/to/myexec]
+
+	#Personal settings
+	email = apetri@phys.columbia.edu
+	charge_account = TG-AST140041
+
+	#Name of the job, output
+	job_name = myexecJob
+	redirect_stdout = myexec.out
+	redirect_stderr = myexec.err
+
+	#Resources
+	cores_per_simulation = 16
+	queue = development
+	wallclock_time = 02:00:00
+
+	#Script name
+	job_script_file = myexec.sh
+
+And, in a shell, type 
+
+::
+
+	lenstools.submission -e SimTest/Home/environment.ini -c code_options.ini -j job.ini -t "/path/to/myexec" SimTest/Home/realizations.txt
+
+to generate the submission script. 
+
+
 Job handlers for different clusters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Each computer cluster comes with its own job sheduler and job submission directives. lenstools facilitates the transition between clusters by translating the platform--independent options contained in "job.ini" into cluster specific directives through the :py:class:`~lenstools.pipeline.deploy.JobHandler` objects. Currently the "-s" switch that you can pass to lenstools.submission accepts the values "stampede" (that will select the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` handler) and "edison" (that will select :py:class:`~lenstools.pipeline.cluster.EdisonHandler`). Should you want to use a different computer cluster, this is what you have to do. Create a file called mycluster.py, and implement a class MyCluster as follows (this is just an example)
+
+::
+
+	#mycluster.py
+
+	from lenstools.pipeline.deploy import JobHandler
+	import astropy.units as u 
+
+	_SLURMspecs = {
+	"directive_prefix" : "#SBATCH",
+	"charge_account_switch" : "-A ",
+	"job_name_switch" : "-J ",
+	"stdout_switch" : "-o ",
+	"stderr_switch" : "-e ",
+	"num_cores_switch" : "-n ",
+	"num_nodes_switch" : "-N ",
+	"tasks_per_node_switch" : None,
+	"queue_type_switch" : "-p ",
+	"wallclock_time_switch" : "-t ",
+	"user_email_switch" : "--mail-user=",
+	"user_email_type" : "--mail-type=all",
+	}
+
+	_MyClusterSpecs = {
+	"shell_prefix" : "#!/bin/bash",
+	"execution_preamble" : None,
+	"job_starter" : "ibrun",
+	"cores_per_node" : 16,
+	"memory_per_node" : 32.0*u.Gbyte,
+	"cores_at_execution_switch" : "-n ",
+	"offset_switch" : "-o ",
+	"wait_switch" : "wait",
+	"multiple_executables_on_node" : True
+	}
+
+	class MyCluster(JobHandler):
+
+		"""
+		Job handler for my cluster 
+
+		"""
+
+		def setDirectives(self):
+			self._directives = Directives(**_SLURMspecs)
+
+		def setClusterSpecs(self):
+			self._cluster_specs = ClusterSpecs(**_MyClusterSpecs) 
+
+After doing this, you just need to pass the string "mycluster.MyCluster" to the "-s" switch when you run lenstools.submission and you are all set!
 
 
 Post processing
@@ -700,19 +937,55 @@ Create a INI configuration file "code_options.ini":
 
 	ensemble_name = gadget2_ps
 	nbody_realizations = 1,2-3
-	first_snapshot = 0
-	last_snapshot = 58
-	fft_grid_size = 256
-	kmin = 0.003 
-	kmax = 1.536 
+	first_snapshot = 46
+	last_snapshot = 47
+	fft_grid_size = 64
+	kmin = 0.06
+	kmax = 5.0 
 	length_unit = Mpc
-	num_k_bins = 50
+	num_k_bins = 10
 
 You deploy like this 
 
 ::
 
-	lenstools.execute-mpi -e SimTest/Home/environment.ini -c code_options.ini -m matter_power_spectrum -p powerSpectrumExecution "Om0.300_Ol0.700|512b240"
+	lenstools.execute-mpi -e SimTest/Home/environment.ini -c code_options.ini -m matter_power_spectrum.powerSpectrumExecution "Om0.300_Ol0.700|512b240"
+
+And this is an example output 
+
+::
+
+	04-21 17:32:lenstools.preamble:INFO: Importing lenstools.scripts.nbody.powerSpectrumExecution
+	04-21 17:32:lenstools.preamble:INFO: Executing: matterPowerSpectrum()
+	04-21 17:32:lenstools.preamble:INFO: Job configuration handler: PowerSpectrumSettings
+	04-21 17:32:lenstools.preamble:INFO: Keyword arguments: {'fmt': <class 'lenstools.simulations.gadget2.Gadget2Snapshot'>}
+	04-21 17:32:lenstools.preamble:INFO: Reading environment from SimTest/environment.ini
+	04-21 17:32:lenstools.preamble:INFO: Reading job configuration from code_options.ini
+	04-21 17:32:lenstools.driver:INFO: Measuring power spectrum for Ensemble gadget2_ps
+	04-21 17:32:lenstools.driver:INFO: The Ensemble will be built with the following N-body realizations: 1-2-3
+	04-21 17:32:lenstools.driver:INFO: First snapshot: 46
+	04-21 17:32:lenstools.driver:INFO: Last snapshot: 47
+	04-21 17:32:lenstools.driver:INFO: Minimum wavenumber: 0.0833333333333 1 / Mpc/h
+	04-21 17:32:lenstools.driver:INFO: Maximum wavenumber: 6.94444444444 1 / Mpc/h
+	04-21 17:32:lenstools.driver:INFO: Bin size: 0.686111111111 1 / Mpc/h
+	04-21 17:32:lenstools.driver:INFO: FFT grid size: 64
+	04-21 17:32:lenstools.driver:INFO: Number of bins: 10
+	04-21 17:32:lenstools.driver:INFO: Processing snapshot 46 of model Om0.300_Ol0.700|512b240
+	04-21 17:32:lenstools.driver:INFO: Allocated memory for power spectrum Ensemble (2, 10)
+	04-21 17:32:lenstools.driver:INFO: Processing N-body realization 1
+	04-21 17:32:lenstools.driver:INFO: Processing N-body realization 2
+	04-21 17:32:lenstools.driver:INFO: Processing N-body realization 3
+	04-21 17:32:lenstools.driver:INFO: Saving wavevectors (1 / Mpc/h) to SimTest/Home/Om0.300_Ol0.700/512b240/gadget2_ps/gadget2_ps_k.npy
+	04-21 17:32:lenstools.driver:INFO: Saving number of modes to SimTest/Home/Om0.300_Ol0.700/512b240/gadget2_ps/gadget2_ps_num_modes.npy
+	04-21 17:32:lenstools.driver:INFO: Saving power spectrum Ensemble (Mpc/h3) to SimTest/Home/Om0.300_Ol0.700/512b240/gadget2_ps/gadget2_ps_snap046.npy
+	04-21 17:32:lenstools.driver:INFO: Processing snapshot 47 of model Om0.300_Ol0.700/512b240|512b240
+	04-21 17:32:lenstools.driver:INFO: Allocated memory for power spectrum Ensemble (2, 10)
+	04-21 17:32:lenstools.driver:INFO: Processing N-body realization 1
+	04-21 17:32:lenstools.driver:INFO: Processing N-body realization 2
+	04-21 17:32:lenstools.driver:INFO: Processing N-body realization 3
+	04-21 17:32:lenstools.driver:INFO: Saving power spectrum Ensemble (Mpc/h3) to SimTest/Home/Om0.300_Ol0.700/512b240/gadget2_ps/gadget2_ps_snap047.npy
+	04-21 17:32:lenstools.driver:INFO: DONE!!
+	
 
 
 Default settings
