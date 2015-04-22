@@ -300,8 +300,8 @@ class SimulationBatch(object):
 		:param path: path into which to copy the current batch directory tree
 		:type path: str.
 
-		:param syshander: system handler (can be a remote)
-		:type syshander: SystemHandler
+		:param syshandler: system handler (can be a remote)
+		:type syshandler: SystemHandler
 
 		"""
 
@@ -360,7 +360,7 @@ class SimulationBatch(object):
 							plane_setCopy = rCopy.newPlaneSet(plane_set.settings)
 
 
-		#Return handle on the copied diretory tree
+		#Return handle on the copied directory tree
 		return batchCopy
 
 
@@ -1128,6 +1128,26 @@ class SimulationModel(object):
 			representation_parameters.append("{0}={1:.3f}".format(p,getattr(self.cosmology,name2attr[p])))
 
 		return "<"+ " , ".join(representation_parameters) + ">"
+
+	################################################################################################################################
+
+	def mkdir(self,directory):
+
+		"""
+		Create a sub-directory inside the current instance home and storage paths
+
+		:param directory: name of the directory to create
+		:type directory: str.
+
+		"""
+
+		for d in [self.home_subdir,self.storage_subdir]:
+
+			dir_to_make = os.path.join(d,directory)
+			
+			if not self.syshandler.exists(dir_to_make):
+				self.syshandler.mkdir(dir_to_make)
+				print("[+] {0} created on {1}".format(dir_to_make,self.syshandler.name))
 
 	################################################################################################################################
 
