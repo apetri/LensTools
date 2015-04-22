@@ -618,7 +618,7 @@ And, in a shell, type
 
 ::
 
-	lenstools.submission -e SimTest/Home/environment.ini -c code_options.ini -j job.ini -t "/path/to/myexec" SimTest/Home/realizations.txt
+	lenstools.submission -e SimTest/Home/environment.ini -o code_options.ini -j job.ini -t "/path/to/myexec" SimTest/Home/realizations.txt
 
 to generate the submission script. 
 
@@ -632,7 +632,7 @@ Each computer cluster comes with its own job sheduler and job submission directi
 
 	#mycluster.py
 
-	from lenstools.pipeline.deploy import JobHandler
+	from lenstools.pipeline.deploy import JobHandler,Directives,ClusterSpecs
 	import astropy.units as u 
 
 	_SLURMspecs = {
