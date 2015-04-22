@@ -24,7 +24,7 @@ type2section = {
 
 #Dictionary that converts command line argument into the appropriate job handler
 system2handler = {
-"stampede" : StampedeHandler,
+"Stampede" : StampedeHandler,
 "edison" : EdisonHandler
 }
 
@@ -53,10 +53,10 @@ environment = EnvironmentSettings.read(cmd_args.env_file)
 
 #Instantiate handler
 if cmd_args.system is not None:
-	system = cmd_args.system.lower()
+	system = cmd_args.system
 else:
 	print("[*] No system option provided, reading system type from $THIS environment variable")
-	system = os.getenv("THIS").lower()
+	system = os.getenv("THIS")
 	if system=="":
 		print("[-] $THIS environment variable is not set, cannot continue")
 		sys.exit(1)
@@ -86,7 +86,7 @@ with open(cmd_args.model_file,"r") as modelfile:
 print("[+] Found {0} realizations to include in job submission, to be split in {1} chunks".format(len(realizations),cmd_args.chunks))
 
 #Now decide which type of submission are we generating, and generate the script
-job_type = cmd_args.job_type.lower()
+job_type = cmd_args.job_type
 
 if job_type=="camb":
 
