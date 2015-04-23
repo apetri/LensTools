@@ -1151,6 +1151,30 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
+	def path(self,filename,where="storage_subdir"):
+
+		"""
+		Returns the complete path to the resource corresponding to filename; returns None if the resource does not exist
+
+		:param filename: name of the resource
+		:type filename: str.
+
+		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
+		:type where: str.
+
+		:returns: full path to the resource
+		:rtype: str.
+
+		"""
+
+		full_path = os.path.join(getattr(self,where),filename)
+		if not(self.syshandler.exists(full_path)):
+			return None
+
+		return full_path
+
+	################################################################################################################################
+
 	def newCollection(self,box_size=240.0*u.Mpc,nside=512):
 
 		"""
@@ -1955,25 +1979,6 @@ class SimulationPlanes(SimulationIC):
 		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
 		return " | ".join(parent_repr)
 
-	def path(self,filename):
-
-		"""
-		Returns the complete path to the lens plane corresponding to filename; returns None if no resource is found
-
-		:param filename: name of the resource
-		:type filename: str.
-
-		:returns: full path to the resource
-		:rtype: str.
-
-		"""
-
-		full_path = os.path.join(self.storage_subdir,filename)
-		if not(self.syshandler.exists(full_path)):
-			return None
-
-		return full_path
-
 
 ##############################################################
 ##############SimulationMaps class############################
@@ -2007,27 +2012,6 @@ class SimulationMaps(SimulationCollection):
 
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
-
-	####################################################################################################################################
-
-	def path(self,filename):
-
-		"""
-		Returns the complete path to the lens map corresponding to filename; returns None if no resource is found
-
-		:param filename: name of the resource
-		:type filename: str.
-
-		:returns: full path to the resource
-		:rtype: str.
-
-		"""
-
-		full_path = os.path.join(self.storage_subdir,filename)
-		if not(self.syshandler.exists(full_path)):
-			return None
-
-		return full_path
 
 	####################################################################################################################################
 
@@ -2093,27 +2077,6 @@ class SimulationCatalog(SimulationCollection):
 
 		#Build the new representation string
 		return super(SimulationCatalog,self).__repr__() + " | Catalog set: {0} | Catalog files on disk: {1} ".format(self.settings.directory_name,len(catalogs_on_disk))
-
-	####################################################################################################################################
-
-	def path(self,filename):
-
-		"""
-		Returns the complete path to the lens catalog corresponding to filename; returns None if no resource is found
-
-		:param filename: name of the resource
-		:type filename: str.
-
-		:returns: full path to the resource
-		:rtype: str.
-
-		"""
-
-		full_path = os.path.join(self.storage_subdir,filename)
-		if not(self.syshandler.exists(full_path)):
-			return None
-
-		return full_path
 
 	####################################################################################################################################
 
