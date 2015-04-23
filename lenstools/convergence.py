@@ -34,7 +34,7 @@ except ImportError:
 from scipy.ndimage import filters
 
 #Units
-from astropy.units import deg,arcmin,arcsec,rad,quantity
+import astropy.units as u
 
 #FITS
 from astropy.io import fits
@@ -69,9 +69,9 @@ class Spin0(object):
 
 		if self.side_angle.unit.physical_type=="angle":
 			
-			self.resolution = self.resolution.to(arcsec)
-			self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
-			self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
+			self.resolution = self.resolution.to(u.arcsec)
+			self.lmin = 2.0*np.pi/self.side_angle.to(u.rad).value
+			self.lmax = np.sqrt(2)*np.pi/self.resolution.to(u.rad).value
 		
 		self._masked = masked
 
@@ -122,7 +122,7 @@ class Spin0(object):
 
 			hdu = fits.open(filename)
 			data = hdu[0].data
-			angle = hdu[0].header["ANGLE"] * deg
+			angle = hdu[0].header["ANGLE"] * u.deg
 			hdu.close()
 
 		else:
@@ -163,7 +163,7 @@ class Spin0(object):
 			else:
 				hdu = fits.PrimaryHDU(self.data.astype(np.float32))
 
-			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"angle of the map in degrees")
+			hdu.header["ANGLE"] = (self.side_angle.to(u.deg).value,"angle of the map in degrees")
 			hdulist = fits.HDUList([hdu])
 			hdulist.writeto(filename,clobber=True)
 
@@ -248,24 +248,24 @@ class Spin0(object):
 		assert isinstance(x,np.ndarray) and isinstance(y,np.ndarray)
 
 		#x coordinates
-		if type(x)==quantity.Quantity:
+		if type(x)==u.quantity.Quantity:
 			
 			assert x.unit.physical_type=="angle"
 			j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 		else:
 
-			j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
+			j = np.mod((x / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[1])	
 
 		#y coordinates
-		if type(y)==quantity.Quantity:
+		if type(y)==u.quantity.Quantity:
 			
 			assert y.unit.physical_type=="angle"
 			i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
 
 		else:
 
-			i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+			i = np.mod((y / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[0])
 
 		#Return the map values at the specified coordinates
 		return self.data[i,j]
@@ -488,24 +488,24 @@ class Spin0(object):
 			assert x.shape==y.shape,"x and y must have the same shape!"
 
 			#x coordinates
-			if type(x)==quantity.Quantity:
+			if type(x)==u.quantity.Quantity:
 			
 				assert x.unit.physical_type==self.side_angle.unit.physical_type
 				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 			else:
 
-				j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
+				j = np.mod((x / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[1])	
 
 			#y coordinates
-			if type(y)==quantity.Quantity:
+			if type(y)==u.quantity.Quantity:
 			
 				assert y.unit.physical_type==self.side_angle.unit.physical_type
 				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
 
 			else:
 
-				i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+				i = np.mod((y / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[0])
 
 		else:
 			i = None
@@ -553,24 +553,24 @@ class Spin0(object):
 			assert x.shape==y.shape,"x and y must have the same shape!"
 
 			#x coordinates
-			if type(x)==quantity.Quantity:
+			if type(x)==u.quantity.Quantity:
 			
 				assert x.unit.physical_type==self.side_angle.unit.physical_type
 				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 			else:
 
-				j = np.mod((x / self.resolution.to(rad).value).astype(np.int32),self.data.shape[1])	
+				j = np.mod((x / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[1])	
 
 			#y coordinates
-			if type(y)==quantity.Quantity:
+			if type(y)==u.quantity.Quantity:
 			
 				assert y.unit.physical_type==self.side_angle.unit.physical_type
 				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
 
 			else:
 
-				i = np.mod((y / self.resolution.to(rad).value).astype(np.int32),self.data.shape[0])
+				i = np.mod((y / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[0])
 
 		else:
 			i = None
@@ -917,7 +917,7 @@ class Spin0(object):
 		ft_map = rfft2(self.data)
 
 		#Compute the power spectrum with the C backend implementation
-		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle.to(deg).value,l_edges)
+		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle.to(u.deg).value,l_edges)
 
 		#Output the power spectrum
 		return l,power_spectrum
@@ -954,7 +954,7 @@ class Spin0(object):
 				theta = kwargs["theta"]
 			else:
 				theta_min = 2.0*np.pi/lmax
-				theta = np.arange(theta_min,self.side_angle.to(rad).value,theta_min) * rad
+				theta = np.arange(theta_min,self.side_angle.to(u.rad).value,theta_min) * u.rad
 
 			assert theta.unit.physical_type=="angle"
 
@@ -965,10 +965,10 @@ class Spin0(object):
 			ell,Pell = self.powerSpectrum(l_edges)
 
 			#Use the hankel transform to measure the 2pcf
-			two_pcf = fht(0,ell,Pell,theta=theta.to(rad).value)[1]
+			two_pcf = fht(0,ell,Pell,theta=theta.to(u.rad).value)[1]
 
 			#Return
-			return theta.to(arcmin),two_pcf
+			return theta.to(u.arcmin),two_pcf
 
 		else:
 			raise NotImplementedError("2PCF algorithm {0} not implemented!".format(algorithm))
@@ -992,8 +992,8 @@ class Spin0(object):
 		assert l_edges is not None
 
 		#Determine the multipole values of each bin in the FFT grid
-		lx = fftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(rad).value
-		ly = rfftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(rad).value
+		lx = fftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
+		ly = rfftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
 		l_squared = lx[:,None]**2 + ly[None,:]**2
 
 		#Count how many of these pixels fall inside each bin
@@ -1052,7 +1052,7 @@ class Spin0(object):
 			ft_map2 = rfft2(other.data)
 
 			#Compute the cross power spectrum with the C backend implementation
-			cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(deg).value,l_edges)
+			cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(u.deg).value,l_edges)
 
 			#Output the cross power spectrum
 			return l,cross_power_spectrum
