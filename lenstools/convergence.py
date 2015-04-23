@@ -22,6 +22,9 @@ import numpy as np
 #FFT engines
 from numpy.fft import rfft2,irfft2,fftfreq
 
+#Hankel transform
+from utils import fht
+
 #Check if rfftfreq is implemented (requires numpy>=1.8)
 try:
 	from numpy.fft import rfftfreq
@@ -31,7 +34,7 @@ except ImportError:
 from scipy.ndimage import filters
 
 #Units
-from astropy.units import deg,arcsec,rad,quantity
+from astropy.units import deg,arcmin,arcsec,rad,quantity
 
 #FITS
 from astropy.io import fits
@@ -918,6 +921,57 @@ class Spin0(object):
 
 		#Output the power spectrum
 		return l,power_spectrum
+
+
+	def twoPointFunction(self,algorithm="FFT",**kwargs):
+
+		"""
+		Computes the two point function of the convergence
+
+		:param algorithm: algorithm used to measure the two point function. Can be "FFT"
+		:type algorithm: str.
+
+		:param kwargs: accepted keyword arguments are "theta" to specify the angles at which to measure the 2pcf. If none indicated, the angles are computed automatically
+		:type kwargs: dict.
+
+		:returns: (theta,2pcf(theta))
+		:rtype: tuple.
+
+		"""
+
+		if algorithm=="FFT":
+
+			#Maximum multipole to use in the calculation
+			if "lmax" in kwargs.keys():
+				lmax = kwargs["lmax"]
+			else:
+				lmax = self.lmax
+
+			assert lmax<=self.lmax,"You selected a maximum multipole {0:.3f} which is too high! (Maximum allowed {1:.3f}".format(lmax,self.lmax)
+
+			#Set angles at which to compute the 2pcf
+			if "theta" in kwargs.keys():
+				theta = kwargs["theta"]
+			else:
+				theta_min = 2.0*np.pi/lmax
+				theta = np.arange(theta_min,self.side_angle.to(rad).value,theta_min) * rad
+
+			assert theta.unit.physical_type=="angle"
+
+			#Select the multipoles to compute the power spectrum
+			l_edges = np.arange(self.lmin,lmax,self.lmin)
+
+			#Compute the power spectrum
+			ell,Pell = self.powerSpectrum(l_edges)
+
+			#Use the hankel transform to measure the 2pcf
+			two_pcf = fht(0,ell,Pell,theta=theta.to(rad).value)[1]
+
+			#Return
+			return theta.to(arcmin),two_pcf
+
+		else:
+			raise NotImplementedError("2PCF algorithm {0} not implemented!".format(algorithm))
 
 
 	def countModes(self,l_edges):

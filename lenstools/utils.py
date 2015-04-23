@@ -1,6 +1,7 @@
 from __future__ import division
-import numpy as np
 
+import numpy as np
+from scipy import special as sp,integrate
 from emcee.utils import MPIPool
 
 try:
@@ -27,6 +28,40 @@ def rfftfreq(n, d=1.0):
     N = n//2 + 1
     results = np.arange(0, N, dtype=int)
     return results * val
+
+####################################################################
+#################Hankel transforms##################################
+####################################################################
+
+def fht(n,l_binned,func,**kwargs):
+
+	if(kwargs.has_key('theta')):
+		theta = kwargs['theta']
+	else:
+		theta_min = 1.0/l_binned.max()
+		theta = l_binned*(theta_min/l_binned.min())
+
+	h_kernel = sp.jn(n,np.outer(l_binned,theta))
+	
+	integrand = np.dot(np.diag(l_binned*func),h_kernel) * (2*np.pi)
+	transform = integrate.simps(integrand,l_binned,axis=0)
+	
+	return theta,transform
+
+def ifht(n,l_binned,func,**kwargs):
+	
+	if(kwargs.has_key('theta')):
+		theta = kwargs['theta']
+	else:
+		theta_min = 1.0/l_binned.max()
+		theta = l_binned*(theta_min/l_binned.min())
+	
+	h_kernel = sp.jn(n,np.outer(l_binned,theta))
+	
+	integrand = np.dot(np.diag(l_binned*func),h_kernel) / (2*np.pi)
+	transform = integrate.simps(integrand,l_binned,axis=0)
+	
+	return theta,transform
 
 ###########################################################################
 ###########Hack to make scipy interpolate objects pickleable###############
