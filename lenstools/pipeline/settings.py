@@ -241,6 +241,19 @@ class MapSettings(object):
 		#Return to user
 		return settings
 
+
+###########################################################
+###########TelescopicMapSettings class#####################
+###########################################################
+
+class TelescopicMapSettings(MapSettings):
+
+	"""
+	Class handler of telescopic simulation map generation settings
+	
+	"""
+
+
 #####################################################
 ###########CatalogSettings class#####################
 #####################################################

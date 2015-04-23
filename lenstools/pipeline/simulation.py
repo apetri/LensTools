@@ -1175,6 +1175,39 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
+	def execute(self,filename,callback=None,where="storage_subdir",**kwargs):
+
+		"""
+		Calls a user defined function on the resource pointed to by filename; if None is provided, returns the full path to the map
+
+		:param filename: name of the file on which to call the callback
+		:type filename: str.
+
+		:param callback: user defined function that takes filename as first argument
+		:type callback: callable
+
+		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
+		:type where: str.
+
+		:param kwargs: key word arguments to be passed to callback
+		:type kwargs: dict.
+
+		:returns: the result of callback
+
+		"""
+
+		full_path = self.path(filename,where)
+		if full_path is None:
+			raise IOError("{0} does not exist!".format(filename))
+
+		if callback is None:
+			return full_path
+
+		#Call the function
+		return callback(full_path,**kwargs)
+
+	################################################################################################################################
+
 	def newCollection(self,box_size=240.0*u.Mpc,nside=512):
 
 		"""
@@ -1236,6 +1269,140 @@ class SimulationModel(object):
 				pass
 
 		return collection_list
+
+
+	################################################
+	############Telescopic map sets#################
+	################################################
+
+	def newTelescopicMapSet(self,collections,redshifts,settings):
+
+		"""
+		Create a new telescopic map set with the provided settings
+
+		:param collections: list of the SimulationCollection instances that participate in the telescopic map set
+		:type collections: list.
+
+		:param redshifts: redshifts that mark the transition from one collection to the other during raytracing
+		:type redshifts: array.
+
+		:param settings: settings for the new map set
+		:type settings: TelescopicMapSettings
+
+		:rtype: SimulationMaps
+
+		"""
+
+		#Safety check
+		assert isinstance(settings,MapSettings)
+
+		#Instantiate SimulationMaps object
+		map_set = SimulationTelescopicMaps(self.cosmology,self.environment,self.parameters,collections,redshifts,settings,syshandler=self.syshandler)
+
+		#Create dedicated directories
+		for d in [ map_set.home_subdir,map_set.storage_subdir ]:
+			if not self.syshandler.exists(d):
+				self.syshandler.mkdir(d)
+				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+
+		#Save a picked copy of the settings to use for future reference
+		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
+			self.syshandler.pickledump(settings,settingsfile)
+
+		#Append the name of the map batch to a summary file
+		with self.syshandler.open(os.path.join(self.home_subdir,"telescopic_map_sets.txt"),"a") as setsfile:
+			setsfile.write("{0},{1},{2}\n".format(map_set.name,"-".join([c.geometry_id for c in map_set.mapcollections]),"-".join(["{0:.3f}".format(z) for z in map_set.redshifts])))
+
+		#Return to user
+		return map_set
+
+	################################################################################################################################
+
+	def getTelescopicMapSet(self,setname):
+
+		"""
+		Return an instance of the telescopic map set named "name"
+
+		:param setname: name of the map set
+		:type setname: str.
+
+		:rtype: SimulationTelescopicMaps
+
+		"""
+
+		with self.syshandler.open(os.path.join(self.home_subdir,"telescopic_map_sets.txt"),"r") as setsfile:
+			
+			while True:
+				
+				line = setsfile.readline().strip("\n")
+				if line=="":
+					return None
+
+				name,colnames,rednames = line.rstrip("\n").split(",")
+
+				if name!=setname:
+					continue
+
+				#Pickle the settings
+				with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"r") as settingsfile:
+					settings = self.syshandler.pickleload(settingsfile)
+
+				#Parse the collections
+				collections = list()
+				for colname in colnames.split("-"):
+					nside,box_size = colname.split("b")
+					nside = int(nside)
+					box_size = float(box_size) * self.Mpc_over_h
+					collections.append(self.getCollection(box_size,nside))
+
+				#Parse the redshifts
+				redshifts = np.array([ float(z) for z in rednames.split("-") ])
+
+				#Return
+				return SimulationTelescopicMaps(self.cosmology,self.environment,self.parameters,collections,redshifts,settings,syshandler=self.syshandler)
+
+
+	################################################################################################################################
+
+	@property
+	def telescopicmapsets(self):
+
+		"""
+		Lists all the available telescopic map sets for a model
+
+		:returns: list.
+		:rtype: SimulationTelescopicMaps
+
+		"""
+
+		map_sets = list()
+		with self.syshandler.open(os.path.join(self.home_subdir,"telescopic_map_sets.txt"),"r") as setsfile:
+			lines = setsfile.readlines()
+
+		for line in lines:
+
+			name,colnames,rednames = line.rstrip("\n").split(",")
+
+			#Pickle the settings
+			with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"r") as settingsfile:
+				settings = self.syshandler.pickleload(settingsfile)
+
+			#Parse the collections
+			collections = list()
+			for colname in colnames.split("-"):
+				nside,box_size = colname.split("b")
+				nside = int(nside)
+				box_size = float(box_size) * self.Mpc_over_h
+				collections.append(self.getCollection(box_size,nside))
+
+			#Parse the redshifts
+			redshifts = np.array([ float(z) for z in rednames.split("-") ])
+
+			#Append the telescopic map instance to map_sets
+			map_sets.append(SimulationTelescopicMaps(self.cosmology,self.environment,self.parameters,collections,redshifts,settings,syshandler=self.syshandler))
+
+		#Return to user
+		return map_sets
 
 
 ##########################################################
@@ -2013,35 +2180,44 @@ class SimulationMaps(SimulationCollection):
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
 
-	####################################################################################################################################
+	
 
-	def execute(self,filename,callback=None,**kwargs):
 
-		"""
-		Calls a user defined function on the map file pointed to by filename; if None is provided, returns the full path to the map
+########################################################################
+##############SimulationTelescopicMaps class############################
+########################################################################
 
-		:param filename: name of the file on which to call the callback
-		:type filename: str.
+class SimulationTelescopicMaps(SimulationModel):
 
-		:param callback: user defined function that takes filename as first argument
-		:type callback: callable
+	"""
+	Class handler of a set of lensing telescopic maps, which are the final products of the lensing pipeline
 
-		:param kwargs: key word arguments to be passed to callback
-		:type kwargs: dict.
+	"""
 
-		:returns: the result of callback
 
-		"""
+	def __init__(self,cosmology,environment,parameters,collections,redshifts,settings,**kwargs):
 
-		full_path = self.path(filename)
-		if full_path is None:
-			raise IOError("{0} does not exist!".format(filename))
+		assert redshifts[0]==0.0,"First redshift should be 0!"
+		assert len(redshifts)==len(collections)
+		assert isinstance(settings,TelescopicMapSettings)
 
-		if callback is None:
-			return full_path
+		super(SimulationTelescopicMaps,self).__init__(cosmology,environment,parameters,**kwargs)
+		self.mapcollections = collections
+		self.redshifts = redshifts
+		self.settings = settings
+		self.name = settings.directory_name
 
-		#Call the function
-		return callback(full_path,**kwargs)
+		#Build the directory names
+		self.home_subdir = os.path.join(self.environment.home,self.cosmo_id,self.name)
+		self.storage_subdir = os.path.join(self.environment.storage,self.cosmo_id,self.name)
+
+	def __repr__(self):
+
+		#Count the number of map files on disk
+		maps_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"WL*"))
+
+		#Build the new representation string
+		return super(SimulationTelescopicMaps,self).__repr__() + " | " + "-".join([c.geometry_id for c in self.mapcollections]) + " | " + "-".join([ "{0:.3f}".format(z) for z in self.redshifts ]) +" | Map files on disk: {0}".format(len(maps_on_disk))
 
 
 
@@ -2077,36 +2253,6 @@ class SimulationCatalog(SimulationCollection):
 
 		#Build the new representation string
 		return super(SimulationCatalog,self).__repr__() + " | Catalog set: {0} | Catalog files on disk: {1} ".format(self.settings.directory_name,len(catalogs_on_disk))
-
-	####################################################################################################################################
-
-	def execute(self,filename,callback=None,**kwargs):
-
-		"""
-		Calls a user defined function on the catalog file pointed to by filename; if None is provided, returns the full path to the map
-
-		:param filename: name of the file on which to call the callback
-		:type filename: str.
-
-		:param callback: user defined function that takes filename as first argument
-		:type callback: callable
-
-		:param kwargs: key word arguments to be passed to callback
-		:type kwargs: dict.
-
-		:returns: the result of callback
-
-		"""
-
-		full_path = self.path(filename)
-		if full_path is None:
-			raise IOError("{0} does not exist!".format(filename))
-
-		if callback is None:
-			return full_path
-
-		#Call the function
-		return callback(full_path,**kwargs)
 
 
 
