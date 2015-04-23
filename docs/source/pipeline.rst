@@ -528,11 +528,11 @@ Each computer cluster comes with its own computing environment, its own job sche
 	#Script name
 	job_script_file = gadget.sh
 
-lenstools provides a command line script, lenstools.submission, that will take care of the script generation. The "-s" flag can be used to specify the system we are running on; if not specified, the system is detected automatically looking at the value of the "THIS" environment variable. For example the "-s stampede" option will generate the submission scripts for the `Stampede <https://portal.xsede.org/tacc-stampede>`_ computer cluster through the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` job handler. Here it is an example on how the script is generated: from the command line run
+lenstools provides a command line script, lenstools.submission, that will take care of the script generation. The "-s" flag can be used to specify the system we are running on; if not specified, the system is detected automatically looking at the value of the "THIS" environment variable. For example the "-s Stampede" option will generate the submission scripts for the `Stampede <https://portal.xsede.org/tacc-stampede>`_ computer cluster through the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` job handler. Here it is an example on how the script is generated: from the command line run
 
 ::
 
-	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede SimTest/Home/realizations.txt
 
 In short, the "-e" switch will make sure that we are pointing to the right simulation batch, the "-j" switch will point to the correct platform--independent job option file, the "-t" switch specifies which job submission script we are generating and the realizations.txt file contains a list of the realizations that the script will process. For example if the contents of "realizations.txt" are
 
@@ -546,26 +546,26 @@ the job submission will process the Om0.300_Ol0.700 model, collection of simulat
 
 ::
 
-	 lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt --chunks 3
+	 lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede SimTest/Home/realizations.txt --chunks 3
 
 will generate 3 job submission scripts, each of which will take care of one of the initial conditions
 
 ::
 
-	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt --chunks 3 --one-script
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede SimTest/Home/realizations.txt --chunks 3 --one-script
 
 will generate one job submission script, in which the 3 initial conditions are processed one after the other, starting with the first. This job will run on 256 cores
 
 ::
 
-	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s stampede SimTest/Home/realizations.txt
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede SimTest/Home/realizations.txt
 
 will generate one submission script, in which the 3 initial conditions are processed in parallel. This job will run on 768 cores. This is the output of this execution of lenstools.submission
 
 ::
 
 	[*] Environment settings for current batch read from SimTest/Home/environment.ini
-	[+] Using job handler for system stampede
+	[+] Using job handler for system Stampede
 	[*] Current batch home directory: SimTest/Home
 	[*] Current batch mass storage: SimTest/Storage	
 	[*] Realizations to include in this submission will be read from realizations.txt
@@ -626,7 +626,7 @@ to generate the submission script.
 Job handlers for different clusters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each computer cluster comes with its own job sheduler and job submission directives. lenstools facilitates the transition between clusters by translating the platform--independent options contained in "job.ini" into cluster specific directives through the :py:class:`~lenstools.pipeline.deploy.JobHandler` objects. Currently the "-s" switch that you can pass to lenstools.submission accepts the values "stampede" (that will select the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` handler) and "edison" (that will select :py:class:`~lenstools.pipeline.cluster.EdisonHandler`). Should you want to use a different computer cluster, this is what you have to do. Create a file called mycluster.py, and implement a class MyCluster as follows (this is just an example)
+Each computer cluster comes with its own job sheduler and job submission directives. lenstools facilitates the transition between clusters by translating the platform--independent options contained in "job.ini" into cluster specific directives through the :py:class:`~lenstools.pipeline.deploy.JobHandler` objects. Currently the "-s" switch that you can pass to lenstools.submission accepts the values "Stampede" (that will select the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` handler) and "edison" (that will select :py:class:`~lenstools.pipeline.cluster.EdisonHandler`). Should you want to use a different computer cluster, this is what you have to do. Create a file called mycluster.py, and implement a class MyCluster as follows (this is just an example)
 
 ::
 
@@ -1005,6 +1005,13 @@ You can visualize the default INI configuration files for the different steps in
 
 	#Default catalog production options
 	lenstools.showData("catalog_default.ini")
+
+Class inheritance
+-----------------
+
+This is a simplifying scheme of the class inheritance used in the lenstools pipeline 
+
+.. figure:: inheritance.png
 
 
 
