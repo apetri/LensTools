@@ -79,7 +79,10 @@ def singleRedshift(pool,batch,settings,id):
 	##################################################################
 
 	#Set random seed to generate the realizations
-	np.random.seed(settings.seed)
+	if pool is not None:
+		np.random.seed(settings.seed + pool.rank)
+	else:
+		np.random.seed(settings.seed)
 
 	#Read map angle,redshift and resolution from the settings
 	map_angle = settings.map_angle
@@ -283,7 +286,10 @@ def simulatedCatalog(pool,batch,settings,id):
 	##################################################################
 
 	#Set random seed to generate the realizations
-	np.random.seed(settings.seed)
+	if pool is not None:
+		np.random.seed(settings.seed + pool.rank)
+	else:
+		np.random.seed(settings.seed)
 
 	#Read the catalog save path from the settings
 	catalog_save_path = catalog.storage_subdir
