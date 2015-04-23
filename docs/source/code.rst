@@ -137,7 +137,7 @@ Directory tree handling
 	:members: current,available,info,newModel,getModel,writeCAMBSubmission,writeNGenICSubmission,writeGadget2Submission,writePlaneSubmission,writeRaySubmission
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationModel
-	:members: path,mkdir,newCollection,getCollection,collections
+	:members: path,mkdir,newCollection,getCollection,collections,newTelescopicMapSet,getTelescopicMapSet,telescopicmapsets
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationCollection
 	:members: newRealization,getRealization,realizations,newMapSet,getMapSet,writeCAMB,camb2ngenic
@@ -148,6 +148,8 @@ Directory tree handling
 .. autoclass:: lenstools.pipeline.simulation.SimulationPlanes
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationMaps
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationTelescopicMaps
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationCatalog
 
@@ -171,6 +173,9 @@ Tunable settings
 	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.settings.MapSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.TelescopicMapSettings
 	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.settings.CatalogSettings
