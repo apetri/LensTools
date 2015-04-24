@@ -1302,7 +1302,23 @@ class SimulationModel(object):
 		"""
 
 		#Safety check
-		assert isinstance(settings,MapSettings)
+		assert isinstance(settings,TelescopicMapSettings)
+		assert type(settings.plane_set)==tuple
+		assert type(settings.mix_nbody_realizations)==tuple
+		assert type(settings.mix_cut_points)==tuple
+		assert type(settings.mix_normals)==tuple
+
+		#Adjust according to number of collections (one specification for each different collection to use)
+		for attr_name in ["plane_set","mix_nbody_realizations","mix_cut_points","mix_normals"]:
+			
+			attr = getattr(settings,attr_name)
+
+			if len(attr)!=len(collections):
+				if len(attr)==1:
+					setattr(settings,attr_name,attr*len(collections))
+				else:
+					raise ValueError("You need to specify a {0} for each collection!".format(attr_name)) 
+
 
 		#Instantiate SimulationMaps object
 		map_set = SimulationTelescopicMaps(self.cosmology,self.environment,self.parameters,collections,redshifts,settings,syshandler=self.syshandler)
@@ -1379,8 +1395,12 @@ class SimulationModel(object):
 		"""
 
 		map_sets = list()
-		with self.syshandler.open(os.path.join(self.home_subdir,"telescopic_map_sets.txt"),"r") as setsfile:
-			lines = setsfile.readlines()
+
+		try:
+			with self.syshandler.open(os.path.join(self.home_subdir,"telescopic_map_sets.txt"),"r") as setsfile:
+				lines = setsfile.readlines()
+		except IOError:
+			return map_sets
 
 		for line in lines:
 

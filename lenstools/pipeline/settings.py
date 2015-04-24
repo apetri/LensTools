@@ -1,4 +1,5 @@
 import os
+import ast
 
 from distutils import config
 from ConfigParser import NoOptionError
@@ -168,6 +169,8 @@ class MapSettings(object):
 
 	"""
 
+	_section = "MapSettings"
+
 	def __init__(self,**kwargs):
 
 		self._init_commmon()
@@ -223,7 +226,7 @@ class MapSettings(object):
 		options.read([config_file])
 
 		#Check that the config file has the appropriate section
-		section = "MapSettings"
+		section = cls._section
 		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
 
 		#Fill in the appropriate fields
@@ -276,6 +279,32 @@ class TelescopicMapSettings(MapSettings):
 	Class handler of telescopic simulation map generation settings
 	
 	"""
+
+	_section = "TelescopicMapSettings"
+
+	def _init_plane_set(self):
+
+		#Set of lens planes to be used during ray tracing
+		self.plane_set = ("Planes",)
+
+	def _init_randomizer(self):
+
+		#N-body simulation realizations that need to be mixed
+		self.mix_nbody_realizations = ([1],)
+		self.mix_cut_points = ([0],)
+		self.mix_normals = ([0],)
+		self.lens_map_realizations = 4
+
+	def _read_plane_set(self,options,section):
+		self.plane_set = tuple(options.get(section,"plane_set").split(","))
+
+	def _read_randomizer(self,options,section):
+
+		self.mix_nbody_realizations = ast.literal_eval(options.get(section,"mix_nbody_realizations"))
+		self.lens_map_realizations = options.getint(section,"lens_map_realizations")
+		self.mix_cut_points = ast.literal_eval(options.get(section,"mix_cut_points"))
+		self.mix_normals = ast.literal_eval(options.get(section,"mix_normals"))
+
 
 
 #####################################################
