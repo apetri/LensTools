@@ -95,6 +95,16 @@ if lens_settings.has_section("MapSettings"):
 	for batch_id in cmd_args.id:
 		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,id=batch_id)
 
+elif lens_settings.has_section("TelescopicMapSettings"):
+
+	if (pool is None) or (pool.is_master()):
+		logpreamble.info("Starting the production of weak lensing simulated Maps (telescopic)")
+	map_settings = TelescopicMapSettings.read(cmd_args.config_file)
+
+	#Cycle over ids to produce the planes
+	for batch_id in cmd_args.id:
+		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,id=batch_id)
+
 elif lens_settings.has_section("CatalogSettings"):
 
 	if (pool is None) or (pool.is_master()):

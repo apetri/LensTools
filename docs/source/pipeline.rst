@@ -1003,6 +1003,9 @@ You can visualize the default INI configuration files for the different steps in
 	#Default lensing options
 	lenstools.showData("lens_default.ini")
 
+	#Default telescopic lensing options
+	lenstools.showData("telescopic_default.ini")
+
 	#Default catalog production options
 	lenstools.showData("catalog_default.ini")
 

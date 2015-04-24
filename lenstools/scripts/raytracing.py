@@ -60,8 +60,9 @@ def singleRedshift(pool,batch,settings,id):
 		model = batch.getModel(cosmo_id)
 
 		#Get the corresponding simulation collection and map batch handlers
-		collection = model.getCollection(geometry_id)
-		map_batch = collection.getMapSet(settings.directory_name)
+		collection = [model.getCollection(geometry_id)]
+		map_batch = collection[0].getMapSet(settings.directory_name)
+		cut_redshifts = np.array([0.0])
 
 	elif len(parts)==1:
 
@@ -73,6 +74,7 @@ def singleRedshift(pool,batch,settings,id):
 		#Get the corresponding simulation collection and map batch handlers
 		map_batch = model.getTelescopicMapSet(settings.directory_name)
 		collection = map_batch.mapcollections
+		cut_redshifts = map_batch.redshifts
 
 	else:
 		
@@ -107,10 +109,45 @@ def singleRedshift(pool,batch,settings,id):
 	map_angle = settings.map_angle
 	source_redshift = settings.source_redshift
 	resolution = settings.map_resolution
-	nbody_realizations = settings.mix_nbody_realizations
-	cut_points = settings.mix_cut_points
-	normals = settings.mix_normals
-	map_realizations = settings.lens_map_realizations
+
+	if len(parts)==2:
+
+		#########################
+		#Use a single collection#
+		#########################
+
+		#Read the plane set we should use
+		plane_set = (settings.plane_set,)
+
+		#Randomization
+		nbody_realizations = (settings.mix_nbody_realizations,)
+		cut_points = (settings.mix_cut_points,)
+		normals = (settings.mix_normals,)
+		map_realizations = settings.lens_map_realizations
+
+	elif len(parts)==1:
+
+		#######################
+		#####Telescopic########
+		#######################
+
+		#Check that we have enough info
+		for attr_name in ["plane_set","mix_nbody_realizations","mix_cut_points","mix_normals"]:
+			if len(getattr(settings,attr_name))!=len(collection):
+				if (pool is None) or (pool.is_master()):
+					logdriver.error("You need to specify a setting {0} for each collection!".format(attr_name))
+				sys.exit(1)
+
+		#Read the plane set we should use
+		plane_set = settings.plane_set
+
+		#Randomization
+		nbody_realizations = settings.mix_nbody_realizations
+		cut_points = settings.mix_cut_points
+		normals = settings.mix_normals
+		map_realizations = settings.lens_map_realizations
+
+
 
 	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
 	if pool is None:
@@ -125,26 +162,29 @@ def singleRedshift(pool,batch,settings,id):
 		logdriver.debug("Task {0} will generate lensing map realizations from {1} to {2}".format(pool.rank,first_map_realization+1,last_map_realization))
 
 	#Planes will be read from this path
-	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
+	plane_path = os.path.join("{0}","ic{1}","{2}")
 
 	if (pool is None) or (pool.is_master()):
-		logdriver.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
+		for c,coll in enumerate(collection):
+			logdriver.info("Reading planes from {0}".format(plane_path.format(coll.storage_subdir,"-".join([str(n) for n in nbody_realizations[c]]),plane_set[c])))
 
 	#Read how many snapshots are available
-	with open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r") as infofile:
+	#TODO: Info file is the same for all
+	with open(os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt"),"r") as infofile:
 		num_snapshots = len(infofile.readlines())
 
 	#Construct the randomization matrix that will differentiate between realizations; this needs to have shape map_realizations x num_snapshots x 3 (ic+cut_points+normals)
+	#TODO: Adapt randomizer matrix in the case we are running telescopic simulations
 	randomizer = np.zeros((map_realizations,num_snapshots,3),dtype=np.int)
-	randomizer[:,:,0] = np.random.randint(low=0,high=len(nbody_realizations),size=(map_realizations,num_snapshots))
-	randomizer[:,:,1] = np.random.randint(low=0,high=len(cut_points),size=(map_realizations,num_snapshots))
-	randomizer[:,:,2] = np.random.randint(low=0,high=len(normals),size=(map_realizations,num_snapshots))
+	randomizer[:,:,0] = np.random.randint(low=0,high=len(nbody_realizations[0]),size=(map_realizations,num_snapshots))
+	randomizer[:,:,1] = np.random.randint(low=0,high=len(cut_points[0]),size=(map_realizations,num_snapshots))
+	randomizer[:,:,2] = np.random.randint(low=0,high=len(normals[0]),size=(map_realizations,num_snapshots))
 
 	if (pool is None) or (pool.is_master()):
 		logdriver.debug("Randomization matrix has shape {0}".format(randomizer.shape))
 
 	#Save path for the maps
-	save_path = os.path.join(map_batch.storage_subdir)
+	save_path = map_batch.storage_subdir
 
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Lensing maps will be saved to {0}".format(save_path))
@@ -165,7 +205,7 @@ def singleRedshift(pool,batch,settings,id):
 		#############################################################
 
 		#Open the info file to read the lens specifications (assume the info file is the same for all nbody realizations)
-		infofile = open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r")
+		infofile = open(os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt"),"r")
 
 		#Read the info file line by line, and decide if we should add the particular lens corresponding to that line or not
 		for s in range(num_snapshots):
@@ -190,9 +230,12 @@ def singleRedshift(pool,batch,settings,id):
 
 			lens_redshift = float(line[2].split("=")[1])
 
+			#TODO: this needs to be computed: it's the collection to use at each redshift
+			c = 0
+
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]]))
+			plane_name = os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][randomizer[r,s,0]],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][randomizer[r,s,1]],normals[c][randomizer[r,s,2]]))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
