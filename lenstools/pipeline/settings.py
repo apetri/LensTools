@@ -170,6 +170,16 @@ class MapSettings(object):
 
 	def __init__(self,**kwargs):
 
+		self._init_commmon()
+		self._init_plane_set()
+		self._init_randomizer()
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+	def _init_commmon(self):
+
 		#Names of the map batch
 		self.directory_name = "Maps"
 
@@ -185,8 +195,17 @@ class MapSettings(object):
 		#Random seed used to generate multiple map realizations
 		self.seed = 0
 
+		#Which lensing quantities do we need?
+		self.convergence = True
+		self.shear = False
+		self.omega = False
+
+	def _init_plane_set(self):
+
 		#Set of lens planes to be used during ray tracing
 		self.plane_set = "Planes"
+
+	def _init_randomizer(self):
 
 		#N-body simulation realizations that need to be mixed
 		self.mix_nbody_realizations = [1]
@@ -194,14 +213,7 @@ class MapSettings(object):
 		self.mix_normals = [0]
 		self.lens_map_realizations = 4
 
-		#Which lensing quantities do we need?
-		self.convergence = True
-		self.shear = False
-		self.omega = False
-
-		#Allow for kwargs override
-		for key in kwargs.keys():
-			setattr(self,key,kwargs[key])
+	###############################################################################################################################################
 
 	@classmethod
 	def read(cls,config_file):
@@ -217,29 +229,41 @@ class MapSettings(object):
 		#Fill in the appropriate fields
 		settings = cls()
 
-		settings.directory_name = options.get(section,"directory_name")
-		settings.override_with_local = options.getboolean(section,"override_with_local")
-		settings.format = options.get(section,"format")
-		settings.map_resolution = options.getint(section,"map_resolution")
-		
-		settings.angle_unit = getattr(u,options.get(section,"angle_unit"))
-		settings.map_angle = options.getfloat(section,"map_angle") * settings.angle_unit
-		
-		settings.source_redshift = options.getfloat(section,"source_redshift")
-
-		settings.seed = options.getint(section,"seed")
-		settings.plane_set = options.get(section,"plane_set")
-		settings.mix_nbody_realizations = [ int(n) for n in options.get(section,"mix_nbody_realizations").split(",") ]
-		settings.lens_map_realizations = options.getint(section,"lens_map_realizations")
-		settings.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
-		settings.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ]
-
-		settings.convergence = options.getboolean(section,"convergence")
-		settings.shear = options.getboolean(section,"shear")
-		settings.omega = options.getboolean(section,"omega")
+		settings._read_common(options,section)
+		settings._read_plane_set(options,section)
+		settings._read_randomizer(options,section)
 
 		#Return to user
 		return settings
+
+	def _read_common(self,options,section):
+
+		self.directory_name = options.get(section,"directory_name")
+		self.override_with_local = options.getboolean(section,"override_with_local")
+		self.format = options.get(section,"format")
+		self.map_resolution = options.getint(section,"map_resolution")
+		
+		self.angle_unit = getattr(u,options.get(section,"angle_unit"))
+		self.map_angle = options.getfloat(section,"map_angle") * self.angle_unit
+		
+		self.source_redshift = options.getfloat(section,"source_redshift")
+
+		self.seed = options.getint(section,"seed")
+
+		self.convergence = options.getboolean(section,"convergence")
+		self.shear = options.getboolean(section,"shear")
+		self.omega = options.getboolean(section,"omega")
+
+	def _read_plane_set(self,options,section):
+		self.plane_set = options.get(section,"plane_set")
+
+	def _read_randomizer(self,options,section):
+
+		self.mix_nbody_realizations = [ int(n) for n in options.get(section,"mix_nbody_realizations").split(",") ]
+		self.lens_map_realizations = options.getint(section,"lens_map_realizations")
+		self.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
+		self.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ] 
+
 
 
 ###########################################################
