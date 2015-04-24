@@ -542,7 +542,7 @@ In short, the "-e" switch will make sure that we are pointing to the right simul
 	Om0.300_Ol0.700|512b240|ic2
 	Om0.300_Ol0.700|512b240|ic3
 
-the job submission will process the Om0.300_Ol0.700 model, collection of simulations with :math:`512^3` particles and 240.0Mpc/h box size, initial conditions from 1 to 3. You can additionally specify the --chunks and --one-script options to change the number of simulations that are processed in parallel.
+the job submission will process the Om0.300_Ol0.700 model, collection of simulations with :math:`512^3` particles and 240.0Mpc/h box size, initial conditions from 1 to 3. You can additionally specify the --chunks and --one options to change the number of simulations that are processed in parallel.
 
 ::
 
@@ -552,7 +552,7 @@ will generate 3 job submission scripts, each of which will take care of one of t
 
 ::
 
-	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede SimTest/Home/realizations.txt --chunks 3 --one-script
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede SimTest/Home/realizations.txt --chunks 3 --one
 
 will generate one job submission script, in which the 3 initial conditions are processed one after the other, starting with the first. This job will run on 256 cores
 
