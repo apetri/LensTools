@@ -1233,7 +1233,15 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
-	def getCollection(self,box_size,nside):
+	def getCollection(self,box_size,nside=None):
+
+		#Allow to pass a geometry_id as first argument
+		if type(box_size)==str:
+			parts = box_size.split("b")
+			nside = int(parts[0])
+			box_size = float(parts[1]) * self.Mpc_over_h
+
+		assert nside is not None,"if you did not specify the second argument, it means the first should be in the form 'xxxbyyy'"
 
 		#See if the collection exists
 		collection = SimulationCollection(self.cosmology,self.environment,self.parameters,box_size,nside,syshandler=self.syshandler)
@@ -1348,12 +1356,7 @@ class SimulationModel(object):
 					settings = self.syshandler.pickleload(settingsfile)
 
 				#Parse the collections
-				collections = list()
-				for colname in colnames.split("-"):
-					nside,box_size = colname.split("b")
-					nside = int(nside)
-					box_size = float(box_size) * self.Mpc_over_h
-					collections.append(self.getCollection(box_size,nside))
+				collections = [ self.getCollection(colname) for colname in colnames.split("-") ]
 
 				#Parse the redshifts
 				redshifts = np.array([ float(z) for z in rednames.split("-") ])
@@ -1388,12 +1391,7 @@ class SimulationModel(object):
 				settings = self.syshandler.pickleload(settingsfile)
 
 			#Parse the collections
-			collections = list()
-			for colname in colnames.split("-"):
-				nside,box_size = colname.split("b")
-				nside = int(nside)
-				box_size = float(box_size) * self.Mpc_over_h
-				collections.append(self.getCollection(box_size,nside))
+			collections = [ self.getCollection(colname) for colname in colnames.split("-") ]
 
 			#Parse the redshifts
 			redshifts = np.array([ float(z) for z in rednames.split("-") ])

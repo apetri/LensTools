@@ -54,12 +54,8 @@ def singleRedshift(pool,batch,settings,id):
 	#Get a handle on the model
 	model = batch.getModel(cosmo_id)
 
-	#Scale the box size to the correct units
-	nside,box_size = geometry_id.split("b")
-	box_size = float(box_size)*model.Mpc_over_h
-
 	#Get the corresponding simulation collection and map batch handlers
-	collection = model.getCollection(box_size,nside)
+	collection = model.getCollection(geometry_id)
 	map_batch = collection.getMapSet(settings.directory_name)
 
 	#Override the settings with the previously pickled ones, if prompted by user
