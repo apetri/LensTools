@@ -56,8 +56,8 @@ logpreamble.info("Reading lensing configuration from {0}".format(cmd_args.config
 lens_settings = config.ConfigParser()
 lens_settings.read([cmd_args.config_file])
 
-if not(lens_settings.has_section("MapSettings")^lens_settings.has_section("CatalogSettings")):
-	logpreamble.error("Lens configuration file {0} should have only one between the MapSettings and CatalogSettings sections!".format(cmd_args.config_file))
+if not(lens_settings.has_section("MapSettings")^lens_settings.has_section("TelescopicMapSettings")^lens_settings.has_section("CatalogSettings")):
+	logpreamble.error("Lens configuration file {0} should have only one between the MapSettings, TelescopicMapSettings and CatalogSettings sections!".format(cmd_args.config_file))
 	sys.exit(1)
 
 

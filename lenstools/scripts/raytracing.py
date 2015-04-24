@@ -20,7 +20,7 @@ from lenstools.catalog import Catalog,ShearCatalog
 
 from lenstools.simulations.raytracing import RayTracer
 from lenstools.pipeline.simulation import SimulationBatch
-from lenstools.pipeline.settings import MapSettings,CatalogSettings
+from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,CatalogSettings
 
 import numpy as np
 import astropy.units as u
@@ -46,17 +46,40 @@ def singleRedshift(pool,batch,settings,id):
 	#Safety check
 	assert isinstance(pool,MPIWhirlPool) or (pool is None)
 	assert isinstance(batch,SimulationBatch)
-	assert isinstance(settings,MapSettings)
 
-	#Separate the id into cosmo_id and geometry_id
-	cosmo_id,geometry_id = id.split("|")
+	parts = id.split("|")
 
-	#Get a handle on the model
-	model = batch.getModel(cosmo_id)
+	if len(parts)==2:
 
-	#Get the corresponding simulation collection and map batch handlers
-	collection = model.getCollection(geometry_id)
-	map_batch = collection.getMapSet(settings.directory_name)
+		assert isinstance(settings,MapSettings)
+	
+		#Separate the id into cosmo_id and geometry_id
+		cosmo_id,geometry_id = parts
+
+		#Get a handle on the model
+		model = batch.getModel(cosmo_id)
+
+		#Get the corresponding simulation collection and map batch handlers
+		collection = model.getCollection(geometry_id)
+		map_batch = collection.getMapSet(settings.directory_name)
+
+	elif len(parts)==1:
+
+		assert isinstance(settings,TelescopicMapSettings)
+
+		#Get a handle on the model
+		model = batch.getModel(parts[0])
+
+		#Get the corresponding simulation collection and map batch handlers
+		map_batch = model.getTelescopicMapSet(settings.directory_name)
+		collection = map_batch.mapcollections
+
+	else:
+		
+		if (pool is None) or (pool.is_master()):
+			logdriver.error("Format error in {0}: too many |".format(id))
+		sys.exit(1)
+
 
 	#Override the settings with the previously pickled ones, if prompted by user
 	if settings.override_with_local:

@@ -68,10 +68,10 @@ if (pool is None) or (pool.is_master()):
 lens_settings = config.ConfigParser()
 lens_settings.read([cmd_args.config_file])
 
-if not(lens_settings.has_section("MapSettings")^lens_settings.has_section("CatalogSettings")):
+if not(lens_settings.has_section("MapSettings")^lens_settings.has_section("TelescopicMapSettings")^lens_settings.has_section("CatalogSettings")):
 	
 	if (pool is None) or (pool.is_master()):
-		logpreamble.error("Lens configuration file {0} should have only one between the MapSettings and CatalogSettings sections!".format(cmd_args.config_file))
+		logpreamble.error("Lens configuration file {0} should have only one between the MapSettings, TelescopicMapSettings and CatalogSettings sections!".format(cmd_args.config_file))
 	
 	sys.exit(1)
 
