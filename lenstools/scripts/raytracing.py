@@ -173,16 +173,6 @@ def singleRedshift(pool,batch,settings,id):
 	with open(os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt"),"r") as infofile:
 		num_snapshots = len(infofile.readlines())
 
-	#Construct the randomization matrix that will differentiate between realizations; this needs to have shape map_realizations x num_snapshots x 3 (ic+cut_points+normals)
-	#TODO: Adapt randomizer matrix in the case we are running telescopic simulations
-	randomizer = np.zeros((map_realizations,num_snapshots,3),dtype=np.int)
-	randomizer[:,:,0] = np.random.randint(low=0,high=len(nbody_realizations[0]),size=(map_realizations,num_snapshots))
-	randomizer[:,:,1] = np.random.randint(low=0,high=len(cut_points[0]),size=(map_realizations,num_snapshots))
-	randomizer[:,:,2] = np.random.randint(low=0,high=len(normals[0]),size=(map_realizations,num_snapshots))
-
-	if (pool is None) or (pool.is_master()):
-		logdriver.debug("Randomization matrix has shape {0}".format(randomizer.shape))
-
 	#Save path for the maps
 	save_path = map_batch.storage_subdir
 
@@ -233,9 +223,17 @@ def singleRedshift(pool,batch,settings,id):
 			#TODO: this needs to be computed: it's the collection to use at each redshift
 			c = 0
 
+			#Randomization of planes
+			nbody = np.random.randint(low=0,high=len(nbody_realizations[c]))
+			cut = np.random.randint(low=0,high=len(cut_points[c]))
+			normal = np.random.randint(low=0,high=len(normals[c]))
+
+			#Log to user
+			logdriver.debug("Realization,snapshot=({0},{1}) --> NbodyIC,cut_point,normal=({2},{3},{4})".format(r,s,nbody_realizations[c][nbody],cut_points[c][cut],normals[c][normal]))
+
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][randomizer[r,s,0]],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][randomizer[r,s,1]],normals[c][randomizer[r,s,2]]))
+			plane_name = os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][nbody],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][cut],normals[c][normal]))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
