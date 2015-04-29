@@ -938,6 +938,7 @@ class RayTracer(object):
 			elif type(lens[k])==str:
 				logray.info("Reading plane from {0}...".format(lens[k]))
 				current_lens = PotentialPlane.load(lens[k])
+				np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens {0} redshift does not match info file specifications!".format(lens[k]))
 				logray.info("Randomly rolling lens {0} along its axes...".format(k))
 				current_lens.randomRoll()
 			else:

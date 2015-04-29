@@ -168,9 +168,14 @@ def singleRedshift(pool,batch,settings,id):
 		for c,coll in enumerate(collection):
 			logdriver.info("Reading planes from {0}".format(plane_path.format(coll.storage_subdir,"-".join([str(n) for n in nbody_realizations[c]]),plane_set[c])))
 
-	#Read how many snapshots are available
 	#TODO: Info file is the same for all
-	with open(os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt"),"r") as infofile:
+	info_filename = os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt")
+
+	if (pool is None) or (pool.is_master()):
+		logdriver.info("Reading lens plane summary information from {0}".format(info_filename))
+
+	#Read how many snapshots are available
+	with open(info_filename,"r") as infofile:
 		num_snapshots = len(infofile.readlines())
 
 	#Save path for the maps
@@ -195,7 +200,7 @@ def singleRedshift(pool,batch,settings,id):
 		#############################################################
 
 		#Open the info file to read the lens specifications (assume the info file is the same for all nbody realizations)
-		infofile = open(os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt"),"r")
+		infofile = open(info_filename,"r")
 
 		#Read the info file line by line, and decide if we should add the particular lens corresponding to that line or not
 		for s in range(num_snapshots):
@@ -220,8 +225,10 @@ def singleRedshift(pool,batch,settings,id):
 
 			lens_redshift = float(line[2].split("=")[1])
 
-			#TODO: this needs to be computed: it's the collection to use at each redshift
-			c = 0
+			#Select the right collection
+			for n,z in enumerate(cut_redshifts):
+				if lens_redshift>=z:
+					c = n
 
 			#Randomization of planes
 			nbody = np.random.randint(low=0,high=len(nbody_realizations[c]))
