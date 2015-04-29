@@ -207,6 +207,7 @@ class MapSettings(object):
 
 		#Set of lens planes to be used during ray tracing
 		self.plane_set = "Planes"
+		self.plane_info_file = None
 
 	def _init_randomizer(self):
 
@@ -258,7 +259,12 @@ class MapSettings(object):
 		self.omega = options.getboolean(section,"omega")
 
 	def _read_plane_set(self,options,section):
+		
 		self.plane_set = options.get(section,"plane_set")
+		try:
+			self.plane_info_file = options.get(section,"plane_info_file")
+		except NoOptionError:
+			self.plane_info_file = None
 
 	def _read_randomizer(self,options,section):
 
@@ -286,6 +292,7 @@ class TelescopicMapSettings(MapSettings):
 
 		#Set of lens planes to be used during ray tracing
 		self.plane_set = ("Planes",)
+		self.plane_info_file = None
 
 	def _init_randomizer(self):
 
@@ -296,7 +303,12 @@ class TelescopicMapSettings(MapSettings):
 		self.lens_map_realizations = 4
 
 	def _read_plane_set(self,options,section):
+		
 		self.plane_set = tuple(options.get(section,"plane_set").split(","))
+		try:
+			self.plane_info_file = options.get(section,"plane_info_file")
+		except NoOptionError:
+			self.plane_info_file = None
 
 	def _read_randomizer(self,options,section):
 

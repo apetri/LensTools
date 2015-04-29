@@ -79,7 +79,7 @@ def singleRedshift(pool,batch,settings,id):
 	else:
 		
 		if (pool is None) or (pool.is_master()):
-			logdriver.error("Format error in {0}: too many |".format(id))
+			logdriver.error("Format error in {0}: too many '|'".format(id))
 		sys.exit(1)
 
 
@@ -168,8 +168,11 @@ def singleRedshift(pool,batch,settings,id):
 		for c,coll in enumerate(collection):
 			logdriver.info("Reading planes from {0}".format(plane_path.format(coll.storage_subdir,"-".join([str(n) for n in nbody_realizations[c]]),plane_set[c])))
 
-	#TODO: Info file is the same for all
-	info_filename = os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt")
+	#Plane info file is the same for all collections
+	if (not hasattr(settings,"plane_info_file")) or (settings.plane_info_file is None):
+		info_filename = os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt")
+	else:
+		info_filename = settings.plane_info_file
 
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Reading lens plane summary information from {0}".format(info_filename))
