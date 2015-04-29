@@ -177,7 +177,7 @@ if gsl_location is not None:
 	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
-	raw_input("[FAIL] GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
+	print("[FAIL] GSL installation not found, the Design feature will not be installed")
 	lenstools_includes = list()
 	lenstools_link = ["-lm"]
 
@@ -202,7 +202,7 @@ if conf.getboolean("nicaea","install_python_bindings"):
 		external_sources["_nicaea"] = ["_nicaea.c"]
 
 	else:
-		raw_input("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations), please press a key to continue: ")
+		print("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations)")
 
 
 #################################################################################################
