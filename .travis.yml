@@ -10,6 +10,9 @@ install:
  - python setup.py install
  - cd ..
  - rm -rf LensTools
+ - sudo apt-get install python-numpy python-scipy
+ - pip install emcee
+ - pip install --no-deps astropy 
 
 virtualenv:
  system_site_packages: true
