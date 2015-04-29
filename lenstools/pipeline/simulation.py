@@ -899,15 +899,7 @@ class SimulationBatch(object):
 			for e in range(num_executables):
 			
 				#Separate the cosmo_id,geometry_id,realization number
-				cosmo_id,geometry_id = realizations_in_chunk[e].split("|")
-
-				#Get the corresponding SimulationXXX instances
-				model = self.getModel(cosmo_id)
-
-				nside,box_size = geometry_id.split("b")
-				nside = int(nside)
-				box_size = float(box_size) * model.Mpc_over_h
-				collection = model.getCollection(box_size=box_size,nside=nside)
+				parts = realizations_in_chunk[e].split("|")
 
 				#Figure out the correct environment file
 				if "environment_file" in kwargs.keys():
@@ -922,7 +914,13 @@ class SimulationBatch(object):
 					config_file = "config.ini"
 
 				#Make sure that there will be perfect load balancing at execution
-				raytracing_settings = MapSettings.read(config_file)
+				if len(parts)==2:
+					raytracing_settings = MapSettings.read(config_file)
+				elif len(parts)==1:
+					raytracing_settings = TelescopicMapSettings.read(config_file)
+				else:
+					raise ValueError("There are too many '|'' into your id: {0}".format(realizations_in_chunk[e]))
+
 				assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
 
 				executables.append(job_settings.path_to_executable + " " + """-e {0} -c {1} "{2}" """.format(environment_file,config_file,realization_list[realizations_per_chunk*c+e]))
