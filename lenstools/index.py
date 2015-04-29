@@ -33,6 +33,10 @@ class Descriptor(object):
 	def last(self):
 		pass
 
+
+##############################################################################
+##############################################################################
+
 class PowerSpectrum(Descriptor):
 	"""
 	Power spectrum indexing class
@@ -65,6 +69,9 @@ class PowerSpectrum(Descriptor):
 
 		self._last = self._start + len(self.l)
 		return self._last
+
+##############################################################################
+##############################################################################
 
 class Moments(Descriptor):
 	"""
@@ -108,7 +115,8 @@ class Moments(Descriptor):
 		self._last = self._start + 9
 		return self._last
 
-
+##############################################################################
+##############################################################################
 
 class Peaks(Descriptor):
 	"""
@@ -149,6 +157,9 @@ class Peaks(Descriptor):
 		self._last = self._start + len(self.midpoints)
 		return self._last
 
+##############################################################################
+##############################################################################
+
 class MinkowskiSingle(Peaks):
 	"""
 	Single Minkowski functional indexing class, identical to Peaks
@@ -167,6 +178,9 @@ class MinkowskiSingle(Peaks):
 		return "Minkowski functionals descriptor (single): {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
 
 
+##############################################################################
+##############################################################################
+
 class PDF(Peaks):
 	"""
 	Probability density function indexing class, identical to Peaks
@@ -174,6 +188,19 @@ class PDF(Peaks):
 	"""
 
 	name = "pdf"
+
+	def __repr__(self):
+
+		if self.norm:
+			answer = "yes"
+		else:
+			answer = "no"
+
+		return "Probability density function descriptor: {0} bins\nEdges: {1}\nMidpoints{2}\nThresholds in sigma units: {3}".format(len(self.midpoints),self.thresholds.__str__(),self.midpoints.__str__(),answer)
+
+
+##############################################################################
+##############################################################################
 
 class MinkowskiAll(Peaks):
 	"""
@@ -216,6 +243,9 @@ class MinkowskiAll(Peaks):
 		mink2._start = self._start + 2*len(self.midpoints) 
 
 		return [mink0,mink1,mink2]
+
+##############################################################################
+##############################################################################
 
 ###################################
 #####Global indexer################
