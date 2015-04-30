@@ -8,7 +8,9 @@ install:
  - sudo apt-get install python-numpy python-scipy python-matplotlib
  - pip install --no-deps astropy
  - pip install --no-deps emcee
- - pip install --no-deps lenstools 
+ - git clone https://github.com/apetri/LensTools
+ - cd LensTools
+ - python setup.py install 
 
 virtualenv:
  system_site_packages: true
