@@ -232,7 +232,7 @@ for ext_module in external_sources.keys():
 package_data = dict()
 package_data[name] = [ os.path.join("data",filename) for filename in os.listdir(os.path.join(name,"data")) if os.path.isfile(os.path.join(name,"data",filename)) ]
 package_data[name] += [ os.path.join(external_dir,filename) for filename in os.listdir(os.path.join(name,external_dir)) if filename.endswith(".h") ] 
-package_data["licenses"] = [ "LICENSE.rst" ]
+package_data[""] = [ os.path.join("licenses","LICENSE.rst") ]
 
 #################################################################################################
 #############################Additional includes#################################################
