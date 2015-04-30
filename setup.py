@@ -264,6 +264,7 @@ setup(
 	author_email=email,
 	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir),"{0}.{1}".format(name,observations_dir),"{0}.{1}".format(name,scripts_dir)],
 	package_data=package_data,
+	include_package_data=True,
 	url=url,
 	download_url=download_url,
 	license="MIT",
