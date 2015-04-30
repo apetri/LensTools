@@ -2,7 +2,7 @@ language: python
 python:
  - "2.7"
 
-script: echo "DONE"
+script: pwd
 
 install:
  - sudo apt-get install python-numpy python-scipy python-matplotlib
