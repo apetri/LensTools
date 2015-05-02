@@ -60,7 +60,13 @@ def string2cosmo(s):
 		parameters_list.append(par)
 
 		try:
-			parameters_dict[name2attr[par]] = float(val)
+			
+			#The Hubble parameter needs particular attention
+			if par=="h":
+				parameters_dict["H0"] = 100.0*float(val)
+			else: 
+				parameters_dict[name2attr[par]] = float(val)
+		
 		except (ValueError,KeyError):
 			return None
 
