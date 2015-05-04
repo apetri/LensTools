@@ -182,18 +182,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -206,18 +206,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -267,18 +267,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -291,18 +291,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -354,18 +354,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -378,18 +378,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -439,18 +439,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -463,18 +463,18 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -560,20 +560,19 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
-
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
 													cos_theta = (k1x*k2x + k1y*k2y + k1z*k2z)/(k1*k2);
@@ -581,8 +580,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}
 												}
@@ -592,18 +589,18 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -612,8 +609,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}	
 												}
@@ -660,20 +655,19 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
-
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
 													cos_theta = (k1x*k2x + k1y*k2y + k1z*k2z)/(k1*k2);
@@ -681,8 +675,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}
 												}
@@ -692,18 +684,18 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -712,8 +704,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}	
 												}
@@ -762,20 +752,19 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
-
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
 													cos_theta = (k1x*k2x + k1y*k2y + k1z*k2z)/(k1*k2);
@@ -783,8 +772,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}
 												}
@@ -794,18 +781,18 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -814,8 +801,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}	
 												}
@@ -862,20 +847,19 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									if(odd_or_even == 1){
 										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-												x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
-
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
 													cos_theta = (k1x*k2x + k1y*k2y + k1z*k2z)/(k1*k2);
@@ -883,8 +867,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}
 												}
@@ -894,18 +876,18 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									else{
 										if(k3x>=-kpixX*(size_x-1)/2 && k3x <= kpixX*(size_x-1)/2 && k3y>=-kpixY*(size_y-1)/2 && k3y<=kpixY*(size_y-1)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
-											x3 = (long)(k3x/kpixX);
+												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
 											else{
-												x3 = size_x + (long)(k3x/kpixX);
+												x3 = size_x + (long)(k3x/kpixX - 0.001);
 											}
 											if(k3y>=0){
-												y3 = (long)(k3y/kpixY);
+												y3 = (long)(k3y/kpixY + 0.001);
 											}
 											else{
-												y3 = size_y + (long)(k3y/kpixY);
+												y3 = size_y + (long)(k3y/kpixY - 0.001);
 											}
-											z3 = (long)(k3z/kpixZ);
+											z3 = (long)(k3z/kpixZ + 0.001);
 											p3 = x3*size_y*size_z + y3*size_z + z3;
 											for(b_large=0;b_large<largebins;b_large++){
 												if(k2>klarge_edges[b_large] && k2<=klarge_edges[b_large+1]){
@@ -914,8 +896,6 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 														if(cos_theta>cosines[b_cosine] && cos_theta<=cosines[b_cosine+1]){
 															bispectrum_k[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine] += creal(ft_map1[p1]*ft_map2[p2]*conj(ft_map3[p3]));
 															hits[b_small*largebins*cosinebins + b_large * cosinebins + b_cosine]++;
-															//printf("x3 = %ld, y3 = %ld, z3 = %ld, b_small = %d, b_large = %d, b_cosine = %ld, cos_theta = %lf\n",x3,y3,z3,b_small,b_large,b_cosine,cos_theta);
-															//hits_test[b_cosine]++;
 														}
 													}	
 												}
