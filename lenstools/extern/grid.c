@@ -34,6 +34,75 @@ int grid3d(float *positions,int Npart,double leftX,double leftY,double leftZ,dou
 
 }
 
+//Snap particles on a 3d regularly spaced grid and compute the numberdensity (equal to mass density) within each grid
+int mass_grid3d(float *positions,int Npart,double leftX,double leftY,double leftZ,double sizeX,double sizeY,double sizeZ,int nx,int ny,int nz,float *grid){
+
+	int n;
+	double i,j,k;
+	double volume_grid = sizeX * sizeY * sizeZ;
+
+	//Cycle through the particles and for each one compute the position on the grid
+	for(n=0;n<Npart;n++){
+
+		//Compute the position on the grid in the fastest way
+		i = (positions[3*n] - leftX)/sizeX;
+		j = (positions[3*n + 1] - leftY)/sizeY;
+		k = (positions[3*n + 2] - leftZ)/sizeZ;
+
+		//If the particle lands on the grid, put it in the correct pixel
+		if(i>=0 && i<nx && j>=0 && j<ny && k>=0 && k<nz){
+
+			grid[((int)i)*ny*nz + ((int)j)*nz + (int)k] += 1.0 / volume_grid;
+
+		}
+
+
+	}
+
+
+	return 0;
+
+
+}
+
+//Snap particles on a 3d regularly spaced grid and compute the mass density fluctuation within each grid
+int massfluc_grid3d(float *positions,int Npart,double leftX,double leftY,double leftZ,double sizeX,double sizeY,double sizeZ,int nx,int ny,int nz,double rho_0,float *grid){
+
+	int n,a,b,c;
+	double i,j,k;
+	double volume_grid = sizeX * sizeY * sizeZ;
+
+	//Cycle through the particles and for each one compute the position on the grid
+	for(n=0;n<Npart;n++){
+
+		//Compute the position on the grid in the fastest way
+		i = (positions[3*n] - leftX)/sizeX;
+		j = (positions[3*n + 1] - leftY)/sizeY;
+		k = (positions[3*n + 2] - leftZ)/sizeZ;
+
+		//If the particle lands on the grid, put it in the correct pixel
+		if(i>=0 && i<nx && j>=0 && j<ny && k>=0 && k<nz){
+
+			grid[((int)i)*ny*nz + ((int)j)*nz + (int)k] += 1.0 / volume_grid;
+
+		}
+
+
+	}
+
+	for(a=0;a<nx;a++){
+		for(b=0;b<ny;b++){
+			for(c=0;c<nz;c++){
+				grid[a*ny*nz + b*nz + c] = grid[a*ny*nz + b*nz + c]/rho_0 - 1;
+			}
+		}
+	}
+
+
+	return 0;
+
+
+}
 
 //adaptive smoothing
 int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane){
