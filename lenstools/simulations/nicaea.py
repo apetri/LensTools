@@ -1,5 +1,9 @@
+from __future__ import division
+
 import types
+
 import numpy as np
+from scipy.integrate import odeint
 from astropy.cosmology import w0waCDM
 from astropy.units import rad
 
@@ -106,6 +110,27 @@ def _check_redshift(z,distribution,distribution_parameters,**kwargs):
 	return nzbins,nofz,Nnz,par_nz
 
 
+##################################################################
+######Useful for integrating the linear growth factor ODE#########
+##################################################################
+
+def _delta_dot(delta,z,cosmology,delz):
+
+	#dt/dz factor
+	H0_dt_dz = (cosmology.H(0) * (cosmology.age(z+delz)-cosmology.age(z)) / delz).decompose().value
+	H0_dt_dz2 = (cosmology.H(0) * (cosmology.age(z+delz)+cosmology.age(z-delz)-2.0*cosmology.age(z)) / delz**2).decompose().value
+	
+	#Linear term in the ODE
+	linear21 = (H0_dt_dz**2) * (2.0 * cosmology.Om(z) * cosmology.critical_density(z) / (3.0 * cosmology.critical_density(0))).value
+	linear22 = H0_dt_dz2/H0_dt_dz - (2.0 * H0_dt_dz * cosmology.H(z) / cosmology.H(0)).value
+	linear_term = np.array([[0.0,1.0],[linear21,linear22]])
+
+	#Inhomogeneous term in the ODE
+	inhomogeneous2 = (-2.0 * (H0_dt_dz**2) * (1.0 + 3*cosmology.w(z)) * cosmology.Ode(z) * cosmology.critical_density(z) / (3.0*cosmology.critical_density(0))).value
+	inhomogeneous = np.array([0.0,inhomogeneous2])
+
+	#Return
+	return H0_dt_dz * (linear_term.dot(delta) + inhomogeneous)
 
 
 ##########################################
@@ -251,6 +276,19 @@ class Nicaea(w0waCDM):
 
 		#Instantiate
 		return cls(H0=H0,Om0=Om0,Ode0=Ode0,Ob0=Ob0,w0=w0,wa=wa,sigma8=sigma8,ns=ns)
+
+	################################################################################################################
+
+	##################################################################
+	###########Growth factor and its derivative#######################
+	##################################################################
+
+	def growth_factor(self,z,delz=0.01):
+
+		delta0 = np.array([1.0,0.0])
+		return odeint(_delta_dot,y0=delta0,t=z,args=(self,delz))
+
+	################################################################################################################
 
 
 	def convergencePowerSpectrum(self,ell,z=2.0,distribution=None,distribution_parameters=None,settings=None,**kwargs):
