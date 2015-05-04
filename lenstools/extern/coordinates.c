@@ -24,3 +24,24 @@ long min_long(long i,long j){
 		return j;
 	}
 }
+
+int signed_int(int i,int j){
+	
+	if(i<=j){
+		return i;
+	}
+	else{
+		return -j;
+	}
+}
+
+long signed_long(long i, long j){
+
+	if(i<=j){
+		return i;
+	}
+	else{
+		return -j;
+	}
+
+}
