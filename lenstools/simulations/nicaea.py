@@ -114,23 +114,32 @@ def _check_redshift(z,distribution,distribution_parameters,**kwargs):
 ######Useful for integrating the linear growth factor ODE#########
 ##################################################################
 
-def _delta_dot(delta,z,cosmology,delz):
+def _delta_dot(delta,z,cosmology):
 
-	#dt/dz factor
-	H0_dt_dz = (cosmology.H(0) * (cosmology.age(z+delz)-cosmology.age(z)) / delz).decompose().value
-	H0_dt_dz2 = (cosmology.H(0) * (cosmology.age(z+delz)+cosmology.age(z-delz)-2.0*cosmology.age(z)) / delz**2).decompose().value
-	
-	#Linear term in the ODE
-	linear21 = (H0_dt_dz**2) * (2.0 * cosmology.Om(z) * cosmology.critical_density(z) / (3.0 * cosmology.critical_density(0))).value
-	linear22 = H0_dt_dz2/H0_dt_dz - (2.0 * H0_dt_dz * cosmology.H(z) / cosmology.H(0)).value
-	linear_term = np.array([[0.0,1.0],[linear21,linear22]])
+	#Densities
+	Ode = cosmology.Ode(z)
+	w = cosmology.w(z)
 
 	#Inhomogeneous term in the ODE
-	inhomogeneous2 = (-2.0 * (H0_dt_dz**2) * (1.0 + 3*cosmology.w(z)) * cosmology.Ode(z) * cosmology.critical_density(z) / (3.0*cosmology.critical_density(0))).value
-	inhomogeneous = np.array([0.0,inhomogeneous2])
+	inhomogeneous = np.array([0.0,-1.5 * Ode * (1+3*w) / (1+z)**2])
 
 	#Return
-	return H0_dt_dz * (linear_term.dot(delta) + inhomogeneous)
+	return _jacobian_delta_dot(delta,z,cosmology).dot(delta) + inhomogeneous
+
+
+def _jacobian_delta_dot(delta,z,cosmology):
+
+	#Densities
+	Om = cosmology.Om(z)
+	Ode = cosmology.Ode(z)
+	w = cosmology.w(z)
+	
+	#Linear term in the ODE
+	linear21 = 1.5*Om / (1+z)**2
+	linear22 = -0.5 * (Om+Ode*(1+3*w)) / (1+z)
+
+	#Return the jacobian
+	return np.array([[0.0,1.0],[linear21,linear22]])
 
 
 ##########################################
@@ -283,10 +292,26 @@ class Nicaea(w0waCDM):
 	###########Growth factor and its derivative#######################
 	##################################################################
 
-	def growth_factor(self,z,delz=0.01):
+	def growth_factor(self,z,delta0=np.array([1.0,0.0]),**kwargs):
 
-		delta0 = np.array([1.0,0.0])
-		return odeint(_delta_dot,y0=delta0,t=z,args=(self,delz))
+		"""
+		Computes the linear growth factor at redshift z, given initial conditions on the density contrast
+
+		:param z: array of redshifts on which to compute the growth factor
+		:type z: array. 
+
+		:param delta0: initial condition (delta0,Ddelta0/dz) for the ODE
+		:type delta0: array.
+
+		:param kwargs: the keyword arguments are passed to odeint
+		:type kwargs: dict.
+
+		:returns: growth factor and its redshift derivative
+		:rtype: array
+
+		"""
+
+		return odeint(_delta_dot,y0=delta0,t=z,Dfun=_jacobian_delta_dot,args=(self,),**kwargs) / delta0[0]
 
 	################################################################################################################
 
