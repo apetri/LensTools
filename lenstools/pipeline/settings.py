@@ -81,10 +81,8 @@ class NGenICSettings(object):
 		self.UnitVelocity_in_cm_per_s = 1e5
 
 		#Typically do not touch these, needed for prefactors calculations
-		self._zminact = 0.0
-		self._zmaxact = 110.0
+		self._zmaxact = 1000.0
 		self._iwmode = 3
-		self._delz = 0.000001
 
 		#Allow for kwargs override
 		for key in kwargs.keys():

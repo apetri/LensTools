@@ -14,13 +14,22 @@ from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2Snapshot
 
 from ..simulations.camb import CAMBSettings
-from ..simulations import Nicaea as CosmoDefault 
+from ..simulations import Nicaea
 
-try:
-	from ..extern import _darkenergy,_prefactors
-	_darkenergy = _darkenergy
-except ImportError:
-	_darkenergy = None
+################################################################
+#######Useful LensToolsCosmology class##########################
+################################################################
+
+class LensToolsCosmology(Nicaea):
+
+	"""
+	LensTools pipeline cosmology handler
+
+	"""
+
+CosmoDefault = LensToolsCosmology() 
+
+###################################################################
 
 name2attr = dict()
 name2attr["Om"] = "Om0"
@@ -71,7 +80,7 @@ def string2cosmo(s):
 			return None
 
 	try:
-		cosmoModel = CosmoDefault(**parameters_dict)
+		cosmoModel = LensToolsCosmology(**parameters_dict)
 	except TypeError:
 		return None
 
@@ -386,6 +395,9 @@ class SimulationBatch(object):
 		:rtype: SimulationModel
 
 		"""
+
+		#cosmology needs to be of type LensToolsCosmology
+		assert isinstance(cosmology,LensToolsCosmology)
 
 		newModel = SimulationModel(cosmology=cosmology,environment=self.environment,parameters=parameters,syshandler=self.syshandler)
 
@@ -1933,9 +1945,6 @@ class SimulationIC(SimulationCollection):
 
 		"""
 
-		if _darkenergy is None:
-			raise ImportError("F77 sources in cextern/darkEnergy are not compiled!!")
-
 		#Safety check
 		assert isinstance(settings,NGenICSettings)
 
@@ -1976,18 +1985,15 @@ class SimulationIC(SimulationCollection):
 			#Initial redshift
 			paramfile.write("Redshift 			{0:.6f}\n".format(settings.Redshift))
 
-			#Computation of the prefactors
-			if self.cosmology._nmassivenu==0:
-				Onu0 = 0.0
-			else:
-				Onu0 = self.cosmology.Onu0
+			#Compute the growth and velocity prefactors
+			print("[+] Solving the linear growth ODE for {0}...".format(self.cosmo_id))
+			g = self.cosmology.growth_factor([settings._zmaxact,settings.Redshift,0.0])
 
-			OmegaK = 1.0 - self.cosmology.Om0 - self.cosmology.Ode0 - Onu0
-			ret,d1,d2 = _darkenergy.f77main(self.cosmology.h,self.cosmology.Om0,Onu0,OmegaK,self.cosmology.Ode0,self.cosmology.w0,self.cosmology.wa,0.0,settings.Redshift,settings._zmaxact,settings._zminact,settings._iwmode)
-			ret,d1,d2minus = _darkenergy.f77main(self.cosmology.h,self.cosmology.Om0,Onu0,OmegaK,self.cosmology.Ode0,self.cosmology.w0,self.cosmology.wa,0.0,settings.Redshift-settings._delz,settings._zmaxact,settings._zminact,settings._iwmode)
-			vel_prefactor = _prefactors.velocity(settings.Redshift,self.cosmology.Om0,self.cosmology.Ode0,self.cosmology.Onu0,self.cosmology.w0,self.cosmology.wa,self.cosmology.h,d2,d2minus,settings._delz,settings._zmaxact,settings._zminact,settings._iwmode)
+			print("[+] Computing prefactors...".format(self.cosmo_id))
+			growth_prefactor = g[2,0] / g[1,0]
+			vel_prefactor = -0.1 * np.sqrt(1+settings.Redshift) *(self.cosmology.H(settings.Redshift)/self.cosmology.H(0)).value * g[1,1] / g[1,0]
 
-			paramfile.write("GrowthFactor			{0:.6f}\n".format(1.0/d2))
+			paramfile.write("GrowthFactor			{0:.6f}\n".format(growth_prefactor))
 			paramfile.write("VelocityPrefactor			{0:.6f}\n".format(vel_prefactor))
 
 			#Sigma8

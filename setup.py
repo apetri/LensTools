@@ -22,10 +22,14 @@ external_support_dir = "cextern"
 
 try:
 	import numpy.distutils.misc_util 
-	from numpy.distutils.core import setup,Extension
 except ImportError:
 	print("Please install numpy!")
 	sys.exit(1)
+
+try:
+	from setuptools import setup,Extension
+except ImportError:
+	from distutils.core import setup,Extension
 
 def rd(filename):
 	
@@ -172,18 +176,6 @@ external_sources["_gadget2"] = ["_gadget2.c","read_gadget_header.c","read_gadget
 external_sources["_nbody"] = ["_nbody.c","grid.c","coordinates.c"]
 external_sources["_pixelize"] = ["_pixelize.c","grid.c","coordinates.c"]
 
-#Decide if we can install the pipeline bindings (requires some external F77 sources)
-if conf.has_section("pipeline"):
-	if conf.getboolean("pipeline","install_pipeline"):
-		
-		lenstools_includes.append(os.path.join(external_support_dir,"darkEnergy"))
-
-		external_sources["_darkenergy"] = []
-		external_support["_darkenergy"] = [ f for f in glob.glob(os.path.join(external_support_dir,"darkEnergy","*")) if f.split(".")[-1] in "f" ]
-
-		external_sources["_prefactors"] = ["_prefactors.c"]
-		external_support["_prefactors"] = [ f for f in glob.glob(os.path.join(external_support_dir,"darkEnergy","*")) if f.split(".")[-1] in "c" ]
-
 ######################################################################################################################################
 
 #Decide if we can install the Design feature, if not throw a warning
@@ -289,4 +281,5 @@ setup(
 	ext_package=os.path.join(name,external_dir),
 	ext_modules=ext,
 	include_dirs=lenstools_includes,
+	zip_safe=False,
 )

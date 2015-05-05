@@ -49,8 +49,8 @@ We first need to specify the cosmological model that will regulate the physics o
 
 ::
 
-	>>> from lenstools.pipeline.simulation import CosmoDefault
-	>>> cosmology = CosmoDefault(Om0=0.3,Ode0=0.7)
+	>>> from lenstools.pipeline.simulation import LensToolsCosmology
+	>>> cosmology = LensToolsCosmology(Om0=0.3,Ode0=0.7)
 
 The cosmology object will be initialized with :math:`(\Omega_m,\Omega_\Lambda)=(0.3,0.7)` and all the other parameters set to their default values
 
