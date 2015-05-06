@@ -180,7 +180,7 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
@@ -265,7 +265,7 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
@@ -352,7 +352,7 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
@@ -437,7 +437,7 @@ int azimuthal_bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
@@ -558,7 +558,7 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
@@ -653,7 +653,7 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
@@ -750,7 +750,7 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
@@ -845,7 +845,7 @@ int bispectrum_rfft3(double _Complex *ft_map1,double _Complex *ft_map2,double _C
 									k3 = sqrt(k3x*k3x + k3y*k3y + k3z*k3z);
 
 									if(odd_or_even == 1){
-										if(k3x>=-kpixX*(size_x-2)/2 && k3x <= kpixX*size_x/2 && k3y>=-kpixY*(size_y-2)/2 && k3y<=kpixY*size_y/2 && k3z<=kpixZ*(size_z-1)){
+										if(k3x>=-kpixX*size_x/2 && k3x <= kpixX*(size_x-2)/2 && k3y>=-kpixY*size_y/2 && k3y<=kpixY*(size_y-2)/2 && k3z<=kpixZ*(size_z-1)){
 											if(k3x>=0){
 												x3 = (long)(k3x/kpixX + 0.001); // Add or subtract 0.001 to avoid error due to finite precision of real numbers
 											}
