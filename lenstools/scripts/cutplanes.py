@@ -103,9 +103,6 @@ def main(pool,batch,settings,id):
 
 	for n in range(first_snapshot,last_snapshot+1):
 
-		#Force garbage collection
-		gc.collect()
-
 		#Open the snapshot
 		snap = Gadget2Snapshot.open(os.path.join(snapshot_path,SnapshotFileBase+"{0:03d}".format(n)),pool=pool)
 
@@ -123,6 +120,13 @@ def main(pool,batch,settings,id):
 		for cut,pos in enumerate(cut_points):
 			for normal in normals:
 
+				#Force garbage collection
+				gc.collect()
+			
+				#Safety barrier sync
+				if pool is not None:
+					pool.comm.Barrier()
+
 				if pool is not None and pool.is_master():
 					logdriver.info("Cutting plane at {0} with normal {1},thickness {2}, of size {3} x {3}".format(pos,normal,thickness,snap.header["box_size"]))
 
@@ -139,10 +143,11 @@ def main(pool,batch,settings,id):
 					logdriver.info("Saving plane to {0}".format(plane_file))
 					potential_plane.save(plane_file)
 			
+				#Force garbage collection
+				gc.collect()
 			
+				#Safety barrier sync
 				if pool is not None:
-			
-					#Safety barrier sync
 					pool.comm.Barrier()
 
 
