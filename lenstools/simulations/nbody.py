@@ -559,6 +559,10 @@ class NbodySnapshot(object):
 			self.pool.accumulate()
 			self.pool.closeWindow()
 
+		#If this task is not the master we can return now
+		if (self.pool is not None) and not(self.pool.is_master()):
+			return (None,)*3
+
 		#Compute the number of particles on the plane
 		NumPartTotal = density.sum()
 
