@@ -142,6 +142,10 @@ def main(pool,batch,settings,id):
 					#Save the result
 					logdriver.info("Saving plane to {0}".format(plane_file))
 					potential_plane.save(plane_file)
+
+					#Force delete plane
+					del(plane)
+					del(potential_plane.data)
 			
 				#Force garbage collection
 				gc.collect()
@@ -153,6 +157,10 @@ def main(pool,batch,settings,id):
 
 		#Close the snapshot
 		snap.close()
+
+		#Force delete particles
+		del(snap.positions)
+
 
 	#Safety barrier sync
 	if pool is not None:
