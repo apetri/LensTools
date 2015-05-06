@@ -27,7 +27,7 @@ long min_long(long i,long j){
 
 int signed_int(int i,int j){
 	
-	if(i<=j){
+	if(i<j){
 		return i;
 	}
 	else{
@@ -37,7 +37,7 @@ int signed_int(int i,int j){
 
 long signed_long(long i, long j){
 
-	if(i<=j){
+	if(i<j){
 		return i;
 	}
 	else{
