@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+from distutils import config
 
 import lenstools.scripts.raytracing
 from lenstools.pipeline import SimulationBatch
