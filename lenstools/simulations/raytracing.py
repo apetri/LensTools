@@ -87,10 +87,7 @@ class Plane(Spin0):
 		else:
 			raise TypeError("data type not supported!")
 
-
-	def __del__(self):
-		logplanes.debug("Plane {0} deleted from memory".format(self.filename))
-
+	
 
 	def angular(self,length_scale):
 
