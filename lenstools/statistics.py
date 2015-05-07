@@ -267,11 +267,11 @@ class Ensemble(object):
 
 		elif kind=="contiguous":
 			
-			row = np.array(reduce(add,[ (i,) * group_size  for i in range(group_size) ]))
+			row = np.array(reduce(add,[ (i,) * group_size  for i in range(num_groups) ]))
 			col = np.arange(self.num_realizations,dtype=np.int)
 			dat = np.ones(self.num_realizations,dtype=np.int8)
 
-			scheme = sparse.csr_matrix((dat,(row,col)),shape=(group_size,self.num_realizations),dtype=np.int8)
+			scheme = sparse.csr_matrix((dat,(row,col)),shape=(num_groups,self.num_realizations),dtype=np.int8)
 
 		else:
 			raise TypeError("The scheme kind you inputed is not valid!")
