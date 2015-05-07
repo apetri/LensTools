@@ -239,7 +239,7 @@ class Ensemble(object):
 		if hasattr(self,"_mean"):
 			self.mean()
 
-	def group(self,group_size,kind="sparse"):
+	def group(self,group_size,kind="sparse",inplace=True):
 
 		"""
 		Sometimes it happens that different realizations in the ensemble need to be grouped together, for example when they belong to different subfields of the same observation field. With this function you can group different realizations together by taking the mean, and reduce the total number of realizations in the ensemble
@@ -278,13 +278,20 @@ class Ensemble(object):
 
 		self._scheme = scheme
 
-		#Dot the data with the scheme to produce the groups, and take the mean in every group
-		self.num_realizations = num_groups
-		self.data = scheme.dot(self.data) / group_size
+		if inplace:
 
-		#If a mean was precomputed, need to recompute the new one
-		if hasattr(self,"_mean"):
-			self.mean()
+			#Dot the data with the scheme to produce the groups, and take the mean in every group
+			self.num_realizations = num_groups
+			self.data = scheme.dot(self.data) / group_size
+
+			#If a mean was precomputed, need to recompute the new one
+			if hasattr(self,"_mean"):
+				self.mean()
+
+		else:
+
+			#Dot the data with the scheme to produce the groups, and take the mean in every group
+			return self.__class__.fromdata(scheme.dot(self.data) / group_size)
 
 
 	def differentiate(self,step=None,order=1):
