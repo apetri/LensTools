@@ -31,6 +31,18 @@ try:
 except ImportError:
 	from distutils.core import setup,Extension
 
+#Print in color
+def red(s):
+	return '\033[31m' + s + '\033[39m'
+
+def green(s):
+	return '\033[32m' + s + '\033[39m'
+
+def yellow(s):
+	return '\033[33m' + s + '\033[39m'
+
+
+#Shortcut for reading file
 def rd(filename):
 	
 	f = file(filename,"r")
@@ -54,9 +66,9 @@ def check_gsl(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(include_filename))
 
 		if os.path.isfile(include_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	for lib in gsl_required_links:
@@ -65,9 +77,9 @@ def check_gsl(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
 
 		if os.path.isfile(lib_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	return gsl_location
@@ -87,9 +99,9 @@ def check_fftw3(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(include_filename))
 
 		if os.path.isfile(include_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	for lib in fftw3_required_links:
@@ -98,9 +110,9 @@ def check_fftw3(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
 
 		if os.path.isfile(lib_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	return fftw3_location
@@ -118,16 +130,16 @@ def check_nicaea(conf):
 	#Check for their existence
 	sys.stderr.write("Checking for {0}...".format(nicaea_include))
 	if os.path.isdir(nicaea_include):
-		sys.stderr.write("[OK]\n")
+		sys.stderr.write(green("[OK]\n"))
 	else:
-		sys.stderr.write("[FAIL]\n")
+		sys.stderr.write(red("[FAIL]\n"))
 		return None
 
 	sys.stderr.write("Checking for {0}...".format(os.path.join(nicaea_lib,"libnicaea.a")))
 	if os.path.isfile(os.path.join(nicaea_lib,"libnicaea.a")):
-		sys.stderr.write("[OK]\n")
+		sys.stderr.write(green("[OK]\n"))
 	else:
-		sys.stderr.write("[FAIL]\n")
+		sys.stderr.write(red("[FAIL]\n"))
 		return None
 	
 	return nicaea_include,nicaea_lib
@@ -149,6 +161,24 @@ else:
 print("Reading system dependent configuration from {0}".format(cfg_file))
 conf.read([cfg_file])
 
+#Override library locations with the ones provided from the command line
+for l in ["fftw3","gsl","nicaea"]:
+	for arg in sys.argv:
+		
+		if "--{0}".format(l) in arg:
+			
+			loc = arg.split("=")[-1]
+			print(yellow("Command line override: looking for {0} in {1}".format(l,loc)))
+			conf.set(l,"installation_path",loc)
+
+			if l=="nicaea":
+				conf.set(l,"install_python_bindings","True")
+
+			#Purge from command line arguments
+			sys.argv.remove(arg)
+
+#########################################################################################
+
 vre = re.compile("__version__ = \"(.*?)\"")
 m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     "lenstools", "__init__.py"))
@@ -156,7 +186,7 @@ version = vre.findall(m)[0]
 download_url = "https://github.com/apetri/LensTools/archive/{0}.tar.gz".format(version)
 
 classifiers = [
-		"Development Status :: 3 - Alpha",
+		"Development Status :: 4 - Beta",
 		"Intended Audience :: Science/Research",
 		"Operating System :: OS Independent",
 		"Programming Language :: Python",
@@ -182,12 +212,12 @@ external_sources["_pixelize"] = ["_pixelize.c","grid.c","coordinates.c"]
 gsl_location = check_gsl(conf)
 
 if gsl_location is not None:
-	print("[OK] Checked GSL installation, the Design feature will be installed")
+	print(green("[OK] Checked GSL installation, the Design feature will be installed"))
 	lenstools_includes.append(os.path.join(gsl_location,"include")) 
 	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
-	raw_input("[FAIL] GSL installation not found, the Design feature will not be installed, please press a key to continue: ")
+	print(red("[FAIL] GSL installation not found, the Design feature will not be installed"))
 	lenstools_link = ["-lm"]
 
 
@@ -201,7 +231,7 @@ if conf.getboolean("nicaea","install_python_bindings"):
 	
 	if (gsl_location is not None) and (fftw3_location is not None) and (nicaea_location is not None):
 	
-		print("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed")
+		print(green("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed"))
 		
 		#Add necessary includes and links
 		lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
@@ -211,7 +241,7 @@ if conf.getboolean("nicaea","install_python_bindings"):
 		external_sources["_nicaea"] = ["_nicaea.c"]
 
 	else:
-		raw_input("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations), please press a key to continue: ")
+		print(red("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations)"))
 
 
 #################################################################################################
