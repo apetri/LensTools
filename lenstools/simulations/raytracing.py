@@ -18,13 +18,9 @@ try:
 except ImportError:
 	matplotlib = None
 
-#FFT engines
-from numpy.fft import fftfreq,rfft2,irfft2
-
-try:
-	from numpy.fft import rfftfreq
-except ImportError:
-	from ..utils import rfftfreq
+#FFT engine
+from ..fft import NUMPYFFTPack
+fftengine = NUMPYFFTPack()
 
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
@@ -211,7 +207,7 @@ class Plane(Spin0):
 
 			#Rolling in Fourier space is just multiplying by phases
 			if lmesh is None:
-				l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+				l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 			else:
 				l = lmesh
 
@@ -241,7 +237,7 @@ class Plane(Spin0):
 		"""
 
 		assert self.space=="fourier","We are already in real space!!"
-		self.data = irfft2(self.data)
+		self.data = fftengine.irfft2(self.data)
 		self.space = "real"
 
 	
@@ -253,7 +249,7 @@ class Plane(Spin0):
 		"""
 
 		assert self.space=="real","We are already in fourier space!!"
-		self.data = rfft2(self.data)
+		self.data = fftengine.rfft2(self.data)
 		self.space="fourier"
 
 
@@ -338,7 +334,7 @@ class DensityPlane(Plane):
 
 		#Initialize l meshgrid
 		if lmesh is None:
-			l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+			l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 		else:
 			l = lmesh
 
@@ -348,7 +344,7 @@ class DensityPlane(Plane):
 
 		#Go with the FFTs
 		if self.space=="real":
-			density_ft = rfft2(self.data)
+			density_ft = fftengine.rfft2(self.data)
 		elif self.space=="fourier":
 			density_ft = self.data.copy()
 		else:
@@ -360,7 +356,7 @@ class DensityPlane(Plane):
 		density_ft[0,0] = 0.0
 
 		#Instantiate the new PotentialPlane
-		return PotentialPlane(data=irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
+		return PotentialPlane(data=fftengine.irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
 
 
 ###########################################################
@@ -414,7 +410,7 @@ class PotentialPlane(Plane):
 
 			#Compute deflections in fourier space
 			if lmesh is None:
-				l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+				l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 			else:
 				l = lmesh
 
@@ -431,7 +427,7 @@ class PotentialPlane(Plane):
 			last_timestamp = now 
 
 			#Go back in real space
-			deflection = irfft2(ft_deflection)
+			deflection = fftengine.irfft2(ft_deflection)
 
 			#Timestamp
 			now = time.time()
@@ -501,7 +497,7 @@ class PotentialPlane(Plane):
 
 			#Compute deflections in fourier space
 			if lmesh is None:
-				lx,ly = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+				lx,ly = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 			else:
 				lx,ly = lmesh
 
@@ -511,9 +507,9 @@ class PotentialPlane(Plane):
 			ft_tensor_yy = -(2.0*np.pi)**2 * self.data * (ly**2)
 
 			#Go back in real space
-			tensor_xx = irfft2(ft_tensor_xx)
-			tensor_xy = irfft2(ft_tensor_xy)
-			tensor_yy = irfft2(ft_tensor_yy)
+			tensor_xx = fftengine.irfft2(ft_tensor_xx)
+			tensor_xy = fftengine.irfft2(ft_tensor_xy)
+			tensor_yy = fftengine.irfft2(ft_tensor_yy)
 
 			tensor = np.array([tensor_xx,tensor_yy,tensor_xy])
 
@@ -574,9 +570,9 @@ class PotentialPlane(Plane):
 
 		elif self.space=="fourier":
 
-			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			ly,lx = np.meshgrid(fftengine.fftfreq(self.data.shape[0]),fftengine.rfftfreq(self.data.shape[0]),indexing="ij")
 			ft_laplacian = -1.0 * (2.0*np.pi)**2 * (lx**2 + ly**2) * self.data
-			laplacian = irfft2(ft_laplacian) 			
+			laplacian = fftengine.irfft2(ft_laplacian) 			
 
 		else:
 			raise ValueError("space must be either real or fourier!")
@@ -759,7 +755,7 @@ class RayTracer(object):
 
 		#If we know the size of the lens planes already we can compute, once and for all, the FFT meshgrid
 		if lens_mesh_size is not None:
-			self.lmesh = np.array(np.meshgrid(rfftfreq(lens_mesh_size),fftfreq(lens_mesh_size)))
+			self.lmesh = np.array(np.meshgrid(fftengine.rfftfreq(lens_mesh_size),fftengine.fftfreq(lens_mesh_size)))
 		else:
 			self.lmesh = None
 

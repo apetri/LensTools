@@ -17,13 +17,9 @@ from astropy.units import Mbyte,kpc,Mpc,cm,km,g,s,hour,day,deg,arcmin,rad,Msun,q
 from astropy.constants import c
 from astropy.cosmology import w0waCDM
 
-#FFT engines
-from numpy.fft import rfftn,irfftn,fftfreq
-try:
-	from numpy.fft import rfftfreq
-except ImportError:
-	from .. import utils
-	rfftfreq = utils.rfftfreq
+#FFT engine
+from ..fft import NUMPYFFTPack
+fftengine = NUMPYFFTPack()
 
 #KD-Tree
 from scipy.spatial import cKDTree as KDTree
@@ -440,14 +436,14 @@ class NbodySnapshot(object):
 		if smooth is not None:
 
 			#Fourier transform the density field
-			fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
-			density_ft = rfftn(density)
+			fx,fy,fz = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.fftfreq(density.shape[1]),fftengine.rfftfreq(density.shape[2]),indexing="ij")
+			density_ft = fftengine.rfftn(density)
 
 			#Perform the smoothing
 			density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
 
 			#Go back in real space
-			density = irfftn(density_ft)
+			density = fftengine.irfftn(density_ft)
 
 
 		#Return the density histogram, along with the bin resolution along each axis
@@ -588,14 +584,14 @@ class NbodySnapshot(object):
 			if smooth is not None:
 		
 				#Fourier transform the density field
-				fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
-				density_ft = rfftn(density)
+				fx,fy,fz = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.fftfreq(density.shape[1]),fftengine.rfftfreq(density.shape[2]),indexing="ij")
+				density_ft = fftengine.rfftn(density)
 
 				#Perform the smoothing
 				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
 
 				#Go back in real space
-				density = irfftn(density_ft)
+				density = fftengine.irfftn(density_ft)
 
 			#Return the computed density histogram
 			return density,bin_resolution,NumPartTotal
@@ -613,14 +609,14 @@ class NbodySnapshot(object):
 		if (smooth is not None) or kind=="potential":
 
 			#Compute the multipoles
-			lx,ly = np.meshgrid(fftfreq(density.shape[0]),rfftfreq(density.shape[1]),indexing="ij")
+			lx,ly = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.rfftfreq(density.shape[1]),indexing="ij")
 			l_squared = lx**2 + ly**2
 
 			#Avoid dividing by 0
 			l_squared[0,0] = 1.0
 
 			#FFT the density field
-			density_ft = rfftn(density)
+			density_ft = fftengine.rfftn(density)
 
 			#Zero out the zeroth frequency
 			density_ft[0,0] = 0.0
@@ -634,7 +630,7 @@ class NbodySnapshot(object):
 				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*l_squared)
 
 			#Revert the FFT
-			density = irfftn(density_ft)
+			density = fftengine.irfftn(density_ft)
 
 		#Multiply by the normalization factors
 		density = density * cosmo_normalization * density_normalization
@@ -823,14 +819,14 @@ class NbodySnapshot(object):
 		if kind=="potential":
 
 			#Compute the multipoles
-			lx,ly = np.meshgrid(fftfreq(density.shape[0]),rfftfreq(density.shape[1]),indexing="ij")
+			lx,ly = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.rfftfreq(density.shape[1]),indexing="ij")
 			l_squared = lx**2 + ly**2
 
 			#Avoid dividing by 0
 			l_squared[0,0] = 1.0
 
 			#FFT the density field
-			density_ft = rfftn(density)
+			density_ft = fftengine.rfftn(density)
 
 			#Zero out the zeroth frequency
 			density_ft[0,0] = 0.0
@@ -839,7 +835,7 @@ class NbodySnapshot(object):
 			density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / self.header["comoving_distance"]**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
 
 			#Revert the FFT and return
-			density = irfftn(density_ft)
+			density = fftengine.irfftn(density_ft)
 			return density*(rad**2),bin_resolution,NumPartTotal
 
 
@@ -1012,11 +1008,11 @@ class NbodySnapshot(object):
 
 			if smooth is not None:
 
-				fx,fy,fz = np.meshgrid(fftfreq(density.shape[0]),fftfreq(density.shape[1]),rfftfreq(density.shape[2]),indexing="ij")
-				density_ft = rfftn(density)
+				fx,fy,fz = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.fftfreq(density.shape[1]),fftengine.rfftfreq(density.shape[2]),indexing="ij")
+				density_ft = fftengine.rfftn(density)
 				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
 				density_ft[0,0] = 0.0
-				density = irfftn(density_ft)
+				density = fftengine.irfftn(density_ft)
 
 				return (density * (1.0/self._header["num_particles_total"]) * (self._header["box_size"]*self.lensMaxSize()**2)/reduce(mul,bin_resolution)).decompose().value, bin_resolution, NumPartTotal
 
@@ -1039,14 +1035,14 @@ class NbodySnapshot(object):
 		if (smooth is not None) or kind=="potential":
 		
 			#Compute the multipoles
-			lx,ly = np.meshgrid(fftfreq(density.shape[0]),rfftfreq(density.shape[1]),indexing="ij")
+			lx,ly = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.rfftfreq(density.shape[1]),indexing="ij")
 			l_squared = lx**2 + ly**2
 
 			#Avoid dividing by 0
 			l_squared[0,0] = 1.0
 
 			#Fourier transform the density field
-			density_ft = rfftn(density)
+			density_ft = fftengine.rfftn(density)
 
 			#Perform the smoothing
 			if smooth is not None:
@@ -1061,7 +1057,7 @@ class NbodySnapshot(object):
 
 			#Go back in real space
 			if space=="real":
-				density = irfftn(density_ft)
+				density = fftengine.irfftn(density_ft)
 			elif space=="fourier":
 				density = density_ft
 			else:
@@ -1071,7 +1067,7 @@ class NbodySnapshot(object):
 
 			density -= density.sum() / reduce(mul,density.shape)
 			if space=="fourier":
-				density = rfftn(density)
+				density = fftengine.rfftn(density)
 
 		#Return
 		return (density*cosmo_normalization*density_normalization).decompose().value,bin_resolution,NumPartTotal
@@ -1141,7 +1137,7 @@ class NbodySnapshot(object):
 			print("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}, distortions might start to appear already at {2}): results might be inaccurate".format(k_edges.max(),k_max,k_max_recommended))
 
 		#Perform the FFT
-		density_ft = rfftn(density)
+		density_ft = fftengine.rfftn(density)
 
 		#Compute the azimuthal averages
 		hits,power_spectrum = ext._topology.rfft3_azimuthal(density_ft,density_ft,kpixX.value,kpixY.value,kpixZ.value,k_edges.value)

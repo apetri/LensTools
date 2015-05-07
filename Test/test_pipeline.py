@@ -6,7 +6,9 @@ try:
 	from lenstools.pipeline.settings import *
 	from lenstools.pipeline.remote import LocalGit
 
-	from lenstools.simulations import Nicaea,Gadget2Settings
+	from lenstools.pipeline.simulation import LensToolsCosmology
+
+	from lenstools.simulations import Gadget2Settings
 	from lenstools import data
 
 except ImportError:
@@ -20,13 +22,15 @@ except ImportError:
 	from lenstools.pipeline.settings import *
 	from lenstools.pipeline.remote import LocalGit
 
-	from lenstools.simulations import Nicaea,Gadget2Settings
+	from lenstools.pipeline.simulation import LensToolsCosmology
+
+	from lenstools.simulations import Gadget2Settings
 	from lenstools import data
 
 home = "../SimTest/Home"
 storage = "../SimTest/Storage"
 
-cosmologies = [Nicaea(),Nicaea(Om0=0.4)]
+cosmologies = [LensToolsCosmology(),LensToolsCosmology(Om0=0.4)]
 box_sizes = [15.0,240.0]
 part = [32,512]
 seeds = [0,11,222]

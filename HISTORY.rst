@@ -6,6 +6,7 @@
 - Weak lensing pipeline functionalities
 - Measure 2pcf of convergence maps with hankel transforms
 - Moved Limber module under lenstools.simulations
+- Dedicated module for Fast Fourier Transforms
 
 0.4.8(beta)
 +++++++++++

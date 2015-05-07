@@ -16,19 +16,6 @@ except ImportError:
 	default_op=None
 	print("Warning! mpi4py installation not found or broken!")
 
-#####################################################################################
-#######Supplying to the lack of rfftfreq implementation in numpy<1.8#################
-#####################################################################################
-
-def rfftfreq(n, d=1.0):
-
-    if not (isinstance(n,int) or isinstance(n, integer)):
-        raise ValueError("n should be an integer")
-    val = 1.0/(n*d)
-    N = n//2 + 1
-    results = np.arange(0, N, dtype=int)
-    return results * val
-
 ####################################################################
 #################Hankel transforms##################################
 ####################################################################

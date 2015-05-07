@@ -19,17 +19,12 @@ from extern import _topology
 
 import numpy as np
 
-#FFT engines
-from numpy.fft import rfft2,irfft2,fftfreq
+#FFT engine
+from .fft import NUMPYFFTPack
+fftengine = NUMPYFFTPack()
 
 #Hankel transform
 from utils import fht
-
-#Check if rfftfreq is implemented (requires numpy>=1.8)
-try:
-	from numpy.fft import rfftfreq
-except ImportError:
-	from utils import rfftfreq
 
 from scipy.ndimage import filters
 
@@ -914,7 +909,7 @@ class Spin0(object):
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
 		#Calculate the Fourier transform of the map with numpy FFT
-		ft_map = rfft2(self.data)
+		ft_map = fftengine.rfft2(self.data)
 
 		#Compute the power spectrum with the C backend implementation
 		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle.to(u.deg).value,l_edges)
@@ -992,8 +987,8 @@ class Spin0(object):
 		assert l_edges is not None
 
 		#Determine the multipole values of each bin in the FFT grid
-		lx = fftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
-		ly = rfftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
+		lx = fftengine.fftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
+		ly = fftengine.rfftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
 		l_squared = lx[:,None]**2 + ly[None,:]**2
 
 		#Count how many of these pixels fall inside each bin
@@ -1048,8 +1043,8 @@ class Spin0(object):
 			assert self.data.shape == other.data.shape
 
 			#Calculate the Fourier transform of the maps with numpy FFTs
-			ft_map1 = rfft2(self.data)
-			ft_map2 = rfft2(other.data)
+			ft_map1 = fftengine.rfft2(self.data)
+			ft_map2 = fftengine.rfft2(other.data)
 
 			#Compute the cross power spectrum with the C backend implementation
 			cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(u.deg).value,l_edges)
@@ -1095,10 +1090,10 @@ class Spin0(object):
 		
 		elif kind=="gaussianFFT":
 
-			lx = fftfreq(self.data.shape[0])
-			ly = rfftfreq(self.data.shape[1])
+			lx = fftengine.fftfreq(self.data.shape[0])
+			ly = fftengine.rfftfreq(self.data.shape[1])
 			l_squared = lx[:,None]**2 + ly[None,:]**2
-			smoothed_data = irfft2(np.exp(-0.5*l_squared*(smoothing_scale_pixel**2))*rfft2(self.data))
+			smoothed_data = fftengine.irfft2(np.exp(-0.5*l_squared*(smoothing_scale_pixel**2))*fftengine.rfft2(self.data))
 		
 		else:
 			raise NotImplementedError("Smoothing algorithm {0} not implemented!".format(kind))

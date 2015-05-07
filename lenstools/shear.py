@@ -17,14 +17,9 @@ from convergence import ConvergenceMap
 
 import numpy as np
 
-#FFT engines
-from numpy.fft import rfft2,irfft2,fftfreq
-
-#Check if rfftfreq is implemented (requires numpy>=1.8)
-try:
-	from numpy.fft import rfftfreq
-except ImportError:
-	from utils import rfftfreq
+#FFT engine
+from .fft import NUMPYFFTPack
+fftengine = NUMPYFFTPack()
 
 #Units
 from astropy.units import deg,rad,arcsec,quantity
@@ -361,8 +356,8 @@ class Spin2(Spin1):
 		assert fourier_E.shape == fourier_B.shape
 
 		#Compute frequencies
-		lx = rfftfreq(fourier_E.shape[0])
-		ly = fftfreq(fourier_E.shape[0])
+		lx = fftengine.rfftfreq(fourier_E.shape[0])
+		ly = fftengine.fftfreq(fourier_E.shape[0])
 
 		#Safety check
 		assert len(lx)==fourier_E.shape[1]
@@ -383,8 +378,8 @@ class Spin2(Spin1):
 		ft_data2 = sin_2_phi * fourier_E + cos_2_phi * fourier_B
 
 		#Invert Fourier transforms
-		data1 = irfft2(ft_data1)
-		data2 = irfft2(ft_data2)
+		data1 = fftengine.irfft2(ft_data1)
+		data2 = fftengine.irfft2(ft_data2)
 
 		#Instantiate new shear map class
 		new = cls(np.array([data1,data2]),angle)
@@ -469,12 +464,12 @@ class Spin2(Spin1):
 		"""
 
 		#Perform Fourier transforms
-		ft_data1 = rfft2(self.data[0])
-		ft_data2 = rfft2(self.data[1])
+		ft_data1 = fftengine.rfft2(self.data[0])
+		ft_data2 = fftengine.rfft2(self.data[1])
 
 		#Compute frequencies
-		lx = rfftfreq(ft_data1.shape[0])
-		ly = fftfreq(ft_data1.shape[0])
+		lx = fftengine.rfftfreq(ft_data1.shape[0])
+		ly = fftengine.fftfreq(ft_data1.shape[0])
 
 		#Safety check
 		assert len(lx)==ft_data1.shape[1]
@@ -633,7 +628,7 @@ class ShearMap(Spin2):
 			l,EE,BB,EB = self.decompose(l_edges,keep_fourier=True)
 
 		#Invert the Fourier transform to go back to real space
-		conv = irfft2(self.fourier_E)
+		conv = fftengine.irfft2(self.fourier_E)
 
 		#Return the ConvergenceMap instance
 		return ConvergenceMap(conv,self.side_angle)

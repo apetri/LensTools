@@ -1655,7 +1655,7 @@ class SimulationCollection(SimulationModel):
 
 		#Save a picked copy of the settings to use for future reference
 		with self.syshandler.open(os.path.join(catalog.home_subdir,"settings.p"),"w") as settingsfile:
-			cPickle.dump(settings,settingsfile)
+			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
 		with self.syshandler.open(os.path.join(self.home_subdir,"catalogs.txt"),"a") as setsfile:
@@ -1682,7 +1682,7 @@ class SimulationCollection(SimulationModel):
 
 		#Read the settings from the pickled file
 		with self.syshandler.open(os.path.join(self.home_subdir,catalog_name,"settings.p"),"r") as settingsfile:
-			settings = cPickle.load(settingsfile) 
+			settings = self.syshandler.pickleload(settingsfile) 
 
 		#Return to user
 		return SimulationCatalog(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,settings,syshandler=self.syshandler)
