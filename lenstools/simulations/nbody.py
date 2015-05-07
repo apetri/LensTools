@@ -559,12 +559,12 @@ class NbodySnapshot(object):
 			self.pool.accumulate()
 			self.pool.closeWindow()
 
-		#If this task is not the master we can return now
-		if (self.pool is not None) and not(self.pool.is_master()):
-			return (None,)*3
-
 		#Compute the number of particles on the plane
 		NumPartTotal = density.sum()
+
+		#If this task is not the master, we can return now
+		if (self.pool is not None) and not(self.pool.is_master()):
+			return (None,)*3
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = [(binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit,(binning[2][1:]-binning[2][:-1]).mean() * positions.unit]

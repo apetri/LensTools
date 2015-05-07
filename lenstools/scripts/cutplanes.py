@@ -7,7 +7,6 @@ from __future__ import division
 import sys,os
 import logging
 import cPickle
-import gc 
 
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
@@ -16,10 +15,6 @@ from lenstools.simulations import Gadget2Snapshot,PotentialPlane
 from lenstools.utils import MPIWhirlPool
 
 import numpy as np
-
-#Enable garbage collection if not active already
-if not gc.isenabled():
-	gc.enable()
 
 ################################################
 ###########Loggers##############################
@@ -120,13 +115,6 @@ def main(pool,batch,settings,id):
 		for cut,pos in enumerate(cut_points):
 			for normal in normals:
 
-				#Force garbage collection
-				gc.collect()
-			
-				#Safety barrier sync
-				if pool is not None:
-					pool.comm.Barrier()
-
 				if pool is not None and pool.is_master():
 					logdriver.info("Cutting plane at {0} with normal {1},thickness {2}, of size {3} x {3}".format(pos,normal,thickness,snap.header["box_size"]))
 
@@ -142,25 +130,16 @@ def main(pool,batch,settings,id):
 					#Save the result
 					logdriver.info("Saving plane to {0}".format(plane_file))
 					potential_plane.save(plane_file)
-
-					#Force delete plane
-					del(plane)
-					del(potential_plane.data)
 			
-				#Force garbage collection
-				gc.collect()
 			
-				#Safety barrier sync
 				if pool is not None:
+			
+					#Safety barrier sync
 					pool.comm.Barrier()
 
 
 		#Close the snapshot
 		snap.close()
-
-		#Force delete particles
-		del(snap.positions)
-
 
 	#Safety barrier sync
 	if pool is not None:

@@ -8,7 +8,6 @@ import logging
 import time
 import cPickle
 import resource
-import gc
 
 from operator import add
 from functools import reduce
@@ -25,10 +24,6 @@ from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,Catalo
 
 import numpy as np
 import astropy.units as u
-
-#Enable garbage collection if not active already
-if not gc.isenabled():
-	gc.enable()
 
 ################################################
 ###########Loggers##############################
@@ -306,9 +301,6 @@ def singleRedshift(pool,batch,settings,id):
 		now = time.time()
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
 		logdriver.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
-
-		#Force garbage collection
-		gc.collect()
 	
 	#Safety sync barrier
 	if pool is not None:
