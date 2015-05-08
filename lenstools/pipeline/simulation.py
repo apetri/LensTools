@@ -1051,6 +1051,10 @@ class SimulationBatch(object):
 
 				executables.append(job_executable + " " + """-e {0} -c {1} "{2}" """.format(environment_file,config_file,realization_list[realizations_per_chunk*c+e]))
 
+				#Allow for extra arguments in the executable
+				if "extra_args" in kwargs.keys() and (kwargs["extra_args"] is not None):
+					executables[-1] += kwargs["extra_args"]
+
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
 

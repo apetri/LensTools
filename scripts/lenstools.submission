@@ -37,6 +37,7 @@ parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str
 parser.add_argument("-t","--type",dest="job_type",action="store",type=str,default=None,help="type of job submission (Gadget,NGenIC,etc...)")
 parser.add_argument("-c","--chunks",dest="chunks",action="store",type=int,default=1,help="number of independent job submissions in which to split the workload")
 parser.add_argument("-s","--system",dest="system",action="store",type=str,default=None,help="name of the system on which we are running on")
+parser.add_argument("-E","--extra_args",dest="extra_args",action="store",type=str,default=None,help="extra arguments to pass to the executable")
 parser.add_argument("model_file",nargs="?",default=None,help="text file that contains all the IDs of the models to include in the job submission")
 
 #Parse command arguments and check that all provided options are available
@@ -153,7 +154,7 @@ else:
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using specifications for {0} found in {1}".format(job_type,cmd_args.exec_options))
-	batch.writeSubmission(realizations,job_settings,job_handler,job_executable=job_type,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script)
+	batch.writeSubmission(realizations,job_settings,job_handler,job_executable=job_type,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script,extra_args=cmd_args.extra_args)
 
 
 
