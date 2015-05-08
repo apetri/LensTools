@@ -320,6 +320,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 		if save:
 			self.positions = positions
+			return self.positions
 		
 		#Return
 		return positions
@@ -386,6 +387,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 		if save:
 			self.velocities = velocities
+			return self.velocities
 		
 		#Return
 		return velocities
@@ -453,6 +455,7 @@ class Gadget2Snapshot(NbodySnapshot):
 		ids = ext._gadget2.getID(self.fp,offset,numPart)
 		if save:
 			self.id = ids
+			return self.id
 		
 		#Return
 		return ids
