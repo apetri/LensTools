@@ -44,11 +44,33 @@ PyMODINIT_FUNC init_nbody(void){
 //grid3d() implementation
 static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 
-	PyObject *positions_obj,*bins_obj;
+	Py_ssize_t nargs = PyTuple_Size(args);
+	PyObject *positions_obj,*bins_obj,*grid_obj;
+	char inplace;
 
-	//parse input tuple
-	if(!PyArg_ParseTuple(args,"OO",&positions_obj,&bins_obj)){
+	if(nargs==2){
+
+		//parse input tuple
+		if(!PyArg_ParseTuple(args,"OO",&positions_obj,&bins_obj)){
+			return NULL;
+		}
+
+		inplace = 0;
+	
+	} else if(nargs==3){
+
+		//parse input tuple
+		if(!PyArg_ParseTuple(args,"OOO",&positions_obj,&bins_obj,&grid_obj)){
+			return NULL;
+		}
+
+		inplace = 1;
+
+	} else{
+
+		PyErr_SetString(PyExc_TypeError,"_grid3d takes either 2 or 3 arguments!!");
 		return NULL;
+
 	}
 
 	//interpret parsed objects as arrays
@@ -81,8 +103,18 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 	int nz = (int)PyArray_DIM(binsZ_array,0) - 1;
 
 	//Allocate the new array for the grid
-	npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
-	PyObject *grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
+	PyObject *grid_array;
+
+	if(!inplace){
+		
+		npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
+		grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
+	
+	} else{
+
+		grid_array = PyArray_FROM_OTF(grid_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+
+	}
 
 	if(grid_array==NULL){
 
@@ -107,7 +139,17 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 	Py_DECREF(binsY_array);
 	Py_DECREF(binsZ_array);
 
-	return grid_array;
+	//if inplace, release the reference to grid_array and return None
+	if(inplace){
+		
+		Py_DECREF(grid_array);
+		Py_RETURN_NONE;
+	
+	} else{
+		
+		return grid_array;
+	
+	}
 
 }
 
