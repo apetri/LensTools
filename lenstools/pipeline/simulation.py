@@ -933,7 +933,12 @@ class SimulationBatch(object):
 
 				#Make sure that there will be perfect load balancing at execution
 				if len(parts)==2:
-					raytracing_settings = MapSettings.read(config_file)
+
+					try:
+						raytracing_settings = MapSettings.read(config_file)
+					except AssertionError:
+						raytracing_settings = CatalogSettings.read(config_file)
+						
 				elif len(parts)==1:
 					raytracing_settings = TelescopicMapSettings.read(config_file)
 				else:
