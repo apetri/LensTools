@@ -5,7 +5,7 @@ from abc import ABCMeta,abstractproperty,abstractmethod
 from operator import mul
 from functools import reduce
 
-import os
+import sys,os
 import logging
 
 from .. import extern as ext
@@ -39,6 +39,18 @@ try:
 	rpy2 = True
 except ImportError:
 	rpy2 = False
+
+###############################################
+###########Logger##############################
+###############################################
+
+console = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
+console.setFormatter(formatter)
+
+logplanes = logging.getLogger("lenstools.cutplanes")
+logplanes.addHandler(console)
+logplanes.propagate = False
 
 
 ###################################################################
@@ -454,7 +466,7 @@ class NbodySnapshot(object):
 
 	###################################################################################################################################################
 
-	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,tomography=False,kind="density"):
+	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,kind="density",**kwargs):
 
 		"""
 		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
@@ -482,6 +494,9 @@ class NbodySnapshot(object):
 
 		:param kind: decide if computing a density or gravitational potential plane (this is computed solving the poisson equation)
 		:type kind: str. ("density" or "potential")
+
+		:param kwargs: accepted keyword are: 'density_placeholder', a pre-allocated numpy array, with a RMA window opened on it; this facilitates the communication with different processors by using a single RMA window during the execution. 'l_squared' a pre-computed meshgrid of squared multipoles used for smoothing
+		:type kwargs: dict.
 
 		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes, number of particles on the plane)
 
@@ -549,14 +564,42 @@ class NbodySnapshot(object):
 		density = ext._nbody.grid3d(positions.value,tuple(binning))
 
 		#Accumulate the density from the other processors
-		if self.pool is not None:
+		if "density_placeholder" in kwargs.keys():
+
+			density_projected = kwargs["density_placeholder"]
+
+			#Safety assert
+			assert density_projected.shape==(density.shape[plane_directions[0]],density.shape[plane_directions[1]])
+
+			density_projected[:] = density.sum(normal)
+
+			if self.pool is not None:
+
+				if self.pool.is_master():
+					logplanes.debug("Communicating density between tasks...")
+
+				self.pool.accumulate()
+
+				if self.pool.is_master():
+					logplanes.debug("Communicated density between tasks.")
+		
+		else:
+
+			#Project along the normal direction
+			density_projected = density.sum(normal)
 			
-			self.pool.openWindow(density)
-			self.pool.accumulate()
-			self.pool.closeWindow()
+			if self.pool is not None:
+				
+				self.pool.openWindow(density_projected)
+				self.pool.accumulate()
+				self.pool.closeWindow()
+
+		#Safety barrier sync
+		if self.pool is not None:
+			self.pool.comm.Barrier()
 
 		#Compute the number of particles on the plane
-		NumPartTotal = density.sum()
+		NumPartTotal = density_projected.sum()
 
 		#If this task is not the master, we can return now
 		if (self.pool is not None) and not(self.pool.is_master()):
@@ -569,54 +612,33 @@ class NbodySnapshot(object):
 		density_normalization = bin_resolution[normal] * self._header["comoving_distance"] / self._header["scale_factor"]
 
 		#Normalize the density to the density fluctuation
-		density /= self._header["num_particles_total"]
-		density *= (self._header["box_size"]**3 / (bin_resolution[0]*bin_resolution[1]*bin_resolution[2])).decompose().value
-
-		#########################################################################################################################################
-		######################################Decide if returning full tomographic information###################################################
-		#########################################################################################################################################
-
-		if tomography:
-
-			if kind=="potential":
-				raise NotImplementedError("Lensing potential tomography is not implemented!")
-
-			if smooth is not None:
-		
-				#Fourier transform the density field
-				fx,fy,fz = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.fftfreq(density.shape[1]),fftengine.rfftfreq(density.shape[2]),indexing="ij")
-				density_ft = fftengine.rfftn(density)
-
-				#Perform the smoothing
-				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*(fx**2 + fy**2 + fz**2))
-
-				#Go back in real space
-				density = fftengine.irfftn(density_ft)
-
-			#Return the computed density histogram
-			return density,bin_resolution,NumPartTotal
-
+		density_projected /= self._header["num_particles_total"]
+		density_projected *= (self._header["box_size"]**3 / (bin_resolution[0]*bin_resolution[1]*bin_resolution[2])).decompose().value
 
 		#################################################################################################################################
 		######################################Ready to solve poisson equation via FFTs###################################################
 		#################################################################################################################################
 
-		#First project along the normal direction
-		density = density.sum(normal)
 		bin_resolution.pop(normal)
 
 		#If smoothing is enabled or potential calculations are needed, we need to FFT the density field
 		if (smooth is not None) or kind=="potential":
 
 			#Compute the multipoles
-			lx,ly = np.meshgrid(fftengine.fftfreq(density.shape[0]),fftengine.rfftfreq(density.shape[1]),indexing="ij")
-			l_squared = lx**2 + ly**2
+			if "l_squared" in kwargs.keys():
 
-			#Avoid dividing by 0
-			l_squared[0,0] = 1.0
+				l_squared = kwargs["l_squared"]
+			
+			else:
+				lx,ly = np.meshgrid(fftengine.fftfreq(density_projected.shape[0]),fftengine.rfftfreq(density_projected.shape[1]),indexing="ij")
+				l_squared = lx**2 + ly**2
+				
+				#Avoid dividing by 0
+				l_squared[0,0] = 1.0
+
 
 			#FFT the density field
-			density_ft = fftengine.rfftn(density)
+			density_ft = fftengine.rfftn(density_projected)
 
 			#Zero out the zeroth frequency
 			density_ft[0,0] = 0.0
@@ -630,20 +652,20 @@ class NbodySnapshot(object):
 				density_ft *= np.exp(-0.5*((2.0*np.pi*smooth)**2)*l_squared)
 
 			#Revert the FFT
-			density = fftengine.irfftn(density_ft)
+			lensing_potential = fftengine.irfftn(density_ft)
 
 		#Multiply by the normalization factors
-		density = density * cosmo_normalization * density_normalization
-		density = density.decompose()
-		assert density.unit.physical_type=="dimensionless"
+		lensing_potential = lensing_potential * cosmo_normalization * density_normalization
+		lensing_potential = lensing_potential.decompose()
+		assert lensing_potential.unit.physical_type=="dimensionless"
 
 		if kind=="potential":
-			density *= rad**2
+			lensing_potential *= rad**2
 		else:
-			density = density.value
+			lensing_potential = lensing_potential.value
 
 		#Return
-		return density,bin_resolution,NumPartTotal
+		return lensing_potential,bin_resolution,NumPartTotal
 
 
 	############################################################################################################################################################################

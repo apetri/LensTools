@@ -16,6 +16,10 @@ from lenstools.utils import MPIWhirlPool
 
 import numpy as np
 
+#FFT engine
+from ..fft import NUMPYFFTPack
+fftengine = NUMPYFFTPack()
+
 ################################################
 ###########Loggers##############################
 ################################################
@@ -96,6 +100,32 @@ def main(pool,batch,settings,id):
 	normals = settings.normals
 	thickness = settings.thickness
 
+	#Place holder for the lensing density on the plane
+	density_projected = np.empty((plane_resolution,)*2,dtype=np.float32)
+
+	#Open a RMA window on the density placeholder
+	if pool is not None:
+		pool.openWindow(density_projected)
+
+	#Pre--compute multipoles for solving Poisson equation
+	lx,ly = np.meshgrid(fftengine.fftfreq(plane_resolution),fftengine.rfftfreq(plane_resolution),indexing="ij")
+	l_squared = lx**2 + ly**2
+				
+	#Avoid dividing by 0
+	l_squared[0,0] = 1.0
+
+	#Arguments
+	kwargs = {
+
+	"plane_resolution" : plane_resolution,
+	"thickness_resolution" : 1,
+	"smooth" : 1,
+	"kind" : "potential",
+	"density_placeholder" : density_projected,
+	"l_squared" : l_squared
+
+	}
+
 	for n in range(first_snapshot,last_snapshot+1):
 
 		#Open the snapshot
@@ -119,7 +149,7 @@ def main(pool,batch,settings,id):
 					logdriver.info("Cutting plane at {0} with normal {1},thickness {2}, of size {3} x {3}".format(pos,normal,thickness,snap.header["box_size"]))
 
 				#Do the cutting
-				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,plane_resolution=plane_resolution,thickness_resolution=1,smooth=1,kind="potential")
+				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,**kwargs)
 				plane_file = os.path.join(save_path,"snap{0}_potentialPlane{1}_normal{2}.{3}".format(n,cut,normal,settings.format))
 
 				if pool is None or pool.is_master():
@@ -144,6 +174,9 @@ def main(pool,batch,settings,id):
 	#Safety barrier sync
 	if pool is not None:
 		pool.comm.Barrier()
+
+		#Close the RMA window
+		pool.closeWindow()
 
 	#Close the infofile
 	if (pool is None) or (pool.is_master()):
