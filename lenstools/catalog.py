@@ -22,6 +22,7 @@ except ImportError:
 	matplotlib = False
 
 import extern as ext
+from . import ShearMap
 
 ##########################################################
 ################Catalog class#############################
@@ -100,15 +101,24 @@ class Catalog(tbl.Table):
 		assert self._field_x in self.columns,"There is no {0} field in the catalog!".format(self._field_x)
 		assert self._field_y in self.columns,"There is no {0} field in the catalog!".format(self._field_y)
 
-		if field_quantity is not None:
-			assert field_quantity in self.columns,"There is no {0} field in the catalog!".format(field_quantity)
-
 		#Horizontal and vertical positions
 		x = self.columns[self._field_x] - origin[0].to(self._position_unit).value
 		y = self.columns[self._field_y] - origin[1].to(self._position_unit).value
 
 		if field_quantity is not None:
-			scalar = self.columns[field_quantity].astype(np.float)
+
+			if type(field_quantity)==str:
+				assert field_quantity in self.columns,"There is no {0} field in the catalog!".format(field_quantity)
+				scalar = self.columns[field_quantity].astype(np.float)
+			elif type(field_quantity)==np.ndarray:
+				assert len(field_quantity)==len(self),"You should provide a scalar property for each record!!"
+				scalar = field_quantity
+			elif type(field_quantity) in [int,float]:
+				scalar = np.empty(len(self),dtype=np.float)
+				scalar.fill(field_quantity)
+			else:
+				raise TypeError("field_quantity format not recognized!")
+
 		else:
 			scalar = np.ones(len(x))
 
@@ -231,6 +241,34 @@ class ShearCatalog(Catalog):
 	Class handler of a galaxy shear catalog, inherits all the functionality from the Catalog class
 
 	"""
+
+	########################################################################################
+
+	def toMap(self,map_size,npixel,smooth):
+
+		"""
+		Convert a shear catalog into a shear map
+
+		:param map_size: spatial size of the map
+		:type map_size: quantity
+
+		:param npixel: number of pixels on a side
+		:type npixel: int.
+
+		:param smooth: if not None, the map is smoothed with a gaussian filter of scale smooth
+		:type smooth: quantity
+
+		:returns: shear map
+		:rtype: ShearMap
+
+		"""
+
+		#Shear components
+		s1 = self.pixelize(map_size,npixel,field_quantity="shear1",smooth=smooth)
+		s2 = self.pixelize(map_size,npixel,field_quantity="shear2",smooth=smooth)
+
+		#Convert into map
+		return ShearMap(np.array([s1.T,s2.T]),map_size)
 
 	########################################################################################
 
