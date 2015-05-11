@@ -575,6 +575,8 @@ class NbodySnapshot(object):
 
 			if self.pool is not None:
 
+				self.pool.comm.Barrier()
+
 				if self.pool.is_master():
 					logplanes.debug("Communicating density between tasks...")
 
