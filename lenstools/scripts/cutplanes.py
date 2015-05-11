@@ -145,7 +145,7 @@ def main(pool,batch,settings,id):
 		for cut,pos in enumerate(cut_points):
 			for normal in normals:
 
-				if pool is not None and pool.is_master():
+				if pool is None or pool.is_master():
 					logdriver.info("Cutting plane at {0} with normal {1},thickness {2}, of size {3} x {3}".format(pos,normal,thickness,snap.header["box_size"]))
 
 				#Do the cutting
