@@ -936,15 +936,18 @@ class SimulationBatch(object):
 
 					try:
 						raytracing_settings = MapSettings.read(config_file)
+						assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
 					except AssertionError:
 						raytracing_settings = CatalogSettings.read(config_file)
-						
+						assert raytracing_settings.lens_catalog_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
+
 				elif len(parts)==1:
 					raytracing_settings = TelescopicMapSettings.read(config_file)
+					assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
 				else:
 					raise ValueError("There are too many '|'' into your id: {0}".format(realizations_in_chunk[e]))
 
-				assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
+				
 
 				executables.append(job_settings.path_to_executable + " " + """-e {0} -c {1} "{2}" """.format(environment_file,config_file,realization_list[realizations_per_chunk*c+e]))
 
