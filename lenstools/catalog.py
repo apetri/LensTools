@@ -144,7 +144,7 @@ class Catalog(tbl.Table):
 			scalar_map = gaussian_filter(scalar_map,sigma=smooth_in_pixel)
 
 		#Return
-		return scalar_map
+		return scalar_map.T
 
 
 
@@ -268,7 +268,7 @@ class ShearCatalog(Catalog):
 		s2 = self.pixelize(map_size,npixel,field_quantity="shear2",smooth=smooth)
 
 		#Convert into map
-		return ShearMap(np.array([s1.T,s2.T]),map_size)
+		return ShearMap(np.array([s1,s2]),map_size)
 
 	########################################################################################
 
