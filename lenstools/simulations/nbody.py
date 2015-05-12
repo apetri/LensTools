@@ -6,7 +6,7 @@ from operator import mul
 from functools import reduce
 
 import sys,os
-import logging
+from .logs import logplanes
 
 from .. import extern as ext
 
@@ -39,18 +39,6 @@ try:
 	rpy2 = True
 except ImportError:
 	rpy2 = False
-
-###############################################
-###########Logger##############################
-###############################################
-
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logplanes = logging.getLogger("lenstools.cutplanes")
-logplanes.addHandler(console)
-logplanes.propagate = False
 
 
 ###################################################################

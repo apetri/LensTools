@@ -8,18 +8,7 @@ from lenstools.pipeline import SimulationBatch
 from lenstools.pipeline.settings import EnvironmentSettings,PlaneSettings
 
 import logging
-
-################################################
-###########Loggers##############################
-################################################
-
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logpreamble = logging.getLogger("lenstools.preamble")
-logpreamble.addHandler(console)
-logpreamble.propagate = False
+from lenstools.simulations.logs import logpreamble
 
 #Parse command line options
 parser = argparse.ArgumentParser()

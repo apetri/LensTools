@@ -3,8 +3,9 @@ from ..shear import Spin1,Spin2,ShearMap
 
 import sys
 import time
-import logging
 import gc
+
+from .logs import logplanes,logray
 
 from operator import mul
 from functools import reduce
@@ -29,23 +30,6 @@ from .io import readFITS,saveFITS
 #Enable garbage collection if not active already
 if not gc.isenabled():
 	gc.enable()
-
-
-################################################
-###########Loggers##############################
-################################################
-
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logplanes = logging.getLogger("lenstools.planes")
-logplanes.addHandler(console)
-logplanes.propagate = False
-
-logray = logging.getLogger("lenstools.raytracing")
-logray.addHandler(console)
-logray.propagate = False
 
 
 ###########################################################

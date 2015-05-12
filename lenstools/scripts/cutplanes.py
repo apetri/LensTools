@@ -5,8 +5,9 @@
 from __future__ import division
 
 import sys,os
-import logging
 import cPickle
+
+from lenstools.simulations.logs import logdriver
 
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
@@ -19,18 +20,6 @@ import numpy as np
 #FFT engine
 from ..fft import NUMPYFFTPack
 fftengine = NUMPYFFTPack()
-
-################################################
-###########Loggers##############################
-################################################
-
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logdriver = logging.getLogger("lenstools.driver")
-logdriver.addHandler(console)
-logdriver.propagate = False
 
 
 #######################################################

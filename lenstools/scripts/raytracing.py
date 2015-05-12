@@ -4,13 +4,14 @@
 from __future__ import division,with_statement
 
 import sys,os
-import logging
 import time
 import cPickle
 import resource
 
 from operator import add
 from functools import reduce
+
+from lenstools.simulations.logs import logdriver
 
 from lenstools.utils import MPIWhirlPool
 
@@ -25,17 +26,7 @@ from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,Catalo
 import numpy as np
 import astropy.units as u
 
-################################################
-###########Loggers##############################
-################################################
 
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logdriver = logging.getLogger("lenstools.driver")
-logdriver.addHandler(console)
-logdriver.propagate = False
 
 ################################################
 #######Single redshift ray tracing##############

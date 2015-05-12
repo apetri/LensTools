@@ -9,22 +9,11 @@ from lenstools.pipeline.settings import EnvironmentSettings
 from lenstools.scripts.nbody import powerSpectrumExecution
 
 import logging
+from lenstools.simulations.logs import logpreamble
 
 #MPI
 from mpi4py import MPI
 from lenstools.utils import MPIWhirlPool
-
-################################################
-###########Loggers##############################
-################################################
-
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logpreamble = logging.getLogger("lenstools.preamble")
-logpreamble.addHandler(console)
-logpreamble.propagate = False
 
 #Parse command line options
 parser = argparse.ArgumentParser()
