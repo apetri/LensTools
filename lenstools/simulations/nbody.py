@@ -18,7 +18,7 @@ from astropy.constants import c
 from astropy.cosmology import w0waCDM
 
 #FFT engine
-from ..fft import NUMPYFFTPack
+from ..utils.fft import NUMPYFFTPack
 fftengine = NUMPYFFTPack()
 
 #KD-Tree

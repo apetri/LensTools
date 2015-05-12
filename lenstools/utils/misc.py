@@ -3,9 +3,6 @@ from __future__ import division
 import numpy as np
 from scipy import special as sp,integrate
 
-from .mpi import MPIWhirlPool
-MPIWhirlPool = MPIWhirlPool
-
 ####################################################################
 #################Hankel transforms##################################
 ####################################################################

@@ -24,8 +24,8 @@ from numpy.linalg import solve,inv
 from scipy.interpolate import interp1d,Rbf
 
 from emcee.ensemble import _function_wrapper
-from .utils import _interpolate_wrapper
-from .utils import pcaHandler as PCA
+from ..utils.misc import _interpolate_wrapper
+from ..utils.misc import pcaHandler as PCA
 
 #########################################################
 #############Default Gaussian data likelihood############

@@ -20,7 +20,7 @@ except ImportError:
 	matplotlib = None
 
 #FFT engine
-from ..fft import NUMPYFFTPack
+from ..utils.fft import NUMPYFFTPack
 fftengine = NUMPYFFTPack()
 
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity

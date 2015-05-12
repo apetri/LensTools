@@ -7,10 +7,15 @@
 
 __version__ = "0.5"
 
-from .convergence import ConvergenceMap,Mask
-from .shear import ShearMap
-from .statistics import Ensemble
-from .noise import GaussianNoiseGenerator
+from image.convergence import ConvergenceMap,Mask
+from image.shear import ShearMap
+from image.noise import GaussianNoiseGenerator
+from .statistics.ensemble import Ensemble
+
+import statistics.index as index
+import statistics.contours as contours
+import statistics.constraints as constraints
+
 
 #Path to the data folder
 import os,pkg_resources

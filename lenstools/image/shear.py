@@ -12,13 +12,13 @@
 
 from __future__ import division
 
-from extern import _topology
+from ..extern import _topology
 from convergence import ConvergenceMap
 
 import numpy as np
 
 #FFT engine
-from .fft import NUMPYFFTPack
+from ..utils.fft import NUMPYFFTPack
 fftengine = NUMPYFFTPack()
 
 #Units

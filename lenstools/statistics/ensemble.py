@@ -16,7 +16,7 @@ from operator import add
 from functools import reduce
 
 from .index import Indexer
-from .utils import pcaHandler as PCA
+from ..utils import pcaHandler as PCA
 
 import numpy as np
 import scipy.io as sio

@@ -17,7 +17,7 @@ from convergence import ConvergenceMap
 import numpy as np
 
 #FFT engine
-from .fft import NUMPYFFTPack
+from ..utils.fft import NUMPYFFTPack
 fftengine = NUMPYFFTPack()
 
 from scipy import interpolate

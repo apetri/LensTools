@@ -15,16 +15,16 @@ from __future__ import division
 from operator import mul
 from functools import reduce
 
-from extern import _topology
+from ..extern import _topology
 
 import numpy as np
 
 #FFT engine
-from .fft import NUMPYFFTPack
+from ..utils.fft import NUMPYFFTPack
 fftengine = NUMPYFFTPack()
 
 #Hankel transform
-from utils import fht
+from ..utils import fht
 
 from scipy.ndimage import filters
 
