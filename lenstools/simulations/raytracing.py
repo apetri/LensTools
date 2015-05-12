@@ -1,5 +1,5 @@
-from ..convergence import Spin0,ConvergenceMap
-from ..shear import Spin1,Spin2,ShearMap
+from ..image.convergence import Spin0,ConvergenceMap
+from ..image.shear import Spin1,Spin2,ShearMap
 
 import sys
 import time

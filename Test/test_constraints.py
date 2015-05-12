@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 try:
 	
 	from lenstools import Ensemble
-	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis,Emulator
+	from lenstools.statistics.constraints import FisherAnalysis,LikelihoodAnalysis,Emulator
 	from lenstools.simulations import CFHTemu1
 
 except ImportError:
@@ -14,7 +14,7 @@ except ImportError:
 	sys.path.append("..")
 
 	from lenstools import Ensemble
-	from lenstools.constraints import FisherAnalysis,LikelihoodAnalysis,Emulator
+	from lenstools.statistics.constraints import FisherAnalysis,LikelihoodAnalysis,Emulator
 	from lenstools.simulations import CFHTemu1
 
 
