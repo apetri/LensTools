@@ -587,13 +587,13 @@ class NbodySnapshot(object):
 			NumPartTask = density_projected.sum()
 			
 			if self.pool is not None:
+
+				#Log
+				logplanes.debug("Task {0} collected {1:.3e} particles".format(self.pool.rank,NumPartTask))
 				
 				self.pool.openWindow(density_projected)
 				self.pool.accumulate()
 				self.pool.closeWindow()
-
-				#Log
-				logplanes.debug("Task {0} collected {1:.3e} particles".format(self.pool.rank,NumPartTask))
 
 		#Safety barrier sync
 		if self.pool is not None:
