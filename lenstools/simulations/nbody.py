@@ -572,23 +572,31 @@ class NbodySnapshot(object):
 			assert density_projected.shape==(density.shape[plane_directions[0]],density.shape[plane_directions[1]])
 
 			density_projected[:] = density.sum(normal)
+			NumPartTask = density_projected.sum()
 
 			if self.pool is not None:
 
 				self.pool.comm.Barrier()
 
+				#Log
+				logplanes.debug("Task {0} collected {1:.3e} particles".format(self.pool.rank,NumPartTask))
+
+				#Compute how many particles in total shoud be collected (for checking)
+				NumPartTotalExpected = np.zeros(1,dtype=np.float32)
+				self.pool.comm.Reduce(np.array([NumPartTask]),NumPartTotalExpected)
+
+				#Log
 				if self.pool.is_master():
+					logplanes.debug("{0[0]:.3e} particles should be collected from tasks 0-{1}".format(NumPartTotalExpected,self.pool.size))
 					logplanes.debug("Communicating density between tasks...")
 
 				self.pool.accumulate()
-
-				if self.pool.is_master():
-					logplanes.debug("Communicated density between tasks.")
 		
 		else:
 
 			#Project along the normal direction
 			density_projected = density.sum(normal)
+			NumPartTask = density_projected.sum()
 			
 			if self.pool is not None:
 				
@@ -596,12 +604,19 @@ class NbodySnapshot(object):
 				self.pool.accumulate()
 				self.pool.closeWindow()
 
+				#Log
+				logplanes.debug("Task {0} collected {1:.3e} particles".format(self.pool.rank,NumPartTask))
+
 		#Safety barrier sync
 		if self.pool is not None:
 			self.pool.comm.Barrier()
 
 		#Compute the number of particles on the plane
 		NumPartTotal = density_projected.sum()
+
+		#Log
+		if (self.pool is not None) and self.pool.is_master():
+			logplanes.debug("Received particles from all tasks: collected {0:.3e} particles".format(NumPartTotal))
 
 		#If this task is not the master, we can return now
 		if (self.pool is not None) and not(self.pool.is_master()):
