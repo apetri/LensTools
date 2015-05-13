@@ -269,7 +269,7 @@ This will generate a CAMB parameter file that can be used to compute the linear 
 
 ::
 
-	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t camb SimTest/Home/realizations.txt
+	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t camb SimTest/Home/collections.txt
 	
 
 Initial conditions (NGenIC)
