@@ -1,14 +1,14 @@
 try:
 	
 	from lenstools.simulations.limber import LimberIntegrator
-	from lenstools.defaults import load_power_default
+	from lenstools.utils.defaults import load_power_default
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools.simulations.limber import LimberIntegrator
-	from lenstools.defaults import load_power_default
+	from lenstools.utils.defaults import load_power_default
 
 import numpy as np
 import matplotlib.pyplot as plt

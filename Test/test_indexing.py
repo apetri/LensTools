@@ -4,14 +4,14 @@ try:
 
 	from lenstools import Ensemble
 	from lenstools.statistics.index import Indexer,PowerSpectrum,PDF,Peaks,MinkowskiAll,Moments
-	from lenstools.defaults import convergence_measure_all
+	from lenstools.utils.defaults import convergence_measure_all
 
 except ImportError:
 
 	sys.path.append("..")
 	from lenstools import Ensemble
 	from lenstools.statistics.index import Indexer,PowerSpectrum,PDF,Peaks,MinkowskiAll,Moments
-	from lenstools.defaults import convergence_measure_all
+	from lenstools.utils.defaults import convergence_measure_all
 
 import logging
 

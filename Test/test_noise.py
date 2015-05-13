@@ -1,14 +1,14 @@
 try:
 	
 	from lenstools import ConvergenceMap,ShearMap,GaussianNoiseGenerator
-	from lenstools.defaults import sample_power_shape
+	from lenstools.utils.defaults import sample_power_shape
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap,ShearMap,GaussianNoiseGenerator
-	from lenstools.defaults import sample_power_shape
+	from lenstools.utils.defaults import sample_power_shape
 
 import numpy as np
 import matplotlib.pyplot as plt

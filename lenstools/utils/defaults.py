@@ -18,8 +18,8 @@ import numpy as np
 from astropy.io import fits
 from astropy.units import deg
 
-from convergence import ConvergenceMap
-from index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle,Moments
+from ..image.convergence import ConvergenceMap
+from ..statistics.index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle,Moments
 
 ##########################################
 #####Default Fits loader convergence######

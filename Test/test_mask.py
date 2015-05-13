@@ -1,14 +1,14 @@
 try:
 	
 	from lenstools import ConvergenceMap,Mask
-	from lenstools.defaults import load_fits_default_convergence
+	from lenstools.utils.defaults import load_fits_default_convergence
 
 except ImportError:
 	
 	import sys
 	sys.path.append("..")
 	from lenstools import ConvergenceMap,Mask
-	from lenstools.defaults import load_fits_default_convergence
+	from lenstools.utils.defaults import load_fits_default_convergence
 
 import numpy as np
 import matplotlib.pyplot as plt

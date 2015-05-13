@@ -21,8 +21,8 @@ try:
 except ImportError:
 	matplotlib = False
 
-import extern as ext
-from . import ShearMap
+from .. import extern as ext
+from ..image.shear import ShearMap
 
 ##########################################################
 ################Catalog class#############################

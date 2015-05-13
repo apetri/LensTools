@@ -16,7 +16,7 @@ from lenstools.simulations.logs import logdriver
 from lenstools.utils.mpi import MPIWhirlPool
 
 from lenstools.image.convergence import Spin0
-from lenstools.image import ConvergenceMap,ShearMap
+from lenstools import ConvergenceMap,ShearMap
 from lenstools.catalog import Catalog,ShearCatalog
 
 from lenstools.simulations.raytracing import RayTracer
