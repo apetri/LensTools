@@ -26,7 +26,9 @@ class MPIWhirlPool(MPIPool):
 
 	"""
 
-	def openWindow(self,memory):
+	#######################################################################################################################
+	
+	def openWindow(self,memory,window_type="sendrecv"):
 
 		"""
 		Create a RMA window that looks from the master process onto all the other workers
@@ -36,14 +38,25 @@ class MPIWhirlPool(MPIPool):
 
 		"""
 
+		self._window_type = window_type
+
 		#Stats of the memory to open a window onto
 		assert isinstance(memory,np.ndarray)
 		self.memory = memory
 
 		#Create the window
-		self.win = MPI.Win.Create(memory=memory,comm=self.comm)
-		self.win.Fence()
+		if window_type=="RMA":
 
+			self.win = MPI.Win.Create(memory=memory,comm=self.comm)
+			self.win.Fence()
+
+		elif window_type=="sendrecv":
+			self._buffer = np.zeros_like(memory)
+
+		else:
+			raise NotImplementedError("Window of type {0} not implemented!".format(window_type))
+
+	#######################################################################################################################
 	
 	def get(self,process):
 
@@ -52,16 +65,23 @@ class MPIWhirlPool(MPIPool):
 
 		"""
 
-		read_buffer = np.zeros(self.memory.shape,dtype=self.memory.dtype)
+		if self._window_type=="RMA":
+		
+			read_buffer = np.zeros(self.memory.shape,dtype=self.memory.dtype)
 
-		self.win.Fence()
+			self.win.Fence()
 
-		if self.is_master():
-			self.win.Get(read_buffer,process)
+			if self.is_master():
+				self.win.Get(read_buffer,process)
 
-		self.win.Fence()
+			self.win.Fence()
 
-		return read_buffer
+			return read_buffer
+
+		elif self._window_type=="sendrecv":
+			raise NotImplementedError
+
+	#######################################################################################################################
 
 	def accumulate(self,op=default_op):
 
@@ -76,19 +96,38 @@ class MPIWhirlPool(MPIPool):
 		#Cycle until only master is left
 		while len(tasks)>1:
 
-			self.win.Fence()
+			if self._window_type=="RMA":
+				self.win.Fence()
 				
 			#Odd tasks communicate the info to the even ones
 			try:
 				n = tasks.index(self.rank)
 				if n%2:
-					self.win.Accumulate(self.memory,tasks[n-1],op=op)
+
+					if self._window_type=="RMA":
+						self.win.Accumulate(self.memory,tasks[n-1],op=op)
+					elif self._window_type=="sendrecv":
+						self.comm.Send(self.memory,dest=tasks[n-1],tag=tasks[n])
+
+				elif n!=len(tasks)-1:
+
+					if self._window_type=="sendrecv":
+						self.comm.Recv(self._buffer,source=tasks[n+1],tag=tasks[n+1])
+
+						if op==default_op:
+							self.memory += self._buffer
+						else:
+							raise NotImplementedError
 
 			except ValueError:
 				pass
 
 			finally:
-				self.win.Fence()
+
+				if self._window_type=="RMA":
+					self.win.Fence()
+				elif self._window_type=="sendrecv":
+					self.comm.Barrier()
 
 				#Remove all tasks in odd positions (which already communicated)
 				purge = list()
@@ -102,7 +141,8 @@ class MPIWhirlPool(MPIPool):
 				#Safety barrier
 				self.comm.Barrier()
 				
-
+	
+	#######################################################################################################################
 
 	def closeWindow(self):
 
@@ -110,5 +150,10 @@ class MPIWhirlPool(MPIPool):
 		Closes a previously opened RMA window
 
 		"""
-		self.win.Fence()
-		self.win.Free()
+		if self._window_type=="RMA":
+			
+			self.win.Fence()
+			self.win.Free()
+		
+		elif self._window_type=="sendrecv":
+			pass

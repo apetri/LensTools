@@ -36,6 +36,7 @@ from astropy.io import fits
 
 try:
 	import matplotlib.pyplot as plt
+	from matplotlib import cm
 	matplotlib = True
 except ImportError:
 	matplotlib = False
@@ -291,7 +292,7 @@ class Spin0(object):
 
 
 
-	def visualize(self,fig=None,ax=None,colorbar=False,**kwargs):
+	def visualize(self,fig=None,ax=None,colorbar=False,cmap="jet",**kwargs):
 
 		"""
 		Visualize the convergence map; the kwargs are passed to imshow 
@@ -312,7 +313,7 @@ class Spin0(object):
 			self.ax = ax
 
 		#Plot the map
-		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=getattr(cm,cmap),**kwargs)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
 
