@@ -1,3 +1,5 @@
+from __future__ import division
+
 try:
 	
 	from mpi4py import MPI
@@ -59,10 +61,7 @@ class MPIWhirlPool(MPIPool):
 
 		self.win.Fence()
 
-		if self.is_master():
-			return read_buffer
-		else:
-			return None
+		return read_buffer
 
 	def accumulate(self,op=default_op):
 
@@ -71,16 +70,38 @@ class MPIWhirlPool(MPIPool):
 
 		"""
 
-		#TODO: This can run in log(N) time
+		#All the tasks that participate in the communication
+		tasks = range(self.size+1)
 
-		for n in range(1,self.size+1):
-
-			self.win.Fence()
-
-			if(self.rank==n):
-				self.win.Accumulate(self.memory,0,op=op)
+		#Cycle until only master is left
+		while len(tasks)>1:
 
 			self.win.Fence()
+				
+			#Odd tasks communicate the info to the even ones
+			try:
+				n = tasks.index(self.rank)
+				if n%2:
+					self.win.Accumulate(self.memory,tasks[n-1],op=op)
+
+			except ValueError:
+				pass
+
+			finally:
+				self.win.Fence()
+
+				#Remove all tasks in odd positions (which already communicated)
+				purge = list()
+				for n in range(len(tasks)):
+					if n%2:
+						purge.append(tasks[n])
+
+				for t in purge:
+					tasks.remove(t)
+
+				#Safety barrier
+				self.comm.Barrier()
+				
 
 
 	def closeWindow(self):
