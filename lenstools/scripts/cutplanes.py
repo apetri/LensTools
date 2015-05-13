@@ -95,6 +95,9 @@ def main(pool,batch,settings,id):
 	#Open a RMA window on the density placeholder
 	if pool is not None:
 		pool.openWindow(density_projected)
+		
+		if pool.is_master():
+			logdriver.debug("Opened density window of type {0}".format(pool._window_type))
 
 	#Pre--compute multipoles for solving Poisson equation
 	lx,ly = np.meshgrid(fftengine.fftfreq(plane_resolution),fftengine.rfftfreq(plane_resolution),indexing="ij")
@@ -166,6 +169,9 @@ def main(pool,batch,settings,id):
 
 		#Close the RMA window
 		pool.closeWindow()
+		
+		if pool.is_master():
+			logdriver.debug("Closed density window of type {0}".format(pool._window_type))
 
 	#Close the infofile
 	if (pool is None) or (pool.is_master()):
