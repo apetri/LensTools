@@ -8,7 +8,7 @@ except ImportError:
 	
 	MPI=None
 	default_op=None
-	print("Warning! mpi4py installation not found or broken!")
+	print("WARNING: could not import mpi4py! (if you set sys.modules['mpi4py']=None please disregard this message)")
 
 from emcee.utils import MPIPool
 import numpy as np
