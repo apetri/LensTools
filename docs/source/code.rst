@@ -229,3 +229,9 @@ MPI
 
 .. autoclass:: lenstools.utils.MPIWhirlPool
 	:inherited-members:
+
+Fast Fourier Transforms
+=======================
+
+.. autoclass:: lenstools.fft.NUMPYFFTPack
+	:inherited-members:
