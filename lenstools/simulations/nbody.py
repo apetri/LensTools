@@ -643,6 +643,9 @@ class NbodySnapshot(object):
 
 
 			#FFT the density field
+			if (self.pool is None) or (self.pool.is_master()):
+				logplanes.debug("Proceeding in density FFT operations...")
+
 			density_ft = fftengine.rfftn(density_projected)
 
 			#Zero out the zeroth frequency
@@ -658,6 +661,9 @@ class NbodySnapshot(object):
 
 			#Revert the FFT
 			lensing_potential = fftengine.irfftn(density_ft)
+
+			if (self.pool is None) or (self.pool.is_master()):
+				logplanes.debug("Done with density FFT operations...")
 
 		#Multiply by the normalization factors
 		lensing_potential = lensing_potential * cosmo_normalization * density_normalization
