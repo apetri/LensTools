@@ -17,6 +17,7 @@ import astropy.units as u
 
 try:
 	import matplotlib.pyplot as plt
+	from matplotlib import cm
 	matplotlib = True
 except ImportError:
 	matplotlib = False
@@ -69,7 +70,7 @@ class Catalog(tbl.Table):
 	########################################################################################
 
 	
-	def pixelize(self,map_size,npixel,field_quantity=None,origin=np.zeros(2)*u.deg,smooth=None):
+	def pixelize(self,map_size,npixel=256,field_quantity=None,origin=np.zeros(2)*u.deg,smooth=None,accumulate="average",callback=None,**kwargs):
 
 		"""
 		Constructs a two dimensional square pixelized map version of one of the scalar properties in the catalog by assigning its objects on a grid
@@ -88,6 +89,15 @@ class Catalog(tbl.Table):
 
 		:param smooth: if not None, the map is smoothed with a gaussian filter of scale smooth
 		:type smooth: quantity
+
+		:param accumulate: if "sum" field galaxies that fall in the same pixel have their field_quantity summed, if "average" the sum is divided by the number of galaxies that fall in the pixel
+		:type accumulate: str.
+
+		:param callback: user defined function that gets called on field_quantity
+		:type callback: callable or None
+
+		:param kwargs: the keyword arguments are passed to callback
+		:type kwargs: dict.
 
 		:returns: two dimensional scalar array with the pixelized field (pixels with no objects are treated as NaN)
 		:rtype: array 
@@ -120,15 +130,36 @@ class Catalog(tbl.Table):
 				raise TypeError("field_quantity format not recognized!")
 
 		else:
-			scalar = np.ones(len(x))
+			scalar = np.ones(len(self))
 
 		#Make sure x,y,scalar have all the same length
 		assert len(x)==len(y) and len(y)==len(scalar)
+
+		#If user decides, call a function on scalar
+		if callback is not None:
+			scalar = callback(scalar,**kwargs)
 
 		#Perform the pixelization
 		scalar_map = np.zeros((npixel,npixel))
 		scalar_map.fill(np.nan)
 		ext._pixelize.grid2d(x,y,scalar,map_size.to(self._position_unit).value,scalar_map)
+
+		#If pixel averaging is requested we need to compute the pixel hit count too
+		if accumulate=="average":
+			
+			#Compute hits
+			hits = np.zeros((npixel,npixel))
+			hits.fill(np.nan)
+			ext._pixelize.grid2d(x,y,np.ones(len(self)),map_size.to(self._position_unit).value,hits)
+
+			#Average the scalar map
+			scalar_map /= hits
+
+		elif accumulate=="sum":
+			pass
+
+		else:
+			raise NotImplementedError("pixel collection method {0} not implemented!")
 
 		#Maybe smooth
 		if smooth is not None:
@@ -151,7 +182,7 @@ class Catalog(tbl.Table):
 	########################################################################################
 
 	
-	def visualize(self,map_size,npixel,field_quantity=None,origin=np.zeros(2)*u.deg,smooth=None,fig=None,ax=None,colorbar=False):
+	def visualize(self,map_size,npixel,field_quantity=None,origin=np.zeros(2)*u.deg,smooth=None,fig=None,ax=None,colorbar=False,cmap="jet",**kwargs):
 
 		"""
 		Visualize a two dimensional square pixelized map version of one of the scalar properties in the catalog by assigning its objects on a grid (the pixelization is performed using the pixelize routine)
@@ -170,6 +201,9 @@ class Catalog(tbl.Table):
 
 		:param smooth: if not None, the map is smoothed with a gaussian filter of scale smooth
 		:type smooth: quantity
+
+		:param kwargs: the additional keyword arguments are passed to pixelize 
+		:type kwargs: dict.
 
 		:returns: two dimensional scalar array with the pixelized field (pixels with no objects are treated as NaN)
 		:rtype: array 
@@ -190,17 +224,17 @@ class Catalog(tbl.Table):
 			self.ax = ax
 
 		#Compute the pixelization
-		scalar_map = self.pixelize(map_size,npixel,field_quantity,origin,smooth)
+		scalar_map = self.pixelize(map_size,npixel,field_quantity,origin,smooth,**kwargs)
 
 		#Plot 
-		ax0 = self.ax.imshow(scalar_map.T,origin="lower",interpolation="nearest",extent=[origin[0].to(self._position_unit).value,(origin[0]+map_size).to(self._position_unit).value,origin[1].to(self._position_unit).value,(origin[1]+map_size).to(self._position_unit).value])
+		ax0 = self.ax.imshow(scalar_map.T,origin="lower",interpolation="nearest",extent=[origin[0].to(self._position_unit).value,(origin[0]+map_size).to(self._position_unit).value,origin[1].to(self._position_unit).value,(origin[1]+map_size).to(self._position_unit).value],cmap=getattr(cm,cmap))
 		self.ax.set_xlabel(r"$x$({0})".format(self._position_unit.to_string()))
 		self.ax.set_ylabel(r"$y$({0})".format(self._position_unit.to_string()))
 
 		#Colorbar
 		if colorbar:
 			cbar = plt.colorbar(ax0,ax=self.ax)
-			if field_quantity is not None:
+			if (field_quantity is not None) and (type(field_quantity)==str):
 				cbar.set_label(field_quantity)
 			else:
 				cbar.set_label(r"$n$")
@@ -244,7 +278,7 @@ class ShearCatalog(Catalog):
 
 	########################################################################################
 
-	def toMap(self,map_size,npixel,smooth):
+	def toMap(self,map_size,npixel,smooth,**kwargs):
 
 		"""
 		Convert a shear catalog into a shear map
@@ -258,14 +292,17 @@ class ShearCatalog(Catalog):
 		:param smooth: if not None, the map is smoothed with a gaussian filter of scale smooth
 		:type smooth: quantity
 
+		:param kwargs: additonal keyword arguments are passed to pixelize
+		:type kwargs: dict.
+
 		:returns: shear map
 		:rtype: ShearMap
 
 		"""
 
 		#Shear components
-		s1 = self.pixelize(map_size,npixel,field_quantity="shear1",smooth=smooth)
-		s2 = self.pixelize(map_size,npixel,field_quantity="shear2",smooth=smooth)
+		s1 = self.pixelize(map_size,npixel,field_quantity="shear1",smooth=smooth,accumulate="average",**kwargs)
+		s2 = self.pixelize(map_size,npixel,field_quantity="shear2",smooth=smooth,accumulate="average",**kwargs)
 
 		#Convert into map
 		return ShearMap(np.array([s1,s2]),map_size)
