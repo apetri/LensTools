@@ -30,6 +30,7 @@ from astropy.io import fits
 try:
 	import matplotlib.pyplot as plt
 	from matplotlib.colors import LogNorm
+	from matplotlib import cm
 	matplotlib = True
 except ImportError:
 	matplotlib = False
@@ -270,7 +271,7 @@ class Spin1(object):
 
 
 	
-	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),colorbar=False,**kwargs):
+	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),colorbar=False,cmap="jet",**kwargs):
 
 		"""
 		Visualize the shear map; the kwargs are passed to imshow 
@@ -299,7 +300,7 @@ class Spin1(object):
 		else:
 
 			for i in range(self.data.shape[0]):
-				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs)
+				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=getattr(cm,cmap),**kwargs)
 
 		#Axes labels
 		for i in range(self.data.shape[0]):
