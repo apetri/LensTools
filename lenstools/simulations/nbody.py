@@ -6,7 +6,9 @@ from operator import mul
 from functools import reduce
 
 import sys,os
+
 from .logs import logplanes
+import logging
 
 from .. import extern as ext
 
