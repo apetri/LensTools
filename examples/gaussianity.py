@@ -5,7 +5,7 @@ Tests the gaussianity of simulated noise maps by measuring their cubic and quart
 import sys
 
 from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
-from lenstools.defaults import load_fits_default_convergence
+from lenstools.utils.defaults import load_fits_default_convergence
 from lenstools.simulations import IGS1
 
 import numpy as np

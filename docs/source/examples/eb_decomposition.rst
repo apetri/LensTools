@@ -7,7 +7,7 @@ Decompose a shear map into E and B modes
 ::
 
 	from lenstools import ShearMap
-	from lenstools.defaults import load_fits_default_convergence,load_fits_default_shear
+	from lenstools.utils.defaults import load_fits_default_convergence,load_fits_default_shear
 	
 	import numpy as np
 	import matplotlib.pyplot as plt

@@ -1,5 +1,5 @@
 from lenstools import Ensemble
-from lenstools.defaults import default_callback_loader,peaks_loader
+from lenstools.utils.defaults import default_callback_loader,peaks_loader
 
 try:
 

@@ -3,7 +3,7 @@
 Measure the power spectrum of a convergence map
 ===============================================
 
-Snipped from lenstools.defaults 
+Snipped from lenstools.utils.defaults 
 
 ::
 
@@ -36,7 +36,7 @@ This is the actual code
 ::
 
 	from lenstools import Ensemble
-	from lenstools.defaults import default_callback_loader
+	from lenstools.utils.defaults import default_callback_loader
 
 	try:
 

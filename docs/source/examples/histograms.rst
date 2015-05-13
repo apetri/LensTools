@@ -12,8 +12,8 @@ Histograms of convergence maps
 	####################################################
 	
 	from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
-	from lenstools.index import PDF,Indexer
-	from lenstools.defaults import load_fits_default_convergence
+	from lenstools.statistics.index import PDF,Indexer
+	from lenstools.utils.defaults import load_fits_default_convergence
 	from lenstools.simulations import IGS1
 	
 	#####################################################

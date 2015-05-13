@@ -4,8 +4,8 @@ import code
 import argparse
 
 #LensTools
-from lenstools.convergence import Spin0
-from lenstools.shear import Spin1
+from lenstools.image.convergence import Spin0
+from lenstools.image.shear import Spin1
 from lenstools.simulations.raytracing import Plane
 
 #Matplotlib

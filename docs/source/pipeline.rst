@@ -432,7 +432,7 @@ Where "collections.txt", in this case, should be a text file with only one line
 
 	Om0.300_Ol0.700|512b240
 
-After lenstools.raytracing-mpi finished the execution, you will find your weak lensing maps in the "Maps" directory, and you can conveniently access them through the :py:class:`~lenstools.ConvergenceMap` and :py:class:`~lenstools.ShearMap` classes. 
+After lenstools.raytracing-mpi finished the execution, you will find your weak lensing maps in the "Maps" directory, and you can conveniently access them through the :py:class:`~lenstools.image.convergence.ConvergenceMap` and :py:class:`~lenstools.image.shear.ShearMap` classes. 
 
 ::
 

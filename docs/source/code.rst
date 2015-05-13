@@ -10,66 +10,66 @@ API
 Convergence maps
 ================
 
-.. autoclass:: lenstools.ConvergenceMap
+.. autoclass:: lenstools.image.convergence.ConvergenceMap
 	:inherited-members:
 
-.. autoclass:: lenstools.Mask
+.. autoclass:: lenstools.image.convergence.Mask
 
 Shear maps
 ==========
 
-.. autoclass:: lenstools.ShearMap
+.. autoclass:: lenstools.image.shear.ShearMap
 	:inherited-members:
 
 Statistics
 ==========
 
-.. autoclass:: lenstools.Ensemble
+.. autoclass:: lenstools.statistics.ensemble.Ensemble
 	:inherited-members: 
 
 Constraining cosmology
 ======================
 
-.. autoclass:: lenstools.constraints.Analysis
+.. autoclass:: lenstools.statistics.constraints.Analysis
 	:inherited-members:
 
-.. autoclass:: lenstools.constraints.FisherAnalysis
+.. autoclass:: lenstools.statistics.constraints.FisherAnalysis
 	:inherited-members:
 
-.. autoclass:: lenstools.constraints.LikelihoodAnalysis
+.. autoclass:: lenstools.statistics.constraints.LikelihoodAnalysis
 	:inherited-members:
 
 
 Confidence contour plotting
 ===========================
 
-.. autoclass:: lenstools.contours.ContourPlot
+.. autoclass:: lenstools.statistics.contours.ContourPlot
 	:inherited-members:
 
 Noise
 =====
 
-.. autoclass:: lenstools.GaussianNoiseGenerator
+.. autoclass:: lenstools.image.noise.GaussianNoiseGenerator
 	:inherited-members:
 
 Indexing
 ========
 
-.. automodule:: lenstools.index
+.. automodule:: lenstools.statistics.index
 
-.. autoclass:: lenstools.index.Indexer
+.. autoclass:: lenstools.statistics.index.Indexer
 
-.. autoclass:: lenstools.index.PowerSpectrum
+.. autoclass:: lenstools.statistics.index.PowerSpectrum
 
-.. autoclass:: lenstools.index.Moments
+.. autoclass:: lenstools.statistics.index.Moments
 
-.. autoclass:: lenstools.index.Peaks
+.. autoclass:: lenstools.statistics.index.Peaks
 
-.. autoclass:: lenstools.index.PDF
+.. autoclass:: lenstools.statistics.index.PDF
 
-.. autoclass:: lenstools.index.MinkowskiAll
+.. autoclass:: lenstools.statistics.index.MinkowskiAll
 
-.. autoclass:: lenstools.index.MinkowskiSingle
+.. autoclass:: lenstools.statistics.index.MinkowskiSingle
 
 Existing Simulation suites
 ==========================
@@ -212,11 +212,6 @@ Observation sets
 .. autoclass:: lenstools.observations.CFHTLens
 	:inherited-members:
 
-Defaults
-========
-
-.. automodule:: lenstools.defaults
-	:members: load_fits_default_convergence,load_fits_default_shear,default_callback_loader,convergence_measure_all
 
 Limber integration
 ==================
@@ -224,14 +219,20 @@ Limber integration
 .. autoclass:: lenstools.simulations.limber.LimberIntegrator
 	:inherited-members:
 
+Defaults
+========
+
+.. automodule:: lenstools.utils.defaults
+	:members: load_fits_default_convergence,load_fits_default_shear,default_callback_loader,convergence_measure_all
+
 MPI
 ===
 
-.. autoclass:: lenstools.utils.MPIWhirlPool
+.. autoclass:: lenstools.utils.mpi.MPIWhirlPool
 	:inherited-members:
 
 Fast Fourier Transforms
 =======================
 
-.. autoclass:: lenstools.fft.NUMPYFFTPack
+.. autoclass:: lenstools.utils.fft.NUMPYFFTPack
 	:inherited-members:
