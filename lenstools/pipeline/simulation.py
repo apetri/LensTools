@@ -1495,6 +1495,33 @@ class SimulationCollection(SimulationModel):
 
 	################################################################################################################################
 
+	def tile(self,n):
+
+		"""
+		Computes the location of the slab centers and the thickness of the slabs necessary to cut the simulation box in n equal pieces
+
+		:param n: the number of pieces to cut the box into
+		:type n: int.
+
+		:return: thickness,cut_points
+		:rtype: tuple. 
+
+		"""
+
+		#Compute thickness
+		thickness = self.box_size / n
+
+		#Compute cut points
+		cut_points = np.zeros(n) * self.Mpc_over_h
+
+		for p in range(n):
+			cut_points[p] = thickness*(0.5 + p)
+
+		#Return in physical units
+		return thickness.to(u.Mpc),cut_points.to(u.Mpc)
+
+	################################################################################################################################
+
 	def newRealization(self,seed=0):
 		
 		#Check if there are already generated initial conditions in there
