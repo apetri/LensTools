@@ -14,6 +14,9 @@ from lenstools.simulations.logs import logpreamble
 from mpi4py import MPI
 from lenstools.utils import MPIWhirlPool
 
+#Append current working directory to path
+sys.path.append("")
+
 #Parse command line options
 parser = argparse.ArgumentParser()
 parser.add_argument("-v","--verbose",dest="verbose",action="store_true",default=False,help="turn output verbosity")
