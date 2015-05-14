@@ -14,8 +14,8 @@ from lenstools.simulations.logs import logpreamble
 from mpi4py import MPI
 from lenstools.utils import MPIWhirlPool
 
-#Append current working directory to path
-sys.path.append("")
+#Prepend current working directory to path
+sys.path = [""] + sys.path
 
 #Parse command line options
 parser = argparse.ArgumentParser()
