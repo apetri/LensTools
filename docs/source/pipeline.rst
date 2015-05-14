@@ -350,7 +350,7 @@ If Gadget2 ran succesfully and produced the required snapshot, this should refle
 
 ::
 
-	>>> for r in collection.realizations
+	>>> for r in collection.realizations:
 		print(r)
 
 	<Om=0.300 , Ol=0.700> | box=240.0 Mpc/h,nside=512 | ic=1,seed=1 | IC files on disk: 256 | Snapshot files on disk: 976
@@ -373,7 +373,7 @@ This will produce the plane generation execution script that, when executed, wil
 
 ::
 
-	>>> for r in collection.realizations
+	>>> for r in collection.realizations:
 		print(r.planesets[0])
 
 	<Om=0.300 , Ol=0.700>  |  box=15.0 Mpc/h,nside=32  |  ic=1,seed=1  | Plane set: Planes , Plane files on disk: 178
