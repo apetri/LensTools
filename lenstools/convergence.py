@@ -292,7 +292,7 @@ class Spin0(object):
 
 
 
-	def visualize(self,fig=None,ax=None,colorbar=False,cmap="jet",**kwargs):
+	def visualize(self,fig=None,ax=None,colorbar=False,cmap="jet",cbar_label=None,**kwargs):
 
 		"""
 		Visualize the convergence map; the kwargs are passed to imshow 
@@ -314,12 +314,15 @@ class Spin0(object):
 
 		#Plot the map
 		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=getattr(cm,cmap),**kwargs)
-		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
-		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
+		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
+		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 
 		#Add a colorbar maybe
 		if colorbar:
-			plt.colorbar(ax0,ax=self.ax)
+			cbar = plt.colorbar(ax0,ax=self.ax)
+
+			if cbar_label is not None:
+				cbar.set_label(r"{0}".format(cbar_label),size=18)
 
 	def savefig(self,filename):
 

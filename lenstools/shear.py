@@ -271,7 +271,7 @@ class Spin1(object):
 
 
 	
-	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),colorbar=False,cmap="jet",**kwargs):
+	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),colorbar=False,cmap="jet",cbar_label=None,**kwargs):
 
 		"""
 		Visualize the shear map; the kwargs are passed to imshow 
@@ -305,9 +305,9 @@ class Spin1(object):
 		#Axes labels
 		for i in range(self.data.shape[0]):
 
-			self.ax[i].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
-			self.ax[i].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()))
-			self.ax[i].set_title(component_labels[i])
+			self.ax[i].set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
+			self.ax[i].set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
+			self.ax[i].set_title(component_labels[i],fontsize=18)
 
 	
 	def savefig(self,filename):
