@@ -1161,6 +1161,48 @@ class SimulationModel(object):
 
 		return "<"+ " , ".join(representation_parameters) + ">"
 
+
+	################################################################################################################################
+
+	def plan(self,map_size,max_redshift,nlenses):
+
+		"""
+		This method is useful when planning a simulation batch: given an expected size of the simulated maps, a maximum redshift for the ray tracing and the number of lenses along the line of sight, it computes the size of the box that must be employed, the spacing between the lenses and the redshifts at which the lenses need to be placed
+
+		:param map_size: angular size of the simulated maps
+		:type map_size: quantity
+
+		:param max_redshift: maximum redshift of the maps
+		:type max_redshift: float.
+
+		:param nlenses: number of lenses along the line of sight
+		:type nlenses: int.
+
+		:returns: (comoving box size,lens_thickness,scale factor for each lens)
+		:rtype: tuple
+
+		"""
+
+		#Comoving distance to max_redshift
+		distance = self.cosmology.comoving_distance(max_redshift)
+
+		#First compute the box size
+		box_size = map_size.to(u.rad).value * distance
+
+		#Next compute the lens plane thickness
+		thickness = distance / nlenses
+
+		#Compute the redshifts at which the lenses need to be put in
+		lens_distance = np.linspace(thickness.value,distance.value,nlenses) * distance.unit
+		lens_redshift = np.zeros(len(lens_distance))
+
+		for n,d in enumerate(lens_distance):
+			lens_redshift[n] = z_at_value(self.cosmology.comoving_distance,d)
+
+		#Return
+		return box_size.to(self.Mpc_over_h),thickness.to(self.Mpc_over_h),np.sort(1/(1+lens_redshift))
+
+
 	################################################################################################################################
 
 	def mkdir(self,directory):
