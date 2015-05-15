@@ -5,7 +5,7 @@ import re
 
 import numpy as np
 import astropy.units as u
-from astropy.cosmology import FLRW,WMAP9
+from astropy.cosmology import z_at_value
 
 from .remote import SystemHandler,LocalSystem,LocalGit
 from .settings import *
@@ -387,7 +387,7 @@ class SimulationBatch(object):
 		Create a new simulation model, given a set of cosmological parameters
 
 		:param cosmology: cosmological model to simulate
-		:type cosmology: FLRW
+		:type cosmology: LensToolsCosmology
 
 		:param parameters: cosmological parameters to keep track of
 		:type parameters: list.
@@ -1110,13 +1110,13 @@ class SimulationModel(object):
 
 	"""
 
-	def __init__(self,cosmology=WMAP9,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
+	def __init__(self,cosmology=CosmoDefault,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
 
 		"""
 		Set the base for the simulation
 
 		:param cosmology: cosmological model to simulate
-		:type cosmology: FLRW
+		:type cosmology: LensToolsCosmology
 
 		:param environment: environment settings of the current machine
 		:type environment: EnvironmentSettings
@@ -1127,7 +1127,7 @@ class SimulationModel(object):
 		"""
 
 		#Safety checks
-		assert isinstance(cosmology,FLRW)
+		assert isinstance(cosmology,LensToolsCosmology)
 
 		if environment is None:
 			self.environment = EnvironmentSettings()
