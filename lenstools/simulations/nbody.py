@@ -388,6 +388,7 @@ class NbodySnapshot(object):
 
 		#Sanity checks
 		assert type(resolution) in [np.int,quantity.Quantity]
+		assert hasattr(self,"weights")
 		
 		if type(resolution)==quantity.Quantity:	
 			assert resolution.unit.physical_type=="length"
@@ -422,7 +423,7 @@ class NbodySnapshot(object):
 
 		#Compute the number count histogram
 		assert positions.value.dtype==np.float32
-		density = ext._nbody.grid3d(positions.value,(xi,yi,zi))
+		density = ext._nbody.grid3d(positions.value,(xi,yi,zi),self.weights)
 
 		#Accumulate from the other processors
 		if self.pool is not None:
@@ -497,6 +498,7 @@ class NbodySnapshot(object):
 		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
+		assert hasattr(self,"weights")
 
 		#Cosmological normalization factor
 		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
@@ -551,7 +553,7 @@ class NbodySnapshot(object):
 
 		#Now use gridding to compute the density along the slab
 		assert positions.value.dtype==np.float32
-		density = ext._nbody.grid3d(positions.value,tuple(binning))
+		density = ext._nbody.grid3d(positions.value,tuple(binning),self.weights)
 
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():
@@ -667,6 +669,10 @@ class NbodySnapshot(object):
 			if (self.pool is None) or (self.pool.is_master()):
 				logplanes.debug("Done with density FFT operations...")
 
+		else:
+
+			lensing_potential = density_projected
+
 		#Multiply by the normalization factors
 		lensing_potential = lensing_potential * cosmo_normalization * density_normalization
 		lensing_potential = lensing_potential.decompose()
@@ -762,6 +768,7 @@ class NbodySnapshot(object):
 		assert normal in range(3),"There are only 3 dimensions!"
 		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
+		assert hasattr(self,"weights")
 
 		#Direction of the plane
 		plane_directions = range(3)
@@ -929,6 +936,7 @@ class NbodySnapshot(object):
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 		assert type(plane_lower_corner)==quantity.Quantity and plane_lower_corner.unit.physical_type=="angle"
 		assert type(plane_size)==quantity.Quantity and plane_size.unit.physical_type=="angle"
+		assert hasattr(self,"weights")
 
 		#First compute the overall normalization factor for the angular density
 		cosmo_normalization = 1.5 * (self._header["H0"]**2) * self._header["Om0"]  * self.cosmology.comoving_distance(self._header["redshift"]) * (1.0+self._header["redshift"]) / c**2
@@ -1006,7 +1014,7 @@ class NbodySnapshot(object):
 
 		#Now use grid3d to compute the angular density on the lens plane
 		assert positions.dtype==np.float32
-		density = ext._nbody.grid3d(positions,tuple(binning))
+		density = ext._nbody.grid3d(positions,tuple(binning),self.weights)
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:

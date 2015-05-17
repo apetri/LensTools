@@ -44,33 +44,12 @@ PyMODINIT_FUNC init_nbody(void){
 //grid3d() implementation
 static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 
-	Py_ssize_t nargs = PyTuple_Size(args);
-	PyObject *positions_obj,*bins_obj,*grid_obj;
-	char inplace;
+	PyObject *positions_obj,*bins_obj,*weights_obj;
+	float *weights;
 
-	if(nargs==2){
-
-		//parse input tuple
-		if(!PyArg_ParseTuple(args,"OO",&positions_obj,&bins_obj)){
-			return NULL;
-		}
-
-		inplace = 0;
-	
-	} else if(nargs==3){
-
-		//parse input tuple
-		if(!PyArg_ParseTuple(args,"OOO",&positions_obj,&bins_obj,&grid_obj)){
-			return NULL;
-		}
-
-		inplace = 1;
-
-	} else{
-
-		PyErr_SetString(PyExc_TypeError,"_grid3d takes either 2 or 3 arguments!!");
+	//parse input tuple
+	if(!PyArg_ParseTuple(args,"OOO",&positions_obj,&bins_obj,&weights_obj)){
 		return NULL;
-
 	}
 
 	//interpret parsed objects as arrays
@@ -90,6 +69,31 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 		return NULL;
 	}
 
+	//check if weights are provided
+	PyObject *weights_array;
+	if(weights_obj!=Py_None){
+		
+		weights_array = PyArray_FROM_OTF(weights_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+		
+		if(weights_array==NULL){
+
+			Py_DECREF(positions_array);
+			Py_DECREF(binsX_array);
+			Py_DECREF(binsY_array);
+			Py_DECREF(binsZ_array);
+
+			return NULL;
+
+		}
+
+		//Data pointer
+		weights = (float *)PyArray_DATA(weights_array);
+
+	} else{
+
+		weights = NULL;
+	}
+
 	//Get data pointers
 	float *positions_data = (float *)PyArray_DATA(positions_array);
 	double *binsX_data = (double *)PyArray_DATA(binsX_array);
@@ -104,17 +108,9 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 
 	//Allocate the new array for the grid
 	PyObject *grid_array;
-
-	if(!inplace){
 		
-		npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
-		grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
-	
-	} else{
-
-		grid_array = PyArray_FROM_OTF(grid_obj,NPY_FLOAT32,NPY_IN_ARRAY);
-
-	}
+	npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
+	grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
 
 	if(grid_array==NULL){
 
@@ -122,6 +118,8 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 		Py_DECREF(binsX_array);
 		Py_DECREF(binsY_array);
 		Py_DECREF(binsZ_array);
+
+		if(weights) Py_DECREF(weights_array);
 
 		return NULL;
 
@@ -131,7 +129,7 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 	float *grid_data = (float *)PyArray_DATA(grid_array);
 
 	//Snap the particles on the grid
-	grid3d(positions_data,NumPart,binsX_data[0],binsY_data[0],binsZ_data[0],binsX_data[1] - binsX_data[0],binsY_data[1] - binsY_data[0],binsZ_data[1] - binsZ_data[0],nx,ny,nz,grid_data);
+	grid3d(positions_data,weights,NumPart,binsX_data[0],binsY_data[0],binsZ_data[0],binsX_data[1] - binsX_data[0],binsY_data[1] - binsY_data[0],binsZ_data[1] - binsZ_data[0],nx,ny,nz,grid_data);
 
 	//return the grid
 	Py_DECREF(positions_array);
@@ -139,17 +137,9 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 	Py_DECREF(binsY_array);
 	Py_DECREF(binsZ_array);
 
-	//if inplace, release the reference to grid_array and return None
-	if(inplace){
-		
-		Py_DECREF(grid_array);
-		Py_RETURN_NONE;
+	if(weights) Py_DECREF(weights_array);
 	
-	} else{
-		
-		return grid_array;
-	
-	}
+	return grid_array;
 
 }
 
