@@ -1164,7 +1164,7 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
-	def plan(self,map_size,max_redshift,nlenses):
+	def plan(self,map_size,max_redshift,nlenses,mass_resolution=1.0e10*u.Msun):
 
 		"""
 		This method is useful when planning a simulation batch: given an expected size of the simulated maps, a maximum redshift for the ray tracing and the number of lenses along the line of sight, it computes the size of the box that must be employed, the spacing between the lenses and the redshifts at which the lenses need to be placed
@@ -1178,8 +1178,11 @@ class SimulationModel(object):
 		:param nlenses: number of lenses along the line of sight
 		:type nlenses: int.
 
-		:returns: (comoving box size,lens_thickness,scale factor for each lens)
-		:rtype: tuple
+		:param mass_resolution: mass of one particle in the N--body simulation
+		:type mass_resoultion: quantity
+
+		:returns: suggested simulations specifications
+		:rtype: dict.
 
 		"""
 
@@ -1188,6 +1191,10 @@ class SimulationModel(object):
 
 		#First compute the box size
 		box_size = map_size.to(u.rad).value * distance
+
+		#Now compute the total mass in the box
+		total_mass = self.cosmology.critical_density0 * self.cosmology.Om0 * (box_size**3)
+		nside = ((total_mass / mass_resolution).decompose().value)**(1/3)
 
 		#Next compute the lens plane thickness
 		thickness = distance / nlenses
@@ -1199,8 +1206,15 @@ class SimulationModel(object):
 		for n,d in enumerate(lens_distance):
 			lens_redshift[n] = z_at_value(self.cosmology.comoving_distance,d)
 
+		#Build the dictionary
+		specs = dict()
+		specs["box_size"] = box_size.to(self.Mpc_over_h)
+		specs["nside"] = int(nside)
+		specs["plane_thickness"] = thickness.to(self.Mpc_over_h)
+		specs["output_scale_factor"] = np.sort(1/(1+lens_redshift))
+
 		#Return
-		return box_size.to(self.Mpc_over_h),thickness.to(self.Mpc_over_h),np.sort(1/(1+lens_redshift))
+		return specs
 
 
 	################################################################################################################################
@@ -1534,6 +1548,19 @@ class SimulationCollection(SimulationModel):
 
 	def newCollection(self):
 		raise TypeError("This method should be called on SimulationModel instances!")
+
+	################################################################################################################################
+
+	@property
+	def resolution(self):
+
+		"""
+		Computes the mass resolution (mass of one particle) of the simulation collection
+
+		"""
+
+		dm_density = self.cosmology.critical_density0 * self.cosmology.Om0
+		return (dm_density*(self.box_size**3) / (self.nside**3)).to(u.Msun)
 
 	################################################################################################################################
 
