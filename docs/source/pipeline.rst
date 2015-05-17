@@ -57,7 +57,7 @@ The cosmology object will be initialized with :math:`(\Omega_m,\Omega_\Lambda)=(
 ::
 
 	>>> cosmology
-	Nicaea(H0=72 km / (Mpc s), Om0=0.3, Ode0=0.7, sigma8=0.8, ns=0.96, w0=-1, wa=0, Tcmb0=2.725 K, Neff=3.04, m_nu=[ 0.  0.  0.] eV, Ob0=0.046) 
+	LensToolsCosmology(H0=72 km / (Mpc s), Om0=0.3, Ode0=0.7, sigma8=0.8, ns=0.96, w0=-1, wa=0, Tcmb0=2.725 K, Neff=3.04, m_nu=[ 0.  0.  0.] eV, Ob0=0.046) 
 
 Now we create a new simulation model that corresponds to the "cosmology" just specified, through our "batch" handler created before
 
@@ -68,7 +68,23 @@ Now we create a new simulation model that corresponds to the "cosmology" just sp
 	[+] SimTest/Home/Om0.300_Ol0.700 created on localhost
 	[+] SimTest/Storage/Om0.300_Ol0.700 created on localhost
 
-The argument "parameters" specifies which cosmological parameters you want to keep track of in your model; this is useful, for example, when you want to simulate different combinations of these parameters while keeping the other fixed to their default values. Note that lenstools informs you of the directories that are created on disk. You have access at any time to the models that are present in your simulation batch 
+The argument "parameters" specifies which cosmological parameters you want to keep track of in your model; this is useful, for example, when you want to simulate different combinations of these parameters while keeping the other fixed to their default values. The values that are specified in the "parameters" list are translated into the names of the attributes of the :py:class:`~lenstools.pipeline.simulation.LensToolsCosmology` instance according to the following dictionary
+
+::
+	
+	>>> from lenstools.pipeline.simulation import name2attr
+	>>> name2attr
+
+	{'Ob': 'Ob0',
+ 	'Ol': 'Ode0',
+ 	'Om': 'Om0',
+ 	'h': 'h',
+ 	'ns': 'ns',
+ 	'si': 'sigma8',
+ 	'w': 'w0',
+ 	'wa': 'wa'}
+
+Note that lenstools informs you of the directories that are created on disk. You have access at any time to the models that are present in your simulation batch 
 
 ::
 
