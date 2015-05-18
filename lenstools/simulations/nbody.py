@@ -776,7 +776,7 @@ class NbodySnapshot(object):
 
 		#Get the particle positions if not available get
 		if hasattr(self,"positions"):
-			positions = self.positions.copy()
+			positions = self.positions
 		else:
 			positions = self.getPositions(save=False)
 
