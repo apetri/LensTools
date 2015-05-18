@@ -84,6 +84,16 @@ class NbodySnapshot(object):
 	######################Default, non--abstract methods###############################
 	###################################################################################
 
+	#Check that header has all required keys#
+	_header_keys = ['redshift','scale_factor','comoving_distance','masses','num_particles_file','num_particles_total','box_size','num_files','Om0','Ode0','w0','wa','h']
+
+	def _check_header(self):
+
+		for key in self._header_keys:
+			assert key in self._header.keys(),"Key {0} not loaded in header, please make sure that the getHeader method is configured to do that!".format(key)
+
+	####################################################################################################################
+
 	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
 
 		self._length_unit = length_unit.to(cm).value
@@ -96,7 +106,12 @@ class NbodySnapshot(object):
 		
 			self.fp = fp
 
+			#Load the header
 			self._header = self.getHeader()
+			
+			#Check that header has been loaded correctly
+			self._check_header()
+
 			self._header["files"] = [self.fp.name]
 			h = self._header["h"]
 

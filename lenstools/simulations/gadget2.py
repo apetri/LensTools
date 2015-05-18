@@ -290,6 +290,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 		#Each particle carries the same weight
 		self.weights = None
+		self.scale_radius = None
 
 		numPart = self._header["num_particles_file"]
 
