@@ -201,7 +201,7 @@ static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
 	double *lensingPlane = (double *)PyArray_DATA(lensingPlane_array);
 
 	//Compute the adaptive smoothing using C backend
-	adaptiveSmoothing(NumPart,positions,rp,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane);
+	adaptiveSmoothing(NumPart,positions,rp,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane,quadraticKernel);
 
 	//Cleanup
 	Py_DECREF(positions_array);

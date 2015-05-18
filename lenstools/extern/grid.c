@@ -103,7 +103,7 @@ int grid3d(float *positions,float *weights,int Npart,double leftX,double leftY,d
 
 
 //adaptive smoothing
-int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane){
+int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane,double(*kernel)(double,double,double)){
 
 	int i,j,p;
 	float posNormal,posTransverse0,posTransverse1;
@@ -155,7 +155,7 @@ int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, 
 				}
 
 				//Add the corresponding contribution to the density
-				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += quadraticKernel(distanceSquared,rp[p]); 
+				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += kernel(distanceSquared,rp[p],1.0); 
 
 			}
 		}
