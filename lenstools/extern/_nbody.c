@@ -17,6 +17,9 @@ static char module_docstring[] = "This module provides a python interface for op
 static char grid3d_docstring[] = "Put the snapshot particles on a regularly spaced grid";
 static char adaptive_docstring[] = "Put the snapshot particles on a regularly spaced grid using adaptive smoothing";
 
+//Useful
+static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double));
+
 //Method declarations
 static PyObject * _nbody_grid3d(PyObject *self,PyObject *args);
 static PyObject * _nbody_adaptive(PyObject *self,PyObject *args);
@@ -143,15 +146,16 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 
 }
 
-//adaptive() implementation
-static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
+//apply_kernel() implementation
+static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double)){
 
-	PyObject *positions_obj,*rp_obj,*binning_obj,*projectAll;
+	PyObject *positions_obj,*weights_obj,*rp_obj,*binning_obj,*projectAll;
 	double center;
 	int direction0,direction1,normal;
+	float *weights;
 
 	//Parse argument tuple
-	if(!PyArg_ParseTuple(args,"OOOdiiiO",&positions_obj,&rp_obj,&binning_obj,&center,&direction0,&direction1,&normal,&projectAll)){
+	if(!PyArg_ParseTuple(args,"OOOOdiiiO",&positions_obj,&weights_obj,&rp_obj,&binning_obj,&center,&direction0,&direction1,&normal,&projectAll)){
 		return NULL;
 	}
 
@@ -172,6 +176,32 @@ static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
 		return NULL;
 	}
 
+	//Parse the weights too if provided
+	PyObject *weights_array;
+
+	if(weights_obj!=Py_None){
+
+		weights_array = PyArray_FROM_OTF(weights_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+		if(weights_array==NULL){
+
+			Py_DECREF(positions_array);
+			Py_DECREF(rp_array);
+			Py_DECREF(binning0_array);
+			Py_DECREF(binning1_array);
+
+			return NULL;
+
+		}
+
+		weights = (float *)PyArray_DATA(weights_array);
+
+	} else{
+
+		weights = NULL;
+
+	}
+
+
 	//Compute the number of particles
 	int NumPart = (int)PyArray_DIM(positions_array,0);
 
@@ -189,6 +219,8 @@ static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
 		Py_DECREF(binning0_array);
 		Py_DECREF(binning1_array);
 
+		if(weights) Py_DECREF(weights_array);
+
 		return NULL;
 
 	}
@@ -201,7 +233,7 @@ static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
 	double *lensingPlane = (double *)PyArray_DATA(lensingPlane_array);
 
 	//Compute the adaptive smoothing using C backend
-	adaptiveSmoothing(NumPart,positions,rp,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane,quadraticKernel);
+	adaptiveSmoothing(NumPart,positions,weights,rp,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane,kernel);
 
 	//Cleanup
 	Py_DECREF(positions_array);
@@ -209,8 +241,17 @@ static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
 	Py_DECREF(binning0_array);
 	Py_DECREF(binning1_array);
 
+	if(weights) Py_DECREF(weights_array);
+
 	//Return
 	return lensingPlane_array;
 
+}
+
+
+//adaptive() implementation
+static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
+
+	return _apply_kernel(args,quadraticKernel);
 
 }

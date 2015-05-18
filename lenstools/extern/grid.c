@@ -103,15 +103,23 @@ int grid3d(float *positions,float *weights,int Npart,double leftX,double leftY,d
 
 
 //adaptive smoothing
-int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane,double(*kernel)(double,double,double)){
+int adaptiveSmoothing(int NumPart,float *positions,float *weights,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane,double(*kernel)(double,double,double)){
 
 	int i,j,p;
 	float posNormal,posTransverse0,posTransverse1;
-	double catchmentRadius,distanceSquared;
+	double catchmentRadius,distanceSquared,w;
 	int catchmentRadiusPixel,pos0Pixel,pos1Pixel,pixelLeft0,pixelRight0,pixelLeft1,pixelRight1;
 
 	//Loop over particles
 	for(p=0;p<NumPart;p++){
+
+		//Set particle weight
+		if(weights){
+			w = (double)(weights[p]);
+		} else{
+			w = 1.0;
+		}
+
 
 		//Compute transverse and longitudinal positions with respect to the plane
 		posNormal = positions[3*p + normal];
@@ -155,7 +163,7 @@ int adaptiveSmoothing(int NumPart,float *positions,double *rp,double *binning0, 
 				}
 
 				//Add the corresponding contribution to the density
-				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += kernel(distanceSquared,rp[p],1.0); 
+				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += kernel(distanceSquared,rp[p],w); 
 
 			}
 		}

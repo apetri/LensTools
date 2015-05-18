@@ -824,7 +824,7 @@ class NbodySnapshot(object):
 		assert (rp>0).all()
 
 		#Compute the adaptive smoothing
-		density = (3.0/np.pi)*ext._nbody.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
+		density = (3.0/np.pi)*ext._nbody.adaptive(positions.value,self.weights,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:
