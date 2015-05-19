@@ -288,9 +288,10 @@ class Gadget2Snapshot(NbodySnapshot):
 		#The file must not be closed
 		assert not self.fp.closed
 
-		#Each particle carries the same weight
+		#Particles do not have structure
 		self.weights = None
-		self.scale_radius = None
+		self.virial_radius = None
+		self.concentration = None
 
 		numPart = self._header["num_particles_file"]
 

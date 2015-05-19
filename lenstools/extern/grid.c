@@ -4,6 +4,8 @@
 #include "coordinates.h"
 #include "grid.h"
 
+#define WEIGHT_DEFAULT 1.0
+#define CONCENTRATION_DEFAULT 1.0
 
 //Two dimensional pixelization of a galaxy catalog
 int grid2d(double *x,double *y,double *s,double *map,int Nobjects,int Npixel,double map_size){
@@ -103,11 +105,11 @@ int grid3d(float *positions,float *weights,int Npart,double leftX,double leftY,d
 
 
 //adaptive smoothing
-int adaptiveSmoothing(int NumPart,float *positions,float *weights,double *rp,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane,double(*kernel)(double,double,double)){
+int adaptiveSmoothing(int NumPart,float *positions,float *weights,double *rp,double *concentration,double *binning0, double *binning1,double center,int direction0,int direction1,int normal,int size0,int size1,int projectAll,double *lensingPlane,double(*kernel)(double,double,double,double)){
 
 	int i,j,p;
 	float posNormal,posTransverse0,posTransverse1;
-	double catchmentRadius,distanceSquared,w;
+	double catchmentRadius,distanceSquared,w,c;
 	int catchmentRadiusPixel,pos0Pixel,pos1Pixel,pixelLeft0,pixelRight0,pixelLeft1,pixelRight1;
 
 	//Loop over particles
@@ -117,7 +119,14 @@ int adaptiveSmoothing(int NumPart,float *positions,float *weights,double *rp,dou
 		if(weights){
 			w = (double)(weights[p]);
 		} else{
-			w = 1.0;
+			w = WEIGHT_DEFAULT;
+		}
+
+		//Set particle concentration
+		if(concentration){
+			c = concentration[p];
+		} else{
+			c = CONCENTRATION_DEFAULT;
 		}
 
 
@@ -163,7 +172,7 @@ int adaptiveSmoothing(int NumPart,float *positions,float *weights,double *rp,dou
 				}
 
 				//Add the corresponding contribution to the density
-				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += kernel(distanceSquared,rp[p],w); 
+				if(distanceSquared<pow(rp[p],2)) lensingPlane[i*size0 + j] += kernel(distanceSquared,w,rp[p],c); 
 
 			}
 		}

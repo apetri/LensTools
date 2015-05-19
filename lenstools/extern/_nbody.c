@@ -18,7 +18,7 @@ static char grid3d_docstring[] = "Put the snapshot particles on a regularly spac
 static char adaptive_docstring[] = "Put the snapshot particles on a regularly spaced grid using adaptive smoothing";
 
 //Useful
-static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double));
+static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double,double));
 
 //Method declarations
 static PyObject * _nbody_grid3d(PyObject *self,PyObject *args);
@@ -147,15 +147,15 @@ static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 }
 
 //apply_kernel() implementation
-static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double)){
+static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double,double)){
 
-	PyObject *positions_obj,*weights_obj,*rp_obj,*binning_obj,*projectAll;
-	double center;
+	PyObject *positions_obj,*weights_obj,*rp_obj,*concentration_obj,*binning_obj,*projectAll;
+	double center,*concentration;
 	int direction0,direction1,normal;
 	float *weights;
 
 	//Parse argument tuple
-	if(!PyArg_ParseTuple(args,"OOOOdiiiO",&positions_obj,&weights_obj,&rp_obj,&binning_obj,&center,&direction0,&direction1,&normal,&projectAll)){
+	if(!PyArg_ParseTuple(args,"OOOOOdiiiO",&positions_obj,&weights_obj,&rp_obj,&concentration_obj,&binning_obj,&center,&direction0,&direction1,&normal,&projectAll)){
 		return NULL;
 	}
 
@@ -177,7 +177,7 @@ static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,doub
 	}
 
 	//Parse the weights too if provided
-	PyObject *weights_array;
+	PyObject *weights_array,*concentration_array;
 
 	if(weights_obj!=Py_None){
 
@@ -201,6 +201,28 @@ static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,doub
 
 	}
 
+	if(concentration_obj!=Py_None){
+
+		concentration_array = PyArray_FROM_OTF(concentration_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+		if(concentration_array==NULL){
+
+			Py_DECREF(positions_array);
+			Py_DECREF(rp_array);
+			Py_DECREF(binning0_array);
+			Py_DECREF(binning1_array);
+			if(weights) Py_DECREF(weights_array);
+
+			return NULL;
+		}
+
+		concentration = (double *)PyArray_DATA(concentration_array);
+
+	} else{
+
+		concentration = NULL;
+
+	}
+
 
 	//Compute the number of particles
 	int NumPart = (int)PyArray_DIM(positions_array,0);
@@ -220,6 +242,7 @@ static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,doub
 		Py_DECREF(binning1_array);
 
 		if(weights) Py_DECREF(weights_array);
+		if(concentration) Py_DECREF(concentration_array);
 
 		return NULL;
 
@@ -233,7 +256,7 @@ static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,doub
 	double *lensingPlane = (double *)PyArray_DATA(lensingPlane_array);
 
 	//Compute the adaptive smoothing using C backend
-	adaptiveSmoothing(NumPart,positions,weights,rp,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane,kernel);
+	adaptiveSmoothing(NumPart,positions,weights,rp,concentration,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane,kernel);
 
 	//Cleanup
 	Py_DECREF(positions_array);
@@ -242,6 +265,7 @@ static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,doub
 	Py_DECREF(binning1_array);
 
 	if(weights) Py_DECREF(weights_array);
+	if(concentration) Py_DECREF(concentration_array);
 
 	//Return
 	return lensingPlane_array;
