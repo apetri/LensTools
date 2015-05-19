@@ -584,7 +584,7 @@ class NbodySnapshot(object):
 		else:
 			rv = None
 
-		density = ext._nbody.grid3d(positions.value,tuple(binning),self.weights,rv,self.concentration)
+		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),self.weights,rv,self.concentration)
 
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():

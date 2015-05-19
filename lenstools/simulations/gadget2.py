@@ -10,7 +10,7 @@ from .. import extern as ext
 import numpy as np
 
 #astropy stuff, invaluable here
-from astropy.units import Mbyte,kpc,Mpc,Msun,cm,g,s,hour,day,quantity,def_unit
+from astropy.units import Mbyte,kpc,Mpc,Msun,cm,km,g,s,hour,day,quantity,def_unit
 from astropy.cosmology import w0waCDM
 
 
@@ -584,6 +584,7 @@ class Gadget2Snapshot(NbodySnapshot):
 		self._header["w0"] = w0
 		self._header["wa"] = wa
 		self._header["h"] = h
+		self._header["H0"] = 100.0*h*km/(s*Mpc)
 		self._header["redshift"] = redshift
 		self._header["scale_factor"] = 1.0 / (1.0 + redshift)
 		self._header["box_size"] = box_size

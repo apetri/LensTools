@@ -6,6 +6,21 @@
 
 #define WEIGHT_DEFAULT 1.0
 #define CONCENTRATION_DEFAULT 1.0
+#define NFW_CUT 0.1
+
+
+//NFW density profile
+double nfwKernel(double dsquared,double w,double rv,double c){
+
+	double x = c * sqrt(dsquared) / rv;
+
+	if(x<NFW_CUT){
+		return w/(NFW_CUT*pow(1.0+NFW_CUT,2));
+	} else{
+		return w/(x*pow(1.0+x,2));
+	}
+
+}
 
 //Two dimensional pixelization of a galaxy catalog
 int grid2d(double *x,double *y,double *s,double *map,int Nobjects,int Npixel,double map_size){
@@ -58,11 +73,9 @@ int grid3d(float *positions,float *weights,double *radius,double *concentration,
 
 	int n;
 	double i,j,k;
-	float w;
-	double r,c;
 
 	//Cycle through the particles and for each one compute the position on the grid
-	if(weights==NULL){
+	if(weights==NULL || radius==NULL || concentration==NULL || kernel==NULL){
 	
 		for(n=0;n<Npart;n++){
 
@@ -82,19 +95,46 @@ int grid3d(float *positions,float *weights,double *radius,double *concentration,
 
 	} else{
 
+		int minI,maxI,minJ,maxJ,minK,maxK;
+		int ii,jj,kk;
+		double distanceSquared;
+
 		for(n=0;n<Npart;n++){
 
-			//Compute the position on the grid in the fastest way
+			//Compute the position of the center on the grid in the fastest way
 			i = (positions[3*n] - leftX)/sizeX;
 			j = (positions[3*n + 1] - leftY)/sizeY;
 			k = (positions[3*n + 2] - leftZ)/sizeZ;
 
-			//If the particle lands on the grid, put it in the correct pixel
-			if(i>=0 && i<nx && j>=0 && j<ny && k>=0 && k<nz){
+			//Compute the extremes of the cloud corresponding to the particle
+			minI = max_int((int)(i-radius[n]/sizeX),0);
+			minI = min_int(minI,nx);
+			maxI = min_int((int)(i+radius[n]/sizeX),nx);
+			maxI = max_int(maxI,0);
 
-				grid[((int)i)*ny*nz + ((int)j)*nz + (int)k] += weights[n];
+			minJ = max_int((int)(j-radius[n]/sizeY),0);
+			minJ = min_int(minJ,ny);
+			maxJ = min_int((int)(j+radius[n]/sizeY),ny);
+			maxJ = max_int(maxJ,0);
 
+			minK = max_int((int)(k-radius[n]/sizeZ),0);
+			minK = min_int(minK,nz);
+			maxK = min_int((int)(k+radius[n]/sizeZ),nz);
+			maxK = max_int(maxK,0);
+
+			//Cycle over all the cloud pixels covered by the particle and assign the correct density
+			for(ii=minI;ii<maxI;ii++){
+				for(jj=minJ;jj<maxJ;jj++){
+					for(kk=minK;kk<maxK;kk++){
+
+						distanceSquared = pow(leftX + (ii+0.5)*sizeX - positions[3*n],2) + pow(leftY + (jj+0.5)*sizeY - positions[3*n+1],2) + pow(leftZ + (kk+0.5)*sizeZ - positions[3*n+2],2);
+						if(distanceSquared<pow(radius[n],2)) grid[ii*ny*nz + jj*nz + kk] += (float)kernel(distanceSquared,(double)weights[n],radius[n],concentration[n]); 
+
+					}
+				}
 			}
+
+
 
 		}
 

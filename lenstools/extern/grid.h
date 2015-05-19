@@ -11,5 +11,7 @@ static inline double quadraticKernel(double dsquared,double w,double rv,double c
 	return (1.0/pow(rv,2)) * pow(1.0 - dsquared/pow(rv,2),2);
 }
 
+double nfwKernel(double dsquared,double w,double rv,double c);
+
 
 #endif

@@ -15,6 +15,7 @@ The module is called _nbody and it defines the methods below (see docstrings)
 //Python module docstrings
 static char module_docstring[] = "This module provides a python interface for operations on Nbody simulation snapshots";
 static char grid3d_docstring[] = "Put the snapshot particles on a regularly spaced grid";
+static char grid3d_nfw_docstring[] = "Put the snapshot particles on a regularly spaced grid, but give each particle a NFW profile";
 static char adaptive_docstring[] = "Put the snapshot particles on a regularly spaced grid using adaptive smoothing";
 
 //Useful
@@ -23,12 +24,14 @@ static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,do
 
 //Method declarations
 static PyObject * _nbody_grid3d(PyObject *self,PyObject *args);
+static PyObject *_nbody_grid3d_nfw(PyObject *self,PyObject *args);
 static PyObject * _nbody_adaptive(PyObject *self,PyObject *args);
 
 //_nbody method definitions
 static PyMethodDef module_methods[] = {
 
 	{"grid3d",_nbody_grid3d,METH_VARARGS,grid3d_docstring},
+	{"grid3d_nfw",_nbody_grid3d_nfw,METH_VARARGS,grid3d_nfw_docstring},
 	{"adaptive",_nbody_adaptive,METH_VARARGS,adaptive_docstring},
 	{NULL,NULL,0,NULL}
 
@@ -336,6 +339,13 @@ static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,do
 static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
 
 	return _apply_kernel3d(args,NULL);
+
+}
+
+//grid3d_nfw() implementation
+static PyObject *_nbody_grid3d_nfw(PyObject *self,PyObject *args){
+
+	return _apply_kernel3d(args,nfwKernel);
 
 }
 
