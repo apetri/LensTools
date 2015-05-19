@@ -404,6 +404,8 @@ class NbodySnapshot(object):
 		#Sanity checks
 		assert type(resolution) in [np.int,quantity.Quantity]
 		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 		
 		if type(resolution)==quantity.Quantity:	
 			assert resolution.unit.physical_type=="length"
@@ -438,7 +440,13 @@ class NbodySnapshot(object):
 
 		#Compute the number count histogram
 		assert positions.value.dtype==np.float32
-		density = ext._nbody.grid3d(positions.value,(xi,yi,zi),self.weights)
+
+		if self.virial_radius is not None:
+			rv = self.virial_radius.to(positions.unit).value
+		else:
+			rv = None
+
+		density = ext._nbody.grid3d(positions.value,(xi,yi,zi),self.weights,rv,self.concentration)
 
 		#Accumulate from the other processors
 		if self.pool is not None:
@@ -514,6 +522,8 @@ class NbodySnapshot(object):
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#Cosmological normalization factor
 		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
@@ -568,7 +578,13 @@ class NbodySnapshot(object):
 
 		#Now use gridding to compute the density along the slab
 		assert positions.value.dtype==np.float32
-		density = ext._nbody.grid3d(positions.value,tuple(binning),self.weights)
+
+		if self.virial_radius is not None:
+			rv = self.virial_radius.to(positions.unit).value
+		else:
+			rv = None
+
+		density = ext._nbody.grid3d(positions.value,tuple(binning),self.weights,rv,self.concentration)
 
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():
@@ -784,6 +800,7 @@ class NbodySnapshot(object):
 		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
 		assert hasattr(self,"concentration")
 
 		#Direction of the plane
@@ -953,6 +970,8 @@ class NbodySnapshot(object):
 		assert type(plane_lower_corner)==quantity.Quantity and plane_lower_corner.unit.physical_type=="angle"
 		assert type(plane_size)==quantity.Quantity and plane_size.unit.physical_type=="angle"
 		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#First compute the overall normalization factor for the angular density
 		cosmo_normalization = 1.5 * (self._header["H0"]**2) * self._header["Om0"]  * self.cosmology.comoving_distance(self._header["redshift"]) * (1.0+self._header["redshift"]) / c**2
@@ -1030,7 +1049,13 @@ class NbodySnapshot(object):
 
 		#Now use grid3d to compute the angular density on the lens plane
 		assert positions.dtype==np.float32
-		density = ext._nbody.grid3d(positions,tuple(binning),self.weights)
+
+		if self.virial_radius is not None:
+			rv = self.virial_radius.to(positions.unit).value
+		else:
+			rv = None
+
+		density = ext._nbody.grid3d(positions,tuple(binning),self.weights,rv,self.concentration)
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:

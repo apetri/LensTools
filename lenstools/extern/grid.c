@@ -54,10 +54,12 @@ int grid2d(double *x,double *y,double *s,double *map,int Nobjects,int Npixel,dou
 
 
 //Snap particles on a 3d regularly spaced grid
-int grid3d(float *positions,float *weights,int Npart,double leftX,double leftY,double leftZ,double sizeX,double sizeY,double sizeZ,int nx,int ny,int nz,float *grid){
+int grid3d(float *positions,float *weights,double *radius,double *concentration,int Npart,double leftX,double leftY,double leftZ,double sizeX,double sizeY,double sizeZ,int nx,int ny,int nz,float *grid,double(*kernel)(double,double,double,double)){
 
 	int n;
 	double i,j,k;
+	float w;
+	double r,c;
 
 	//Cycle through the particles and for each one compute the position on the grid
 	if(weights==NULL){

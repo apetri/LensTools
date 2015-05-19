@@ -18,7 +18,8 @@ static char grid3d_docstring[] = "Put the snapshot particles on a regularly spac
 static char adaptive_docstring[] = "Put the snapshot particles on a regularly spaced grid using adaptive smoothing";
 
 //Useful
-static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double,double));
+static PyObject *_apply_kernel2d(PyObject *args,double(*kernel)(double,double,double,double));
+static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,double,double));
 
 //Method declarations
 static PyObject * _nbody_grid3d(PyObject *self,PyObject *args);
@@ -44,110 +45,8 @@ PyMODINIT_FUNC init_nbody(void){
 
 }
 
-//grid3d() implementation
-static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
-
-	PyObject *positions_obj,*bins_obj,*weights_obj;
-	float *weights;
-
-	//parse input tuple
-	if(!PyArg_ParseTuple(args,"OOO",&positions_obj,&bins_obj,&weights_obj)){
-		return NULL;
-	}
-
-	//interpret parsed objects as arrays
-	PyObject *positions_array = PyArray_FROM_OTF(positions_obj,NPY_FLOAT32,NPY_IN_ARRAY);
-	PyObject *binsX_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,0),NPY_DOUBLE,NPY_IN_ARRAY);
-	PyObject *binsY_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,1),NPY_DOUBLE,NPY_IN_ARRAY);
-	PyObject *binsZ_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,2),NPY_DOUBLE,NPY_IN_ARRAY);
-
-	//check if anything failed
-	if(positions_array==NULL || binsX_array==NULL || binsY_array==NULL || binsZ_array==NULL){
-		
-		Py_XDECREF(positions_array);
-		Py_XDECREF(binsX_array);
-		Py_XDECREF(binsY_array);
-		Py_XDECREF(binsZ_array);
-
-		return NULL;
-	}
-
-	//check if weights are provided
-	PyObject *weights_array;
-	if(weights_obj!=Py_None){
-		
-		weights_array = PyArray_FROM_OTF(weights_obj,NPY_FLOAT32,NPY_IN_ARRAY);
-		
-		if(weights_array==NULL){
-
-			Py_DECREF(positions_array);
-			Py_DECREF(binsX_array);
-			Py_DECREF(binsY_array);
-			Py_DECREF(binsZ_array);
-
-			return NULL;
-
-		}
-
-		//Data pointer
-		weights = (float *)PyArray_DATA(weights_array);
-
-	} else{
-
-		weights = NULL;
-	}
-
-	//Get data pointers
-	float *positions_data = (float *)PyArray_DATA(positions_array);
-	double *binsX_data = (double *)PyArray_DATA(binsX_array);
-	double *binsY_data = (double *)PyArray_DATA(binsY_array);
-	double *binsZ_data = (double *)PyArray_DATA(binsZ_array);
-
-	//Get info about the number of bins
-	int NumPart = (int)PyArray_DIM(positions_array,0);
-	int nx = (int)PyArray_DIM(binsX_array,0) - 1;
-	int ny = (int)PyArray_DIM(binsY_array,0) - 1;
-	int nz = (int)PyArray_DIM(binsZ_array,0) - 1;
-
-	//Allocate the new array for the grid
-	PyObject *grid_array;
-		
-	npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
-	grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
-
-	if(grid_array==NULL){
-
-		Py_DECREF(positions_array);
-		Py_DECREF(binsX_array);
-		Py_DECREF(binsY_array);
-		Py_DECREF(binsZ_array);
-
-		if(weights) Py_DECREF(weights_array);
-
-		return NULL;
-
-	}
-
-	//Get a data pointer
-	float *grid_data = (float *)PyArray_DATA(grid_array);
-
-	//Snap the particles on the grid
-	grid3d(positions_data,weights,NumPart,binsX_data[0],binsY_data[0],binsZ_data[0],binsX_data[1] - binsX_data[0],binsY_data[1] - binsY_data[0],binsZ_data[1] - binsZ_data[0],nx,ny,nz,grid_data);
-
-	//return the grid
-	Py_DECREF(positions_array);
-	Py_DECREF(binsX_array);
-	Py_DECREF(binsY_array);
-	Py_DECREF(binsZ_array);
-
-	if(weights) Py_DECREF(weights_array);
-	
-	return grid_array;
-
-}
-
-//apply_kernel() implementation
-static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,double,double)){
+//apply_kernel2d() implementation
+static PyObject *_apply_kernel2d(PyObject *args,double(*kernel)(double,double,double,double)){
 
 	PyObject *positions_obj,*weights_obj,*rp_obj,*concentration_obj,*binning_obj,*projectAll;
 	double center,*concentration;
@@ -272,10 +171,178 @@ static PyObject *_apply_kernel(PyObject *args,double(*kernel)(double,double,doub
 
 }
 
+//apply_kernel3d() implementation
+static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,double,double)){
+
+
+	PyObject *positions_obj,*bins_obj,*weights_obj,*radius_obj,*concentration_obj;
+	float *weights;
+	double *radius,*concentration;
+
+	//parse input tuple
+	if(!PyArg_ParseTuple(args,"OOOOO",&positions_obj,&bins_obj,&weights_obj,&radius_obj,&concentration_obj)){
+		return NULL;
+	}
+
+	//interpret parsed objects as arrays
+	PyObject *positions_array = PyArray_FROM_OTF(positions_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+	PyObject *binsX_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,0),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binsY_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,1),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binsZ_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,2),NPY_DOUBLE,NPY_IN_ARRAY);
+
+	//check if anything failed
+	if(positions_array==NULL || binsX_array==NULL || binsY_array==NULL || binsZ_array==NULL){
+		
+		Py_XDECREF(positions_array);
+		Py_XDECREF(binsX_array);
+		Py_XDECREF(binsY_array);
+		Py_XDECREF(binsZ_array);
+
+		return NULL;
+	}
+
+	//check if weights,radius,concentration are provided
+	PyObject *weights_array,*radius_array,*concentration_array;
+	
+	if(weights_obj!=Py_None){
+		
+		weights_array = PyArray_FROM_OTF(weights_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+		
+		if(weights_array==NULL){
+
+			Py_DECREF(positions_array);
+			Py_DECREF(binsX_array);
+			Py_DECREF(binsY_array);
+			Py_DECREF(binsZ_array);
+
+			return NULL;
+
+		}
+
+		//Data pointer
+		weights = (float *)PyArray_DATA(weights_array);
+
+	} else{
+
+		weights = NULL;
+	}
+
+
+	if(radius_obj!=Py_None){
+		
+		radius_array = PyArray_FROM_OTF(radius_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+		
+		if(radius_array==NULL){
+
+			Py_DECREF(positions_array);
+			Py_DECREF(binsX_array);
+			Py_DECREF(binsY_array);
+			Py_DECREF(binsZ_array);
+			if(weights) Py_DECREF(weights_array);
+
+			return NULL;
+
+		}
+
+		//Data pointer
+		radius = (double *)PyArray_DATA(radius_array);
+
+	} else{
+
+		radius = NULL;
+	}
+
+
+	if(concentration_obj!=Py_None){
+		
+		concentration_array = PyArray_FROM_OTF(concentration_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+		
+		if(concentration_array==NULL){
+
+			Py_DECREF(positions_array);
+			Py_DECREF(binsX_array);
+			Py_DECREF(binsY_array);
+			Py_DECREF(binsZ_array);
+			if(weights) Py_DECREF(weights_array);
+			if(radius) Py_DECREF(radius_array);
+
+			return NULL;
+
+		}
+
+		//Data pointer
+		concentration = (double *)PyArray_DATA(concentration_array);
+
+	} else{
+
+		concentration = NULL;
+	}
+
+	//Get data pointers
+	float *positions_data = (float *)PyArray_DATA(positions_array);
+	double *binsX_data = (double *)PyArray_DATA(binsX_array);
+	double *binsY_data = (double *)PyArray_DATA(binsY_array);
+	double *binsZ_data = (double *)PyArray_DATA(binsZ_array);
+
+	//Get info about the number of bins
+	int NumPart = (int)PyArray_DIM(positions_array,0);
+	int nx = (int)PyArray_DIM(binsX_array,0) - 1;
+	int ny = (int)PyArray_DIM(binsY_array,0) - 1;
+	int nz = (int)PyArray_DIM(binsZ_array,0) - 1;
+
+	//Allocate the new array for the grid
+	PyObject *grid_array;
+		
+	npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
+	grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
+
+	if(grid_array==NULL){
+
+		Py_DECREF(positions_array);
+		Py_DECREF(binsX_array);
+		Py_DECREF(binsY_array);
+		Py_DECREF(binsZ_array);
+
+		if(weights) Py_DECREF(weights_array);
+		if(radius) Py_DECREF(radius_array);
+		if(concentration) Py_DECREF(concentration_array);
+
+		return NULL;
+
+	}
+
+	//Get a data pointer
+	float *grid_data = (float *)PyArray_DATA(grid_array);
+
+	//Snap the particles on the grid
+	grid3d(positions_data,weights,radius,concentration,NumPart,binsX_data[0],binsY_data[0],binsZ_data[0],binsX_data[1] - binsX_data[0],binsY_data[1] - binsY_data[0],binsZ_data[1] - binsZ_data[0],nx,ny,nz,grid_data,kernel);
+
+	//return the grid
+	Py_DECREF(positions_array);
+	Py_DECREF(binsX_array);
+	Py_DECREF(binsY_array);
+	Py_DECREF(binsZ_array);
+
+	if(weights) Py_DECREF(weights_array);
+	if(radius) Py_DECREF(radius_array);
+	if(concentration) Py_DECREF(concentration_array);
+	
+	return grid_array;
+
+
+}
+
+//grid3d() implementation
+static PyObject *_nbody_grid3d(PyObject *self,PyObject *args){
+
+	return _apply_kernel3d(args,NULL);
+
+}
+
 
 //adaptive() implementation
 static PyObject * _nbody_adaptive(PyObject *self,PyObject *args){
 
-	return _apply_kernel(args,quadraticKernel);
+	return _apply_kernel2d(args,quadraticKernel);
 
 }
