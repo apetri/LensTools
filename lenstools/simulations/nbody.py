@@ -583,12 +583,19 @@ class NbodySnapshot(object):
 		#Now use gridding to compute the density along the slab
 		assert positions.value.dtype==np.float32
 
+		#Weights
+		if self.weights is not None:
+			weights = (self.weights * self._header["num_particles_total"] / ((len(binning[0]) - 1) * (len(binning[1]) - 1) * (len(binning[2]) - 1))).astype(np.float32)
+		else:
+			weights = None
+
+		#Virial radius
 		if self.virial_radius is not None:
 			rv = self.virial_radius.to(positions.unit).value
 		else:
 			rv = None
 
-		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),self.weights,rv,self.concentration)
+		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
 
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():
