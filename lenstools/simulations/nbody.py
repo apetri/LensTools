@@ -100,6 +100,8 @@ class NbodySnapshot(object):
 
 	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
 
+		self.pool = pool
+
 		self._length_unit = length_unit.to(cm).value
 		self._mass_unit = mass_unit.to(g).value
 		self._velocity_unit = velocity_unit.to(cm/s).value
@@ -152,8 +154,6 @@ class NbodySnapshot(object):
 			#Once all the info is available, add a wCDM instance as attribute to facilitate the cosmological calculations
 			if h>0.0:
 				self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
-
-		self.pool = pool
 
 
 	@classmethod
