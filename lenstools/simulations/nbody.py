@@ -58,7 +58,11 @@ class NbodySnapshot(object):
 
 	#####################################################################
 	######################Abstract methods###############################
-	#####################################################################	
+	#####################################################################
+
+	@abstractmethod
+	def buildFilename(cls,root,pool,**kwargs):
+		pass	
 
 	@abstractmethod
 	def getHeader(self):
@@ -153,7 +157,7 @@ class NbodySnapshot(object):
 
 
 	@classmethod
-	def open(cls,filename,pool=None):
+	def open(cls,filename,pool=None,**kwargs):
 
 		"""
 		Opens a snapshot at filename
@@ -164,14 +168,14 @@ class NbodySnapshot(object):
 		:param pool: use to distribute the calculations on different processors; if not None, each processor takes care of one of the snapshot parts, appending as ".n" to the filename
 		:type pool: MPIWhirlPool instance
 
+		:param kwargs: the keyword arguments are passed to buildFilename
+		:type kwargs: dict.
+
 		"""
 
 		if type(filename)==str:
 
-			if pool is not None:
-				filename+=".{0}".format(pool.rank)
-			
-			fp = open(filename,"r")
+			fp = open(cls.buildFilename(filename,pool,**kwargs),"r")
 		
 		elif type(filename)==file:
 			

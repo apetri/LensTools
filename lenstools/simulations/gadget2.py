@@ -261,6 +261,16 @@ class Gadget2Snapshot(NbodySnapshot):
 	#########################Abstract methods implementation#######################################
 	###############################################################################################
 
+	@classmethod
+	def buildFilename(cls,root,pool,**kwargs):
+		
+		if pool is not None:
+			return root+".{0}".format(pool.rank)
+		else:
+			return root
+
+	############################################################################################
+
 	def getHeader(self):
 		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
 		return self._header 
