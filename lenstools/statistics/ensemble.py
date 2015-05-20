@@ -115,6 +115,27 @@ class Ensemble(object):
 		new_ensemble.load(from_old=True,callback_loader=callback_loader,**kwargs)
 		return new_ensemble
 
+	@classmethod
+	def readall(cls,filelist,callback_loader=None,**kwargs):
+
+		"""
+		Reads a list of files into an Ensemble
+
+		:param filelist: list of files to read
+		:type filelist: list.
+
+		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble. If None provided, it performs a numpy.load on the specified file. Must return a numpy array with the loaded data
+		:type callback_loader: function
+
+		:param kwargs: Any additional keyword arguments to be passed to callback_loader
+		:type kwargs: dict.
+
+		:returns: Ensemble instance read from the file
+
+		"""
+
+		return reduce(add,[ cls.read(f,callback_loader,**kwargs) for f in filelist ])
+
 
 	def load(self,callback_loader=None,pool=None,from_old=False,**kwargs):
 		"""

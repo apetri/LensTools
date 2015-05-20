@@ -228,16 +228,16 @@ class Catalog(tbl.Table):
 
 		#Plot 
 		ax0 = self.ax.imshow(scalar_map.T,origin="lower",interpolation="nearest",extent=[origin[0].to(self._position_unit).value,(origin[0]+map_size).to(self._position_unit).value,origin[1].to(self._position_unit).value,(origin[1]+map_size).to(self._position_unit).value],cmap=getattr(cm,cmap))
-		self.ax.set_xlabel(r"$x$({0})".format(self._position_unit.to_string()))
-		self.ax.set_ylabel(r"$y$({0})".format(self._position_unit.to_string()))
+		self.ax.set_xlabel(r"$x$({0})".format(self._position_unit.to_string()),fontsize=18)
+		self.ax.set_ylabel(r"$y$({0})".format(self._position_unit.to_string()),fontsize=18)
 
 		#Colorbar
 		if colorbar:
 			cbar = plt.colorbar(ax0,ax=self.ax)
 			if (field_quantity is not None) and (type(field_quantity)==str):
-				cbar.set_label(field_quantity)
+				cbar.set_label(field_quantity,size=18)
 			else:
-				cbar.set_label(r"$n$")
+				cbar.set_label(r"$n$",size=18)
 
 
 	########################################################################################

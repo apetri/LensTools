@@ -5,7 +5,7 @@ import re
 
 import numpy as np
 import astropy.units as u
-from astropy.cosmology import FLRW,WMAP9
+from astropy.cosmology import z_at_value
 
 from .remote import SystemHandler,LocalSystem,LocalGit
 from .settings import *
@@ -387,7 +387,7 @@ class SimulationBatch(object):
 		Create a new simulation model, given a set of cosmological parameters
 
 		:param cosmology: cosmological model to simulate
-		:type cosmology: FLRW
+		:type cosmology: LensToolsCosmology
 
 		:param parameters: cosmological parameters to keep track of
 		:type parameters: list.
@@ -1110,13 +1110,13 @@ class SimulationModel(object):
 
 	"""
 
-	def __init__(self,cosmology=WMAP9,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
+	def __init__(self,cosmology=CosmoDefault,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
 
 		"""
 		Set the base for the simulation
 
 		:param cosmology: cosmological model to simulate
-		:type cosmology: FLRW
+		:type cosmology: LensToolsCosmology
 
 		:param environment: environment settings of the current machine
 		:type environment: EnvironmentSettings
@@ -1127,7 +1127,7 @@ class SimulationModel(object):
 		"""
 
 		#Safety checks
-		assert isinstance(cosmology,FLRW)
+		assert isinstance(cosmology,LensToolsCosmology)
 
 		if environment is None:
 			self.environment = EnvironmentSettings()
@@ -1160,6 +1160,62 @@ class SimulationModel(object):
 			representation_parameters.append("{0}={1:.3f}".format(p,getattr(self.cosmology,name2attr[p])))
 
 		return "<"+ " , ".join(representation_parameters) + ">"
+
+
+	################################################################################################################################
+
+	def plan(self,map_size,max_redshift,nlenses,mass_resolution=1.0e10*u.Msun):
+
+		"""
+		This method is useful when planning a simulation batch: given an expected size of the simulated maps, a maximum redshift for the ray tracing and the number of lenses along the line of sight, it computes the size of the box that must be employed, the spacing between the lenses and the redshifts at which the lenses need to be placed
+
+		:param map_size: angular size of the simulated maps
+		:type map_size: quantity
+
+		:param max_redshift: maximum redshift of the maps
+		:type max_redshift: float.
+
+		:param nlenses: number of lenses along the line of sight
+		:type nlenses: int.
+
+		:param mass_resolution: mass of one particle in the N--body simulation
+		:type mass_resoultion: quantity
+
+		:returns: suggested simulations specifications
+		:rtype: dict.
+
+		"""
+
+		#Comoving distance to max_redshift
+		distance = self.cosmology.comoving_distance(max_redshift)
+
+		#First compute the box size
+		box_size = map_size.to(u.rad).value * distance
+
+		#Now compute the total mass in the box
+		total_mass = self.cosmology.critical_density0 * self.cosmology.Om0 * (box_size**3)
+		nside = ((total_mass / mass_resolution).decompose().value)**(1/3)
+
+		#Next compute the lens plane thickness
+		thickness = distance / nlenses
+
+		#Compute the redshifts at which the lenses need to be put in
+		lens_distance = np.linspace(thickness.value,distance.value,nlenses) * distance.unit
+		lens_redshift = np.zeros(len(lens_distance))
+
+		for n,d in enumerate(lens_distance):
+			lens_redshift[n] = z_at_value(self.cosmology.comoving_distance,d)
+
+		#Build the dictionary
+		specs = dict()
+		specs["box_size"] = box_size.to(self.Mpc_over_h)
+		specs["nside"] = int(nside)
+		specs["plane_thickness"] = thickness.to(self.Mpc_over_h)
+		specs["output_scale_factor"] = np.sort(1/(1+lens_redshift))
+
+		#Return
+		return specs
+
 
 	################################################################################################################################
 
@@ -1492,6 +1548,46 @@ class SimulationCollection(SimulationModel):
 
 	def newCollection(self):
 		raise TypeError("This method should be called on SimulationModel instances!")
+
+	################################################################################################################################
+
+	@property
+	def resolution(self):
+
+		"""
+		Computes the mass resolution (mass of one particle) of the simulation collection
+
+		"""
+
+		dm_density = self.cosmology.critical_density0 * self.cosmology.Om0
+		return (dm_density*(self.box_size**3) / (self.nside**3)).to(u.Msun)
+
+	################################################################################################################################
+
+	def tile(self,n):
+
+		"""
+		Computes the location of the slab centers and the thickness of the slabs necessary to cut the simulation box in n equal pieces
+
+		:param n: the number of pieces to cut the box into
+		:type n: int.
+
+		:return: thickness,cut_points
+		:rtype: tuple. 
+
+		"""
+
+		#Compute thickness
+		thickness = self.box_size / n
+
+		#Compute cut points
+		cut_points = np.zeros(n) * self.Mpc_over_h
+
+		for p in range(n):
+			cut_points[p] = thickness*(0.5 + p)
+
+		#Return in physical units
+		return thickness.to(u.Mpc),cut_points.to(u.Mpc)
 
 	################################################################################################################################
 

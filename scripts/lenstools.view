@@ -6,7 +6,7 @@ import argparse
 #LensTools
 from lenstools.image.convergence import Spin0
 from lenstools.image.shear import Spin1
-from lenstools.simulations.raytracing import Plane
+from lenstools.simulations.raytracing import Plane,PotentialPlane
 
 #Matplotlib
 import matplotlib.pyplot as plt
@@ -16,9 +16,11 @@ parser = argparse.ArgumentParser(prog=os.path.split(sys.argv[0])[-1])
 parser.add_argument("filename",nargs="+")
 parser.add_argument("-s","--spin",dest="spin",type=int,default=0,help="Spin of the lensing field to visualize, must be 0 (scalar) or 1 (vector/tensor)")
 parser.add_argument("-p","--plane",dest="plane",action="store_true",default=False,help="Enable if the image you are loading is a lensing plane (these have extra info in the header)")
+parser.add_argument("-pd","--planedensity",dest="planedensity",action="store_true",default=False,help="Enable if the image you are loading is a lensing potential plane, of which you wish to compute the density")
 parser.add_argument("-f","--format",dest="img_format",type=str,default=None,help="Format of the image to save on disk; if None, no image is saved")
 parser.add_argument("-i","--interactive",dest="interactive",action="store_true",default=True,help="Switch to interactive mode after plotting")
 parser.add_argument("-cm","--colormap",dest="colormap",action="store",type=str,default="jet",help="matplotlib color map name")
+parser.add_argument("-l","--label",dest="label",action="store",type=str,default=None,help="optional label to give to the image colorbar")
 
 cmd_args = parser.parse_args()
 
@@ -38,12 +40,18 @@ for filename in cmd_args.filename:
 
 	if cmd_args.plane:
 		img = Plane.load(filename)
+	
+	elif cmd_args.planedensity:
+		img  = PotentialPlane.load(filename)
+		img = img.density()
+	
 	elif cmd_args.spin==0:
 		img = Spin0.load(filename)
+	
 	else:
 		img = Spin1.load(filename)
 	
-	img.visualize(colorbar=True,cmap=cmd_args.colormap)
+	img.visualize(colorbar=True,cmap=cmd_args.colormap,cbar_label=cmd_args.label)
 
 	if cmd_args.interactive:
 		

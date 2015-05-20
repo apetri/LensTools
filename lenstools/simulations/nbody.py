@@ -7,8 +7,8 @@ from functools import reduce
 
 import sys,os
 
-import logging
 from .logs import logplanes
+import logging
 
 from .. import extern as ext
 
@@ -58,7 +58,11 @@ class NbodySnapshot(object):
 
 	#####################################################################
 	######################Abstract methods###############################
-	#####################################################################	
+	#####################################################################
+
+	@abstractmethod
+	def buildFilename(cls,root,pool,**kwargs):
+		pass	
 
 	@abstractmethod
 	def getHeader(self):
@@ -84,7 +88,19 @@ class NbodySnapshot(object):
 	######################Default, non--abstract methods###############################
 	###################################################################################
 
+	#Check that header has all required keys#
+	_header_keys = ['redshift','scale_factor','comoving_distance','masses','num_particles_file','num_particles_total','box_size','num_files','Om0','Ode0','w0','wa','h']
+
+	def _check_header(self):
+
+		for key in self._header_keys:
+			assert key in self._header.keys(),"Key {0} not loaded in header, please make sure that the getHeader method is configured to do that!".format(key)
+
+	####################################################################################################################
+
 	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
+
+		self.pool = pool
 
 		self._length_unit = length_unit.to(cm).value
 		self._mass_unit = mass_unit.to(g).value
@@ -96,7 +112,12 @@ class NbodySnapshot(object):
 		
 			self.fp = fp
 
+			#Load the header
 			self._header = self.getHeader()
+			
+			#Check that header has been loaded correctly
+			self._check_header()
+
 			self._header["files"] = [self.fp.name]
 			h = self._header["h"]
 
@@ -134,11 +155,9 @@ class NbodySnapshot(object):
 			if h>0.0:
 				self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
 
-		self.pool = pool
-
 
 	@classmethod
-	def open(cls,filename,pool=None):
+	def open(cls,filename,pool=None,**kwargs):
 
 		"""
 		Opens a snapshot at filename
@@ -149,14 +168,14 @@ class NbodySnapshot(object):
 		:param pool: use to distribute the calculations on different processors; if not None, each processor takes care of one of the snapshot parts, appending as ".n" to the filename
 		:type pool: MPIWhirlPool instance
 
+		:param kwargs: the keyword arguments are passed to buildFilename
+		:type kwargs: dict.
+
 		"""
 
 		if type(filename)==str:
 
-			if pool is not None:
-				filename+=".{0}".format(pool.rank)
-			
-			fp = open(filename,"r")
+			fp = open(cls.buildFilename(filename,pool,**kwargs),"r")
 		
 		elif type(filename)==file:
 			
@@ -365,10 +384,10 @@ class NbodySnapshot(object):
 		self.velocities = velocities
 
 
-	def numberDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False):
+	def massDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False):
 
 		"""
-		Uses a C backend gridding function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
+		Uses a C backend gridding function to compute the matter mass density fluctutation for the current snapshot: the density is evaluated using a nearest neighbor search
 
 		:param resolution: resolution below which particles are grouped together; if an int is passed, this is the size of the grid
 		:type resolution: float with units or int.
@@ -382,7 +401,7 @@ class NbodySnapshot(object):
 		:param save: if True saves the density histogram and resolution as instance attributes
 		:type save: bool.
 
-		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density on a grid,bin resolution along the axes)  
+		:returns: tuple(numpy 3D array with the (unsmoothed) matter density fluctuation on a grid,bin resolution along the axes)  
 
 		"""
 
@@ -394,9 +413,13 @@ class NbodySnapshot(object):
 
 		#Check if positions are already available, otherwise retrieve them
 		if hasattr(self,"positions"):
-			positions = self.positions.copy()
+			positions = self.positions
 		else:
 			positions = self.getPositions(save=False)
+
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#Bin extremes (we start from the leftmost position up to the box size)
 		if left_corner is None:
@@ -422,7 +445,19 @@ class NbodySnapshot(object):
 
 		#Compute the number count histogram
 		assert positions.value.dtype==np.float32
-		density = ext._nbody.grid3d(positions.value,(xi,yi,zi))
+
+		#Weights
+		if self.weights is not None:
+			weights = (self.weights * self._header["num_particles_total"] / ((len(xi) - 1) * (len(yi) - 1) * (len(zi) - 1))).astype(np.float32)
+		else:
+			weights = None
+
+		if self.virial_radius is not None:
+			rv = self.virial_radius.to(positions.unit).value
+		else:
+			rv = None
+
+		density = ext._nbody.grid3d(positions.value,(xi,yi,zi),weights,rv,self.concentration) * (len(xi)-1) * (len(yi)-1) * (len(zi)-1) / self._header["num_particles_total"]
 
 		#Accumulate from the other processors
 		if self.pool is not None:
@@ -511,6 +546,10 @@ class NbodySnapshot(object):
 		else:
 			positions = self.getPositions(save=False)
 
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
+
 		#Lower left corner of the plane
 		if left_corner is None:
 			left_corner = positions.min(axis=0)
@@ -551,7 +590,20 @@ class NbodySnapshot(object):
 
 		#Now use gridding to compute the density along the slab
 		assert positions.value.dtype==np.float32
-		density = ext._nbody.grid3d(positions.value,tuple(binning))
+
+		#Weights
+		if self.weights is not None:
+			weights = (self.weights * self._header["num_particles_total"] / ((len(binning[0]) - 1) * (len(binning[1]) - 1) * (len(binning[2]) - 1))).astype(np.float32)
+		else:
+			weights = None
+
+		#Virial radius
+		if self.virial_radius is not None:
+			rv = self.virial_radius.to(positions.unit).value
+		else:
+			rv = None
+
+		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
 
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():
@@ -667,6 +719,10 @@ class NbodySnapshot(object):
 			if (self.pool is None) or (self.pool.is_master()):
 				logplanes.debug("Done with density FFT operations...")
 
+		else:
+
+			lensing_potential = density_projected
+
 		#Multiply by the normalization factors
 		lensing_potential = lensing_potential * cosmo_normalization * density_normalization
 		lensing_potential = lensing_potential.decompose()
@@ -769,9 +825,13 @@ class NbodySnapshot(object):
 
 		#Get the particle positions if not available get
 		if hasattr(self,"positions"):
-			positions = self.positions.copy()
+			positions = self.positions
 		else:
 			positions = self.getPositions(save=False)
+
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#Lower left corner of the plane
 		if left_corner is None:
@@ -816,8 +876,14 @@ class NbodySnapshot(object):
 		#Check that thay are all positive
 		assert (rp>0).all()
 
+		#Weights
+		if self.weights is not None:
+			weights = self.weights.astype(np.float32)
+		else:
+			weights = None
+
 		#Compute the adaptive smoothing
-		density = (3.0/np.pi)*ext._nbody.adaptive(positions.value,rp,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
+		density = (3.0/np.pi)*ext._nbody.adaptive(positions.value,weights,rp,self.concentration,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:
@@ -943,6 +1009,10 @@ class NbodySnapshot(object):
 		else:
 			positions = self.getPositions(save=False)
 
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
+
 		#Scale the units
 		thickness = thickness.to(positions.unit)
 		center = center.to(positions.unit)
@@ -1006,7 +1076,13 @@ class NbodySnapshot(object):
 
 		#Now use grid3d to compute the angular density on the lens plane
 		assert positions.dtype==np.float32
-		density = ext._nbody.grid3d(positions,tuple(binning))
+
+		if self.virial_radius is not None:
+			rv = self.virial_radius.to(positions.unit).value
+		else:
+			rv = None
+
+		density = ext._nbody.grid3d(positions,tuple(binning),self.weights,rv,self.concentration)
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:
@@ -1131,7 +1207,7 @@ class NbodySnapshot(object):
 		:param k_edges: wavenumbers at which to compute the density power spectrum (must have units)
 		:type k_edges: array.
 
-		:param resolution: optional, fix the grid resolution to some value; to be passed to the numberDensity method. If none this is computed automatically from the k_edges
+		:param resolution: optional, fix the grid resolution to some value; to be passed to the massDensity method. If none this is computed automatically from the k_edges
 		:type resolution: float with units, int. or None
 
 		:param return_num_modes: if True returns the mode counting for each k bin as the last element in the return tuple
@@ -1153,9 +1229,9 @@ class NbodySnapshot(object):
 
 		#Compute the gridded number density
 		if not hasattr(self,"density"):
-			density,bin_resolution = self.numberDensity(resolution=resolution) 
+			density,bin_resolution = self.massDensity(resolution=resolution) 
 		else:
-			assert resolution is None,"The spatial resolution is already specified in the attributes of this instance! Call numberDensity() to modify!"
+			assert resolution is None,"The spatial resolution is already specified in the attributes of this instance! Call massDensity() to modify!"
 			density,bin_resolution = self.density,self.resolution
 		
 		#Decide pixel sizes in Fourier spaces
@@ -1179,7 +1255,7 @@ class NbodySnapshot(object):
 
 		#Return the result (normalize the power so it corresponds to the one of the density fluctuations)
 		k = 0.5*(k_edges[1:]+k_edges[:-1])
-		return_tuple = (k,(power_spectrum/hits) * (self._header["box_size"]**3) / (self._header["num_particles_total"]**2))
+		return_tuple = (k,(power_spectrum/hits) * (bin_resolution[0] * bin_resolution[1] * bin_resolution[2])**2 / (self._header["box_size"]**3))
 
 		if return_num_modes:
 			return_tuple += (hits,)
