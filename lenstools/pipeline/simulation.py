@@ -409,7 +409,6 @@ class SimulationBatch(object):
 
 			else:
 				print("[-] Model {0} already exists!".format(newModel.cosmo_id))
-				return None
 				
 
 		#Return to user
@@ -1314,7 +1313,7 @@ class SimulationModel(object):
 
 			else:
 				print("[-] Collection {0} already exists!".format(os.path.join(newSimulation.cosmo_id,newSimulation.geometry_id)))
-				return None
+				return newSimulation
 				
 
 		#Keep track of the fact we created a new collection
