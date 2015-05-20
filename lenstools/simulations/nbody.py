@@ -384,10 +384,10 @@ class NbodySnapshot(object):
 		self.velocities = velocities
 
 
-	def numberDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False):
+	def massDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False):
 
 		"""
-		Uses a C backend gridding function to compute the particle number density for the current snapshot: the density is evaluated using a nearest neighbor search
+		Uses a C backend gridding function to compute the matter mass density fluctutation for the current snapshot: the density is evaluated using a nearest neighbor search
 
 		:param resolution: resolution below which particles are grouped together; if an int is passed, this is the size of the grid
 		:type resolution: float with units or int.
@@ -401,24 +401,25 @@ class NbodySnapshot(object):
 		:param save: if True saves the density histogram and resolution as instance attributes
 		:type save: bool.
 
-		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density on a grid,bin resolution along the axes)  
+		:returns: tuple(numpy 3D array with the (unsmoothed) matter density fluctuation on a grid,bin resolution along the axes)  
 
 		"""
 
 		#Sanity checks
 		assert type(resolution) in [np.int,quantity.Quantity]
-		assert hasattr(self,"weights")
-		assert hasattr(self,"virial_radius")
-		assert hasattr(self,"concentration")
 		
 		if type(resolution)==quantity.Quantity:	
 			assert resolution.unit.physical_type=="length"
 
 		#Check if positions are already available, otherwise retrieve them
 		if hasattr(self,"positions"):
-			positions = self.positions.copy()
+			positions = self.positions
 		else:
 			positions = self.getPositions(save=False)
+
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#Bin extremes (we start from the leftmost position up to the box size)
 		if left_corner is None:
@@ -445,12 +446,18 @@ class NbodySnapshot(object):
 		#Compute the number count histogram
 		assert positions.value.dtype==np.float32
 
+		#Weights
+		if self.weights is not None:
+			weights = (self.weights * self._header["num_particles_total"] / ((len(xi) - 1) * (len(yi) - 1) * (len(zi) - 1))).astype(np.float32)
+		else:
+			weights = None
+
 		if self.virial_radius is not None:
 			rv = self.virial_radius.to(positions.unit).value
 		else:
 			rv = None
 
-		density = ext._nbody.grid3d(positions.value,(xi,yi,zi),self.weights,rv,self.concentration)
+		density = ext._nbody.grid3d(positions.value,(xi,yi,zi),weights,rv,self.concentration) * (len(xi)-1) * (len(yi)-1) * (len(zi)-1) / self._header["num_particles_total"]
 
 		#Accumulate from the other processors
 		if self.pool is not None:
@@ -525,9 +532,6 @@ class NbodySnapshot(object):
 		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
-		assert hasattr(self,"weights")
-		assert hasattr(self,"virial_radius")
-		assert hasattr(self,"concentration")
 
 		#Cosmological normalization factor
 		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
@@ -541,6 +545,10 @@ class NbodySnapshot(object):
 			positions = self.positions
 		else:
 			positions = self.getPositions(save=False)
+
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#Lower left corner of the plane
 		if left_corner is None:
@@ -810,9 +818,6 @@ class NbodySnapshot(object):
 		assert normal in range(3),"There are only 3 dimensions!"
 		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
-		assert hasattr(self,"weights")
-		assert hasattr(self,"virial_radius")
-		assert hasattr(self,"concentration")
 
 		#Direction of the plane
 		plane_directions = range(3)
@@ -823,6 +828,10 @@ class NbodySnapshot(object):
 			positions = self.positions
 		else:
 			positions = self.getPositions(save=False)
+
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#Lower left corner of the plane
 		if left_corner is None:
@@ -867,8 +876,14 @@ class NbodySnapshot(object):
 		#Check that thay are all positive
 		assert (rp>0).all()
 
+		#Weights
+		if self.weights is not None:
+			weights = self.weights.astype(np.float32)
+		else:
+			weights = None
+
 		#Compute the adaptive smoothing
-		density = (3.0/np.pi)*ext._nbody.adaptive(positions.value,self.weights,rp,self.concentration,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
+		density = (3.0/np.pi)*ext._nbody.adaptive(positions.value,weights,rp,self.concentration,binning,center.to(positions.unit).value,plane_directions[0],plane_directions[1],normal,projectAll)
 
 		#Accumulate the density from the other processors
 		if self.pool is not None:
@@ -980,9 +995,6 @@ class NbodySnapshot(object):
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 		assert type(plane_lower_corner)==quantity.Quantity and plane_lower_corner.unit.physical_type=="angle"
 		assert type(plane_size)==quantity.Quantity and plane_size.unit.physical_type=="angle"
-		assert hasattr(self,"weights")
-		assert hasattr(self,"virial_radius")
-		assert hasattr(self,"concentration")
 
 		#First compute the overall normalization factor for the angular density
 		cosmo_normalization = 1.5 * (self._header["H0"]**2) * self._header["Om0"]  * self.cosmology.comoving_distance(self._header["redshift"]) * (1.0+self._header["redshift"]) / c**2
@@ -996,6 +1008,10 @@ class NbodySnapshot(object):
 			positions = self.positions.copy()
 		else:
 			positions = self.getPositions(save=False)
+
+		assert hasattr(self,"weights")
+		assert hasattr(self,"virial_radius")
+		assert hasattr(self,"concentration")
 
 		#Scale the units
 		thickness = thickness.to(positions.unit)
@@ -1191,7 +1207,7 @@ class NbodySnapshot(object):
 		:param k_edges: wavenumbers at which to compute the density power spectrum (must have units)
 		:type k_edges: array.
 
-		:param resolution: optional, fix the grid resolution to some value; to be passed to the numberDensity method. If none this is computed automatically from the k_edges
+		:param resolution: optional, fix the grid resolution to some value; to be passed to the massDensity method. If none this is computed automatically from the k_edges
 		:type resolution: float with units, int. or None
 
 		:param return_num_modes: if True returns the mode counting for each k bin as the last element in the return tuple
@@ -1213,9 +1229,9 @@ class NbodySnapshot(object):
 
 		#Compute the gridded number density
 		if not hasattr(self,"density"):
-			density,bin_resolution = self.numberDensity(resolution=resolution) 
+			density,bin_resolution = self.massDensity(resolution=resolution) 
 		else:
-			assert resolution is None,"The spatial resolution is already specified in the attributes of this instance! Call numberDensity() to modify!"
+			assert resolution is None,"The spatial resolution is already specified in the attributes of this instance! Call massDensity() to modify!"
 			density,bin_resolution = self.density,self.resolution
 		
 		#Decide pixel sizes in Fourier spaces
@@ -1239,7 +1255,7 @@ class NbodySnapshot(object):
 
 		#Return the result (normalize the power so it corresponds to the one of the density fluctuations)
 		k = 0.5*(k_edges[1:]+k_edges[:-1])
-		return_tuple = (k,(power_spectrum/hits) * (self._header["box_size"]**3) / (self._header["num_particles_total"]**2))
+		return_tuple = (k,(power_spectrum/hits) * (bin_resolution[0] * bin_resolution[1] * bin_resolution[2])**2 / (self._header["box_size"]**3))
 
 		if return_num_modes:
 			return_tuple += (hits,)

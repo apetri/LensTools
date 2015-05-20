@@ -20,11 +20,11 @@ if pool is None:
 
 	#If we run on one core only the snapshots need to be processed in series
 	snap = Gadget2Snapshot.open("Data/gadget/ic1.0")
-	n1,r = snap.numberDensity(resolution=64,left_corner=np.array([0.0,0.0,0.0])*snap.Mpc_over_h)
+	n1,r = snap.massDensity(resolution=64,left_corner=np.array([0.0,0.0,0.0])*snap.Mpc_over_h)
 	snap.close()
 
 	snap = Gadget2Snapshot.open("Data/gadget/ic1.1")
-	n2,r = snap.numberDensity(resolution=64,left_corner=np.array([0.0,0.0,0.0])*snap.Mpc_over_h)
+	n2,r = snap.massDensity(resolution=64,left_corner=np.array([0.0,0.0,0.0])*snap.Mpc_over_h)
 	snap.close()
 
 	n = n1+n2
@@ -38,7 +38,7 @@ else:
 
 	#If we run on 2 cores, we can process the snapshots in parallel
 	snap = Gadget2Snapshot.open("Data/gadget/ic1",pool=pool)
-	n,r = snap.numberDensity(resolution=64,left_corner=np.array([0.0,0.0,0.0])*snap.Mpc_over_h)
+	n,r = snap.massDensity(resolution=64,left_corner=np.array([0.0,0.0,0.0])*snap.Mpc_over_h)
 	snap.close()
 
 	if pool.is_master():
