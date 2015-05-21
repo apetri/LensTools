@@ -10,6 +10,9 @@ The code you have to run to measure the power spectrum of a convergence map look
 	#The operations on convergence maps are handled with the ConvergenceMap class
 	from lenstools import ConvergenceMap
 
+	import numpy as np
+	import matplotlib.pyplot as plt
+
 	map_filename = "Data/conv1.fit"
 	conv_map = ConvergenceMap.load(map_filename)
 
