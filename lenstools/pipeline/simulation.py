@@ -484,31 +484,35 @@ class SimulationBatch(object):
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
 
-		for c in range(chunks):
-		
-			#Arguments for the executable
-			exec_args = list()
+		#Override job settings to make sure requested resources are enough
+		job_settings.num_cores = job_settings.cores_per_simulation*realizations_per_chunk
 
-			for realization in realization_list[realizations_per_chunk*c:realizations_per_chunk*(c+1)]:
+		for c in range(chunks):
+
+			#Find the realizations this chunk must process
+			realizations_in_chunk = realization_list[realizations_per_chunk*c:realizations_per_chunk*(c+1)]
+
+			#Find in how many executables we should split the realizations in this chunk
+			num_executables = len(realizations_in_chunk)
+
+			#Find how many realizations per executable
+			executables = list()
+			cores = [job_settings.cores_per_simulation] * num_executables
+			
+			for e in range(num_executables):
 			
 				#Separate the cosmo_id,geometry_id,realization number
-				cosmo_id,geometry_id = realization.split("|")
+				cosmo_id,geometry_id = realizations_in_chunk[e].split("|")
 
 				#Get the corresponding SimulationXXX instances
 				model = self.getModel(cosmo_id)
-
-				nside,box_size = geometry_id.split("b")
-				nside = int(nside)
-				box_size = float(box_size) * model.Mpc_over_h
-				collection = model.getCollection(box_size=box_size,nside=nside)
+				collection = model.getCollection(geometry_id)
 
 				parameter_file = os.path.join(collection.home_subdir,"camb.param")
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("CAMB parameter file at {0} does not exist yet!".format(parameter_file))
 
-				exec_args.append(parameter_file)
-
-			executable = job_settings.path_to_executable + " " + " ".join(exec_args)
+				executables.append(job_settings.path_to_executable + " " + "{0}".format(parameter_file))
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
@@ -520,16 +524,17 @@ class SimulationBatch(object):
 			job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
 			job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
 
-			#Inform user where logs will be directed
-			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
-			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
+			if not c:
+			
+				#Inform user where logs will be directed
+				print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
+				print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
 
-			#Override settings
-			job_settings.num_cores = job_settings.cores_per_simulation
-
-			with self.syshandler.open(script_filename,"w") as scriptfile:
-				scriptfile.write(job_handler.writePreamble(job_settings))
-				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
+				with self.syshandler.open(script_filename,"w") as scriptfile:
+					scriptfile.write(job_handler.writePreamble(job_settings))
+			
+			with self.syshandler.open(script_filename,"a") as scriptfile:
+				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
 
 			#Log to user and return
 			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
