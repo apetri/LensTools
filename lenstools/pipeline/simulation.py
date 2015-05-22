@@ -444,7 +444,7 @@ class SimulationBatch(object):
 	##########################################Job submission scripts###########################################################################
 	###########################################################################################################################################
 
-	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,chunks=1):
+	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
 
 		"""
 		Writes CAMB submission script
@@ -461,6 +461,9 @@ class SimulationBatch(object):
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
 
+		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
+		:type kwargs: dict.
+
 		"""
 
 		#Type safety check
@@ -468,11 +471,18 @@ class SimulationBatch(object):
 		assert isinstance(job_handler,JobHandler)
 		assert len(realization_list)%chunks==0,"Perfect load balancing enforced, each job will process the same number of realizations!"
 
+		#Check if we need to collapse everyting in one script
+		if "one_script" in kwargs.keys():
+			one_script = kwargs["one_script"]
+		else:
+			one_script = False
+
 		#It's better to run CAMB from the directory where the executable resides
 		job_handler.cluster_specs.execution_preamble = "cd {0}".format(os.path.dirname(job_settings.path_to_executable))
 
-		#Each simulation must run on a single core!
-		assert job_settings.cores_per_simulation==1,"CAMB must run on a single core!"
+		#This limit is enforced
+		assert job_settings.cores_per_simulation*chunks==len(realization_list),"cores_per_simulation x chunks should be equal to the total number of models!"
+		job_settings.num_cores = job_settings.cores_per_simulation
 
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
@@ -484,47 +494,44 @@ class SimulationBatch(object):
 		#Split realizations between independent jobs
 		realizations_per_chunk = len(realization_list)//chunks
 
-		#Override job settings to make sure requested resources are enough
-		job_settings.num_cores = job_settings.cores_per_simulation*realizations_per_chunk
-
 		for c in range(chunks):
+		
+			#Arguments for the executable
+			exec_args = list()
 
-			#Find the realizations this chunk must process
-			realizations_in_chunk = realization_list[realizations_per_chunk*c:realizations_per_chunk*(c+1)]
-
-			#Find in how many executables we should split the realizations in this chunk
-			num_executables = len(realizations_in_chunk)
-
-			#Find how many realizations per executable
-			executables = list()
-			cores = [job_settings.cores_per_simulation] * num_executables
-			
-			for e in range(num_executables):
+			for realization in realization_list[realizations_per_chunk*c:realizations_per_chunk*(c+1)]:
 			
 				#Separate the cosmo_id,geometry_id,realization number
-				cosmo_id,geometry_id = realizations_in_chunk[e].split("|")
+				cosmo_id,geometry_id = realization.split("|")
 
 				#Get the corresponding SimulationXXX instances
 				model = self.getModel(cosmo_id)
-				collection = model.getCollection(geometry_id)
+
+				nside,box_size = geometry_id.split("b")
+				nside = int(nside)
+				box_size = float(box_size) * model.Mpc_over_h
+				collection = model.getCollection(box_size=box_size,nside=nside)
 
 				parameter_file = os.path.join(collection.home_subdir,"camb.param")
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("CAMB parameter file at {0} does not exist yet!".format(parameter_file))
 
-				executables.append(job_settings.path_to_executable + " " + "{0}".format(parameter_file))
+				exec_args.append(parameter_file)
+
+			executable = job_settings.path_to_executable + " " + " ".join(exec_args)
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
-			script_filename_split = script_filename.split(".")
-			script_filename_split[-2] += "{0}".format(c+1)
-			script_filename = ".".join(script_filename_split)
+			if not one_script:
+				script_filename_split = script_filename.split(".")
+				script_filename_split[-2] += "{0}".format(c+1)
+				script_filename = ".".join(script_filename_split)
 
 			#Override settings to make stdout and stderr go in the right places
 			job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
 			job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
 
-			if not c:
+			if (not one_script) or (not c):
 			
 				#Inform user where logs will be directed
 				print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
@@ -534,15 +541,16 @@ class SimulationBatch(object):
 					scriptfile.write(job_handler.writePreamble(job_settings))
 			
 			with self.syshandler.open(script_filename,"a") as scriptfile:
-				scriptfile.write(job_handler.writeExecution(executables,cores,job_settings))
+				scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
+			if (not one_script) or (not c):	
+				print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################
 
-	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,chunks=1):
+	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
 
 		"""
 		Writes NGenIC submission script
@@ -559,12 +567,21 @@ class SimulationBatch(object):
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
 
+		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
+		:type kwargs: dict.
+
 		"""
 
 		#Type safety check
 		assert isinstance(job_settings,JobSettings)
 		assert isinstance(job_handler,JobHandler)
 		assert len(realization_list)%chunks==0,"Perfect load balancing enforced, each job will process the same number of realizations!"
+
+		#Check if we need to collapse everyting in one script
+		if "one_script" in kwargs.keys():
+			one_script = kwargs["one_script"]
+		else:
+			one_script = False
 
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
@@ -606,27 +623,33 @@ class SimulationBatch(object):
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
-			script_filename_split = script_filename.split(".")
-			script_filename_split[-2] += "{0}".format(c+1)
-			script_filename = ".".join(script_filename_split)
+			if not one_script:
+				script_filename_split = script_filename.split(".")
+				script_filename_split[-2] += "{0}".format(c+1)
+				script_filename = ".".join(script_filename_split)
 
 			#Override settings to make stdout and stderr go in the right places
 			job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
 			job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
 
-			#Inform user where logs will be directed
-			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
-			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
-
 			#Override settings
 			job_settings.num_cores = job_settings.cores_per_simulation
 
-			with self.syshandler.open(script_filename,"w") as scriptfile:
-				scriptfile.write(job_handler.writePreamble(job_settings))
-				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
+			if (not one_script) or (not c):
+			
+				#Inform user where logs will be directed
+				print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
+				print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
+
+				with self.syshandler.open(script_filename,"w") as scriptfile:
+					scriptfile.write(job_handler.writePreamble(job_settings))
+			
+			with self.syshandler.open(script_filename,"a") as scriptfile:
+				scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
+			if (not one_script) or (not c):	
+				print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################
