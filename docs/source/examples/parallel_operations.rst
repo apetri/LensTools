@@ -48,7 +48,7 @@ You can take advantage of the :py:class:`~lenstools.statistics.Ensemble` class t
 	ens = Ensemble.fromfilelist(filelist)
 
 	#Call square on every file in the list
-	ens.load(square)
+	ens.load(square,pool=pool)
 
 	#ens.data will be an array of 0 and 1 depending on which files have been written succesfully and which not
 
