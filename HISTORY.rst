@@ -1,6 +1,6 @@
 .. :changelog:
 
-0.4.8.3
+0.4.8.4
 +++++++
 
 - New operations in Ensemble: bootstrap, readall, shuffle
