@@ -307,6 +307,59 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
+	def list(self,resource=None,chunk_size=10,**kwargs):
+
+		"""
+		Lists the available resources in the simulation batch (collections,mapsets,etc...)
+
+		:param resource: custom function to call on each batch.available element, must return a string. If None the list of Storage model directories is returned
+		:type resource: None or callable
+
+		:param chunk_size: size of output chunk
+		:type chunk_size: int.
+
+		:param kwargs: the keyword arguments are passed to resource
+		:type kwargs: dict.
+
+		:returns: requested resources
+		:rtype: list.
+
+		"""
+
+		#Available models
+		models = self.available
+
+		#Return chunks
+		chunks = list()
+		local_chunk = list()
+
+		while True:
+
+			#Get the model at the front
+			try:
+				model = models.pop(0)
+			except IndexError:
+				if len(local_chunk):
+					chunks.append("\n".join(local_chunk))
+				break
+
+			#Extract the resource
+			if resource is not None:
+				local_chunk.append(resource(model,**kwargs))
+			else:
+				local_chunk.append(model.storage_subdir)
+
+			#If we reached the chunk size dump and reset
+			if len(local_chunk)==chunk_size:
+				chunks.append("\n".join(local_chunk))
+				local_chunk = list()
+
+		#Return to user
+		return chunks
+
+
+	##############################################################################################################################################
+
 	def copyTree(self,path,syshandler=syshandler):
 
 		"""
