@@ -31,6 +31,15 @@ from emcee.ensemble import _function_wrapper
 def _np_load(filename):
 	return np.load(filename)
 
+##########################################################################
+#########Useful for bootstrap estimates of the covariance matrix###########
+##########################################################################
+
+def _bsp_covariance(data):
+	sub = data - data.mean(0)[None]
+	return np.dot(sub.T,sub) / (data.shape[0] - 1.0)
+
+
 ##########################################
 ########Ensemble class####################
 ##########################################
@@ -105,6 +114,27 @@ class Ensemble(object):
 		new_ensemble = cls.fromfilelist([filename])
 		new_ensemble.load(from_old=True,callback_loader=callback_loader,**kwargs)
 		return new_ensemble
+
+	@classmethod
+	def readall(cls,filelist,callback_loader=None,**kwargs):
+
+		"""
+		Reads a list of files into an Ensemble
+
+		:param filelist: list of files to read
+		:type filelist: list.
+
+		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble. If None provided, it performs a numpy.load on the specified file. Must return a numpy array with the loaded data
+		:type callback_loader: function
+
+		:param kwargs: Any additional keyword arguments to be passed to callback_loader
+		:type kwargs: dict.
+
+		:returns: Ensemble instance read from the file
+
+		"""
+
+		return reduce(add,[ cls.read(f,callback_loader,**kwargs) for f in filelist ])
 
 
 	def load(self,callback_loader=None,pool=None,from_old=False,**kwargs):
@@ -226,11 +256,8 @@ class Ensemble(object):
 
 			self.data *= weights
 
-		#If a mean was precomputed, need to recompute the new one
-		if hasattr(self,"_mean"):
-			self.mean()
 
-	def group(self,group_size,kind="sparse"):
+	def group(self,group_size,kind="sparse",inplace=True):
 
 		"""
 		Sometimes it happens that different realizations in the ensemble need to be grouped together, for example when they belong to different subfields of the same observation field. With this function you can group different realizations together by taking the mean, and reduce the total number of realizations in the ensemble
@@ -258,24 +285,27 @@ class Ensemble(object):
 
 		elif kind=="contiguous":
 			
-			row = np.array(reduce(add,[ (i,) * group_size  for i in range(group_size) ]))
+			row = np.array(reduce(add,[ (i,) * group_size  for i in range(num_groups) ]))
 			col = np.arange(self.num_realizations,dtype=np.int)
 			dat = np.ones(self.num_realizations,dtype=np.int8)
 
-			scheme = sparse.csr_matrix((dat,(row,col)),shape=(group_size,self.num_realizations),dtype=np.int8)
+			scheme = sparse.csr_matrix((dat,(row,col)),shape=(num_groups,self.num_realizations),dtype=np.int8)
 
 		else:
 			raise TypeError("The scheme kind you inputed is not valid!")
 
 		self._scheme = scheme
 
-		#Dot the data with the scheme to produce the groups, and take the mean in every group
-		self.num_realizations = num_groups
-		self.data = scheme.dot(self.data) / group_size
+		if inplace:
 
-		#If a mean was precomputed, need to recompute the new one
-		if hasattr(self,"_mean"):
-			self.mean()
+			#Dot the data with the scheme to produce the groups, and take the mean in every group
+			self.num_realizations = num_groups
+			self.data = scheme.dot(self.data) / group_size
+
+		else:
+
+			#Dot the data with the scheme to produce the groups, and take the mean in every group
+			return self.__class__.fromdata(scheme.dot(self.data) / group_size)
 
 
 	def differentiate(self,step=None,order=1):
@@ -334,10 +364,6 @@ class Ensemble(object):
 
 				self.data = new_data
 
-				#Recompute mean after cut, if mean was precomputed
-				if hasattr(self,"_mean"):
-					self.mean()
-
 				#Return
 				return min
 
@@ -363,10 +389,6 @@ class Ensemble(object):
 			if inplace:
 
 				self.data = new_data
-			
-				#Recompute mean after cut, if mean was precomputed
-				if hasattr(self,"_mean"):
-					self.mean()
 
 				#Return
 				if feature_label is not None:
@@ -422,17 +444,21 @@ class Ensemble(object):
 			
 			self.data = transformed_data
 			self.num_realizations = transformed_data.shape[0]
-			if hasattr(self,"_mean"):
-				self.mean()
 
 		else:
 			return self.__class__.fromdata(transformed_data)
 
 
-	def covariance(self):
+	def covariance(self,bootstrap=False,**kwargs):
 
 		"""
 		Computes the ensemble covariance matrix
+
+		:param bootstrap: if True the covariance matrix is computed with a bootstrap estimate
+		:type bootstrap: bool.
+
+		:param kwargs: the keyword arguments are passed to the bootstrap method
+		:type kwargs: dict.
 
 		:returns: ndarray with the covariance matrix, has shape (self.data[0],self.data[0]) 
 
@@ -441,11 +467,58 @@ class Ensemble(object):
 		assert self.num_realizations>1, "I can't compute a covariance matrix with one realization only!!"
 		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
 
-		if not hasattr(self,"_mean"):
-			self.mean()
+		if bootstrap:
+			return self.bootstrap(_bsp_covariance,**kwargs)
+		
+		else:
+			if not hasattr(self,"_mean"):
+				self.mean()
 
-		subtracted = self.data - self._mean[np.newaxis,:]
-		return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
+			subtracted = self.data - self._mean[np.newaxis,:]
+			return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
+			
+
+
+	def bootstrap(self,callback,bootstrap_size=10,resample=10,seed=None):
+
+		"""
+		Computes a custom statistic on the Ensemble using the bootstrap method
+
+		:param callback: statistic to compute on the ensemble; takes the resampled Ensemble data as an input
+		:type callback: callable
+
+		:param bootstrap_size: size of the resampled ensembles used in the bootstraping; must be less than or equal to the number of realizations in the Ensemble
+		:type bootstrap_size: int.
+
+		:param resample: number of times the Ensemble is resampled
+		:type resample: int.
+
+		:param seed: if not None, this is the random seed of the random resamples 
+		:type seed: int.
+
+		:returns: the bootstraped Ensemble statistic
+
+		"""
+
+		#Safety check
+		assert bootstrap_size<=self.num_realizations,"The size of the resampling cannot exceed the original number of realizations"
+
+		#Set the random seed
+		if seed is not None:
+			np.random.seed(seed)
+
+		#TODO: Parallelize
+		M = map
+
+		#Construct the randomization matrix
+		randomizer = np.random.randint(self.num_realizations,size=(resample,bootstrap_size))
+
+		#Compute the statistic with the callback
+		statistic = np.array(M(callback,self[randomizer]))
+
+		#Return the bootstraped statistic expectation value
+		return statistic.mean(0)
+
 
 
 	def principalComponents(self):
@@ -508,6 +581,52 @@ class Ensemble(object):
 		#Compute the chi2 for each realization
 		return (difference * np.linalg.solve(covariance,difference.T).T).sum(-1)
 
+
+
+	def shuffle(self,seed=None):
+
+		"""
+		Changes the order of the realizations in the Ensemble
+
+		:param seed: random seed for the random shuffling
+		:type seed: int.
+
+		"""
+
+		if seed is not None:
+			np.random.seed(seed)
+
+		#Shuffle
+		np.random.shuffle(self.data)
+
+
+	def split(self,index):
+
+		"""
+		Inverse of the * operator: this method uses an Indexer instance to break down a multiple descriptor ensemble in many, smaller, single descriptor ensembles
+
+		:param index: index of descriptors with which to perform the split
+		:type index: Indexer instance
+
+		:returns: list of Ensemble instances, one for each element in index
+
+		:raises: AssertionError if shape of the ensemble data is not suitable 
+
+		"""
+
+		assert isinstance(index,Indexer)
+
+		splitted = list()
+		
+		for n in range(index.num_descriptors):
+
+			splitted.append(self.__class__(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
+
+		return splitted
+
+
+	#####################################################################################################################
+
 	
 	def __add__(self,rhs):
 
@@ -555,33 +674,22 @@ class Ensemble(object):
 		"""
 
 		return self.data[n]
-	
 
-	def split(self,index):
+
+	#Protect Ensemble against changes in the data
+	def __setattr__(self,a,x):
 
 		"""
-		Inverse of the * operator: this method uses an Indexer instance to break down a multiple descriptor ensemble in many, smaller, single descriptor ensembles
-
-		:param index: index of descriptors with which to perform the split
-		:type index: Indexer instance
-
-		:returns: list of Ensemble instances, one for each element in index
-
-		:raises: AssertionError if shape of the ensemble data is not suitable 
+		This overload protects the Ensemble against inplace changes in its data
 
 		"""
 
-		assert isinstance(index,Indexer)
+		#Call parent method
+		super(Ensemble,self).__setattr__(a,x)
 
-		splitted = list()
-		
-		for n in range(index.num_descriptors):
-
-			splitted.append(self.__class__(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
-
-		return splitted
-
-
+		#Recompute means if ensemble data is modified
+		if a=="data" and hasattr(self,"_mean"):
+			self.mean()
 
 
 
