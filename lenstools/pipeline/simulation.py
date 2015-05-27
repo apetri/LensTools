@@ -2,6 +2,7 @@ from __future__ import division,with_statement
 
 import os
 import re
+import tarfile
 
 import numpy as np
 import astropy.units as u
@@ -356,6 +357,45 @@ class SimulationBatch(object):
 
 		#Return to user
 		return chunks
+
+
+	##############################################################################################################################################
+
+	def archive(self,name,**kwargs):
+
+		"""
+		Archives a batch available resource to a tar gzipped archive; the resource file/directory names are retrieved with the list method. The archives will be written to the simulation batch storage directory 
+
+		:param name: name of the archive
+		:type name: str.
+
+		:param kwargs: the keyword arguments are passed to the list method
+		:type kwargs: dict.
+
+		"""
+
+		#Retrieve resource chunks
+		resource_chunks = self.list(**kwargs)
+
+		#Split filename
+		name_pieces = name.split(".")
+		if name_pieces[-1]=="gz":
+			mode = "w"
+		else:
+			mode = "w:gz"
+
+		#Cycle over chunks
+		for n,chunk in enumerate(resource_chunks):
+
+			#Build archive name
+			archive_name = ".".join([name_pieces[0]+"{0}".format(n+1)]+name_pieces[1:])
+			archive_path = os.path.join(self.environment.storage,archive_name)
+			print("[+] Writing {0} on localhost...".format(archive_path))
+
+			#Add files to the archive
+			with tarfile.open(archive_path,mode) as tar:
+				for f in chunk.split("\n"):
+					tar.add(f)
 
 
 	##############################################################################################################################################
