@@ -394,6 +394,12 @@ class CatalogSettings(object):
 		#N-body simulation realizations that need to be mixed
 		settings.mix_nbody_realizations = [ int(n) for n in options.get(section,"mix_nbody_realizations").split(",") ]
 		settings.lens_catalog_realizations = options.getint(section,"lens_catalog_realizations")
+		
+		try:
+			settings.realizations_per_subdirectory = options.getint(section,"realizations_per_subdirectory")
+		except NoOptionError:
+			pass
+		
 		settings.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
 		settings.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ]
 
