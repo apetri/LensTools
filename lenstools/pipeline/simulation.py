@@ -308,13 +308,16 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
-	def list(self,resource=None,chunk_size=10,**kwargs):
+	def list(self,resource=None,which=None,chunk_size=10,**kwargs):
 
 		"""
 		Lists the available resources in the simulation batch (collections,mapsets,etc...)
 
 		:param resource: custom function to call on each batch.available element, must return a string. If None the list of Storage model directories is returned
 		:type resource: None or callable
+
+		:param which: extremes of the model numbers to get (if None all models are processed)
+		:type which: tuple. 
 
 		:param chunk_size: size of output chunk
 		:type chunk_size: int.
@@ -328,7 +331,10 @@ class SimulationBatch(object):
 		"""
 
 		#Available models
-		models = self.available
+		if which is None:
+			models = self.available
+		else:
+			models = self.available.__getslice__(*which)
 
 		#Return chunks
 		chunks = list()
@@ -361,13 +367,27 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
-	def archive(self,name,**kwargs):
+	@staticmethod
+	def _archive(name,chunk,mode):
+
+		print("[+] Compressing {0} into {1}".format("-".join(chunk.split("\n")),name))
+
+		with tarfile.open(name,mode) as tar:
+			for f in chunk.split("\n"):
+				tar.add(f)
+
+	##############################################################################################################################################
+
+	def archive(self,name,pool=None,**kwargs):
 
 		"""
 		Archives a batch available resource to a tar gzipped archive; the resource file/directory names are retrieved with the list method. The archives will be written to the simulation batch storage directory 
 
 		:param name: name of the archive
 		:type name: str.
+
+		:param pool: MPI Pool used to parallelize compression
+		:type pool: MPIPool
 
 		:param kwargs: the keyword arguments are passed to the list method
 		:type kwargs: dict.
@@ -377,25 +397,43 @@ class SimulationBatch(object):
 		#Retrieve resource chunks
 		resource_chunks = self.list(**kwargs)
 
-		#Split filename
-		name_pieces = name.split(".")
-		if name_pieces[-1]=="gz":
-			mode = "w"
-		else:
+		#Get archive names
+		if type(name)==str:
+
+			name_pieces = name.split(".")
+			if name_pieces[-1]=="gz":
+				mode = "w"
+			else:
+				mode = "w:gz"
+			
+			archive_names = list()
+
+			for n,chunk in enumerate(resource_chunks):
+
+				#Build archive name
+				archive_name = name.replace(".tar","{0}.tar".format(n+1))
+				archive_names.append(os.path.join(self.environment.storage,archive_name))
+
+		elif type(name)==list:
+
 			mode = "w:gz"
+			archive_names = [ os.path.join(self.environment.storage,n) for n in name ]
 
-		#Cycle over chunks
-		for n,chunk in enumerate(resource_chunks):
+		else:
+			raise TypeError("name should be a string or list!")
 
-			#Build archive name
-			archive_name = ".".join([name_pieces[0]+"{0}".format(n+1)]+name_pieces[1:])
-			archive_path = os.path.join(self.environment.storage,archive_name)
-			print("[+] Writing {0} on localhost...".format(archive_path))
+		#Safety assert
+		assert len(archive_names)==len(resource_chunks),"You should provide an archive file name for each resouce chunk!"
+		
+		#Call the _archive method to make the compression
+		if pool is None:
 
-			#Add files to the archive
-			with tarfile.open(archive_path,mode) as tar:
-				for f in chunk.split("\n"):
-					tar.add(f)
+			for n,chunk in enumerate(resource_chunks):
+				self.__class__._archive(archive_names[n],chunk,mode)
+		
+		else:
+			assert len(resource_chunks)==pool.size+1,"There should be one MPI task (you have {0}) for each chunk (you have {1})!".format(pool.size+1,len(resource_chunks))
+			self.__class__._archive(archive_names[pool.rank],resource_chunks[pool.rank],mode)
 
 
 	##############################################################################################################################################
