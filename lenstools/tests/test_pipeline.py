@@ -1,34 +1,16 @@
-try:
-	
-	import os
-	from lenstools.pipeline import SimulationBatch
+import os
+from ..pipeline import SimulationBatch
 
-	from lenstools.pipeline.settings import *
-	from lenstools.pipeline.remote import LocalGit
+from ..pipeline.settings import *
+from ..pipeline.remote import LocalGit
 
-	from lenstools.pipeline.simulation import LensToolsCosmology
+from ..pipeline.simulation import LensToolsCosmology
 
-	from lenstools.simulations import Gadget2Settings
-	from lenstools import data
+from ..simulations import Gadget2Settings
+from .. import data
 
-except ImportError:
-	
-	import sys
-	sys.path.append("..")
-
-	import os
-	from lenstools.pipeline import SimulationBatch
-
-	from lenstools.pipeline.settings import *
-	from lenstools.pipeline.remote import LocalGit
-
-	from lenstools.pipeline.simulation import LensToolsCosmology
-
-	from lenstools.simulations import Gadget2Settings
-	from lenstools import data
-
-home = "../SimTest/Home"
-storage = "../SimTest/Storage"
+home = "Data/SimTest/Home"
+storage = "Data/SimTest/Storage"
 
 cosmologies = [LensToolsCosmology(),LensToolsCosmology(Om0=0.4)]
 box_sizes = [15.0,240.0]

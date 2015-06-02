@@ -1,14 +1,5 @@
-try:
-	
-	from lenstools import ConvergenceMap,ShearMap
-	from lenstools.image.shear import Spin2
-
-except ImportError:
-	
-	import sys
-	sys.path.append("..")
-	from lenstools import ConvergenceMap,ShearMap
-	from lenstools.image.shear import Spin2
+from .. import ConvergenceMap,ShearMap
+from ..image.shear import Spin2
 
 import numpy as np
 import matplotlib.pyplot as plt

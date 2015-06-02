@@ -1,17 +1,8 @@
 import sys
-
-try:
 	
-	from lenstools import Ensemble
-	from lenstools.utils.defaults import default_callback_loader,peaks_loader,convergence_measure_all
-	from lenstools.statistics.index import Indexer,MinkowskiAll
-
-except ImportError:
-
-	sys.path.append("..")
-	from lenstools import Ensemble
-	from lenstools.utils.defaults import default_callback_loader,peaks_loader,convergence_measure_all
-	from lenstools.statistics.index import Indexer,MinkowskiAll
+from .. import Ensemble
+from ..utils.defaults import default_callback_loader,peaks_loader,convergence_measure_all
+from ..statistics.index import Indexer,MinkowskiAll
 
 try:
 

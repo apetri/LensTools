@@ -1,14 +1,5 @@
-try:
-	
-	import sys
-	from lenstools.simulations import Nicaea,NicaeaSettings
-
-except ImportError:
-	
-	import sys
-	sys.path.append("..")
-	from lenstools.simulations import Nicaea,NicaeaSettings
-
+import sys
+from ..simulations import Nicaea,NicaeaSettings
 
 import numpy as np
 import matplotlib.pyplot as plt

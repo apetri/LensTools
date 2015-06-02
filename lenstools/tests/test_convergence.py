@@ -1,12 +1,4 @@
-try:
-	
-	from lenstools import ConvergenceMap
-
-except ImportError:
-	
-	import sys
-	sys.path.append("..")
-	from lenstools import ConvergenceMap
+from .. import ConvergenceMap
 
 import numpy as np
 from astropy.units import deg,rad

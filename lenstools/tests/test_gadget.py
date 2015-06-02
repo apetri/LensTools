@@ -1,12 +1,4 @@
-try:
-	
-	from lenstools.simulations import Gadget2Snapshot
-
-except ImportError:
-	
-	import sys
-	sys.path.append("..")
-	from lenstools.simulations import Gadget2Snapshot
+from ..simulations import Gadget2Snapshot
 
 import numpy as np
 from astropy.units import Mpc,m,s

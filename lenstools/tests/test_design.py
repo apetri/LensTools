@@ -1,12 +1,4 @@
-try:
-	
-	from lenstools.simulations import Design
-
-except ImportError:
-	
-	import sys
-	sys.path.append("..")
-	from lenstools.simulations import Design
+from ..simulations import Design
 
 import numpy as np
 import matplotlib.pyplot as plt

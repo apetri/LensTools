@@ -1,14 +1,5 @@
-try:
-	
-	from lenstools.simulations import Gadget2Snapshot
-	from lenstools.simulations.raytracing import PotentialPlane
-
-except ImportError:
-	
-	import sys
-	sys.path.append("..")
-	from lenstools.simulations import Gadget2Snapshot
-	from lenstools.simulations.raytracing import PotentialPlane
+from ..simulations import Gadget2Snapshot
+from ..simulations.raytracing import PotentialPlane
 
 import numpy as np
 import astropy.units as u
