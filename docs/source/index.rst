@@ -68,13 +68,18 @@ The core features require the standard numpy_, scipy_ , and additionally  astrop
 Test
 ----
 
-To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install pytest_, then you need to download some data files (mainly FITS images) that the test suite depends on (you can find these data files here_, the file is approximately 250MB). Once you downloaded it into the Test directory unpack it::
+To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install pytest_, then you need to download some data files (mainly FITS images) that the test suite depends on. You need to set the environment variable LENSTOOLS_DATA to the path where you want your data to be downloaded (for a manual download the data file can be found here_, it is almost 250MB). After that, in a python shell, type
 
-   tar -xvf data.tar.gz
+::
 
-Then you're good to go! Just run::
-	
-	py.test
+   import lenstools
+   lenstools.dataExtern()
+
+That should make sure the data directory is downloaded and available and should return the full path of the data directory. After that operation has completed, just go in the tests directory and run
+
+::
+
+   py.test
 
 Each test, if successful, will produce some PNG plots.
 

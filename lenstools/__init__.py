@@ -16,10 +16,16 @@ import statistics.index as index
 import statistics.contours as contours
 import statistics.constraints as constraints
 
+import os,pkg_resources
+import urllib2
+import tarfile
+
+#External data needed by tests, may be downloaded
+data_directory = os.getenv("LENSTOOLS_DATA")
+if data_directory is None:
+	data_directory = "Data"
 
 #Path to the data folder
-import os,pkg_resources
-
 def data(name=None):
 
 	if name is not None:
@@ -43,5 +49,36 @@ def showData(name):
 	with open(path,"r") as datafile:
 		print(datafile.read())
 
+
 def dataExtern():
-	return "Data"
+	
+	if not(os.path.exists(data_directory)):
+		getTestData(os.path.dirname(os.path.abspath(data_directory)))
+
+	return data_directory
+
+
+#Download the test data into path
+def getTestData(path="."):
+	
+	data_url = "http://danishlaundromat.com/apetri/data.tar.gz"
+	data_filename = os.path.join(path,"data.tar.gz")
+
+	#Download the file
+	response = urllib2.urlopen(data_url)
+	with open(data_filename,"wb") as datafile:
+		print("[+] Downloading {0}...".format(data_url))
+		datafile.write(response.read())
+
+	#Unpack the archive
+	with tarfile.open(data_filename,"r:gz") as tar:
+		tar.extractall(path)
+
+	#Remove the archive
+	os.remove(data_filename)
+
+	#Make the necessary rename
+	os.rename(os.path.join(path,"Data"),os.path.join(path,os.path.basename(data_directory)))
+
+
+
