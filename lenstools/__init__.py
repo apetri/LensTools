@@ -41,4 +41,7 @@ def showData(name):
 	
 	path = data(name)
 	with open(path,"r") as datafile:
-		print(datafile.read())		
+		print(datafile.read())
+
+def dataExtern():
+	return "Data"

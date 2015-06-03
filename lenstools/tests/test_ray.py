@@ -1,5 +1,6 @@
 from ..simulations.raytracing import RayTracer,PotentialPlane,DeflectionPlane
 from .. import ConvergenceMap,ShearMap
+
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.units import deg,rad,arcmin
