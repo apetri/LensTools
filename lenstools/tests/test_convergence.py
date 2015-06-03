@@ -1,4 +1,8 @@
+import os
+
 from .. import ConvergenceMap
+
+from .. import dataExtern
 
 import numpy as np
 from astropy.units import deg,rad
@@ -6,7 +10,7 @@ from astropy.units import deg,rad
 import matplotlib.pyplot as plt
 
 
-test_map = ConvergenceMap.load("Data/conv.fit")
+test_map = ConvergenceMap.load(os.path.join(dataExtern(),"conv.fit"))
 
 #Set bin edges
 l_edges = np.arange(200.0,50000.0,200.0)
@@ -46,8 +50,8 @@ def test_power():
 def test_cross():
 
 	#Load
-	conv1 = ConvergenceMap.load("Data/conv1.fit")
-	conv2 = ConvergenceMap.load("Data/conv2.fit")
+	conv1 = ConvergenceMap.load(os.path.join(dataExtern(),"conv1.fit"))
+	conv2 = ConvergenceMap.load(os.path.join(dataExtern(),"conv2.fit"))
 
 	#Cross
 	l,Pl = conv1.cross(conv2,l_edges=l_edges)

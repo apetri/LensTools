@@ -9,6 +9,8 @@ from ..pipeline.simulation import LensToolsCosmology
 from ..simulations import Gadget2Settings
 from .. import data
 
+from .. import dataExtern
+
 import numpy as np
 
 try:

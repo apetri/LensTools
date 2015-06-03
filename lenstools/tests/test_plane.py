@@ -1,5 +1,9 @@
+import os
+
 from ..simulations import Gadget2Snapshot
 from ..simulations.raytracing import PotentialPlane
+
+from .. import dataExtern
 
 import numpy as np
 import astropy.units as u

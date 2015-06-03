@@ -1,4 +1,8 @@
+import os
+
 from ..simulations import Design
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt

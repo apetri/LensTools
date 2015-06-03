@@ -1,4 +1,4 @@
-import sys
+import sys,os
 	
 from .. import Ensemble
 from ..utils.defaults import default_callback_loader,peaks_loader,convergence_measure_all
@@ -14,6 +14,8 @@ except ImportError:
 	MPIPool = None
 
 import logging
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -41,7 +43,7 @@ if (pool is not None) and not(pool.is_master()):
 	pool.wait()
 	sys.exit(0)
 
-map_list = ["Data/conv1.fit","Data/conv2.fit","Data/conv3.fit","Data/conv4.fit"]
+map_list = [os.path.join(dataExtern(),"conv1.fit"),os.path.join(dataExtern(),"conv2.fit"),os.path.join(dataExtern(),"conv3.fit"),os.path.join(dataExtern(),"conv4.fit")]
 l_edges = np.arange(200.0,50000.0,200.0)
 thresholds_pk = np.arange(-1.0,5.0,0.2)
 
@@ -87,7 +89,7 @@ def test_chi2():
 
 def test_pca():
 
-	pca_ensemble = Ensemble.read("Data/ensemble_pca.npy")
+	pca_ensemble = Ensemble.read(os.path.join(dataExtern(),"ensemble_pca.npy"))
 	pca = pca_ensemble.principalComponents()
 	assert len(pca.explained_variance_)==pca_ensemble.data.shape[1]
 	
@@ -242,7 +244,7 @@ def test_differentiate():
 
 def test_selfChi2():
 
-	ens = Ensemble.read("Data/all/Om0.295_Ol0.705_w-1.878_ns0.960_si0.100/subfield1/sigma05/power_spectrum.npy")
+	ens = Ensemble.read(os.path.join(dataExtern(),"all/Om0.295_Ol0.705_w-1.878_ns0.960_si0.100/subfield1/sigma05/power_spectrum.npy"))
 	chi2 = ens.selfChi2()
 	assert chi2.shape[0]==ens.data.shape[0]
 

@@ -1,4 +1,6 @@
-import os,sys
+import sys,os
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,20 +19,20 @@ def test_fisher():
 	#Load the power spectral features and parameters into the analysis instance
 	
 	#Fiducial
-	l,P,g = np.loadtxt("Data/fiducial",unpack=True)
+	l,P,g = np.loadtxt(os.path.join(dataExtern(),"fiducial"),unpack=True)
 	covariance = P**2 / (l + 0.5)
 	f.add_model(parameters=np.array([0.26,-1.0,0.798,0.960]),feature=P)
 
 	#High Om
-	l,P,g = np.loadtxt("Data/v_Om_0.29",unpack=True)
+	l,P,g = np.loadtxt(os.path.join(dataExtern(),"v_Om_0.29"),unpack=True)
 	f.add_model(parameters=np.array([0.29,-1.0,0.798,0.960]),feature=P)
 
 	#High w
-	l,P,g = np.loadtxt("Data/v_w_-0.8",unpack=True)
+	l,P,g = np.loadtxt(os.path.join(dataExtern(),"v_w_-0.8"),unpack=True)
 	f.add_model(parameters=np.array([0.26,-0.8,0.798,0.960]),feature=P)
 
 	#High sigma8
-	l,P,g = np.loadtxt("Data/v_si8_0.850",unpack=True)
+	l,P,g = np.loadtxt(os.path.join(dataExtern(),"v_si8_0.850"),unpack=True)
 	f.add_model(parameters=np.array([0.26,-1.0,0.850,0.960]),feature=P)
 
 	#Sanity checks
@@ -71,7 +73,7 @@ def test_fisher():
 #Test interpolation of power spectrum
 def test_interpolation():
 
-	root_path = "Data/all"
+	root_path = os.path.join(dataExtern(),"all")
 	analysis = LikelihoodAnalysis()
 
 	#Read in model names

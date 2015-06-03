@@ -1,5 +1,9 @@
+import os
+
 import sys
 from ..simulations import Nicaea,NicaeaSettings
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt

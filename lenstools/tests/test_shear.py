@@ -1,5 +1,9 @@
+import os
+
 from .. import ConvergenceMap,ShearMap
 from ..image.shear import Spin2
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,8 +28,8 @@ def two_file_loader(filename1,filename2):
 
 
 
-test_map = ShearMap.load("Data/shear1.fit",filename2="Data/shear2.fit",format=two_file_loader)
-test_map_conv = ConvergenceMap.load("Data/conv.fit")
+test_map = ShearMap.load(os.path.join(dataExtern(),"shear1.fit"),filename2=os.path.join(dataExtern(),"shear2.fit"),format=two_file_loader)
+test_map_conv = ConvergenceMap.load(os.path.join(dataExtern(),"conv.fit"))
 
 l_edges = np.arange(200.0,50000.0,200.0)
 

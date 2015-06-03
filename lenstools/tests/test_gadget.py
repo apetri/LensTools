@@ -1,4 +1,8 @@
+import os
+
 from ..simulations import Gadget2Snapshot
+
+from .. import dataExtern
 
 import numpy as np
 from astropy.units import Mpc,m,s
@@ -6,7 +10,7 @@ from astropy.units import Mpc,m,s
 def test_read():
 
 	#Open the gadget snapshot
-	snapshot = Gadget2Snapshot.open("Data/gadget/snapshot_001")
+	snapshot = Gadget2Snapshot.open(os.path.join(dataExtern(),"gadget/snapshot_001"))
 
 	#Get the particles positions and play with the indices
 	pospart = snapshot.getPositions(first=500,last=1000)

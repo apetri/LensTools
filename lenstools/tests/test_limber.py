@@ -1,5 +1,9 @@
+import os
+
 from ..simulations.limber import LimberIntegrator
 from ..utils.defaults import load_power_default
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +16,7 @@ def test_convergence_power():
 	l = np.logspace(0.0,5.0,100.0)
 
 	integrator = LimberIntegrator(cosmoModel=WMAP9)
-	integrator.load3DPowerSpectrum(load_power_default,"Data/camb_output","fiducial_matterpower_")
+	integrator.load3DPowerSpectrum(load_power_default,os.path.join(dataExtern(),"camb_output"),"fiducial_matterpower_")
 
 	Cl = integrator.convergencePowerSpectrum(l)
 

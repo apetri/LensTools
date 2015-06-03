@@ -1,12 +1,16 @@
+import os
+
 from .. import ConvergenceMap,ShearMap,GaussianNoiseGenerator
 from ..utils.defaults import sample_power_shape
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.units import deg,arcmin
 
-test_map_conv = ConvergenceMap.load("Data/conv.fit")
+test_map_conv = ConvergenceMap.load(os.path.join(dataExtern(),"conv.fit"))
 
 shape_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
 corr_noise_gen = GaussianNoiseGenerator.forMap(test_map_conv)
@@ -90,7 +94,7 @@ def test_interpolated_convergence_power():
 
 	fig,ax = plt.subplots()
 
-	power_func = np.loadtxt("Data/ee4e-7.txt",unpack=True)
+	power_func = np.loadtxt(os.path.join(dataExtern(),"ee4e-7.txt"),unpack=True)
 	l_in,Pl_in = power_func
 	
 	#Plot power spectral density
@@ -117,7 +121,7 @@ def test_interpolated_convergence_power():
 def test_interpolated_convergence_maps():
 
 	fig,ax = plt.subplots(1,3,figsize=(24,8))
-	power_func = np.loadtxt("Data/ee4e-7.txt",unpack=True)
+	power_func = np.loadtxt(os.path.join(dataExtern(),"ee4e-7.txt"),unpack=True)
 
 	#Generate three realizations of this power spectral density and plot them for cross check
 	for i in range(3):

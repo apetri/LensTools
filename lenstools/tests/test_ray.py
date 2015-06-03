@@ -1,5 +1,9 @@
+import os
+
 from ..simulations.raytracing import RayTracer,PotentialPlane,DeflectionPlane
 from .. import ConvergenceMap,ShearMap
+
+from .. import dataExtern
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +23,7 @@ last_timestamp = now
 
 #Add the lenses to the system
 for i in range(11,57):
-	tracer.addLens(PotentialPlane.load("Data/lensing/planes/snap{0}_potentialPlane0_normal0.fits".format(i)))
+	tracer.addLens(PotentialPlane.load(os.path.join(dataExtern(),"lensing/planes/snap{0}_potentialPlane0_normal0.fits").format(i)))
 
 now = time.time()
 logging.info("Plane loading completed in {0:.3f}s".format(now-last_timestamp))
@@ -164,7 +168,7 @@ def test_distortion():
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
 
 	#load unlensed image from png file
-	image_unlensed = plt.imread("Data/lensing/lens.png")[:,:,0]
+	image_unlensed = plt.imread(os.path.join(dataExtern(),"lensing/lens.png"))[:,:,0]
 	pos_original = (np.array(np.where(image_unlensed>0)) * 2.0/image_unlensed.shape[0]) * deg
 	pos_original = np.roll(pos_original,1,axis=0)
 	pos_original[1] *= -1
@@ -191,7 +195,7 @@ def test_distortion():
 def test_continuous_distortion():
 
 	#load unlensed image from png file
-	image_unlensed = plt.imread("Data/lensing/lens.png")[:,:,0]
+	image_unlensed = plt.imread(os.path.join(dataExtern(),"lensing/lens.png"))[:,:,0]
 	pos_original = (np.array(np.where(image_unlensed>0)) * 2.0/image_unlensed.shape[0]) * deg
 	pos_original = np.roll(pos_original,1,axis=0)
 	pos_original[1] *= -1
