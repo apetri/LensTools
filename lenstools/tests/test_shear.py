@@ -89,7 +89,7 @@ def test_visualize2():
 
 	fig,ax = plt.subplots()
 	
-	test_map_conv.visualize(fig,ax,cmap=plt.cm.Reds)
+	test_map_conv.visualize(fig,ax,cmap="Reds")
 	test_map.sticks(fig=fig,ax=ax,pixel_step=40)
 
 	fig.savefig("sticks.png")

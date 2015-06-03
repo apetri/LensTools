@@ -9,7 +9,6 @@ from scipy import integrate
 # do not edit! added by PythonBreakpoints
 from pdb import set_trace as _breakpoint
 
-
 def test_visualize():
 
 	conv_map = ConvergenceMap.load("Data/unmasked.fit")
@@ -18,7 +17,7 @@ def test_visualize():
 	masked_fraction = conv_map.mask(mask_profile,inplace=True)
 
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
-	mask_profile.visualize(fig,ax[0],cmap=plt.cm.binary)
+	mask_profile.visualize(fig,ax[0],cmap="binary")
 	conv_map.visualize(fig,ax[1])
 
 	ax[0].set_title("Mask")

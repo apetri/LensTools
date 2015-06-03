@@ -9,8 +9,13 @@ from ..pipeline.simulation import LensToolsCosmology
 from ..simulations import Gadget2Settings
 from .. import data
 
-home = "Data/SimTest/Home"
-storage = "Data/SimTest/Storage"
+try:
+	os.mkdir("SimTest")
+except:
+	pass
+
+home = "SimTest/Home"
+storage = "SimTest/Storage"
 
 cosmologies = [LensToolsCosmology(),LensToolsCosmology(Om0=0.4)]
 box_sizes = [15.0,240.0]
@@ -53,13 +58,25 @@ def test_directory_tree():
 
 
 def test_copy():
-	bCopy = batch.copyTree("../SimTest/Copy")
+	
+	try:
+		os.mkdir("SimTest/Copy")
+	except:
+		pass
+
+	bCopy = batch.copyTree("SimTest/Copy")
 
 def test_git():
 
 	try:
+
+		try:
+			os.mkdir("SimTest/CopyGit")
+		except:
+			pass
+
 		git = LocalGit()
-		bCopy = batch.copyTree("../SimTest/CopyGit",syshandler=git)
+		bCopy = batch.copyTree("SimTest/CopyGit",syshandler=git)
 		bCopy.commit("Initial directory tree")
 	except ImportError:
 		pass
