@@ -2,6 +2,7 @@ from __future__ import division,with_statement
 
 import os
 import re
+import tarfile
 
 import numpy as np
 import astropy.units as u
@@ -307,6 +308,136 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
+	def list(self,resource=None,which=None,chunk_size=10,**kwargs):
+
+		"""
+		Lists the available resources in the simulation batch (collections,mapsets,etc...)
+
+		:param resource: custom function to call on each batch.available element, must return a string. If None the list of Storage model directories is returned
+		:type resource: None or callable
+
+		:param which: extremes of the model numbers to get (if None all models are processed)
+		:type which: tuple. 
+
+		:param chunk_size: size of output chunk
+		:type chunk_size: int.
+
+		:param kwargs: the keyword arguments are passed to resource
+		:type kwargs: dict.
+
+		:returns: requested resources
+		:rtype: list.
+
+		"""
+
+		#Available models
+		if which is None:
+			models = self.available
+		else:
+			models = self.available.__getslice__(*which)
+
+		#Return chunks
+		chunks = list()
+		local_chunk = list()
+
+		while True:
+
+			#Get the model at the front
+			try:
+				model = models.pop(0)
+			except IndexError:
+				if len(local_chunk):
+					chunks.append("\n".join(local_chunk))
+				break
+
+			#Extract the resource
+			if resource is not None:
+				local_chunk.append(resource(model,**kwargs))
+			else:
+				local_chunk.append(model.storage_subdir)
+
+			#If we reached the chunk size dump and reset
+			if len(local_chunk)==chunk_size:
+				chunks.append("\n".join(local_chunk))
+				local_chunk = list()
+
+		#Return to user
+		return chunks
+
+
+	##############################################################################################################################################
+
+	@staticmethod
+	def _archive(name,chunk,mode):
+
+		print("[+] Compressing {0} into {1}".format("-".join(chunk.split("\n")),name))
+
+		with tarfile.open(name,mode) as tar:
+			for f in chunk.split("\n"):
+				tar.add(f)
+
+	##############################################################################################################################################
+
+	def archive(self,name,pool=None,**kwargs):
+
+		"""
+		Archives a batch available resource to a tar gzipped archive; the resource file/directory names are retrieved with the list method. The archives will be written to the simulation batch storage directory 
+
+		:param name: name of the archive
+		:type name: str.
+
+		:param pool: MPI Pool used to parallelize compression
+		:type pool: MPIPool
+
+		:param kwargs: the keyword arguments are passed to the list method
+		:type kwargs: dict.
+
+		"""
+
+		#Retrieve resource chunks
+		resource_chunks = self.list(**kwargs)
+
+		#Get archive names
+		if type(name)==str:
+
+			name_pieces = name.split(".")
+			if name_pieces[-1]=="gz":
+				mode = "w"
+			else:
+				mode = "w:gz"
+			
+			archive_names = list()
+
+			for n,chunk in enumerate(resource_chunks):
+
+				#Build archive name
+				archive_name = name.replace(".tar","{0}.tar".format(n+1))
+				archive_names.append(os.path.join(self.environment.storage,archive_name))
+
+		elif type(name)==list:
+
+			mode = "w:gz"
+			archive_names = [ os.path.join(self.environment.storage,n) for n in name ]
+
+		else:
+			raise TypeError("name should be a string or list!")
+
+		#Safety assert
+		assert len(archive_names)==len(resource_chunks),"You should provide an archive file name for each resouce chunk!"
+		
+		#Call the _archive method to make the compression
+		if pool is None:
+
+			for n,chunk in enumerate(resource_chunks):
+				self.__class__._archive(archive_names[n],chunk,mode)
+		
+		else:
+			assert len(resource_chunks)==pool.size+1,"There should be one MPI task (you have {0}) for each chunk (you have {1})!".format(pool.size+1,len(resource_chunks))
+			self.__class__._archive(archive_names[pool.rank],resource_chunks[pool.rank],mode)
+
+
+	##############################################################################################################################################
+
 	def copyTree(self,path,syshandler=syshandler):
 
 		"""
@@ -444,7 +575,7 @@ class SimulationBatch(object):
 	##########################################Job submission scripts###########################################################################
 	###########################################################################################################################################
 
-	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,chunks=1):
+	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
 
 		"""
 		Writes CAMB submission script
@@ -461,6 +592,9 @@ class SimulationBatch(object):
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
 
+		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
+		:type kwargs: dict.
+
 		"""
 
 		#Type safety check
@@ -468,11 +602,18 @@ class SimulationBatch(object):
 		assert isinstance(job_handler,JobHandler)
 		assert len(realization_list)%chunks==0,"Perfect load balancing enforced, each job will process the same number of realizations!"
 
+		#Check if we need to collapse everyting in one script
+		if "one_script" in kwargs.keys():
+			one_script = kwargs["one_script"]
+		else:
+			one_script = False
+
 		#It's better to run CAMB from the directory where the executable resides
 		job_handler.cluster_specs.execution_preamble = "cd {0}".format(os.path.dirname(job_settings.path_to_executable))
 
-		#Each simulation must run on a single core!
-		assert job_settings.cores_per_simulation==1,"CAMB must run on a single core!"
+		#This limit is enforced
+		assert job_settings.cores_per_simulation*chunks==len(realization_list),"cores_per_simulation x chunks should be equal to the total number of models!"
+		job_settings.num_cores = job_settings.cores_per_simulation
 
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
@@ -512,32 +653,35 @@ class SimulationBatch(object):
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
-			script_filename_split = script_filename.split(".")
-			script_filename_split[-2] += "{0}".format(c+1)
-			script_filename = ".".join(script_filename_split)
+			if not one_script:
+				script_filename_split = script_filename.split(".")
+				script_filename_split[-2] += "{0}".format(c+1)
+				script_filename = ".".join(script_filename_split)
 
 			#Override settings to make stdout and stderr go in the right places
 			job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
 			job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
 
-			#Inform user where logs will be directed
-			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
-			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
+			if (not one_script) or (not c):
+			
+				#Inform user where logs will be directed
+				print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
+				print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
 
-			#Override settings
-			job_settings.num_cores = job_settings.cores_per_simulation
-
-			with self.syshandler.open(script_filename,"w") as scriptfile:
-				scriptfile.write(job_handler.writePreamble(job_settings))
-				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
+				with self.syshandler.open(script_filename,"w") as scriptfile:
+					scriptfile.write(job_handler.writePreamble(job_settings))
+			
+			with self.syshandler.open(script_filename,"a") as scriptfile:
+				scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
+			if (not one_script) or (not c):	
+				print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################
 
-	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,chunks=1):
+	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
 
 		"""
 		Writes NGenIC submission script
@@ -554,12 +698,21 @@ class SimulationBatch(object):
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
 
+		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
+		:type kwargs: dict.
+
 		"""
 
 		#Type safety check
 		assert isinstance(job_settings,JobSettings)
 		assert isinstance(job_handler,JobHandler)
 		assert len(realization_list)%chunks==0,"Perfect load balancing enforced, each job will process the same number of realizations!"
+
+		#Check if we need to collapse everyting in one script
+		if "one_script" in kwargs.keys():
+			one_script = kwargs["one_script"]
+		else:
+			one_script = False
 
 		#Create the dedicated Job and Logs directories if not existent already
 		for d in [os.path.join(self.environment.home,"Jobs"),os.path.join(self.environment.home,"Logs")]:
@@ -601,27 +754,33 @@ class SimulationBatch(object):
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
-			script_filename_split = script_filename.split(".")
-			script_filename_split[-2] += "{0}".format(c+1)
-			script_filename = ".".join(script_filename_split)
+			if not one_script:
+				script_filename_split = script_filename.split(".")
+				script_filename_split[-2] += "{0}".format(c+1)
+				script_filename = ".".join(script_filename_split)
 
 			#Override settings to make stdout and stderr go in the right places
 			job_settings.redirect_stdout = os.path.join(self.environment.home,"Logs",job_settings.redirect_stdout)
 			job_settings.redirect_stderr = os.path.join(self.environment.home,"Logs",job_settings.redirect_stderr)
 
-			#Inform user where logs will be directed
-			print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
-			print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
-
 			#Override settings
 			job_settings.num_cores = job_settings.cores_per_simulation
 
-			with self.syshandler.open(script_filename,"w") as scriptfile:
-				scriptfile.write(job_handler.writePreamble(job_settings))
-				scriptfile.write(job_handler.writeExecution([executable],[job_settings.cores_per_simulation],job_settings))
+			if (not one_script) or (not c):
+			
+				#Inform user where logs will be directed
+				print("[+] Stdout will be directed to {0}".format(job_settings.redirect_stdout))
+				print("[+] Stderr will be directed to {0}".format(job_settings.redirect_stderr))
+
+				with self.syshandler.open(script_filename,"w") as scriptfile:
+					scriptfile.write(job_handler.writePreamble(job_settings))
+			
+			with self.syshandler.open(script_filename,"a") as scriptfile:
+				scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
 
 			#Log to user and return
-			print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
+			if (not one_script) or (not c):	
+				print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))
 
 
 	############################################################################################################################################

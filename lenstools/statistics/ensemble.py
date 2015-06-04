@@ -256,9 +256,6 @@ class Ensemble(object):
 
 			self.data *= weights
 
-		#If a mean was precomputed, need to recompute the new one
-		if hasattr(self,"_mean"):
-			self.mean()
 
 	def group(self,group_size,kind="sparse",inplace=True):
 
@@ -304,10 +301,6 @@ class Ensemble(object):
 			#Dot the data with the scheme to produce the groups, and take the mean in every group
 			self.num_realizations = num_groups
 			self.data = scheme.dot(self.data) / group_size
-
-			#If a mean was precomputed, need to recompute the new one
-			if hasattr(self,"_mean"):
-				self.mean()
 
 		else:
 
@@ -371,10 +364,6 @@ class Ensemble(object):
 
 				self.data = new_data
 
-				#Recompute mean after cut, if mean was precomputed
-				if hasattr(self,"_mean"):
-					self.mean()
-
 				#Return
 				return min
 
@@ -400,10 +389,6 @@ class Ensemble(object):
 			if inplace:
 
 				self.data = new_data
-			
-				#Recompute mean after cut, if mean was precomputed
-				if hasattr(self,"_mean"):
-					self.mean()
 
 				#Return
 				if feature_label is not None:
@@ -459,8 +444,6 @@ class Ensemble(object):
 			
 			self.data = transformed_data
 			self.num_realizations = transformed_data.shape[0]
-			if hasattr(self,"_mean"):
-				self.mean()
 
 		else:
 			return self.__class__.fromdata(transformed_data)
@@ -598,6 +581,52 @@ class Ensemble(object):
 		#Compute the chi2 for each realization
 		return (difference * np.linalg.solve(covariance,difference.T).T).sum(-1)
 
+
+
+	def shuffle(self,seed=None):
+
+		"""
+		Changes the order of the realizations in the Ensemble
+
+		:param seed: random seed for the random shuffling
+		:type seed: int.
+
+		"""
+
+		if seed is not None:
+			np.random.seed(seed)
+
+		#Shuffle
+		np.random.shuffle(self.data)
+
+
+	def split(self,index):
+
+		"""
+		Inverse of the * operator: this method uses an Indexer instance to break down a multiple descriptor ensemble in many, smaller, single descriptor ensembles
+
+		:param index: index of descriptors with which to perform the split
+		:type index: Indexer instance
+
+		:returns: list of Ensemble instances, one for each element in index
+
+		:raises: AssertionError if shape of the ensemble data is not suitable 
+
+		"""
+
+		assert isinstance(index,Indexer)
+
+		splitted = list()
+		
+		for n in range(index.num_descriptors):
+
+			splitted.append(self.__class__(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
+
+		return splitted
+
+
+	#####################################################################################################################
+
 	
 	def __add__(self,rhs):
 
@@ -645,33 +674,22 @@ class Ensemble(object):
 		"""
 
 		return self.data[n]
-	
 
-	def split(self,index):
+
+	#Protect Ensemble against changes in the data
+	def __setattr__(self,a,x):
 
 		"""
-		Inverse of the * operator: this method uses an Indexer instance to break down a multiple descriptor ensemble in many, smaller, single descriptor ensembles
-
-		:param index: index of descriptors with which to perform the split
-		:type index: Indexer instance
-
-		:returns: list of Ensemble instances, one for each element in index
-
-		:raises: AssertionError if shape of the ensemble data is not suitable 
+		This overload protects the Ensemble against inplace changes in its data
 
 		"""
 
-		assert isinstance(index,Indexer)
+		#Call parent method
+		super(Ensemble,self).__setattr__(a,x)
 
-		splitted = list()
-		
-		for n in range(index.num_descriptors):
-
-			splitted.append(self.__class__(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
-
-		return splitted
-
-
+		#Recompute means if ensemble data is modified
+		if a=="data" and hasattr(self,"_mean"):
+			self.mean()
 
 
 

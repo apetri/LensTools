@@ -26,7 +26,22 @@ from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,Catalo
 import numpy as np
 import astropy.units as u
 
+#############################################################
+#########Spilt realizations in subdirectories################
+#############################################################
 
+def _subdirectories(num_realizations,realizations_in_subdir):
+
+	assert not(num_realizations%realizations_in_subdir),"The number of realizations in each subdirectory must be the same!"
+	s = list()
+
+	if num_realizations==realizations_in_subdir:
+		return s
+
+	for c in range(num_realizations//realizations_in_subdir):
+		s.append("{0}-{1}".format(c*realizations_in_subdir+1,(c+1)*realizations_in_subdir))
+
+	return s
 
 ################################################
 #######Single redshift ray tracing##############
@@ -412,6 +427,26 @@ def simulatedCatalog(pool,batch,settings,id):
 	normals = settings.mix_normals
 	catalog_realizations = settings.lens_catalog_realizations
 
+	if hasattr(settings,"realizations_per_subdirectory"):
+		realizations_in_subdir = settings.realizations_per_subdirectory
+	else:
+		realizations_in_subdir = catalog_realizations
+
+	#Create subdirectories as necessary
+	catalog_subdirectory = _subdirectories(catalog_realizations,realizations_in_subdir)
+	if (pool is None) or (pool.is_master()):
+		
+		for d in catalog_subdirectory:
+			
+			dir_to_make = os.path.join(catalog_save_path,d)
+			if not(os.path.exists(dir_to_make)):
+				logdriver.info("Creating catalog subdirectory {0}".format(dir_to_make))
+				os.mkdir(dir_to_make)
+
+	#Safety barrier sync
+	if pool is not None:
+		pool.comm.Barrier() 
+
 	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
 	if pool is None:
 		first_realization = 0
@@ -523,7 +558,12 @@ def simulatedCatalog(pool,batch,settings,id):
 			except TypeError:
 				galaxies_before = 0
 		
-			shear_catalog_savename = os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
+			#Build savename
+			if len(catalog_subdirectory):
+				shear_catalog_savename = os.path.join(catalog_save_path,catalog_subdirectory[r//realizations_in_subdir],"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
+			else:
+				shear_catalog_savename = os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
+			
 			logdriver.info("Saving simulated shear catalog to {0}".format(shear_catalog_savename))
 			shear_catalog[galaxies_before:galaxies_before+galaxies_in_catalog[n]].write(shear_catalog_savename,overwrite=True)
 
