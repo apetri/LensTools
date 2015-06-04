@@ -15,16 +15,18 @@ import astropy.units as u
 #Settings
 settings = NicaeaSettings.default()
 
-try:
-	cosmo = Nicaea.fromCosmology(WMAP9)
-except ImportError:
-	sys.exit(0)
+#Cosmology
+cosmo = Nicaea.fromCosmology(WMAP9)
 
 def test_power_spectrum():
 
 	#Compute power spectrum
 	ell = np.arange(300.0,1.0e5,500.0)
-	power = cosmo.convergencePowerSpectrum(ell,z=2.0,settings=settings)
+
+	try:
+		power = cosmo.convergencePowerSpectrum(ell,z=2.0,settings=settings)
+	except ImportError:
+		return
 
 	#Plot
 	fig,ax = plt.subplots(figsize=(8,8))
@@ -42,8 +44,12 @@ def test_2pt_correlation():
 
 	#Compute the correlation function
 	theta = np.arange(1.0,100.0,1.0)*u.arcmin
-	xi_plus = cosmo.shearTwoPoint(theta,z=2.0,settings=settings,kind="+")
-	xi_minus = cosmo.shearTwoPoint(theta,z=2.0,settings=settings,kind="-")
+
+	try:
+		xi_plus = cosmo.shearTwoPoint(theta,z=2.0,settings=settings,kind="+")
+		xi_minus = cosmo.shearTwoPoint(theta,z=2.0,settings=settings,kind="-")
+	except ImportError:
+		return
 
 	#Plot
 	fig,ax = plt.subplots(figsize=(8,8))
