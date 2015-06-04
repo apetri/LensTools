@@ -1,0 +1,14 @@
+language: python
+python:
+ - "2.7"
+
+script: mkdir Test; cd Test; py.test --pyargs lenstools.tests
+
+install:
+ - sudo apt-get install python-numpy python-scipy python-matplotlib
+ - pip install --no-deps astropy
+ - pip install emcee
+ - pip install lenstools
+
+virtualenv:
+ system_site_packages: true
