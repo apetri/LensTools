@@ -75,13 +75,15 @@ To check that everything works before installing you can run the pre implemented
    import lenstools
    lenstools.dataExtern()
 
-That should make sure the data directory is downloaded and available and should return the full path of the data directory. After that operation has completed, just go in the tests directory and run
+That should make sure the data directory is downloaded and available and should return the full path of the data directory. After that operation has completed create a Test directory and run the tests:
 
 ::
+   
+   mkdir Test
+   cd Test
+   py.test --pyargs lenstools.tests
 
-   py.test
-
-Each test, if successful, will produce some PNG plots.
+Each test, if successful, will produce some output (PNG plots, text files, etc...)
 
 
 Weak Lensing simulations
