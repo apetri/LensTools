@@ -496,7 +496,7 @@ class Ensemble(object):
 				self.mean()
 
 			subtracted = self.data - self._mean[np.newaxis,:]
-			std = np.sqrt(subtracted**2.sum(-1))
+			std = np.sqrt((subtracted**2).sum(-1))
 
 			return np.dot(subtracted,subtracted.T) / np.outer(std,std)
 
