@@ -460,7 +460,7 @@ class Ensemble(object):
 		:param kwargs: the keyword arguments are passed to the bootstrap method
 		:type kwargs: dict.
 
-		:returns: ndarray with the covariance matrix, has shape (self.data[0],self.data[0]) 
+		:returns: ndarray with the covariance matrix, has shape (self.data[1],self.data[1]) 
 
 		""" 
 
@@ -476,7 +476,29 @@ class Ensemble(object):
 
 			subtracted = self.data - self._mean[np.newaxis,:]
 			return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
-			
+
+
+	def correlation(self):
+
+		"""
+		Computes the ensemble correlation matrix
+
+		:returns: ndarray with the correlation matrix, has shape (num_realizations,num_realizations)
+
+		"""
+
+		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
+		if self.num_realizations==1:
+			return np.ones((1,1))
+		else:	
+
+			if not hasattr(self,"_mean"):
+				self.mean()
+
+			subtracted = self.data - self._mean[np.newaxis,:]
+			std = np.sqrt(subtracted**2.sum(-1))
+
+			return np.dot(subtracted,subtracted.T) / np.outer(std,std)
 
 
 	def bootstrap(self,callback,bootstrap_size=10,resample=10,seed=None):
