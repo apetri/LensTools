@@ -24,6 +24,12 @@ from scipy import sparse
 
 from emcee.ensemble import _function_wrapper
 
+try:
+	import pandas as pd
+	pd = pd
+except ImportError:
+	pd = None
+
 ##########################################
 #########np.load wrapper##################
 ##########################################
@@ -59,6 +65,10 @@ class Ensemble(object):
 		self.data = data
 		self.num_realizations = num_realizations
 		self.metric = metric
+
+	####################################
+	#############I/O####################
+	####################################
 
 	@classmethod
 	def fromfilelist(cls,file_list):
@@ -223,6 +233,32 @@ class Ensemble(object):
 			sio.savemat(filename,{"data": self.data},**kwargs)
 		else:
 			format(self,filename,**kwargs)
+
+	#Convert into pandas DataFrame
+	def toPandas(self,column_label=None):
+
+		"""
+		Convert the Ensemble into a pandas DataFrame, interpreting the first dimension as observation and the second dimension as field
+
+		:param column_label: columns of the DataFrame
+		:type column_label: list. or Index
+
+		:returns: DataFrame
+
+		"""
+
+		#Check if pandas is installed
+		if pd is None:
+			raise ImportError("pandas needs to be installed to use this feature")
+
+		#Convert into DataFrame
+		row_index = pd.Index(np.arange(self.num_realizations),name="realization")
+		return pd.DataFrame(self.data,index=row_index,columns=column_label)
+
+
+	####################################
+	#############Operations#############
+	####################################
 	
 	def mean(self):
 
