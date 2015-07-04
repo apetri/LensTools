@@ -249,7 +249,7 @@ class Ensemble(object):
 
 		#Check if pandas is installed
 		if pd is None:
-			raise ImportError("pandas needs to be installed to use this feature")
+			raise ImportError("pandas needs to be installed to use this feature!")
 
 		#Convert into DataFrame
 		row_index = pd.Index(np.arange(self.num_realizations),name="realization")
