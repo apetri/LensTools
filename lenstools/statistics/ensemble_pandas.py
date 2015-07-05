@@ -2,7 +2,7 @@
 
 .. module:: statistics 
 	:platform: Unix
-	:synopsis: This module implements a set of statistical operations on ensembles of weak lensing maps (shear/convergence)
+	:synopsis: This module implements a set of statistical operations on ensembles of weak lensing maps (shear/convergence), wrapped around a pandas DataFrame
 
 
 .. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>
@@ -43,20 +43,33 @@ def _bsp_covariance(data):
 ########Ensemble class####################
 ##########################################
 
-class Ensemble(object):
+class Ensemble(pd.DataFrame):
 
 	"""
-	A class that handles statistical operations on weak lensing maps; an ensemble is a collection of different statistical realization of the same random variable. This class has an attribute 'data' that is a numpy array which first axis corresponds to the realization number.
-
-	>>> from lenstools.statistics import Ensemble
+	A class that handles statistical operations on weak lensing maps, inherits from pandas DataFrame. The rows in the Ensemble correspond to the different ensemble realizations of the same descriptor
 
 	"""
 
-	def __init__(self,file_list=list(),data=None,num_realizations=0,metric="chi2"):
+	def __init__(self,data=None,file_list=list(),metric="chi2",**kwargs):
+
+		#Create the index of the Ensemble
+		index_name = "realization"
+
+		if data is not None:
+			index = pd.Index(np.arange(data.shape[0]),name=index_name)
+		else:
+			index = pd.Index(np.arange(len(file_list)),name=index_name)
+
+		#Ignore index in kwargs
+		if "index" in kwargs.keys():
+			del(kwargs["index"])
+
+		#Call parent constructor
+		super(Ensemble,self).__init__(data=data,index=index,**kwargs)
 		
+		#Additional attributes
+		self.num_realizations = len(index)
 		self.file_list = file_list
-		self.data = data
-		self.num_realizations = num_realizations
 		self.metric = metric
 
 	####################################
@@ -74,25 +87,8 @@ class Ensemble(object):
 
 		"""
 
-		#See how many realizations are there in the ensemble
-		num_realizations = len(file_list)
-		assert num_realizations>0,"There are no realizations in your ensemble!!"
-
 		#Build the ensemble instance and return it
-		return cls(file_list=file_list,num_realizations=num_realizations)
-
-	@classmethod
-	def fromdata(cls,npy_data):
-
-		"""
-		Builds the ensemble from data in numpy array format
-
-		:param npy_data: numpy array with the data, the first dimension must be the number of realizations
-		:type npy_data: array
-		
-		"""
-
-		return cls(num_realizations=npy_data.shape[0],data=npy_data)
+		return cls(file_list=file_list)
 
 
 	@classmethod
@@ -114,9 +110,10 @@ class Ensemble(object):
 
 		"""
 
-		new_ensemble = cls.fromfilelist([filename])
-		new_ensemble.load(from_old=True,callback_loader=callback_loader,**kwargs)
-		return new_ensemble
+		if callback_loader is None:
+			callback_loader = lambda f: np.load(f)
+
+		return cls(callback_loader(filename,**kwargs),file_list=[filename])
 
 	@classmethod
 	def readall(cls,filelist,callback_loader=None,**kwargs):
@@ -137,10 +134,10 @@ class Ensemble(object):
 
 		"""
 
-		return reduce(add,[ cls.read(f,callback_loader,**kwargs) for f in filelist ])
+		return cls.concat([ cls.read(f,callback_loader,**kwargs) for f in filelist ])
 
 
-	def load(self,callback_loader=None,pool=None,from_old=False,**kwargs):
+	def load(self,callback_loader=None,pool=None,**kwargs):
 		"""
 		Loads the ensemble into memory, can spread the calculations on multiple processors using a MPI pool
 
@@ -167,8 +164,7 @@ class Ensemble(object):
 
 		"""
 
-		if callback_loader is None:
-			callback_loader = lambda f: np.load(f)
+		assert callback_loader is not None, "You must specify a callback loader function that returns a numpy array!"
 
 		self.pool = pool
 
@@ -186,11 +182,23 @@ class Ensemble(object):
 		assert type(full_data) == np.ndarray
 		assert full_data.shape[0] == self.num_realizations 
 
-		if from_old:
-			full_data = full_data[0]
+		#Fill in the columns
+		for n,c in enumerate(full_data.T):
+			self[n] = c
 
-		self.num_realizations = full_data.shape[0]
-		self.data = full_data
+	#Set the column names
+	def setColumns(self,columns=None):
+
+		"""
+		Change the names of the columns
+
+		:param columns: new column names
+		:type columns: pandas Index
+
+		"""
+
+		if columns is not None:
+			self.columns = columns
 
 	
 	def save(self,filename,format=None,**kwargs):
@@ -221,37 +229,22 @@ class Ensemble(object):
 
 		#Proceed to the saving procedure
 		if format=="numpy":
-			np.save(filename,self.data)
+			np.save(filename,self.values)
 		elif format=="matlab":
-			sio.savemat(filename,{"data": self.data},**kwargs)
+			sio.savemat(filename,{"values": self.values},**kwargs)
 		else:
 			format(self,filename,**kwargs)
-
-	#Convert into pandas DataFrame
-	def toPandas(self,column_label=None):
-
-		"""
-		Convert the Ensemble into a pandas DataFrame, interpreting the first dimension as observation and the second dimension as field
-
-		:param column_label: columns of the DataFrame
-		:type column_label: list. or Index
-
-		:returns: DataFrame
-
-		"""
-
-		#Check if pandas is installed
-		if pd is None:
-			raise ImportError("pandas needs to be installed to use this feature")
-
-		#Convert into DataFrame
-		row_index = pd.Index(np.arange(self.num_realizations),name="realization")
-		return pd.DataFrame(self.data,index=row_index,columns=column_label)
-
+	
 
 	####################################
 	#############Operations#############
 	####################################
+
+	@classmethod 
+	def concat(cls,ensemble_list):
+
+		data = np.vstack([ ens.values for ens in ensemble_list ])
+		return cls(data)
 	
 	def mean(self):
 
@@ -677,70 +670,6 @@ class Ensemble(object):
 
 
 	#####################################################################################################################
-
-	
-	def __add__(self,rhs):
-
-		"""
-		Overload of the sum operator: a sum between ensembles is another ensemble whose data are vstacked. This operation is useful if you have two ensembles with different, independent realizations and you want to create an ensemble which is the union of the two. The data must be vstackable
-
-		"""
-
-		#Safety checks
-		assert isinstance(rhs,self.__class__)
-		assert self.metric == rhs.metric,"The two ensemble instances must have the same metric!!"
-			
-		if self.data is not None:
-			new_data = np.vstack((self.data,rhs.data))
-		else:
-			new_data = rhs.data
-
-		return self.__class__(file_list=self.file_list+rhs.file_list,data=new_data,num_realizations=self.num_realizations+rhs.num_realizations,metric=self.metric)
-
-
-	def __mul__(self,rhs):
-
-		"""
-		Overload of the multiplication operator: a multiplication of two ensembles is another ensemble whose data are hstacked. This operation is useful if you have two ensembles with the same realizations but different statistical descriptor, and you want to create an ensemble in which both descriptors are included. The data must be hstackable
-
-		"""
-
-		#Safety checks
-		assert isinstance(rhs,self.__class__)
-		assert self.metric == rhs.metric
-		assert self.num_realizations == rhs.num_realizations
-
-		new_data = np.hstack((self.data,rhs.data))
-
-		return self.__class__(file_list=list(set(self.file_list + rhs.file_list)),data=new_data,num_realizations=self.num_realizations,metric=self.metric)
-
-	
-	def __getitem__(self,n):
-
-		"""
-		Retrieves the n-th realization of the ensemble (starting from 0)
-
-		:raises: IndexError if out of bounds
-
-		"""
-
-		return self.data[n]
-
-
-	#Protect Ensemble against changes in the data
-	def __setattr__(self,a,x):
-
-		"""
-		This overload protects the Ensemble against inplace changes in its data
-
-		"""
-
-		#Call parent method
-		super(Ensemble,self).__setattr__(a,x)
-
-		#Recompute means if ensemble data is modified
-		if a=="data" and hasattr(self,"_mean"):
-			self.mean()
 
 
 
