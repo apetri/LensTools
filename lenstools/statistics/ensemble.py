@@ -15,7 +15,6 @@ from __future__ import division
 from operator import add
 from functools import reduce
 
-from .index import Indexer
 from ..utils import pcaHandler as PCA
 
 import numpy as np
@@ -640,31 +639,6 @@ class Ensemble(pd.DataFrame):
 
 		#Shuffle
 		np.random.shuffle(self.data)
-
-
-	def split(self,index):
-
-		"""
-		Inverse of the * operator: this method uses an Indexer instance to break down a multiple descriptor ensemble in many, smaller, single descriptor ensembles
-
-		:param index: index of descriptors with which to perform the split
-		:type index: Indexer instance
-
-		:returns: list of Ensemble instances, one for each element in index
-
-		:raises: AssertionError if shape of the ensemble data is not suitable 
-
-		"""
-
-		assert isinstance(index,Indexer)
-
-		splitted = list()
-		
-		for n in range(index.num_descriptors):
-
-			splitted.append(self.__class__(file_list=self.file_list,num_realizations=self.num_realizations,data=self.data[:,index[n].first:index[n].last],metric=self.metric))
-
-		return splitted
 
 
 	#####################################################################################################################
