@@ -52,20 +52,18 @@ class Ensemble(pd.DataFrame):
 
 	def __init__(self,data=None,file_list=list(),metric="chi2",**kwargs):
 
-		#Create the index of the Ensemble
-		index_name = "realization"
+		#Create the index of the Ensemble if not provided
+		if not "index" in kwargs.keys():
 
-		if data is not None:
-			index = pd.Index(np.arange(data.shape[0]),name=index_name)
-		else:
-			index = pd.Index(np.arange(len(file_list)),name=index_name)
+			index_name = "realization"
 
-		#Ignore index in kwargs
-		if "index" in kwargs.keys():
-			del(kwargs["index"])
+			if data is not None:
+				kwargs["index"] = pd.Index(np.arange(data.shape[0]),name=index_name)
+			else:
+				kwargs["index"] = pd.Index(np.arange(len(file_list)),name=index_name)
 
 		#Call parent constructor
-		super(Ensemble,self).__init__(data=data,index=index,**kwargs)
+		super(Ensemble,self).__init__(data=data,**kwargs)
 		
 		#Additional attributes
 		self.num_realizations = len(index)
