@@ -30,13 +30,26 @@ except ImportError:
 	pd = None
 
 ##########################################################################
-#########Useful for bootstrap estimates of the covariance matrix###########
+#########Useful for bootstrap estimates of the covariance matrix##########
 ##########################################################################
 
 def _bsp_covariance(data):
 	sub = data - data.mean(0)[None]
 	return np.dot(sub.T,sub) / (data.shape[0] - 1.0)
 
+##############################################################
+#################Series class#################################
+##############################################################
+
+class Series(pd.Series):
+
+	@property
+	def _constructor(self):
+		return Series
+
+	@property
+	def _constructor_expanddim(self):
+		return Ensemble
 
 ##########################################
 ########Ensemble class####################
@@ -49,25 +62,35 @@ class Ensemble(pd.DataFrame):
 
 	"""
 
+	################################################################
+	##############DataFrame subclassing#############################
+	################################################################
+
 	_metadata = ["num_realizations","file_list","metric"]
 
+	@property
+	def _constructor(self):
+		return Ensemble
+
+	@property
+	def _constructor_sliced(self):
+		return Series
+
+	##################################
+	########Constructor###############
+	##################################
+
 	def __init__(self,data=None,file_list=list(),metric="chi2",**kwargs):
-
-		#Create the index of the Ensemble if not provided
-		if (not "index" in kwargs.keys()) or (kwargs["index"] is None):
-
-			index_name = "realization"
-
-			if data is not None:
-				kwargs["index"] = pd.Index(np.arange(data.shape[0]),name=index_name)
-			else:
-				kwargs["index"] = pd.Index(np.arange(len(file_list)),name=index_name)
 
 		#Call parent constructor
 		super(Ensemble,self).__init__(data=data,**kwargs)
 		
 		#Additional attributes
-		self.num_realizations = len(kwargs["index"])
+		if data is not None:
+			self.num_realizations = data.shape[0]
+		else:
+			self.num_realizations = 0 
+
 		self.file_list = file_list
 		self.metric = metric
 
@@ -553,7 +576,7 @@ class Ensemble(pd.DataFrame):
 		"""
 
 		pca = PCA()
-		pca.fit(self.data)
+		pca.fit(self.values)
 		return pca
 
 	
@@ -583,7 +606,7 @@ class Ensemble(pd.DataFrame):
 
 		else:
 
-			raise ValueError("Only chi2 metric implemented so far!!")
+			raise NotImplementedError("Only chi2 metric implemented so far!!")
 
 
 	def selfChi2(self):
