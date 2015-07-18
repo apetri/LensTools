@@ -12,9 +12,10 @@ from image.shear import ShearMap
 from image.noise import GaussianNoiseGenerator
 from .statistics.ensemble import Ensemble
 
-import statistics.index as index
 import statistics.contours as contours
 import statistics.constraints as constraints
+
+import legacy.index as index
 
 import os,pkg_resources
 import urllib2

@@ -49,10 +49,12 @@ class Ensemble(pd.DataFrame):
 
 	"""
 
+	_metadata = ["num_realizations","file_list","metric"]
+
 	def __init__(self,data=None,file_list=list(),metric="chi2",**kwargs):
 
 		#Create the index of the Ensemble if not provided
-		if not "index" in kwargs.keys():
+		if (not "index" in kwargs.keys()) or (kwargs["index"] is None):
 
 			index_name = "realization"
 
@@ -65,28 +67,13 @@ class Ensemble(pd.DataFrame):
 		super(Ensemble,self).__init__(data=data,**kwargs)
 		
 		#Additional attributes
-		self.num_realizations = len(index)
+		self.num_realizations = len(kwargs["index"])
 		self.file_list = file_list
 		self.metric = metric
 
 	####################################
 	#############I/O####################
 	####################################
-
-	@classmethod
-	def fromfilelist(cls,file_list):
-
-		"""
-		Builds the ensemble from a file list: each file corresponds to a different realization
-
-		:param file_list: List of files on which to define the ensemble
-		:type file_list: list of str.
-
-		"""
-
-		#Build the ensemble instance and return it
-		return cls(file_list=file_list)
-
 
 	@classmethod
 	def read(cls,filename,callback_loader=None,**kwargs):
@@ -133,10 +120,14 @@ class Ensemble(pd.DataFrame):
 
 		return cls.concat([ cls.read(f,callback_loader,**kwargs) for f in filelist ])
 
-
-	def load(self,callback_loader=None,pool=None,**kwargs):
+	@classmethod
+	def compute(cls,file_list,callback_loader=None,pool=None,index=None,**kwargs):
+		
 		"""
-		Loads the ensemble into memory, can spread the calculations on multiple processors using a MPI pool
+		Computes an ensemble, can spread the calculations on multiple processors using a MPI pool
+
+		:param file_list: list of files that will constitute the ensemble; the callback_loader is called on each of the files to produce the different realizations
+		:type file_list: list. 
 
 		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble. If None provided, it performs a numpy.load on the specified files. Must return a numpy array with the loaded data
 		:type callback_loader: function
@@ -156,14 +147,14 @@ class Ensemble(pd.DataFrame):
 		>>> map_list = ["conv1.fit","conv2.fit","conv3.fit"]
 		>>> l_edges = np.arange(200.0,50000.0,200.0)
 
-		>>> conv_ensemble = Ensemble.fromfilelist(map_list)
-		>>> conv_ensemble.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+		>>> conv_ensemble = Ensemble.compute(map_list,callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
 
 		"""
 
+		#Safety checks
 		assert callback_loader is not None, "You must specify a callback loader function that returns a numpy array!"
-
-		self.pool = pool
+		if index is not None:
+			assert len(index)==len(file_list),"The number of elements in the index hould be the same as the number of files!"
 
 		#Build a function wrapper of the callback loader, so it becomes pickleable
 		_callback_wrapper = _function_wrapper(callback_loader,args=tuple(),kwargs=kwargs)
@@ -174,28 +165,18 @@ class Ensemble(pd.DataFrame):
 		else:
 			M = map
 
-		full_data = np.array(M(_callback_wrapper,self.file_list))
+		full_data = np.array(M(_callback_wrapper,file_list))
 		
 		assert type(full_data) == np.ndarray
-		assert full_data.shape[0] == self.num_realizations 
 
-		#Fill in the columns
-		for n,c in enumerate(full_data.T):
-			self[n] = c
+		#Check if user provided column labels
+		if "columns" in kwargs.keys():
+			columns = kwargs["columns"]
+		else:
+			columns = None
 
-	#Set the column names
-	def setColumns(self,columns=None):
-
-		"""
-		Change the names of the columns
-
-		:param columns: new column names
-		:type columns: pandas Index
-
-		"""
-
-		if columns is not None:
-			self.columns = columns
+		#Return the created ensemble from the full_data array
+		return cls(full_data,file_list,index=index,columns=columns)
 
 	
 	def save(self,filename,format=None,**kwargs):
