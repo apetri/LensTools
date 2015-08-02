@@ -24,6 +24,12 @@ from scipy import sparse
 from emcee.ensemble import _function_wrapper
 
 try:
+	import matplotlib
+	import matplotlib.pyplot as plt
+except ImportError:
+	matplotlib = None
+
+try:
 	import pandas as pd
 	pd = pd
 except ImportError:
@@ -247,6 +253,7 @@ class Ensemble(pd.DataFrame):
 		data = np.vstack([ ens.values for ens in ensemble_list ])
 		return cls(data)
 	
+	#TODO: remove
 	def mean(self):
 
 		"""
@@ -260,6 +267,7 @@ class Ensemble(pd.DataFrame):
 		
 		return self._mean
 
+	#TODO: reimplement
 	def scale(self,weights):
 
 		"""
@@ -279,7 +287,7 @@ class Ensemble(pd.DataFrame):
 
 			self.data *= weights
 
-
+	#TODO: reimplement
 	def group(self,group_size,kind="sparse",inplace=True):
 
 		"""
@@ -331,6 +339,7 @@ class Ensemble(pd.DataFrame):
 			return self.__class__.fromdata(scheme.dot(self.data) / group_size)
 
 
+	#TODO: remove
 	def differentiate(self,step=None,order=1):
 
 		"""
@@ -354,6 +363,7 @@ class Ensemble(pd.DataFrame):
 		return self.__class__(data=diff_data,num_realizations=diff_data.shape[0])
 
 
+	#TODO: remove
 	def cut(self,min=None,max=None,feature_label=None,inplace=True):
 
 		"""
@@ -423,7 +433,7 @@ class Ensemble(pd.DataFrame):
 				return self.__class__.fromdata(new_data)
 
 
-
+	#TODO: remove
 	def subset(self,realizations):
 
 		"""
@@ -441,6 +451,7 @@ class Ensemble(pd.DataFrame):
 		return self.__class__.fromdata(data)
 
 
+	#TODO: remove
 	def transform(self,transformation,inplace=False,**kwargs):
 
 		"""
@@ -472,6 +483,7 @@ class Ensemble(pd.DataFrame):
 			return self.__class__.fromdata(transformed_data)
 
 
+	#TODO: reimplement
 	def covariance(self,bootstrap=False,**kwargs):
 
 		"""
@@ -500,7 +512,7 @@ class Ensemble(pd.DataFrame):
 			subtracted = self.data - self._mean[np.newaxis,:]
 			return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
 
-
+	#TODO: reimplement just calling self.corr()
 	def correlation(self):
 
 		"""
@@ -523,7 +535,7 @@ class Ensemble(pd.DataFrame):
 
 			return np.dot(subtracted,subtracted.T) / np.outer(std,std)
 
-
+	#TODO: reimplement
 	def bootstrap(self,callback,bootstrap_size=10,resample=10,seed=None):
 
 		"""
@@ -559,13 +571,13 @@ class Ensemble(pd.DataFrame):
 		randomizer = np.random.randint(self.num_realizations,size=(resample,bootstrap_size))
 
 		#Compute the statistic with the callback
-		statistic = np.array(M(callback,self[randomizer]))
+		statistic = np.array(M(callback,self.iloc[randomizer]))
 
 		#Return the bootstraped statistic expectation value
 		return statistic.mean(0)
 
 
-
+	#TODO: reimplement adding the proper constructor to PCA
 	def principalComponents(self):
 
 		"""
@@ -608,7 +620,7 @@ class Ensemble(pd.DataFrame):
 
 			raise NotImplementedError("Only chi2 metric implemented so far!!")
 
-
+	#TODO: reimplement
 	def selfChi2(self):
 
 		"""
@@ -627,7 +639,7 @@ class Ensemble(pd.DataFrame):
 		return (difference * np.linalg.solve(covariance,difference.T).T).sum(-1)
 
 
-
+	#TODO: remove: the reindex() method does the same thing
 	def shuffle(self,seed=None):
 
 		"""
@@ -646,6 +658,57 @@ class Ensemble(pd.DataFrame):
 
 
 	#####################################################################################################################
+
+	####################################
+	#############Visualization##########
+	####################################
+
+	def imshow(self,fig=None,ax=None,**kwargs):
+
+		"""
+		Visualize a two dimensional map of the Ensemble, with the index as the vertical axis and the columns as the horizontal axis
+
+		:param fig:
+		:type fig:
+
+		:param ax:
+		:type ax:
+
+		:param kwargs:
+		:type kwargs: dict.
+
+		"""
+
+		#Matplotlib needs to be installed
+		if matplotlib is None:
+			raise ImportError("matplotlib needs to be installed to use this method!")
+
+		#Create figure if one does not exist yet
+		if fig is None or ax is None:
+			self.fig,self.ax = plt.subplots()
+		else:
+			self.fig = fig
+			self.ax = ax
+
+		#Show the ensemble
+		img = plt.imshow(self.values,**kwargs)
+
+		#Set the ticks and ticklabels
+		self.ax.set_yticks(range(self.shape[0]))
+		self.ax.set_xticks(range(self.shape[1]))
+		self.ax.set_yticklabels(self.index)
+		self.ax.set_xticklabels(self.columns,rotation="vertical")
+
+		#Maybe the axis labels if index and columns have names
+		if self.index.name is not None:
+			self.ax.set_ylabel(self.index.name)
+
+		if self.columns.name is not None:
+			self.ax.set_xlabel(self.columns.name)
+
+		#Return the handle
+		return self.ax
+
 
 
 
