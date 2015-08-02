@@ -150,7 +150,7 @@ class Ensemble(pd.DataFrame):
 		return cls.concat([ cls.read(f,callback_loader,**kwargs) for f in filelist ])
 
 	@classmethod
-	def compute(cls,file_list,callback_loader=None,pool=None,index=None,**kwargs):
+	def compute(cls,file_list,callback_loader=None,pool=None,index=None,assemble=np.array,**kwargs):
 		
 		"""
 		Computes an ensemble, can spread the calculations on multiple processors using a MPI pool
@@ -164,8 +164,11 @@ class Ensemble(pd.DataFrame):
 		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
 		:type pool: MPI pool object
 
-		:param from_old: If True, the loaded data are interpreted as an old, already existing ensemble, which means that only one file (in which the old ensemble is saved) is loaded, the first dimension of the data is 1 and hence it is discarded 
-		:type from_old: bool.
+		:param index: index of the Ensemble
+		:type index: pandas Index
+
+		:param assemble: called on the list of features (one feature per file) to assemble them in an array (defaults to np.array)
+		:type assemble: callable
 
 		:param kwargs: Any additional keyword arguments to be passed to callback_loader
 		:type kwargs: dict.
@@ -194,7 +197,7 @@ class Ensemble(pd.DataFrame):
 		else:
 			M = map
 
-		full_data = np.array(M(_callback_wrapper,file_list))
+		full_data = assemble(M(_callback_wrapper,file_list))
 		
 		assert type(full_data) == np.ndarray
 
