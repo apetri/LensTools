@@ -73,6 +73,12 @@ class pcaHandler(object):
 
 	"""
 
+	def __init__(self,constructor_series,constructor_ensemble,columns):
+		
+		self._constructor_series = constructor_series
+		self._constructor_ensemble = constructor_ensemble
+		self._columns = columns
+
 	def fit(self,data):
 
 		#Scale the data to zero mean and unit variance
@@ -96,7 +102,6 @@ class pcaHandler(object):
 
 	@property
 	def eigenvectors(self):
-
 		return self.components_*np.sqrt(self._data_scaled.shape[0] - 1)*self._pca_std[None] + self._pca_mean[None]
 
 	def transform(self,X):
@@ -141,9 +146,9 @@ class pcaHandler(object):
 		original_components += self._pca_mean[None]  
 
 		if original_components.shape[0]==1:
-			return original_components[0]
+			return self._constructor_series(original_components[0],index=self._columns)
 		else:
-			return original_components
+			return self._constructor_ensemble(original_components,columns=self._columns)
 
 	def select_components(self,X,n_components):
 

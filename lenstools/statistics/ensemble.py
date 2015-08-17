@@ -35,13 +35,6 @@ try:
 except ImportError:
 	pd = None
 
-##########################################################################
-#########Useful for bootstrap estimates of the covariance matrix##########
-##########################################################################
-
-def _bsp_covariance(data):
-	sub = data - data.mean(0)[None]
-	return np.dot(sub.T,sub) / (data.shape[0] - 1.0)
 
 ##############################################################
 #################Series class#################################
@@ -56,6 +49,18 @@ class Series(pd.Series):
 	@property
 	def _constructor_expanddim(self):
 		return Ensemble
+
+	@staticmethod
+	def make_index(*indices):
+
+		"""
+		Merge a sequence of simple indices in a single multi-index
+
+		"""
+
+		values = np.concatenate([idx.values for idx in indices])
+		names = reduce(add,[ [idx.name]*len(idx) for idx in indices ])
+		return pd.MultiIndex.from_tuples(zip(names,values))
 
 ##########################################
 ########Ensemble class####################
@@ -72,7 +77,7 @@ class Ensemble(pd.DataFrame):
 	##############DataFrame subclassing#############################
 	################################################################
 
-	_metadata = ["num_realizations","file_list","metric"]
+	_metadata = ["file_list","metric"]
 
 	@property
 	def _constructor(self):
@@ -81,6 +86,10 @@ class Ensemble(pd.DataFrame):
 	@property
 	def _constructor_sliced(self):
 		return Series
+
+	@property
+	def _constructor_expanddim(self):
+		return Panel
 
 	##################################
 	########Constructor###############
@@ -92,13 +101,30 @@ class Ensemble(pd.DataFrame):
 		super(Ensemble,self).__init__(data=data,**kwargs)
 		
 		#Additional attributes
-		if data is not None:
-			self.num_realizations = data.shape[0]
-		else:
-			self.num_realizations = 0 
-
 		self.file_list = file_list
 		self.metric = metric
+
+
+	@property
+	def nobs(self):
+		return self.shape[0]
+
+	###############################
+	########Grouping###############
+	###############################
+
+	def groupby(self,*args,**kwargs):
+
+		"""
+		Same as pandas DataFrame groupby
+		"""
+
+		g = super(Ensemble,self).groupby(*args,**kwargs)
+		g.__class__ = EnsembleGroupBy
+		g._series_constructor = self._constructor_sliced
+		g._ensemble_constructor = self.__class__
+
+		return g
 
 	####################################
 	#############I/O####################
@@ -147,7 +173,7 @@ class Ensemble(pd.DataFrame):
 
 		"""
 
-		return cls.concat([ cls.read(f,callback_loader,**kwargs) for f in filelist ])
+		return cls.concat([ cls.read(f,callback_loader,**kwargs) for f in filelist ],axis=0,ignore_index=True)
 
 	@classmethod
 	def compute(cls,file_list,callback_loader=None,pool=None,index=None,assemble=np.array,**kwargs):
@@ -251,47 +277,11 @@ class Ensemble(pd.DataFrame):
 	####################################
 
 	@classmethod 
-	def concat(cls,ensemble_list):
+	def concat(cls,ensemble_list,**kwargs):
+		return pd.concat(ensemble_list,**kwargs)
 
-		data = np.vstack([ ens.values for ens in ensemble_list ])
-		return cls(data)
-	
-	#TODO: remove
-	def mean(self):
 
-		"""
-		Computes the ensemble average over realizations 
-
-		:returns: ndarray with the averages, has the same shape as self.data[0]
-
-		"""
-		
-		self._mean = self.data.mean(axis=0)
-		
-		return self._mean
-
-	#TODO: reimplement
-	def scale(self,weights):
-
-		"""
-		Set manually the units of each row of the ensemble by multiplying it by a row of weights
-
-		:param weights: row of weights used to scale the ensemble, must have the same length as the number of rows
-		:type weights: array
-
-		"""
-
-		if isinstance(weights,np.ndarray):
-			
-			assert len(weights)==self.data.shape[0]
-			self.data *= weights.reshape(self.data.shape)
-
-		else:
-
-			self.data *= weights
-
-	#TODO: reimplement
-	def group(self,group_size,kind="sparse",inplace=True):
+	def group(self,group_size,kind="sparse"):
 
 		"""
 		Sometimes it happens that different realizations in the ensemble need to be grouped together, for example when they belong to different subfields of the same observation field. With this function you can group different realizations together by taking the mean, and reduce the total number of realizations in the ensemble
@@ -299,194 +289,25 @@ class Ensemble(pd.DataFrame):
 		:param group_size: how many realizations to put in a group, must divide exactly the total number of realizations in the ensemble
 		:type group_size: int
 
-		:param kind: specifies how to do the grouping; if set to "sparse" the groups are formed by taking one realizations every num_realizations/group_size (for example ([1,1001,...,9001],[2,1002,...,9002]) if num_realizations=10000 and group_size=10). If set to "contiguous" then the realizations are grouped as ([1,2,...,10],[11,12,...,20]). Otherwise you can set kind to your own sparse matrix scheme 
-		:type kind: str. or scipy.sparse 
+		:param kind: specifies how to do the grouping; if set to "sparse" the groups are formed by taking one realizations every nobs/group_size (for example ([1,1001,...,9001],[2,1002,...,9002]) if nobs=10000 and group_size=10). If set to "contiguous" then the realizations are grouped as ([1,2,...,10],[11,12,...,20]). Otherwise you can set kind to your own sparse matrix scheme 
+		:type kind: str. 
+
+		:returns: gropby object
 
 		"""
 
-		assert not(self.num_realizations%group_size),"The group size must divide exactly the number of realizations!"
-		num_groups = self.num_realizations//group_size
+		assert not(self.nobs%group_size),"The group size must divide exactly the number of realizations!"
 
 		#Build the appropriate grouping scheme
-		if isinstance(kind,sparse.csr.csr_matrix):
-
-			assert kind.dtype == np.bool,"The scheme type must be bool, only 0 and 1!"
-			scheme = kind
-		
-		elif kind=="sparse":
-
-			scheme = reduce(add,[ sparse.eye(num_groups,self.num_realizations,k=num_groups*i,dtype=np.int8) for i in range(group_size)])
-
+		if kind=="sparse":
+			return self.groupby(lambda i:i%group_size)
 		elif kind=="contiguous":
-			
-			row = np.array(reduce(add,[ (i,) * group_size  for i in range(num_groups) ]))
-			col = np.arange(self.num_realizations,dtype=np.int)
-			dat = np.ones(self.num_realizations,dtype=np.int8)
-
-			scheme = sparse.csr_matrix((dat,(row,col)),shape=(num_groups,self.num_realizations),dtype=np.int8)
-
+			return self.groupby(lambda i:i%group_size)
 		else:
-			raise TypeError("The scheme kind you inputed is not valid!")
-
-		self._scheme = scheme
-
-		if inplace:
-
-			#Dot the data with the scheme to produce the groups, and take the mean in every group
-			self.num_realizations = num_groups
-			self.data = scheme.dot(self.data) / group_size
-
-		else:
-
-			#Dot the data with the scheme to produce the groups, and take the mean in every group
-			return self.__class__.fromdata(scheme.dot(self.data) / group_size)
+			raise NotImplementedError("Grouping scheme '{0}' not implemented".format(kind))
 
 
-	#TODO: remove
-	def differentiate(self,step=None,order=1):
-
-		"""
-		Compute a new ensemble, in which the feature is differentiated with respect to its label (e.g. the differentiation of the first minkowski functional is the PDF)
-
-		:param step: measure unit on the feature label axis 
-		:type step: float or array
-
-		:returns: new Ensemble instance with the differentiated feature 
-
-		"""
-
-		#differentiate
-		diff_data = np.diff(self.data,n=order,axis=1)
-
-		#Optionally scale the measure units
-		if step is not None:
-			diff_data /= step
-
-		#return the new ensemble
-		return self.__class__(data=diff_data,num_realizations=diff_data.shape[0])
-
-
-	#TODO: remove
-	def cut(self,min=None,max=None,feature_label=None,inplace=True):
-
-		"""
-		Allows to manually cut the ensemble along the second axis, if you want to select a feature subset; you better know what you are doing if you are using this function
-
-		:param min: left extreme of the cut, included; if a list of indices is passed, the cut is performed on those indices, on the second axis and the remaining parameters are ignored
-		:type min: int or float
-
-		:param max: right extreme of the cut, included
-		:type max: int or float
-
-		:param feature_label: if not None, serves as a reference for min and max, in which the ensemble is cut according to the position of the min and max elements in the feature_label array
-		:type feature_label: array
-
-		:param inplace: if True, the Ensemble cut is made in place, otherwise a new ensemble is returned
-		:type inplace: bool.
-
-		:returns: the min and max cut indices if feature_label is None, otherwise it returns the array of the cut feature; if min was a list of indices, these are returned back. Returns the new Ensemble if inplace is False
-
-		"""
-
-		#Sanity checks
-		assert self.data.ndim==2,"Only one dimensional feature cuts implemented so far!"
-		assert (min is not None) or (max is not None),"No cutting extremes selected!"
-
-		if type(min)==list:
-		
-			new_data = self.data[:,min]
-
-			if inplace:
-
-				self.data = new_data
-
-				#Return
-				return min
-
-			else:
-				return self.__class__.fromdata(new_data)
-
-		else:
-		
-			if feature_label is not None:
-
-				#Look for the corresponding indices in the feature label
-				min_idx = np.abs(feature_label-min).argmin()
-				max_idx = np.abs(feature_label-max).argmin()
-
-			else:
-
-				#Interpret max and min as indices between which to perform the cut
-				min_idx = min
-				max_idx = max
-
-			new_data = self.data[:,min_idx:max_idx+1]
-
-			if inplace:
-
-				self.data = new_data
-
-				#Return
-				if feature_label is not None:
-					return feature_label[min_idx:max_idx+1]
-				else:
-					return min_idx,max_idx
-
-			else:
-				return self.__class__.fromdata(new_data)
-
-
-	#TODO: remove
-	def subset(self,realizations):
-
-		"""
-		Returns a new ensemble that contains only the selected realizations
-
-		:param realizations: realizations to keep in the subset Ensemble, must be compatible with numpy array indexing syntax
-		:type realizations: int. or array of int.
-
-		:returns: new Ensemble instance that contains only the selected realizations 
-
-		"""
-
-		data = self.data[realizations]
-		
-		return self.__class__.fromdata(data)
-
-
-	#TODO: remove
-	def transform(self,transformation,inplace=False,**kwargs):
-
-		"""
-		Allows a general transformation on the Ensemble by calling a function on its data
-
-		:param transformation: callback function called on the ensemble data
-		:type transformation: callable 
-
-		:param inplace: if True the transformation is performed in place, otherwise a new Ensemble is created
-		:type inplace: bool.
-
-		:param kwargs: the keyword arguments are passed to the transformation callable
-		:type kwargs: dict.
-
-		:returns: new Ensemble instance if the transformation is nor performed in place
-
-		"""
-
-		#Apply the transformation
-		transformed_data = transformation(self.data,**kwargs)
-
-		#Return the new Ensemble 
-		if inplace:
-			
-			self.data = transformed_data
-			self.num_realizations = transformed_data.shape[0]
-
-		else:
-			return self.__class__.fromdata(transformed_data)
-
-
-	#TODO: reimplement
+	#TODO: reimplement bootstraping method
 	def covariance(self,bootstrap=False,**kwargs):
 
 		"""
@@ -502,41 +323,11 @@ class Ensemble(pd.DataFrame):
 
 		""" 
 
-		assert self.num_realizations>1, "I can't compute a covariance matrix with one realization only!!"
-		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
-
 		if bootstrap:
-			return self.bootstrap(_bsp_covariance,**kwargs)
-		
+			raise NotImplementedError
 		else:
-			if not hasattr(self,"_mean"):
-				self.mean()
+			return self.cov()
 
-			subtracted = self.data - self._mean[np.newaxis,:]
-			return np.dot(subtracted.transpose(),subtracted) / (self.num_realizations - 1.0)
-
-	#TODO: reimplement just calling self.corr()
-	def correlation(self):
-
-		"""
-		Computes the ensemble correlation matrix
-
-		:returns: ndarray with the correlation matrix, has shape (num_realizations,num_realizations)
-
-		"""
-
-		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
-		if self.num_realizations==1:
-			return np.ones((1,1))
-		else:	
-
-			if not hasattr(self,"_mean"):
-				self.mean()
-
-			subtracted = self.data - self._mean[np.newaxis,:]
-			std = np.sqrt((subtracted**2).sum(-1))
-
-			return np.dot(subtracted,subtracted.T) / np.outer(std,std)
 
 	#TODO: reimplement
 	def bootstrap(self,callback,bootstrap_size=10,resample=10,seed=None):
@@ -561,7 +352,7 @@ class Ensemble(pd.DataFrame):
 		"""
 
 		#Safety check
-		assert bootstrap_size<=self.num_realizations,"The size of the resampling cannot exceed the original number of realizations"
+		assert bootstrap_size<=self.nobs,"The size of the resampling cannot exceed the original number of realizations"
 
 		#Set the random seed
 		if seed is not None:
@@ -571,7 +362,7 @@ class Ensemble(pd.DataFrame):
 		M = map
 
 		#Construct the randomization matrix
-		randomizer = np.random.randint(self.num_realizations,size=(resample,bootstrap_size))
+		randomizer = np.random.randint(self.nobs,size=(resample,bootstrap_size))
 
 		#Compute the statistic with the callback
 		statistic = np.array(M(callback,self.iloc[randomizer]))
@@ -580,7 +371,6 @@ class Ensemble(pd.DataFrame):
 		return statistic.mean(0)
 
 
-	#TODO: reimplement adding the proper constructor to PCA
 	def principalComponents(self):
 
 		"""
@@ -590,11 +380,10 @@ class Ensemble(pd.DataFrame):
 
 		"""
 
-		pca = PCA()
+		pca = PCA(constructor_series=self._constructor_sliced,constructor_ensemble=self.__class__,columns=self.columns)
 		pca.fit(self.values)
 		return pca
 
-	
 
 	def compare(self,rhs,**kwargs):
 
@@ -608,14 +397,14 @@ class Ensemble(pd.DataFrame):
 
 		if self.metric=="chi2":
 
-			mean1 = self.mean()
+			mean1 = self.mean(0).values
 			
 			if "covariance" in kwargs.keys():
 				covariance = kwargs["covariance"]
 			else:
-				covariance = self.covariance()
+				covariance = self.covariance().values
 			
-			mean2 = rhs.mean()
+			mean2 = rhs.mean(0).values
 
 			return np.dot(mean1 - mean2,np.dot(np.linalg.inv(covariance),mean1 - mean2))
 
@@ -623,7 +412,6 @@ class Ensemble(pd.DataFrame):
 
 			raise NotImplementedError("Only chi2 metric implemented so far!!")
 
-	#TODO: reimplement
 	def selfChi2(self):
 
 		"""
@@ -634,15 +422,14 @@ class Ensemble(pd.DataFrame):
 		"""
 
 		#Compute mean and covariance
-		mean = self.mean()
-		covariance = self.covariance()
-		difference = self.data - mean[None]
+		mean = self.mean(0).values
+		covariance = self.covariance().values
+		difference = self.values - mean[None]
 
 		#Compute the chi2 for each realization
-		return (difference * np.linalg.solve(covariance,difference.T).T).sum(-1)
+		return Series((difference * np.linalg.solve(covariance,difference.T).T).sum(-1))
 
 
-	#TODO: remove: the reindex() method does the same thing
 	def shuffle(self,seed=None):
 
 		"""
@@ -651,13 +438,15 @@ class Ensemble(pd.DataFrame):
 		:param seed: random seed for the random shuffling
 		:type seed: int.
 
+		:returns: shuffled Ensemble
+
 		"""
 
 		if seed is not None:
 			np.random.seed(seed)
 
 		#Shuffle
-		np.random.shuffle(self.data)
+		return self.reindex(self.index[np.random.permutation(np.arange(len(self)))])
 
 
 	#####################################################################################################################
@@ -713,8 +502,60 @@ class Ensemble(pd.DataFrame):
 		return self.ax
 
 
+#######################################
+########Panel class####################
+#######################################
+
+class Panel(pd.Panel):
+
+	@property 
+	def _constructor(self):
+		return Panel
+
+	@property
+	def _constructor_sliced(self):
+		return Ensemble
 
 
+###################################################################################################################################################################################################
+
+
+###########################
+###SeriesGroupBy class#####
+###########################
+
+class SeriesGroupBy(pd.core.groupby.SeriesGroupBy):
+
+	"""
+	Useful for grouping Series
+
+	"""
+
+	def mean(self,*args,**kwargs):
+		return self._series_constructor(super(SeriesGroupBy,self).mean(*args,**kwargs))
+
+###########################
+###EnsembleGroupBy class###
+###########################
+
+class EnsembleGroupBy(pd.core.groupby.DataFrameGroupBy):
+
+	"""
+	Useful for grouping Ensemble
+
+	"""
+
+	def mean(self,*args,**kwargs):
+		return self._ensemble_constructor(super(EnsembleGroupBy,self).mean(*args,**kwargs))
+
+	def apply(self,*args,**kwargs):
+		return self._ensemble_constructor(super(EnsembleGroupBy,self).apply(*args,**kwargs))
+
+	def __getitem__(self,name):
+		item = super(EnsembleGroupBy,self).__getitem__(name)
+		item.__class__ = SeriesGroupBy
+		item._series_constructor = self._series_constructor
+		return item
 
 
 

@@ -1,8 +1,7 @@
 import sys,os
 	
 from .. import Ensemble
-from ..utils.defaults import default_callback_loader,peaks_loader,convergence_measure_all
-from ..statistics.index import Indexer,MinkowskiAll
+from ..utils.defaults import default_callback_loader,peaks_loader
 
 try:
 
@@ -18,6 +17,7 @@ import logging
 from .. import dataExtern
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
 
@@ -49,25 +49,24 @@ thresholds_pk = np.arange(-1.0,5.0,0.2)
 
 l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-conv_ensemble = Ensemble.fromfilelist(map_list)
-conv_ensemble.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+conv_ensemble = Ensemble.compute(file_list=map_list,callback_loader=default_callback_loader,pool=pool,l_edges=l_edges,columns=pd.Index(l,name="ell"))
 
 if pool is not None:
 	pool.close()
 
 def test_shape():
 
-	assert conv_ensemble.num_realizations==len(map_list)
-	assert conv_ensemble.data.shape==(len(map_list),len(l_edges)-1)
+	assert conv_ensemble.nobs==len(map_list)
+	assert conv_ensemble.shape==(len(map_list),len(l_edges)-1)
 
 def test_power_plot():
 
 	fig,ax = plt.subplots()
-	for n in range(conv_ensemble.num_realizations):
-		ax.plot(l,l*(l+1)*conv_ensemble[n]/(2.0*np.pi),label="Map {0}".format(n+1),linestyle="--")
+	for n in range(len(conv_ensemble)):
+		ax.plot(l,l*(l+1)*conv_ensemble.iloc[n].values/(2.0*np.pi),label="Map {0}".format(n+1),linestyle="--")
 
-	mean = conv_ensemble.mean()
-	errors = np.sqrt(conv_ensemble.covariance().diagonal())
+	mean = conv_ensemble.mean(0).values
+	errors = np.sqrt(conv_ensemble.covariance().values.diagonal())
 
 	ax.errorbar(l,l*(l+1)*mean/(2.0*np.pi),yerr=l*(l+1)*errors/(2.0*np.pi),label="Mean")
 
@@ -81,17 +80,14 @@ def test_power_plot():
 	plt.clf()
 
 def test_chi2():
-
-	conv_ensemble1 = Ensemble.fromfilelist(map_list[0:2])
-	conv_ensemble1.load(callback_loader=default_callback_loader,pool=None,l_edges=l_edges)
-
+	conv_ensemble1 = Ensemble.compute(file_list=map_list[0:2],callback_loader=default_callback_loader,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
 	print("chi2 difference = {0}".format(conv_ensemble.compare(conv_ensemble1)))
 
 def test_pca():
 
 	pca_ensemble = Ensemble.read(os.path.join(dataExtern(),"ensemble_pca.npy"))
 	pca = pca_ensemble.principalComponents()
-	assert len(pca.explained_variance_)==pca_ensemble.data.shape[1]
+	assert len(pca.explained_variance_)==pca_ensemble.shape[1]
 	
 	fig,ax = plt.subplots(1,2,figsize=(16,8))
 	ax[0].plot(pca.explained_variance_)
@@ -105,29 +101,22 @@ def test_pca():
 
 def test_add():
 
-	conv_ensemble1 = Ensemble.fromfilelist(map_list[0:2])
-	conv_ensemble2 = Ensemble.fromfilelist(map_list[2:])
+	conv_ensemble1 = Ensemble.compute(file_list=map_list[0:2],callback_loader=default_callback_loader,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
+	conv_ensemble2 = Ensemble.compute(file_list=map_list[2:],callback_loader=default_callback_loader,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
+	conv_ensemble_union = Ensemble.concat([conv_ensemble1,conv_ensemble2],axis=0,ignore_index=True)
 
-	conv_ensemble1.load(callback_loader=default_callback_loader,pool=None,l_edges=l_edges)
-	conv_ensemble2.load(callback_loader=default_callback_loader,pool=None,l_edges=l_edges)
-
-	conv_ensemble_union = conv_ensemble1 + conv_ensemble2
-
-	assert conv_ensemble_union.num_realizations == 4
-	assert len(conv_ensemble_union.file_list) == 4
-	assert conv_ensemble_union.data.shape[0] == 4
-	assert conv_ensemble_union.data.shape[1] == conv_ensemble1.data.shape[1]
+	assert conv_ensemble_union.nobs == 4
+	assert conv_ensemble_union.shape[0] == 4
+	assert conv_ensemble_union.shape[1] == conv_ensemble1.shape[1]
 
 def test_multiply():
 
-	conv_ensemble_peaks = Ensemble.fromfilelist(map_list)
-	conv_ensemble_peaks.load(callback_loader=peaks_loader,pool=None,thresholds=thresholds_pk)
+	conv_ensemble_peaks = Ensemble.compute(file_list=map_list,callback_loader=peaks_loader,pool=None,thresholds=thresholds_pk)
+	conv_ensemble_both = Ensemble.concat([conv_ensemble,conv_ensemble_peaks],axis=1)
 
-	conv_ensemble_both = conv_ensemble * conv_ensemble_peaks
-
-	assert conv_ensemble_both.num_realizations == 4
-	assert conv_ensemble_both.data.shape[0] == 4
-	assert conv_ensemble_both.data.shape[1] == len(l_edges) + len(thresholds_pk) - 2
+	assert conv_ensemble_both.nobs == 4
+	assert conv_ensemble_both.shape[0] == 4
+	assert conv_ensemble_both.shape[1] == len(l_edges) + len(thresholds_pk) - 2
 
 def test_save_and_load():
 
@@ -135,32 +124,30 @@ def test_save_and_load():
 	conv_ensemble.save("ensemble_saved",format="matlab",appendmat=True)
 	conv_ensemble_new = Ensemble.read("ensemble_saved.npy")
 
-	assert conv_ensemble_new.num_realizations == conv_ensemble.num_realizations
-	assert conv_ensemble_new.data.shape == conv_ensemble.data.shape
+	assert conv_ensemble_new.nobs == conv_ensemble.nobs
+	assert conv_ensemble_new.shape == conv_ensemble.shape
 
 def test_group():
 
-	conv_ensemble_sparse = Ensemble.fromfilelist(map_list)
-	conv_ensemble_sparse.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
-	conv_ensemble_sparse.group(group_size=2,kind="sparse")
+	conv_ensemble_sparse = Ensemble.compute(file_list=map_list,callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	conv_ensemble_sparse = conv_ensemble_sparse.group(group_size=2,kind="sparse").mean()
 	
-	assert conv_ensemble_sparse.num_realizations==2
+	assert conv_ensemble_sparse.nobs==2
 
-	conv_ensemble_contiguous = Ensemble.fromfilelist(map_list)
-	conv_ensemble_contiguous.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
-	conv_ensemble_contiguous.group(group_size=2,kind="contiguous")
+	conv_ensemble_contiguous = Ensemble.compute(file_list=map_list,callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	conv_ensemble_contiguous = conv_ensemble_contiguous.group(group_size=2,kind="contiguous").mean()
 	
-	assert conv_ensemble_contiguous.num_realizations==2
+	assert conv_ensemble_contiguous.nobs==2
 
 	fig,ax = plt.subplots()
-	for n in range(conv_ensemble.num_realizations):
-		ax.plot(l,l*(l+1)*conv_ensemble.data[n]/(2.0*np.pi),label="Original {0}".format(n+1),linestyle="-")
+	for n in range(conv_ensemble.nobs):
+		ax.plot(l,l*(l+1)*conv_ensemble.values[n]/(2.0*np.pi),label="Original {0}".format(n+1),linestyle="-")
 
-	for n in range(conv_ensemble_sparse.num_realizations):
-		ax.plot(l,l*(l+1)*conv_ensemble_sparse.data[n]/(2.0*np.pi),label="Sparse {0}".format(n+1),linestyle="--")
+	for n in range(conv_ensemble_sparse.nobs):
+		ax.plot(l,l*(l+1)*conv_ensemble_sparse.values[n]/(2.0*np.pi),label="Sparse {0}".format(n+1),linestyle="--")
 
-	for n in range(conv_ensemble_contiguous.num_realizations):
-		ax.plot(l,l*(l+1)*conv_ensemble_contiguous.data[n]/(2.0*np.pi),label="Contiguous {0}".format(n+1),linestyle="-.")
+	for n in range(conv_ensemble_contiguous.nobs):
+		ax.plot(l,l*(l+1)*conv_ensemble_contiguous.values[n]/(2.0*np.pi),label="Contiguous {0}".format(n+1),linestyle="-.")
 
 	ax.set_xscale("log")
 	ax.set_yscale("log")
@@ -171,22 +158,21 @@ def test_group():
 	plt.savefig("power_ensemble_grouped.png")
 	plt.clf()
 
-	return conv_ensemble_sparse._scheme,conv_ensemble_contiguous._scheme
 
 def test_subset():
 
-	conv_subset = conv_ensemble.subset(range(2))
-	assert conv_subset.num_realizations==2
+	conv_subset = conv_ensemble.iloc[range(2)]
+	assert conv_subset.nobs==2
 
 	fig,ax = plt.subplots()
-	ax.plot(l,l*(l+1)*conv_subset[0]/(2.0*np.pi),label="1")
-	ax.plot(l,l*(l+1)*conv_subset[1]/(2.0*np.pi),label="2")
+	ax.plot(l,l*(l+1)*conv_subset.values[0]/(2.0*np.pi),label="1")
+	ax.plot(l,l*(l+1)*conv_subset.values[1]/(2.0*np.pi),label="2")
 
-	conv_subset = conv_ensemble.subset(range(2,4))
-	assert conv_subset.num_realizations==2
+	conv_subset = conv_ensemble.iloc[range(2,4)]
+	assert conv_subset.nobs==2
 
-	ax.plot(l,l*(l+1)*conv_subset[0]/(2.0*np.pi),label="3")
-	ax.plot(l,l*(l+1)*conv_subset[1]/(2.0*np.pi),label="4")
+	ax.plot(l,l*(l+1)*conv_subset.values[0]/(2.0*np.pi),label="3")
+	ax.plot(l,l*(l+1)*conv_subset.values[1]/(2.0*np.pi),label="4")
 
 	ax.set_xscale("log")
 	ax.set_yscale("log")
@@ -202,11 +188,13 @@ def test_cut():
 	ax.plot(l,l*(l+1)*conv_ensemble.mean()/(2.0*np.pi),label="Full")
 
 	#Perform the cut
-	l_cut = conv_ensemble.cut(10000.0,30000.0,feature_label=l)
-	assert conv_ensemble.data.shape[1] == len(l_cut)
+	l_cut = filter(lambda ell:ell>=10000.0 and ell<=30000.0,conv_ensemble.columns)
+	conv_ensemble_cut = conv_ensemble[l_cut]
+	assert conv_ensemble_cut.shape[1] == len(l_cut)
+	l_cut = np.array(l_cut)
 
 	#Plot
-	ax.plot(l_cut,l_cut*(l_cut+1)*conv_ensemble.mean()/(2.0*np.pi),label="Cut",color="yellow")
+	ax.plot(l_cut,l_cut*(l_cut+1)*conv_ensemble_cut.mean(0).values/(2.0*np.pi),label="Cut",color="yellow")
 
 	ax.set_xscale("log")
 	ax.set_yscale("log")
@@ -220,21 +208,12 @@ def test_cut():
 
 def test_differentiate():
 
-	thresholds = np.arange(-0.04,0.12,0.001)
-	midpoints = 0.5*(thresholds[:-1] + thresholds[1:])
-
-	index = Indexer.stack([MinkowskiAll(thresholds)])
-	index_separate = Indexer(MinkowskiAll(thresholds).separate())
-	
-	diff_ensemble = Ensemble.fromfilelist(map_list)
-	diff_ensemble.load(callback_loader=convergence_measure_all,index=index)
-
-	ensemble_0 = diff_ensemble.split(index_separate)[0]
-	ensemble_pdf = ensemble_0.differentiate(step=thresholds[0]-thresholds[1])
+	conv_ensemble_peaks_cumulative = Ensemble.compute(file_list=map_list,callback_loader=peaks_loader,pool=None,thresholds=thresholds_pk).cumsum(1)
+	diff_ensemble = conv_ensemble_peaks_cumulative.apply(lambda s:s.diff(),axis=1)
 
 	fig,ax = plt.subplots()
-	for i in range(ensemble_0.num_realizations):
-		ax.plot(0.5*(midpoints[:-1]+midpoints[1:]),ensemble_pdf[i])
+	for i in range(diff_ensemble.nobs):
+		ax.plot(0.5*(thresholds_pk[:-1]+thresholds_pk[1:]),diff_ensemble.values[i])
 		
 	ax.set_xlabel(r"$\kappa$")
 	ax.set_ylabel(r"$P(\kappa)$")
@@ -244,16 +223,16 @@ def test_differentiate():
 
 def test_selfChi2():
 
-	ens = Ensemble.read(os.path.join(dataExtern(),"all/Om0.295_Ol0.705_w-1.878_ns0.960_si0.100/subfield1/sigma05/power_spectrum.npy"))
+	ens = Ensemble.read(os.path.join(dataExtern(),"all","Om0.295_Ol0.705_w-1.878_ns0.960_si0.100","subfield1","sigma05","power_spectrum.npy"))
 	chi2 = ens.selfChi2()
-	assert chi2.shape[0]==ens.data.shape[0]
+	assert chi2.shape[0]==ens.shape[0]
 
 	#Plot histogram
 	fig,ax = plt.subplots()
-	n,bins,patch = ax.hist(chi2,bins=50,normed=True,histtype="stepfilled",alpha=0.5)
+	n,bins,patch = ax.hist(chi2.values,bins=50,normed=True,histtype="stepfilled",alpha=0.5)
 
 	#Compare to chi2 distribution
-	ax.plot(stats.chi2.pdf(bins,ens.data.shape[1]))
+	ax.plot(stats.chi2.pdf(bins,ens.shape[1]))
 
 	#Labels
 	ax.set_xlabel(r"$\chi^2$")

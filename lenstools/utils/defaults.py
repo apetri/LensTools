@@ -19,7 +19,6 @@ from astropy.io import fits
 from astropy.units import deg
 
 from ..image.convergence import ConvergenceMap
-from ..statistics.index import PowerSpectrum,Peaks,PDF,MinkowskiAll,MinkowskiSingle,Moments
 
 ##########################################
 #####Default Fits loader convergence######
@@ -85,7 +84,7 @@ def load_fits_default_shear(filename):
 ##########Default callback loader, loads in the measured power spectrum#########
 ################################################################################
 
-def default_callback_loader(filename,l_edges):
+def default_callback_loader(filename,l_edges,columns=None):
 	"""
 	
 	Default ensemble loader: reads a FITS data file containing a convergence map and measures its power spectrum
@@ -105,14 +104,15 @@ def default_callback_loader(filename,l_edges):
 	l,Pl = conv_map.powerSpectrum(l_edges)
 	return Pl
 
-def peaks_loader(filename,thresholds):
+def peaks_loader(filename,thresholds,columns=None):
 
 	logging.debug("Processing {0} peaks".format(filename))
 	conv_map = ConvergenceMap.load(filename,format=load_fits_default_convergence)
 
 	v,pk = conv_map.peakCount(thresholds,norm=True)
-	return v
+	return pk
 
+#TODO: update
 def convergence_measure_all(filename,index,fits_loader=None):
 
 	"""
