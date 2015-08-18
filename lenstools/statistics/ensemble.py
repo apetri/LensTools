@@ -45,7 +45,7 @@ class Series(pd.Series):
 
 	@property
 	def _constructor(self):
-		return Series
+		return self.__class__
 
 	@property
 	def _constructor_expanddim(self):
@@ -545,7 +545,7 @@ class Panel(pd.Panel):
 
 	@property 
 	def _constructor(self):
-		return Panel
+		return self.__class__
 
 	@property
 	def _constructor_sliced(self):
