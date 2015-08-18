@@ -105,6 +105,17 @@ class Ensemble(pd.DataFrame):
 		self.file_list = file_list
 		self.metric = metric
 
+	##################################
+	########Serialization#############
+	##################################
+
+	def __getstate__(self):
+		meta = dict((k,getattr(self,k,None)) for k in self._metadata)
+		return dict(_data=self._data,_typ=self._typ,_metadata=self._metadata,**meta)
+
+	##################
+	####Properties####
+	##################
 
 	@property
 	def nobs(self):
