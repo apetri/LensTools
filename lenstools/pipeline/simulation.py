@@ -12,7 +12,7 @@ from .remote import SystemHandler,LocalSystem,LocalGit
 from .settings import *
 
 from .deploy import JobHandler
-from ..simulations import Gadget2Settings,Gadget2Snapshot
+from ..simulations import Gadget2Settings,Gadget2SnapshotDE
 
 from ..simulations.camb import CAMBSettings
 from ..simulations import Nicaea
@@ -2243,7 +2243,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("GlassFile			{0}\n".format(os.path.abspath(settings.GlassFile)))
 
 			#Tiling
-			glass = Gadget2Snapshot.open(os.path.abspath(settings.GlassFile))
+			glass = Gadget2SnapshotDE.open(os.path.abspath(settings.GlassFile))
 			nside_glass = glass.header["num_particles_total_side"]
 			glass.close()
 			paramfile.write("TileFac			{0}\n".format(self.nside//nside_glass))
@@ -2355,7 +2355,7 @@ class SimulationIC(SimulationCollection):
 			ic_filenames = self.syshandler.glob(initial_condition_file+"*")
 
 			try:
-				ic_snapshot = Gadget2Snapshot.open(ic_filenames[0])
+				ic_snapshot = Gadget2SnapshotDE.open(ic_filenames[0])
 				paramfile.write("TimeBegin			{0}\n".format(ic_snapshot.header["scale_factor"]))
 				ic_snapshot.close()
 			except (IndexError,IOError):
