@@ -14,6 +14,7 @@ from __future__ import division
 
 from operator import add
 from functools import reduce
+import cPickle as pickle
 
 from ..utils import pcaHandler as PCA
 
@@ -81,7 +82,7 @@ class Ensemble(pd.DataFrame):
 
 	@property
 	def _constructor(self):
-		return Ensemble
+		return self.__class__
 
 	@property
 	def _constructor_sliced(self):
@@ -131,6 +132,24 @@ class Ensemble(pd.DataFrame):
 	####################################
 
 	@classmethod
+	def read_pickle(cls,filename):
+
+		"""
+		Reads in a pickled Ensemble from disk
+
+		:param filename: name of the file to read
+		:type filename: str.
+
+		:returns: Ensemble instance read from the file
+
+		"""
+
+		with open(filename,"r") as fp:
+			ens = pickle.load(fp)
+
+		return cls(ens)
+
+	@classmethod
 	def read(cls,filename,callback_loader=None,**kwargs):
 
 		"""
@@ -139,7 +158,7 @@ class Ensemble(pd.DataFrame):
 		:param filename: name of the file to read
 		:type filename: str.
 
-		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble. If None provided, it performs a numpy.load on the specified file. Must return a numpy array with the loaded data
+		:param callback_loader: This function gets executed on each of the files in the list and populates the ensemble. If None provided, it unpickles the specified file. Must return an acceptable input for the Ensemble constructor
 		:type callback_loader: function
 
 		:param kwargs: Any additional keyword arguments to be passed to callback_loader
@@ -150,7 +169,7 @@ class Ensemble(pd.DataFrame):
 		"""
 
 		if callback_loader is None:
-			callback_loader = lambda f: np.load(f)
+			callback_loader = cls.read_pickle
 
 		return cls(callback_loader(filename,**kwargs),file_list=[filename])
 
@@ -259,6 +278,8 @@ class Ensemble(pd.DataFrame):
 				format = "numpy"
 			elif filename.endswith(".mat"):
 				format = "matlab"
+			elif filename.endswith(".pkl"):
+				format = "pickle"
 			else:
 				raise ValueError("Format not recognized!")
 
@@ -268,6 +289,9 @@ class Ensemble(pd.DataFrame):
 			np.save(filename,self.values)
 		elif format=="matlab":
 			sio.savemat(filename,{"values": self.values},**kwargs)
+		elif format=="pickle":
+			with open(filename,"w") as fp:
+				pickle.dump(self,fp)
 		else:
 			format(self,filename,**kwargs)
 	
