@@ -713,7 +713,7 @@ class Gadget2Snapshot(Gadget2SnapshotDE):
 		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
 		self._header["w0"] = -1.0
 		self._header["wa"] = 0.0
-		self._header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["0m0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
+		self._header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["Om0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
 
 		return self._header 
 
