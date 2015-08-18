@@ -11,7 +11,7 @@ import numpy as np
 
 #astropy stuff, invaluable here
 from astropy.units import Mbyte,kpc,Mpc,Msun,cm,km,g,s,hour,day,quantity,def_unit
-from astropy.cosmology import w0waCDM
+from astropy.cosmology import w0waCDM,LambdaCDM
 
 
 ############################################################
@@ -246,14 +246,14 @@ class Gadget2Header(dict):
 
 		return merged_header
 
-############################################################
-#################Gadget2Snapshot class######################
-############################################################
+##############################################################
+#################Gadget2SnapshotDE class######################
+##############################################################
 
-class Gadget2Snapshot(NbodySnapshot):
+class Gadget2SnapshotDE(NbodySnapshot):
 
 	"""
-	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics.Inherits from the abstract NbodySnapshot
+	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics.Inherits from the abstract NbodySnapshot; assumes that the header includes Dark Energy information
 
 	"""
 
@@ -695,3 +695,25 @@ class Gadget2Snapshot(NbodySnapshot):
 
 			#Softening lengths section
 			paramfile.write(settings.writeSection("softening"))
+
+
+##############################################################
+#################Gadget2Snapshot class########################
+##############################################################
+
+class Gadget2Snapshot(Gadget2SnapshotDE):
+
+	"""
+	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics.Inherits from Gadget2SnapshotDE; assumes that the dark energy is described by (w0,wa)=(-1,0)
+
+	"""
+
+	def getHeader(self):
+		
+		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
+		self._header["w0"] = -1.0
+		self._header["wa"] = 0.0
+		self._header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["0m0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
+
+		return self._header 
+
