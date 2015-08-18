@@ -566,8 +566,31 @@ class SeriesGroupBy(pd.core.groupby.SeriesGroupBy):
 
 	"""
 
-	def mean(self,*args,**kwargs):
-		return self._series_constructor(super(SeriesGroupBy,self).mean(*args,**kwargs))
+	def _wrap_applied_output(self,*args,**kwargs):
+		
+		out = super(SeriesGroupBy,self)._wrap_applied_output(*args,**kwargs)
+		if isinstance(out,pd.Series):
+			return self._series_constructor(out)
+		else:
+			return out
+
+	def _wrap_aggregated_output(self,*args,**kwargs):
+		
+		out = super(SeriesGroupBy,self)._wrap_aggregated_output(*args,**kwargs)
+		if isinstance(out,pd.Series):
+			return self._series_constructor(out)
+		else:
+			return out
+
+	def aggregate(self,*args,**kwargs):
+
+		out = super(SeriesGroupBy,self).aggregate(*args,**kwargs)
+		if isinstance(out,pd.Series):
+			return self._series_constructor(out)
+		else:
+			return out
+
+
 
 ###########################
 ###EnsembleGroupBy class###
@@ -580,11 +603,46 @@ class EnsembleGroupBy(pd.core.groupby.DataFrameGroupBy):
 
 	"""
 
-	def mean(self,*args,**kwargs):
-		return self._ensemble_constructor(super(EnsembleGroupBy,self).mean(*args,**kwargs))
+	def _wrap_applied_output(self,*args,**kwargs):
+		
+		out = super(EnsembleGroupBy,self)._wrap_applied_output(*args,**kwargs)
+		if isinstance(out,pd.Series):
+			return self._series_constructor(out)
+		elif isinstance(out,pd.DataFrame):
+			return self._ensemble_constructor(out)
+		else:
+			return out
 
-	def apply(self,*args,**kwargs):
-		return self._ensemble_constructor(super(EnsembleGroupBy,self).apply(*args,**kwargs))
+	def _wrap_aggregated_output(self,*args,**kwargs):
+		
+		out = super(EnsembleGroupBy,self)._wrap_aggregated_output(*args,**kwargs)
+		if isinstance(out,pd.Series):
+			return self._series_constructor(out)
+		elif isinstance(out,pd.DataFrame):
+			return self._ensemble_constructor(out)
+		else:
+			return out
+
+	def _wrap_agged_blocks(self,*args,**kwargs):
+
+		out = super(EnsembleGroupBy,self)._wrap_agged_blocks(*args,**kwargs)
+		if isinstance(out,pd.Series):
+			return self._series_constructor(out)
+		elif isinstance(out,pd.DataFrame):
+			return self._ensemble_constructor(out)
+		else:
+			return out
+
+	def aggregate(self,*args,**kwargs):
+
+		out = super(EnsembleGroupBy,self).aggregate(*args,**kwargs)
+		if isinstance(out,pd.Series):
+			return self._series_constructor(out)
+		elif isinstance(out,pd.DataFrame):
+			return self._ensemble_constructor(out)
+		else:
+			return out
+
 
 	def __getitem__(self,name):
 		item = super(EnsembleGroupBy,self).__getitem__(name)
