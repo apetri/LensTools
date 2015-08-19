@@ -99,31 +99,14 @@ class Analysis(Ensemble):
 
 	def _check_valid(self):
 		assert "parameters" in self.columns.levels[0],"There are no parameters specified for this analysis!"
-		assert "features" in self.columns.levels[0],"There are no features specified for this analysis!"
-
-	##################################
-	########Constructor###############
-	##################################
-
-	def __init__(self,*args,**kwargs):
-
-		#Do not instantiate this directly
-		if self._analysis_type is None:
-			raise TypeError("Don't instantiate this class directly, use one of its subclasses!")
-
-		#Parent constructor
-		super(Analysis,self).__init__(*args,**kwargs)
-
-		#Check validity of instance
-		#self._check_valid()
-
-	#def __repr__(self):
-		
-		#prefix = "{0}: {1} parameters, {2} bins, {3} observations\n".format(self._analysis_type,self.parameter_set.shape[1],self.feature_set.shape[1],self.nobs)
-		#return prefix + super(Analysis,self).__repr__()
 
 	@classmethod
 	def from_features(cls,features,parameters=None,feature_index=None,parameter_index=None):
+
+		#If features and parameters are already in DataFrame instances then just append them
+		if isinstance(features,pd.DataFrame) and isinstance(parameters,pd.DataFrame):
+			assert len(parameters.columns.levels[0])==1 and parameters.columns.levels[0][0]=="parameters"
+			return cls(cls.concat(parameters,features),axis=1)
 
 		#Cast shapes correctly
 		if len(features.shape)==1:
@@ -131,25 +114,38 @@ class Analysis(Ensemble):
 
 		if parameters is None:
 			parameters = np.arange(len(features))[None]
-			parameter_index = ["p"]
 
 		if len(parameters.shape)==1:
 			parameters = parameters[None]
 
-		if feature_index is None:
-			feature_index = np.arange(features.shape[1])
+		#Make the indices
+		if parameter_index is None:
+			parameter_index = Series.make_index(pd.Index(range(parameters.shape[1]),name="parameters"))
+		elif isinstance(parameter_index,list):
+			parameter_index = Series.make_index(pd.Index(parameter_index,name="parameters"))
 
-		#Build indices
-		parameter_index = pd.Index(parameter_index,name="parameters")
-		feature_index = pd.Index(feature_index,name="features")
-		parameter_and_feature_index = Series.make_index(parameter_index,feature_index)
+		if feature_index is None:
+			feature_index = Series.make_index(pd.Index(range(features.shape[1]),name="features"))
+		elif isinstance(feature_index,list):
+			feature_index = Series,make_index(pd.Index(feature_index,name="features"))
+
+		#Instantiate the parameter and feature part of the analysis
+		analysis_param = cls(parameters,columns=parameter_index)
+		analysis_features = cls(features,columns=feature_index)
 
 		#Instantiate Analysis
-		return cls(np.hstack((parameters,features)),columns=parameter_and_feature_index)
+		return cls.concat((analysis_param,analysis_features),axis=1)
+
 
 	##################
 	####Properties####
 	##################
+
+	@property
+	def feature_names(self):
+		all_names = list(self.columns.levels[0])
+		all_names.remove("parameters")
+		return all_names
 
 	@property
 	def parameter_set(self):
@@ -157,7 +153,7 @@ class Analysis(Ensemble):
 
 	@property
 	def feature_set(self):
-		return self["features"].values
+		return self[self.feature_names].values
 
 
 	##################
@@ -232,14 +228,14 @@ class Analysis(Ensemble):
 		"""
 
 		transformed_analysis = self.copy()
-		transformed_analysis["features"] = self["features"].apply(transformation,axis=1,**kwargs)
+		transformed_analysis[self.feature_names] = self[self.feature_names].apply(transformation,axis=1,**kwargs)
 		return transformed_analysis
 
 
 	def find(self,parameters,rtol=1.0e-05):
 
 		"""
-		Finds the index of the training model that has the specified combination of parameters
+		Finds the location in the instance that has the specified combination of parameters
 
 		:param parameters: the parameters of the model to find
 		:type parameters: array.
@@ -730,6 +726,10 @@ class Emulator(Analysis):
 
 		#Compute total number of feature bins and reshape the training set accordingly
 		self._num_bins = reduce(mul,self.feature_set.shape[1:])
+		
+		if "_num_bins" not in self._metadata:
+			self._metadata.append("_num_bins")
+
 		flattened_feature_set = self.feature_set.reshape((self.feature_set.shape[0],self._num_bins))
 
 		#Build one interpolator for each feature bin (not optimal but we suck it up for now)
