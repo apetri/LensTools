@@ -30,6 +30,7 @@ from emcee.ensemble import _function_wrapper
 #########################################################
 
 from .ensemble import Series,Ensemble,Panel 
+from ..utils.misc import _interpolate_wrapper
 
 #########################################################
 #############Default Gaussian data likelihood############
@@ -691,7 +692,9 @@ class Emulator(Analysis):
 		
 		super(Emulator,self).__init__(*args,**kwargs) 
 		self._likelihood_function = gaussian_likelihood
-		self._metadata.append("_likelihood_function")
+
+		if "_likelihood_function" not in self._metadata:
+			self._metadata.append("_likelihood_function")
 
 	#######################################################################################################################################
 
@@ -725,17 +728,16 @@ class Emulator(Analysis):
 			used_parameters = self.parameter_set.transpose()
 
 		#Compute total number of feature bins and reshape the training set accordingly
-		self._num_bins = reduce(mul,self.feature_set.shape[1:])
-		
 		if "_num_bins" not in self._metadata:
 			self._metadata.append("_num_bins")
+		self._num_bins = reduce(mul,self.feature_set.shape[1:])
 
 		flattened_feature_set = self.feature_set.reshape((self.feature_set.shape[0],self._num_bins))
 
 		#Build one interpolator for each feature bin (not optimal but we suck it up for now)
-		self._interpolator = list()
 		if "_interpolator" not in self._metadata:
 			self._metadata.append("_interpolator")
+		self._interpolator = list()
 
 		for n in range(self._num_bins):
 			self._interpolator.append(_interpolate_wrapper(Rbf,args=(tuple(used_parameters) + (flattened_feature_set[:,n],)),kwargs=kwargs))

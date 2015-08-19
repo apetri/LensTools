@@ -3,41 +3,51 @@ import sys,os
 from .. import dataExtern
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 	
 from .. import Ensemble
-from ..statistics.constraints import FisherAnalysis,LikelihoodAnalysis,Emulator
+from ..statistics.constraints import FisherAnalysis,FisherSeries,Emulator,EmulatorSeries
 from ..simulations import CFHTemu1
 
 
 #Test Fisher analysis with power spectrum
 def test_fisher():
 
-	f = FisherAnalysis()
-
-	#Load the power spectral features and parameters into the analysis instance
+	#Load the power spectral features and parameters
+	parameters = list()
+	features = list()
 	
 	#Fiducial
+	parameters.append(np.array([0.26,-1.0,0.798,0.960]))
 	l,P,g = np.loadtxt(os.path.join(dataExtern(),"fiducial"),unpack=True)
+	features.append(P)
+	
 	covariance = P**2 / (l + 0.5)
-	f.add_model(parameters=np.array([0.26,-1.0,0.798,0.960]),feature=P)
 
 	#High Om
+	parameters.append(np.array([0.29,-1.0,0.798,0.960]))
 	l,P,g = np.loadtxt(os.path.join(dataExtern(),"v_Om_0.29"),unpack=True)
-	f.add_model(parameters=np.array([0.29,-1.0,0.798,0.960]),feature=P)
+	features.append(P)
 
 	#High w
+	parameters.append(np.array([0.26,-0.8,0.798,0.960]))
 	l,P,g = np.loadtxt(os.path.join(dataExtern(),"v_w_-0.8"),unpack=True)
-	f.add_model(parameters=np.array([0.26,-0.8,0.798,0.960]),feature=P)
+	features.append(P)
 
 	#High sigma8
+	parameters.append(np.array([0.26,-1.0,0.850,0.960]))
 	l,P,g = np.loadtxt(os.path.join(dataExtern(),"v_si8_0.850"),unpack=True)
-	f.add_model(parameters=np.array([0.26,-1.0,0.850,0.960]),feature=P)
+	features.append(P)
+
+	#Instantiate the FisherAnalysis
+	feature_index = FisherSeries.make_index(pd.Index(l,name="ell"))
+	f = FisherAnalysis.from_features(np.array(features),parameters=np.array(parameters),parameter_index=["Om","w","si8","ns"],feature_index=feature_index)
 
 	#Sanity checks
 	assert f.parameter_set.shape[0] == 4
-	assert f.training_set.shape[0] == 4
+	assert f.feature_set.shape[0] == 4
 
 	#Compute the derivatives
 	derivatives = f.compute_derivatives()
@@ -68,13 +78,12 @@ def test_fisher():
 	fisher = f.fisher_matrix(simulated_features_covariance=covariance)
 	np.savetxt("fisher_constraints.txt",np.sqrt(np.linalg.inv(fisher).diagonal()))
 
-	return f
-
 #Test interpolation of power spectrum
 def test_interpolation():
 
 	root_path = os.path.join(dataExtern(),"all")
-	analysis = LikelihoodAnalysis()
+	parameters = list()
+	features = list()
 
 	#Read in model names
 	models = CFHTemu1.getModels()[:17]
@@ -93,33 +102,28 @@ def test_interpolation():
 
 	#Load in the means of the power spectra of the 17 models, and populate the analysis instance
 	for model in training_models:
+		ens = Ensemble(np.load(os.path.join(root_path,model._cosmo_id_string,"subfield1","sigma05","power_spectrum.npy")))
+		parameters.append(model.squeeze(with_ns=True))
+		features.append(ens.mean(0).values)
 
-		ens = Ensemble.fromfilelist([os.path.join(root_path,model._cosmo_id_string,"subfield1","sigma05","power_spectrum.npy")])
-		ens.load(from_old=True)
+	#Instantiate the Emulator
+	feature_index = EmulatorSeries.make_index(pd.Index(ell,name="ell"))
+	analysis = Emulator.from_features(np.array(features),parameters=np.array(parameters),parameter_index=["Om","w","si8","ns"],feature_index=feature_index)
 
-		analysis.add_model(parameters=model.squeeze(with_ns=True),feature=ens.mean())
-
-	#Add the multipoles to the analysis
-	analysis.add_feature_label(ell)
-	l = analysis.feature_label
-
-	ens = Ensemble.fromfilelist([os.path.join(root_path,testing_model._cosmo_id_string,"subfield1","sigma05","power_spectrum.npy")])
-	ens.load(from_old=True)
-	testing_Pl = ens.mean()
+	ens = Ensemble(np.load(os.path.join(root_path,testing_model._cosmo_id_string,"subfield1","sigma05","power_spectrum.npy")))
+	testing_Pl = ens.mean(0).values
 
 	#Load in also the observed power spectrum
-	ens = Ensemble.fromfilelist([os.path.join(root_path,"observations","subfield1","sigma05","power_spectrum.npy")])
-	ens.load(from_old=True)
-	observed_Pl = ens.mean() 
+	ens = Ensemble(np.load(os.path.join(root_path,"observations","subfield1","sigma05","power_spectrum.npy")))
+	observed_Pl = ens.mean(0) 
 
 	#Output the analysis stats
 	np.savetxt("16_parameter_points.txt",analysis.parameter_set)
 
 	for n in range(len(training_models)):
+		plt.plot(ell,ell*(ell+1)*analysis.feature_set[n]/(2*np.pi))
 
-		plt.plot(l,l*(l+1)*analysis.training_set[n]/(2*np.pi))
-
-	plt.plot(l,l*(l+1)*observed_Pl/(2*np.pi),linestyle="--",label="Observation")	
+	plt.plot(ell,ell*(ell+1)*observed_Pl/(2*np.pi),linestyle="--",label="Observation")	
 
 	plt.xlabel(r"$l$")
 	plt.ylabel(r"$l(l+1)P_l/2\pi$")
@@ -136,8 +140,9 @@ def test_interpolation():
 	assert hasattr(analysis,"_num_bins")
 
 	#Emulator portability test with pickle/unpickle
-	analysis.save("analysis.p")
-	emulator = LikelihoodAnalysis.load("analysis.p")
+	analysis.save("analysis.pkl")
+	emulator = Emulator.read("analysis.pkl")
+	emulator.train(use_parameters=range(3))
 
 	#Predict the power spectrum at the remaining point
 	predicted_Pl = emulator.predict(testing_model.squeeze())
@@ -146,13 +151,13 @@ def test_interpolation():
 	fig,ax = plt.subplots(2,1,figsize=(16,8))
 
 	#Measured
-	ax[0].plot(l,l*(l+1)*testing_Pl/(2*np.pi),label="measured")
+	ax[0].plot(ell,ell*(ell+1)*testing_Pl/(2*np.pi),label="measured")
 
 	#Predicted
-	ax[0].plot(l,l*(l+1)*predicted_Pl/(2*np.pi),label="interpolated")
+	ax[0].plot(ell,ell*(ell+1)*predicted_Pl/(2*np.pi),label="interpolated")
 	
 	#Fractional difference
-	ax[1].plot(l,(predicted_Pl - testing_Pl)/testing_Pl)
+	ax[1].plot(ell,(predicted_Pl - testing_Pl)/testing_Pl)
 
 	ax[1].set_xlabel(r"$l$")
 	ax[0].set_ylabel(r"$l(l+1)P_l/2\pi$")
@@ -171,16 +176,16 @@ def test_interpolation():
 	fig,ax = plt.subplots(2,1,figsize=(16,8))
 
 	#Predicted
-	ax[0].plot(l,l*(l+1)*two_predicted_Pl[0]/(2*np.pi),color="red",linestyle="--")
-	ax[0].plot(l,l*(l+1)*two_predicted_Pl[1]/(2*np.pi),color="green",linestyle="--")
+	ax[0].plot(ell,ell*(ell+1)*two_predicted_Pl[0]/(2*np.pi),color="red",linestyle="--")
+	ax[0].plot(ell,ell*(ell+1)*two_predicted_Pl[1]/(2*np.pi),color="green",linestyle="--")
 
 	#Measured
-	ax[0].plot(l,l*(l+1)*emulator.training_set[0]/(2*np.pi),color="red",linestyle="-")
-	ax[0].plot(l,l*(l+1)*testing_Pl/(2*np.pi),color="green",linestyle="-")
+	ax[0].plot(ell,ell*(ell+1)*emulator.feature_set[0]/(2*np.pi),color="red",linestyle="-")
+	ax[0].plot(ell,ell*(ell+1)*testing_Pl/(2*np.pi),color="green",linestyle="-")
 
 	#Fractional difference
-	ax[1].plot(l,(two_predicted_Pl[0] - emulator.training_set[0])/emulator.training_set[0],color="red")
-	ax[1].plot(l,(two_predicted_Pl[1] - testing_Pl)/testing_Pl,color="green")
+	ax[1].plot(ell,(two_predicted_Pl[0] - emulator.feature_set[0])/emulator.feature_set[0],color="red")
+	ax[1].plot(ell,(two_predicted_Pl[1] - testing_Pl)/testing_Pl,color="green")
 
 	ax[1].set_xlabel(r"$l$")
 	ax[0].set_ylabel(r"$l(l+1)P_l/2\pi$")
@@ -192,7 +197,7 @@ def test_interpolation():
 	plt.clf()
 
 	#Generate a fudge power spectrum covariance matrix
-	covariance = np.diag(testing_Pl**2/(0.5 + l))
+	covariance = np.diag(testing_Pl**2/(0.5 + ell))
 
 	#Generate a fudge observation by wiggling the testing power spectrum
 	observation = testing_Pl + np.random.uniform(low=-testing_Pl*0.1,high=testing_Pl*0.1)
@@ -219,70 +224,33 @@ def test_interpolation():
 
 	return chi2_values_1,chi2_values_2
 
-def test_remove():
-
-	emulator = LikelihoodAnalysis.load("analysis.p")
-	emulator.remove_model([8,10])
-	emulator.train(use_parameters=range(3))
-
-	assert emulator.parameter_set.shape[0] == 14
-	assert emulator.training_set.shape[0] == 14 
-
 def test_find():
 
-	emulator = LikelihoodAnalysis.load("analysis.p")
+	emulator = Emulator.read("analysis.pkl")
 	parameters_to_find = emulator.parameter_set[7]
 
 	n = emulator.find(parameters_to_find)
 	assert len(n)==1
 	assert n[0] == 7
 
-def test_emulator():
-
-	#Unpickle the emulator
-	emulator = Emulator.load("analysis.p")
-	emulator.train()
-
-	#Set the model
-	emulator.set_to_model(np.array([ 0.26,-2.66,1.31,0.96]))
-	ell = emulator.feature_label
-	Pell = emulator._current_predicted_feature
-
-	#Select the new multipoles
-	l = np.arange(900.0,3000.0,200.0)
-	#Emulate the power spectrum
-	Pl = emulator.emulate(l)
-
-	#Plot
-	fig,ax = plt.subplots()
-	ax.plot(ell,ell*(ell+1)*Pell/(2*np.pi),label="Fully emulated")
-	ax.plot(l,l*(l+1)*Pl/(2.0*np.pi),label="New multipoles",color="yellow")
-
-	ax.set_xlabel(r"$l$")
-	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
-	ax.set_yscale("log")
-	ax.legend(loc="upper left")
-
-	fig.savefig("emulated_power.png")
-
 
 def test_reparametrize():
 
 	#Unpickle the emulator
-	emulator = Emulator.load("analysis.p")
+	emulator = Emulator.read("analysis.pkl")
 
 	#Get the old parametrizations
-	Om = emulator.parameter_set[:,0]
-	w = emulator.parameter_set[:,1]
-	si8 = emulator.parameter_set[:,2]
+	Om = emulator[("parameters","Om")].values
+	w = emulator[("parameters","w")].values
+	si8 = emulator[("parameters","si8")].values
 
 	#Define the reparametrizer ( (Om,si8) -> (si8 x Om^0.5))
-	def formatter(data,n):
+	def formatter(p,n):
 		print("Omega_m exponent={0:.1f}".format(n))
-		return np.array([data[:,1],data[:,2]*(data[:,0]**n)]).transpose()
+		return np.array([p[1],p[2]*(p[0]**n),p[0],p[3]])
 
 	#Reparametrize the parameter space
-	emulator.reparametrize(formatter,0.5)
+	emulator = emulator.reparametrize(formatter,n=0.5)
 
 	#Check that everything worked
 	assert (emulator.parameter_set[:,0]==w).all()
