@@ -244,17 +244,12 @@ def test_reparametrize():
 	w = emulator[("parameters","w")].values
 	si8 = emulator[("parameters","si8")].values
 
-	#Define the reparametrizer ( (Om,si8) -> (si8 x Om^0.5))
-	def formatter(p,n):
-		print("Omega_m exponent={0:.1f}".format(n))
-		return np.array([p[1],p[2]*(p[0]**n),p[0],p[3]])
-
-	#Reparametrize the parameter space
-	emulator = emulator.reparametrize(formatter,n=0.5)
+	#Reparametrize the parameter space ((Om,w,si8) -> (w,si8 x Om^0.5))
+	emulator = emulator.reparametrize(lambda p:pd.Series([p["w"],p["si8"]*p["Om"]**0.5],index=["w","Si8"]))
 
 	#Check that everything worked
-	assert (emulator.parameter_set[:,0]==w).all()
-	assert (emulator.parameter_set[:,1]==(si8*(Om**0.5))).all()
+	assert (emulator[("parameters","w")]==w).all()
+	assert (emulator[("parameters","Si8")]==(si8*(Om**0.5))).all()
 
 
 

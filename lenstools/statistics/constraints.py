@@ -252,13 +252,13 @@ class Analysis(Ensemble):
 		return self.__class__.concat((new_parameters,reparametrized_analysis),axis=1)
 
 
-	def transform(self,transformation,**kwargs):
+	def refeaturize(self,transformation,**kwargs):
 
 		"""
-		Allows a general transformation on the feature_set of the analysis by calling an arbitrary transformation function
+		Allows a general transformation on the feature set of the analysis by calling an arbitrary transformation function
 
-		:param transformation: callback function called on the feature_set; must take in a row of features and return a row of features
-		:type transformation: callable 
+		:param transformation: callback function called on the feature_set; must take in a row of features and return a row of features. If a dictionary is passed, the keys must be the feature names
+		:type transformation: callable or dict.
 
 		:param kwargs: the keyword arguments are passed to the transformation callable
 		:type kwargs: dict.
@@ -267,9 +267,35 @@ class Analysis(Ensemble):
 
 		"""
 
-		transformed_analysis = self.copy()
-		transformed_analysis[self.feature_names] = self[self.feature_names].apply(transformation,axis=1,**kwargs)
-		return transformed_analysis
+		#Build transformation dictionary
+		if isinstance(transformation,dict):
+			transformation_dict = dict((n,lambda x:x) for n in self.feature_names)
+			for n in transformation.keys():
+				transformation_dict[n] = transformation[n]
+		else:
+			transformation_dict = dict((n,transformation) for n in self.feature_names)
+
+		#Apply the transformations to each feature
+		transformed_features = list()
+		for n in self.feature_names:
+			transformed_feature = self[[n]].apply(transformation_dict[n],axis=1)
+			transformed_features.append(transformed_feature)
+
+		#Concatenate and return
+		return self.__class__.concat([self[["parameters"]]]+transformed_features,axis=1)
+
+
+	def combine_features(self,combinations):
+
+		"""
+		Combine features in the Analysis, according to a dictionary which keys are the name of the combined features
+
+		:param combinations: mapping of combined features onto the old ones 
+		:type combinations: dict.
+
+		"""
+
+		raise NotImplementedError
 
 
 	def find(self,parameters,rtol=1.0e-05):
