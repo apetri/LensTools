@@ -241,9 +241,15 @@ class Analysis(Ensemble):
 
 		"""
 
+		#Apply the transformation
+		new_parameters = self["parameters"].apply(transformation,axis=1,**kwargs)
+		new_parameters.columns.name = "parameters"
+		new_parameters.columns = Series.make_index(new_parameters.columns)
+
+		#Return the reparametrized analysis
 		reparametrized_analysis = self.copy()
-		reparametrized_analysis["parameters"] = self["parameters"].apply(transformation,axis=1,**kwargs)
-		return reparametrized_analysis
+		reparametrized_analysis.pop("parameters")
+		return self.__class__.concat((new_parameters,reparametrized_analysis),axis=1)
 
 
 	def transform(self,transformation,**kwargs):
@@ -623,7 +629,7 @@ class FisherAnalysis(Analysis):
 	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
 
 		"""
-		Computes the Fisher matrix of the associated features, that in the end allows to compute the paramter confidence contours (around the fiducial value)
+		Computes the Fisher matrix of the associated features, that in the end allows to compute the parameter confidence contours (around the fiducial value)
 
 		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
 		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
