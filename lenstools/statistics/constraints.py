@@ -149,12 +149,45 @@ class Analysis(Ensemble):
 		return all_names
 
 	@property
+	def parameter_names(self):
+		return list(self["parameters"].columns)
+
+	@property
 	def parameter_set(self):
 		return self["parameters"].values
 
 	@property
 	def feature_set(self):
 		return self[self.feature_names].values
+
+	def parameters(self,names=None):
+
+		if names is None:
+			return self
+
+		parameter_names = self.parameter_names
+		if isinstance(names,str):
+			names = [names]
+
+		subset = self.copy()
+		exclude_names = filter(lambda n:not n in names,parameter_names)
+
+		for n in exclude_names:
+			subset.pop(("parameters",n))
+
+		return subset
+		
+
+	def features(self,names=None):
+
+		if names is None:
+			return self
+		elif isinstance(names,str):
+			return self[["parameters"]+[names]]
+		elif isinstance(names,list):
+			return self[["parameters"]+names]
+		else:
+			raise TypeError("names type not supported!")
 
 
 	##################
