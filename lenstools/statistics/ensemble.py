@@ -174,24 +174,6 @@ class Ensemble(pd.DataFrame):
 	####################################
 
 	@classmethod
-	def read_pickle(cls,filename):
-
-		"""
-		Reads in a pickled Ensemble from disk
-
-		:param filename: name of the file to read
-		:type filename: str.
-
-		:returns: Ensemble instance read from the file
-
-		"""
-
-		with open(filename,"r") as fp:
-			ens = pickle.load(fp)
-
-		return cls(ens)
-
-	@classmethod
 	def read(cls,filename,callback_loader=None,**kwargs):
 
 		"""
@@ -211,9 +193,29 @@ class Ensemble(pd.DataFrame):
 		"""
 
 		if callback_loader is None:
-			callback_loader = cls.read_pickle
+			callback_loader = pd.read_pickle
 
-		return cls(callback_loader(filename,**kwargs),file_list=[filename])
+		#Read the Ensemble
+		loaded_ensemble = callback_loader(filename,**kwargs)
+
+		#Preserve the metadata
+		if hasattr(loaded_ensemble,"_metadata"):
+			meta = dict((k,getattr(loaded_ensemble,k)) for k in loaded_ensemble._metadata)
+		else:
+			meta = None
+
+		#Instantiate the Ensemble
+		loaded_ensemble = cls(loaded_ensemble,file_list=[filename])
+
+		#Complete the metadata
+		if meta is not None:
+			for k in meta.keys():
+				if not k in loaded_ensemble._metadata:
+					loaded_ensemble._metadata.append(k)
+				setattr(loaded_ensemble,k,meta[k])
+
+		#Return
+		return loaded_ensemble
 
 	@classmethod
 	def readall(cls,filelist,callback_loader=None,**kwargs):
