@@ -68,7 +68,7 @@ class Series(pd.Series):
 	def combine_columns(self,combinations):
 
 		"""
-		Combine hierarchical columns in the Series, according to a dictionary which keys are the name of the combined features
+		Combine the hierarchical columns in the Series, according to a dictionary which keys are the name of the combined features
 
 		:param combinations: mapping of combined features onto the old ones 
 		:type combinations: dict.
@@ -345,6 +345,38 @@ class Ensemble(pd.DataFrame):
 	@classmethod 
 	def concat(cls,ensemble_list,**kwargs):
 		return pd.concat(ensemble_list,**kwargs)
+
+	def combine_columns(self,combinations):
+
+		"""
+		Combine the hierarchical columns in the Ensemble, according to a dictionary which keys are the name of the combined features
+
+		:param combinations: mapping of combined features onto the old ones 
+		:type combinations: dict.
+
+		:returns: Ensemble with columns combined
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		combined_columns  = list()
+
+		#Cycle over the combinations keys
+		for n in combinations.keys():
+
+			#Select
+			combined_column = self[combinations[n]].copy()
+			
+			#Merge the column names
+			combined_column_index = pd.Index(np.hstack([ combined_column[c].columns.values for c in combinations[n] ]),name=n)
+			combined_column_index = Series.make_index(combined_column_index)
+			combined_column.columns = combined_column_index
+
+			#Append to the combination list
+			combined_columns.append(combined_column)
+
+		#Concatenate everything
+		return self.__class__.concat(combined_columns,axis=1)
 
 
 	def group(self,group_size,kind="sparse"):
