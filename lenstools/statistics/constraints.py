@@ -183,9 +183,9 @@ class Analysis(Ensemble):
 		if names is None:
 			return self
 		elif isinstance(names,str):
-			return self[["parameters"]+[names]]
+			return self[["parameters"]+[names]].copy()
 		elif isinstance(names,list):
-			return self[["parameters"]+names]
+			return self[["parameters"]+names].copy()
 		else:
 			raise TypeError("names type not supported!")
 
@@ -978,6 +978,77 @@ class Emulator(Analysis):
 
 		return self._likelihood_function(chi2_value,**kwargs)
 
+	############################################################################################################################################
+
+	def score(self,parameters,observed_feature,method="chi2",**kwargs):
+
+		"""
+		Compute the score for an observed feature for each combination of the proposed parameters
+
+		:param parameters: parameter combinations to score
+ 		:type parameters: DataFrame or array
+
+ 		:param observed_feature: observed feature to score
+ 		:type observed_feature: Series
+
+ 		:param method: scoring method to use (defaults to chi2): if callable, must take in the current instance, the parameter array and the observed feature and return a score for each parameter combination
+ 		:type method: str. or callable
+
+ 		:param kwargs: keyword arguments passed to the callable method
+ 		:type kwargs: dict.
+
+		:returns: ensemble with the scores, for each feature
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		#Get the names of the features to use
+		feature_names = list(observed_feature.index.levels[0])
+		try:
+			feature_names.remove("parameters")
+		except ValueError:
+			pass
+
+		#Check that the observed feature columns and the Emulator columns correspond
+		for c in feature_names:
+			assert c in self.feature_names,"Feature '{0}'' is not present in the Emulator!".format(c)
+
+		#Reorder the parameters according to the ones in the Emulator
+		parameters = parameters[self.parameter_names]
+
+		#If the method is chi2, a covariance matrix must be provided
+		if method=="chi2":
+			assert "features_covariance" in kwargs.keys()
+			features_covariance = kwargs["features_covariance"]
+			del(kwargs["features_covariance"])
+			assert (features_covariance.index==observed_feature.index).all()
+			assert (features_covariance.columns==observed_feature.index).all()
+
+		#Build an Ensemble with the parameters
+		score_ensemble = Ensemble(parameters)
+
+		#For each feature, compute the score
+		for c in feature_names:
+
+			#Isolate the Emulator that concerns this feature only
+			sub_emulator = self.features(c)
+
+			#Isolate the observed sub_feature
+			sub_feature = observed_feature[c].values
+
+			#If the method is chi2, use the already implemented version of it
+			if method=="chi2":
+				sub_emulator.train()
+				sub_feature_covariance = features_covariance[c].loc[c].values
+				score_ensemble[c] = sub_emulator.chi2(parameters=parameters.values,observed_feature=sub_feature,features_covariance=sub_feature_covariance,**kwargs)
+			else:
+				score_ensemble[c] = method(sub_emulator,parameters.values,sub_feature,**kwargs)
+
+		#Return the score ensemble
+		return score_ensemble
+
+
+	############################################################################################################################################
 
 	def set_to_model(self,parameters):
 
