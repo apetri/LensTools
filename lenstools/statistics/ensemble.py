@@ -63,6 +63,37 @@ class Series(pd.Series):
 		names = reduce(add,[ [idx.name]*len(idx) for idx in indices ])
 		return pd.MultiIndex.from_tuples(zip(names,values))
 
+	############################################################################################################################
+
+	def combine_columns(self,combinations):
+
+		"""
+		Combine hierarchical columns in the Series, according to a dictionary which keys are the name of the combined features
+
+		:param combinations: mapping of combined features onto the old ones 
+		:type combinations: dict.
+
+		:returns: Series with columns combined
+		:rtype: :py:class:`Series`
+
+		"""
+
+		combined_columns  = list()
+
+		#Cycle over the combinations keys
+		for n in combinations.keys():
+
+			#Select and set new index 
+			combined_column = pd.concat(self[c] for c in combinations[n])
+			combined_column.index.name = n
+			combined_column.index = self.__class__.make_index(combined_column.index) 
+
+			#Append to the combination list
+			combined_columns.append(combined_column)
+
+		#Concatenate everything
+		return pd.concat(combined_columns)
+
 ##########################################
 ########Ensemble class####################
 ##########################################
