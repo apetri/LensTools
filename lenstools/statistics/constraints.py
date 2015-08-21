@@ -295,7 +295,27 @@ class Analysis(Ensemble):
 
 		"""
 
-		raise NotImplementedError
+		combined_features  = list()
+
+		#Cycle over the combinations keys
+		for n in combinations.keys():
+
+			#Select
+			combined_feature = self[combinations[n]].copy()
+			
+			#Merge the column names
+			combined_feature_index = pd.Index(np.hstack([ combined_feature[c].columns.values for c in combinations[n] ]),name=n)
+			combined_feature_index = Series.make_index(combined_feature_index)
+			combined_feature.columns = combined_feature_index
+
+			#Append to the combination list
+			combined_features.append(combined_feature)
+
+		#Concatenate everything
+		return self.__class__.concat([self[["parameters"]]]+combined_features,axis=1)
+	
+
+	###############################################################################################################################
 
 
 	def find(self,parameters,rtol=1.0e-05):
