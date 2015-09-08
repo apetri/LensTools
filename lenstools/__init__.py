@@ -62,7 +62,7 @@ def dataExtern():
 #Download the test data into path
 def getTestData(path="."):
 	
-	data_url = "http://danishlaundromat.com/apetri/data.tar.gz"
+	data_url = "http://www.plus-six.com/andrea/lenstools/data.tar.gz"
 	data_filename = os.path.join(path,"data.tar.gz")
 
 	#Download the file
