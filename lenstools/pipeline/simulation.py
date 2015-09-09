@@ -213,6 +213,11 @@ class SimulationBatch(object):
 		#Return the list with the available models
 		return models
 
+	#Alias for available models
+	@property
+	def models(self):
+		return self.available
+
 	##############################################################################################################################
 
 	@property
