@@ -370,7 +370,9 @@ class SimulationBatch(object):
 		return chunks
 
 
-	##############################################################################################################################################
+	#################
+	####Compress#####
+	#################
 
 	@staticmethod
 	def _archive(name,chunk,mode):
@@ -440,8 +442,58 @@ class SimulationBatch(object):
 			assert len(resource_chunks)==pool.size+1,"There should be one MPI task (you have {0}) for each chunk (you have {1})!".format(pool.size+1,len(resource_chunks))
 			self.__class__._archive(archive_names[pool.rank],resource_chunks[pool.rank],mode)
 
+	#################
+	####Unpack#######
+	#################
+
+	@staticmethod
+	def _unpack(name,path):
+		print("[+] Unpacking {0} into {1}...".format(name,path))
+		with tarfile.open(name,"r:gz") as tar:
+			tar.extractall(path=path)
+
+	def unpack(self,where,which=None,pool=None):
+
+		"""
+		Unpacks the compressed simulation batch products into the storage directory: the resources of each model must be contained in a file called <cosmo_id>.tar.gz
+
+		:param where: path of the compressed resources
+		:type where: str.
+
+		:param which: extremes of the model numbers to unpack (if None all models are unpacked)
+		:type which: tuple.
+
+		:param pool: MPI Pool used to parallelize de-compression
+		:type pool: MPIPool
+
+		"""
+
+		#Get the models to unpack 
+		if which is None:
+			models = self.available
+		else:
+			models = self.available.__getslice__(*which)
+
+
+		#Unpack each model (spread computations over MPIPool if provided)
+		if pool is not None:
+			assert len(models)==pool.size+1,"The number of MPI processes must be equal to the number of models to unpack!"
+
+		if pool is None:
+			for model in models:
+				archive_path = os.path.join(where,"{0}.tar.gz".format(model.cosmo_id))
+				self._unpack(archive_path,self.environment.storage)
+		else:
+			archive_path = os.path.join(where,"{0}.tar.gz".format(models[pool.rank].cosmo_id))
+			self._unpack(archive_path,self.environment.storage)
+
+
 
 	##############################################################################################################################################
+
+	####################
+	####Duplicate#######
+	####################
 
 	def copyTree(self,path,syshandler=syshandler):
 
