@@ -2634,7 +2634,7 @@ class SimulationCatalog(SimulationCollection):
 				first_realization,last_realization = basename.split("-")
 				first_realization = int(first_realization)
 				last_realization = int(last_realization)
-				sub_catalog = SimulationSubCatalog(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.settings,self.syshandler)
+				sub_catalog = SimulationSubCatalog(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.settings,syshandler=self.syshandler)
 				sub_catalog.storage_subdir = os.path.join(sub_catalog.storage_subdir,basename)
 				sub_catalog._first_realization = first_realization
 				sub_catalog._last_realization = last_realization
@@ -2645,7 +2645,8 @@ class SimulationCatalog(SimulationCollection):
 			except ValueError:
 				pass
 
-		#Return to user
+		#Sort according to first realization and return to user
+		sub_catalogs.sort(key=lambda c:c.first_realization)
 		return sub_catalogs
 
 
