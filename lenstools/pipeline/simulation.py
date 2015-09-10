@@ -2613,6 +2613,66 @@ class SimulationCatalog(SimulationCollection):
 		#Build the new representation string
 		return super(SimulationCatalog,self).__repr__() + " | Catalog set: {0} | Catalog files on disk: {1} ".format(self.settings.directory_name,len(catalogs_on_disk))
 
+	@property 
+	def subcatalogs(self):
+
+		"""
+		List the subcatalogs present in the catalog
+
+		"""
+
+		#List the storage subdirectory, and find the sub-catalog directories
+		sub_catalog_directories = self.syshandler.glob(os.path.join(self.storage_subdir,"*-*"))
+		sub_catalogs = list()
+
+		#Build a SimulationSubCatalog instance for each sub_catalog found
+		for d in sub_catalog_directories:
+			basename = os.path.basename(d)
+			try:
+				
+				#Build
+				first_realization,last_realization = basename.split("-")
+				first_realization = int(first_realization)
+				last_realization = int(last_realization)
+				sub_catalog = SimulationSubCatalog(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.settings,self.syshandler)
+				sub_catalog.storage_subdir = os.path.join(sub_catalog.storage_subdir,basename)
+				sub_catalog._first_realization = first_realization
+				sub_catalog._last_realization = last_realization
+
+				#Append
+				sub_catalogs.append(sub_catalog)
+			
+			except ValueError:
+				pass
+
+		#Return to user
+		return sub_catalogs
+
+
+class SimulationSubCatalog(SimulationCatalog):
+
+	"""
+	Class handler of a simulated lensing sub-catalog, that contains a subset of the realizations of a bigger catalog
+
+	"""
+
+	def __repr__(self):
+
+		#Count the number of map files on disk
+		catalogs_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"WL*"))
+
+		#Build the new representation string
+		return super(SimulationCatalog,self).__repr__() + " | Sub-catalog set: {0}({1}-{2}) | Catalog files on disk: {3} ".format(self.settings.directory_name,self.first_realization,self.last_realization,len(catalogs_on_disk))
+
+
+	@property 
+	def first_realization(self):
+		return self._first_realization
+
+	@property
+	def last_realization(self):
+		return self._last_realization
+
 
 
 
