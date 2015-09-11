@@ -287,8 +287,6 @@ class Ensemble(pd.DataFrame):
 			M = map
 
 		full_data = assemble(M(_callback_wrapper,file_list))
-		
-		assert type(full_data) == np.ndarray
 
 		#Check if user provided column labels
 		if "columns" in kwargs.keys():
