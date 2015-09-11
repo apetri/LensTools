@@ -239,6 +239,14 @@ class Ensemble(pd.DataFrame):
 		return cls.concat([ cls.read(f,callback_loader,**kwargs) for f in filelist ],axis=0,ignore_index=True)
 
 	@classmethod
+	def read_sql_query(cls,sql,con,**kwargs):
+		return cls(pd.read_sql_query(sql,con,**kwargs))
+
+	@classmethod
+	def read_sql_table(cls,table_name,con,**kwargs):
+		return cls(pd.read_sql_table(table_name,con,**kwargs))
+
+	@classmethod
 	def compute(cls,file_list,callback_loader=None,pool=None,index=None,assemble=np.array,**kwargs):
 		
 		"""
