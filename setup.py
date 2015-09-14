@@ -270,7 +270,7 @@ for ext_module in external_sources.keys():
 #Data files on which the package depends on
 package_data = dict()
 package_data[name] = [ os.path.join("data",filename) for filename in os.listdir(os.path.join(name,"data")) if os.path.isfile(os.path.join(name,"data",filename)) ]
-package_data["licenses"] = [ os.path.join("licenses","LICENSE.rst") ]
+package_data[name] += [ os.path.join(external_dir,filename) for filename in os.listdir(os.path.join(name,external_dir)) if filename.endswith(".h") ]
 
 #################################################################################################
 #############################Additional includes#################################################
@@ -306,7 +306,7 @@ setup(
 	download_url=download_url,
 	license="MIT",
 	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd("README.rst"),
+	long_description=rd("README.rst") + "\n\n" + "Changelog\n" + "---------\n\n" + rd("HISTORY.rst"),
 	scripts=scripts,
 	classifiers=classifiers,
 	ext_package=os.path.join(name,external_dir),

@@ -39,6 +39,15 @@ def _bsp_covariance(data):
 	return np.dot(sub.T,sub) / (data.shape[0] - 1.0)
 
 
+##########################################################################
+#########Useful for bootstrap estimates of the covariance matrix###########
+##########################################################################
+
+def _bsp_covariance(data):
+	sub = data - data.mean(0)[None]
+	return np.dot(sub.T,sub) / (data.shape[0] - 1.0)
+
+
 ##########################################
 ########Ensemble class####################
 ##########################################
@@ -725,7 +734,6 @@ class Ensemble(object):
 		"""
 
 		return self.data[n]
-
 
 	#Protect Ensemble against changes in the data
 	def __setattr__(self,a,x):

@@ -484,6 +484,43 @@ class FisherAnalysis(Analysis):
 		return derivatives
 
 
+	#############################################################################################################################
+
+	def observables2parameters(self,features_covariance=None):
+
+		"""
+		Computes the conversion matrix M that allows to match a feature vector V to its best fit parameters P, in the sense P = P[fiducial] + MV
+
+		:param features_covariance: covariance matrix of the simulated features, must be provided!
+		:type features_covariance: 2 dimensional array (or 1 dimensional if diagonal)
+
+		:returns: the (p,N) conversion matrix
+		:rtype: array
+
+		"""
+
+		#Safety checks
+		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+		assert features_covariance.shape in [self.training_set.shape[-1:],self.training_set.shape[-1:]*2]
+
+		#Check if derivatives are already computed 
+		if not hasattr(self,"derivatives"):
+			self.compute_derivatives()
+
+		#Linear algebra manipulations (parameters = M x features)
+		if features_covariance.shape == self.training_set.shape[1:] * 2:
+			Y = solve(features_covariance,self.derivatives.transpose())
+		else:
+			Y = (1/features_covariance[:,np.newaxis]) * self.derivatives.transpose()
+
+		XY = np.dot(self.derivatives,Y)
+		
+		return solve(XY,Y.transpose())
+
+
+	#############################################################################################################################
+
+
 	def chi2(self,observed_feature,features_covariance):
 
 		"""
@@ -528,6 +565,9 @@ class FisherAnalysis(Analysis):
 		else:
 			return result
 
+
+	#############################################################################################################################
+
 	
 	def fit(self,observed_feature,features_covariance):
 
@@ -554,14 +594,7 @@ class FisherAnalysis(Analysis):
 		if not hasattr(self,"derivatives"):
 			self.compute_derivatives()
 
-		#Linear algebra manipulations (parameters = M x features)
-		if features_covariance.shape == observed_feature.shape * 2:
-			Y = solve(features_covariance,self.derivatives.transpose())
-		else:
-			Y = (1/features_covariance[:,np.newaxis]) * self.derivatives.transpose()
-
-		XY = np.dot(self.derivatives,Y)
-		M = solve(XY,Y.transpose())
+		M = self.observables2parameters(features_covariance)
 
 		#Compute difference in parameters (with respect to the fiducial model)
 		dP = np.dot(M,observed_feature - self.training_set[self._fiducial])

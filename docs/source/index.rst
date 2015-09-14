@@ -19,10 +19,11 @@ This python add-on will handle basically every operation you will need to perfor
 - Survey masks
 - Efficient :math:`E` and :math:`B` mode decompositions of shear maps
 - Artificial noise generation engines
+- All functionality of pandas_ DataFrame readily available (and improved!)
 - Easy to compute parameter statistical inferences
 - Easy input/output from :math:`N`-body simulation snapshots in the Gadget2 binary format
 - Interfaces with existing simulation sets
-- Ray Tracing simulations (in development...)
+- Ray Tracing simulations
 - CPU vectorization of expensive computations via numpy
 - Easy multiprocessing and cluster deployment via the mpi4py_ module
 - *Future prospect*: taking advantage of numpy offload capabilities to Intel Xeon Phi coprocessors to boost performance (planned) 
@@ -30,11 +31,13 @@ This python add-on will handle basically every operation you will need to perfor
 Installation
 ------------
 
-The easiest is to install through pip (this will install the 0.4.8 version, for this version you need to install from source)::
 
-	pip install LensTools
+The easiest way is to install through pip ::
 
-To install from source you can clone or fork the `github repository <https://github.com/apetri/LensTools>`_ to download the source and build it manually. 
+	pip install lenstools
+
+
+An alternative is to install from source by cloning or forking the `github repository <https://github.com/apetri/LensTools>`_ to download the source and build it manually. F
 First clone the repository (the original one, or your fork)::
    
    git clone https://github.com/apetri/LensTools
@@ -53,6 +56,7 @@ Dependencies
 .. _numpy: http://www.numpy.org
 .. _scipy: http://www.scipy.org
 .. _astropy: http://www.astropy.org
+.. _pandas: http://pandas.pydata.org
 .. _emcee: http://dan.iel.fm/emcee/current/
 .. _matplotlib: http://matplotlib.org
 .. _mpi4py: http://mpi4py.scipy.org
