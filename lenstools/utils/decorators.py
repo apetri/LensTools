@@ -3,30 +3,33 @@ from .mpi import MPIWhirlPool
 
 from mpi4py import MPI
 
-def spread_across_pool(func):
+class Parallelize(object):
 
-	def spreaded_func():
+	@classmethod
+	def masterworker(cls,func):
 
-		#MPI Pool
-		try:
-			pool = MPIWhirlPool()
-		except ValueError:
-			pool = None
+		def spreaded_func(*args):
 
-		if (pool is not None) and (not pool.is_master()):
-			pool.wait()
-			pool.comm.Barrier()
-			MPI.Finalize()
-			sys.exit(0)
+			#MPI Pool
+			try:
+				pool = MPIWhirlPool()
+			except ValueError:
+				pool = None
 
-		#Execute
-		func(pool)
+			if (pool is not None) and (not pool.is_master()):
+				pool.wait()
+				pool.comm.Barrier()
+				MPI.Finalize()
+				sys.exit(0)
 
-		#Finish
-		if pool is not None:
-			pool.close()
-			pool.comm.Barrier()
-			MPI.Finalize()
+			#Execute
+			func(pool)
+
+			#Finish
+			if pool is not None:
+				pool.close()
+				pool.comm.Barrier()
+				MPI.Finalize()
 		
 
-	return spreaded_func
+		return spreaded_func
