@@ -5,7 +5,7 @@ LensTools provides an easy to use API to interact with the Gadget2 binary format
 
 ::
 	
-	>>> from lenstools.simulations import Gadget2Snapshot
+	>>> from lenstools.simulations import Gadget2SnapshotDE
 
 	>>> import numpy as np
 	>>> from astropy.units import Mpc,m,s
@@ -24,7 +24,7 @@ Then we write them to a snapshot
 
 	#Create an empty gadget snapshot
 
-	>>> snap = Gadget2Snapshot()
+	>>> snap = Gadget2SnapshotDE()
 
 	#Put the particles in the snapshot
 	>>> snap.setPositions(x)
@@ -44,7 +44,7 @@ Now check that we did everything correctly, visualizing the snapshot
 	######################Read and visualize#########################
 
 	#Open the snapshot
-	>>> snap = Gadget2Snapshot.open("gadget_ic")
+	>>> snap = Gadget2SnapshotDE.open("gadget_ic")
 
 	#Visualize the header
 	>>> print(snap.header)
@@ -69,7 +69,7 @@ If you don't believe that this works, here it is what happens with an actual sna
 	######################Read and visualize#########################
 
 	#Open the snapshot
-	>>> snap = Gadget2Snapshot.open("../Test/Data/gadget/snapshot_001")
+	>>> snap = Gadget2SnapshotDE.open("../Test/Data/gadget/snapshot_001")
 
 	#Visualize the header
 	>>> print(snap.header)

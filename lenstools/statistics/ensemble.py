@@ -16,7 +16,7 @@ from operator import add
 from functools import reduce
 import cPickle as pickle
 
-from ..utils import pcaHandler as PCA
+from ..utils.algorithms import pcaHandler as PCA
 
 import numpy as np
 import scipy.io as sio

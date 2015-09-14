@@ -1,10 +1,6 @@
 API
 ***
 
-.. warning::
-
-	This is still in pre-alpha stage, not tested yet on full scale! Use at your own risk!
-
 .. automodule:: lenstools
 
 Convergence maps
@@ -25,19 +21,19 @@ Statistics
 ==========
 
 .. autoclass:: lenstools.statistics.ensemble.Ensemble
-	:inherited-members: 
+	:members: nobs,read,readall,read_sql_table,read_sql_query,compute,save,concat,combine_columns,group,covariance,bootstrap,principalComponents,compare,selfChi2,shuffle,imshow 
 
 Constraining cosmology
 ======================
 
 .. autoclass:: lenstools.statistics.constraints.Analysis
-	:inherited-members:
+	:members: from_features,feature_names,parameter_names,parameter_set,feature_set,parameters,features,add_models,reparametrize,refeaturize,combine_features,find
 
 .. autoclass:: lenstools.statistics.constraints.FisherAnalysis
-	:inherited-members:
+	:members: set_fiducial,fiducial,variations,check,where,varied,compute_derivatives,chi2,fit,classify,fisher_matrix
 
-.. autoclass:: lenstools.statistics.constraints.LikelihoodAnalysis
-	:inherited-members:
+.. autoclass:: lenstools.statistics.constraints.Emulator
+	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score
 
 
 Confidence contour plotting
@@ -51,25 +47,6 @@ Noise
 
 .. autoclass:: lenstools.image.noise.GaussianNoiseGenerator
 	:inherited-members:
-
-Indexing
-========
-
-.. automodule:: lenstools.statistics.index
-
-.. autoclass:: lenstools.statistics.index.Indexer
-
-.. autoclass:: lenstools.statistics.index.PowerSpectrum
-
-.. autoclass:: lenstools.statistics.index.Moments
-
-.. autoclass:: lenstools.statistics.index.Peaks
-
-.. autoclass:: lenstools.statistics.index.PDF
-
-.. autoclass:: lenstools.statistics.index.MinkowskiAll
-
-.. autoclass:: lenstools.statistics.index.MinkowskiSingle
 
 Existing Simulation suites
 ==========================
@@ -89,7 +66,7 @@ Simulation design
 =================
 
 .. autoclass:: lenstools.simulations.Design
-	:inherited-members:
+	:members: parameters,from_specs,write,visualize,savefig,set_title,diagonalCost,cost,sample
 
 
 Nicaea bindings

@@ -1,5 +1,5 @@
+from lenstools import ConvergenceMap
 from lenstools.statistics.ensemble import Ensemble
-from lenstools.utils.defaults import default_callback_loader,peaks_loader
 from lenstools.utils.decorators import Parallelize
 
 import logging
@@ -9,13 +9,19 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.DEBUG)
 
+def measure_power_spectrum(filename,l_edges):
+
+	conv_map = ConvergenceMap.load(filename)
+	l,Pl = conv_map.powerSpectrum(l_edges)
+	return Pl
+
 @Parallelize.masterworker
 def main(pool): 
 
 	l_edges = np.arange(200.0,50000.0,200.0)
 	l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-	conv_ensemble = Ensemble.compute(["Data/conv1.fit","Data/conv2.fit","Data/conv3.fit","Data/conv4.fit"],callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	conv_ensemble = Ensemble.compute(["Data/conv1.fit","Data/conv2.fit","Data/conv3.fit","Data/conv4.fit"],callback_loader=measure_power_spectrum,pool=pool,l_edges=l_edges)
 
 	fig,ax = plt.subplots()
 	for n in range(len(conv_ensemble)):

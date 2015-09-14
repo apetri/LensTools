@@ -373,17 +373,6 @@ class FisherAnalysis(Analysis):
 
 	"""
 
-	def add_model(self,parameters,feature):
-
-		super(FisherAnalysis,self).add_model(parameters,feature)
-
-		try:
-			self.check()
-		except Exception,e:
-			self.remove_model(-1)
-			raise RuntimeError(e)
-
-
 	def set_fiducial(self,n):
 
 		"""
