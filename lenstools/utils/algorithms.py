@@ -50,6 +50,11 @@ class pcaHandler(object):
 
 	def transform(self,X):
 
+		try:
+			X = X.values
+		except AttributeError:
+			pass
+
 		#Cast X to the right dimensions
 		if len(X.shape)==1:
 			X_copy = X.copy()[None]
@@ -63,11 +68,16 @@ class pcaHandler(object):
 		#Compute the projection via dot product
 		components = X_copy.dot(self.components_.transpose())
 		if len(X.shape)==1:
-			return components[0]
+			return self._constructor_series(components[0])
 		else:
-			return components
+			return self._constructor_ensemble(components)
 
 	def inverse_transform(self,X,n_components=None):
+
+		try:
+			X = X.values
+		except AttributeError:
+			pass
 
 		#Cast X to the right dimensions
 		if len(X.shape)==1:
