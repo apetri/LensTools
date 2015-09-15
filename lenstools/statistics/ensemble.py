@@ -390,7 +390,7 @@ class Ensemble(pd.DataFrame):
 		#Concatenate everything
 		return self.__class__.concat(combined_columns,axis=1)
 
-	def combine_rows(self,by,suppress,columns):
+	def suppress_indices(self,by,suppress,columns):
 
 		"""
 		Combine multiple rows in the Ensemble into a single row, according to a specific criterion
