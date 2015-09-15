@@ -42,11 +42,15 @@ class pcaHandler(object):
 
 	@property
 	def eigenvalues(self):
-		return self.explained_variance_
+		return self._constructor_series(self.explained_variance_)
 
 	@property
 	def eigenvectors(self):
-		return self.components_*np.sqrt(self._data_scaled.shape[0] - 1)*self._pca_std[None] + self._pca_mean[None]
+		e = self._constructor_ensemble(self.components_*np.sqrt(self._data_scaled.shape[0] - 1)*self._pca_std[None] + self._pca_mean[None],columns=self._columns)
+		e.index.name = "eigenvector"
+		e.columns.name = "component"
+		return e
+
 
 	def transform(self,X):
 
