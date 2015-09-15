@@ -21,7 +21,7 @@ Statistics
 ==========
 
 .. autoclass:: lenstools.statistics.ensemble.Ensemble
-	:members: nobs,read,readall,read_sql_table,read_sql_query,compute,save,concat,combine_columns,group,covariance,bootstrap,principalComponents,compare,selfChi2,shuffle,imshow 
+	:members: nobs,read,readall,read_sql_table,read_sql_query,compute,save,concat,combine_columns,combine_rows,group,covariance,bootstrap,principalComponents,compare,selfChi2,shuffle,imshow 
 
 .. autoclass:: lenstools.statistics.database.Database
 	:inherited-members:

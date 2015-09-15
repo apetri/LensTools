@@ -354,6 +354,10 @@ class Ensemble(pd.DataFrame):
 	def concat(cls,ensemble_list,**kwargs):
 		return pd.concat(ensemble_list,**kwargs)
 
+	@classmethod
+	def merge(cls,*args,**kwargs):
+		return cls(pd.merge(*args,**kwargs))
+
 	def combine_columns(self,combinations):
 
 		"""
@@ -386,6 +390,51 @@ class Ensemble(pd.DataFrame):
 		#Concatenate everything
 		return self.__class__.concat(combined_columns,axis=1)
 
+	def combine_rows(self,by,suppress,columns):
+
+		"""
+		Combine multiple rows in the Ensemble into a single row, according to a specific criterion
+
+		:param by: list of columns that is used to group the Ensemble: the rows in each group are combined
+		:type by: list.
+
+		:param suppress: list of columns to suppress: these indices get suppressed when the rows are combined
+		:type suppress: list.
+
+		:param columns: list of columns to keep in the rows that are combined
+		:type columns: list.
+
+		:returns: suppressed indices lookup table,combined Ensemble
+		:rtype: list.
+
+		"""
+
+		#by group
+		by_group = self.groupby(by)
+		self["by_group_id"] = by_group.grouper.group_info[0]
+		by_labels = self[by+["by_group_id"]].drop_duplicates()
+
+		#suppress group
+		suppress_group = self.groupby(suppress)
+		self["suppress_group_id"] = suppress_group.grouper.group_info[0]
+		suppress_labels = self[suppress+["suppress_group_id"]].drop_duplicates()
+
+		#Combine the rows
+		ens_combined = self[["by_group_id","suppress_group_id"]+columns].pivot(index="by_group_id",columns="suppress_group_id")
+		ens_combined.columns = ens_combined.columns.rename(None,level=1)
+		ens_combined.index.name = None
+
+		#Join the by_labels
+		ens_combined = self.__class__.merge(ens_combined.reset_index(),by_labels,left_on="index",right_on="by_group_id")
+		ens_combined.pop(("index",""))
+		ens_combined.pop("by_group_id")
+
+		#Return
+		self.pop("by_group_id")
+		self.pop("suppress_group_id")
+		return suppress_labels,ens_combined
+
+
 
 	def group(self,group_size,kind="sparse"):
 
@@ -408,7 +457,7 @@ class Ensemble(pd.DataFrame):
 		if kind=="sparse":
 			return self.groupby(lambda i:i%group_size)
 		elif kind=="contiguous":
-			return self.groupby(lambda i:i%group_size)
+			return self.groupby(lambda i:i/group_size)
 		else:
 			raise NotImplementedError("Grouping scheme '{0}' not implemented".format(kind))
 
