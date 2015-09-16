@@ -358,6 +358,35 @@ class Ensemble(pd.DataFrame):
 	def merge(cls,*args,**kwargs):
 		return cls(pd.merge(*args,**kwargs))
 
+	@classmethod
+	def combine_from_dict(cls,ensemble_dict):
+
+		"""
+		Builds an Ensemble combining the columns of smaller Ensembles; each key in the ensemble_dict dictionary becomes an element in the top level of the resulting Ensemble index
+
+		:param ensemble_dict: dictionary that contains the Ensembles to combine
+		:type ensemble_dict: dict.
+
+		:py:class:`Ensemble`
+
+		"""
+
+		combined_list = list()
+		combined_columns = list()
+
+		#Cycle over dictionary keys
+		for key in ensemble_dict.keys():
+			combined_list.append(ensemble_dict[key])
+			combined_columns.append(ensemble_dict[key].columns)
+			combined_columns[-1].name = key
+
+		#Concatenate
+		ensemble_combined = cls.concat(combined_list,axis=1,ignore_index=True)
+		ensemble_combined.columns = Series.make_index(*tuple(combined_columns))
+
+		#Return
+		return ensemble_combined
+
 	def combine_columns(self,combinations):
 
 		"""

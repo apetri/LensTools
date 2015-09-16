@@ -128,7 +128,7 @@ class Analysis(Ensemble):
 		if feature_index is None:
 			feature_index = Series.make_index(pd.Index(range(features.shape[1]),name="features"))
 		elif isinstance(feature_index,list):
-			feature_index = Series,make_index(pd.Index(feature_index,name="features"))
+			feature_index = Series.make_index(pd.Index(feature_index,name="features"))
 
 		#Instantiate the parameter and feature part of the analysis
 		analysis_param = cls(parameters,columns=parameter_index)

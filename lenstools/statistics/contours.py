@@ -166,6 +166,12 @@ class ContourPlot(object):
 			#Finally load in the probability meshgrid
 			contour.likelihood = score_ensemble[feature].values.reshape(*(nside,)*len(parameters))
 			contour.likelihood /= contour.likelihood.sum()
+
+			#If the likelihood is two dimensional then we can update the plot extent information
+			if len(parameters)==2:
+				contour.extent = (contour.min[parameters[0]],contour.max[parameters[0]],contour.min[parameters[1]],contour.max[parameters[1]])
+
+			#Append to the list
 			contour_plots.append(contour)
 
 		#Return
@@ -509,7 +515,7 @@ class ContourPlot(object):
 
 		assert reduced_likelihood.ndim == 2,"Can show only 2 dimensional likelihoods in the figure!!"
 		
-		self.likelihood_image = self.ax.imshow(reduced_likelihood.transpose(),origin="lower",cmap=plt.cm.binary_r,extent=self.extent,aspect="auto")
+		self.likelihood_image = self.ax.imshow(reduced_likelihood.transpose(),origin="lower",cmap=plt.cm.binary_r,extent=self.extent,interpolation="nearest",aspect="auto")
 		self.colorbar = plt.colorbar(self.likelihood_image,ax=self.ax)
 		
 
