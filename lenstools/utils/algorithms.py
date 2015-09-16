@@ -51,6 +51,12 @@ class pcaHandler(object):
 		e.columns.name = "component"
 		return e
 
+	@property
+	def directions(self):
+		e = self._constructor_ensemble(self.components_,columns=self._columns)
+		e.index.name = "eigenvector"
+		e.columns.name = "component"
+		return e
 
 	def transform(self,X):
 

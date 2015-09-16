@@ -33,7 +33,15 @@ class Database(object):
 		if sqlalchemy is None:
 			raise ImportError("sqlalchemy is not installed!!")
 
+		self._constructor_ensemble = Ensemble
 		self.connection = sqlalchemy.create_engine("sqlite:///"+name)
+
+
+	#Set constructor for the query results
+	def set_constructor(self,constructor):
+		assert issubclass(constructor,Ensemble),"The constructor should be a sub-class of Ensemble"
+		self._constructor_ensemble = constructor
+
 
 	#For context manager
 	def __enter__(self):
@@ -65,7 +73,7 @@ class Database(object):
 
 		"""
 
-		return Ensemble.read_sql_query(sql,self.connection)
+		return self._constructor_ensemble.read_sql_query(sql,self.connection)
 
 	#Visualize information about a table in the database
 	def info(self,table_name="data"):
@@ -80,4 +88,4 @@ class Database(object):
 	#Read table in a database
 	def read_table(self,table_name):
 		assert table_name in self.tables,"Table {0} does not exist!".format(table_name)
-		return Ensemble.read_sql_table(table_name,self.connection) 
+		return self._constructor_ensemble.read_sql_table(table_name,self.connection) 
