@@ -22,6 +22,8 @@ from scipy import integrate
 import matplotlib.pyplot as plt
 from matplotlib import rc
 
+import pandas as pd
+
 #############################################################
 ############Find confidence levels in 1D likelihood##########
 #############################################################
@@ -86,6 +88,94 @@ class ContourPlot(object):
 	A class handler for contour plots
 
 	"""
+
+
+	##############################################################
+	#######Build ContourPlot instance out of score ensemble#######
+	##############################################################
+
+	@classmethod 
+	def from_scores(cls,score_ensemble,parameters,plot_labels=None):
+
+		"""
+		Build a ContourPlot instance out of an ensemble of scores
+
+		:param score_ensemble: ensemble of the scores
+		:type score_ensemble: :py:class:`Ensemble`
+
+		:param parameters: columns names that contain the parameters
+		:type parameters: list.
+
+		:param plot_labels: plot labels for the parameters
+		:type plot_labels: list.
+
+		:returns: list of ContourPlot
+
+		"""
+
+		contour_plots = list()
+
+		npar = len(parameters)
+		nside = int(np.ceil(len(score_ensemble)**(1/npar)))
+
+		#Type check
+		assert isinstance(score_ensemble,pd.DataFrame)
+
+		#Check that the ensemble is the right size
+		if nside**npar!=len(score_ensemble):
+			raise ValueError("Parameters cannot be cast in a meshgrid!")
+
+		#Check that there is regular spacing between parameters
+		parameter_values_dict = dict()
+		for p in parameters:
+			parameter_values = np.sort(score_ensemble[p].drop_duplicates().values)
+			
+			if len(parameter_values)!=nside:
+				raise ValueError("Parameters cannot be cast in a meshgrid!")
+
+			if not(np.isclose(parameter_values[1]-parameter_values[0],(parameter_values[1:]-parameter_values[:-1]).mean())):
+				raise ValueError("Parameters cannot be cast in a meshgrid!")
+
+			parameter_values_dict[p] = parameter_values
+
+		#Sort the score_ensemble so that the parameters ordered like a meshgrid
+		score_ensemble = score_ensemble.sort(parameters)
+		feature_labels = filter(lambda l:l not in parameters,score_ensemble.columns)
+
+		#One contour plot for each label
+		fig,ax = plt.subplots()
+		for feature in feature_labels:
+			
+			contour = cls(fig,ax)
+			contour.parameter_axes = dict()
+			contour.parameter_labels = dict()
+			
+			#Units and labels
+			for n,p in enumerate(parameters):
+				contour.parameter_axes[p] = n
+				contour.min[p] = parameter_values_dict[p].min()
+				contour.max[p] = parameter_values_dict[p].max()
+				contour.npoints[p] = len(parameter_values_dict[p])
+				contour.unit[p] = parameter_values_dict[p][1] - parameter_values_dict[p][0]
+
+				if plot_labels is not None:
+					contour.parameter_labels[p] = plot_labels[n]
+				else:
+					contour.parameter_labels[p] = p
+
+			#Finally load in the probability meshgrid
+			contour.likelihood = score_ensemble[feature].values.reshape(*(nside,)*len(parameters))
+			contour.likelihood /= contour.likelihood.sum()
+			contour_plots.append(contour)
+
+		#Return
+		if len(contour_plots)>1:
+			return contour_plots
+		else:
+			return contour_plots[0]
+
+
+	##############################################################
 
 	def __init__(self,fig=None,ax=None):
 
@@ -412,9 +502,14 @@ class ContourPlot(object):
 
 		"""
 
-		assert self.reduced_likelihood.ndim == 2,"Can show only 2 dimensional likelihoods in the figure!!"
+		if hasattr(self,"reduced_likelihood"):
+			reduced_likelihood = self.reduced_likelihood
+		else:
+			reduced_likelihood = self.likelihood
+
+		assert reduced_likelihood.ndim == 2,"Can show only 2 dimensional likelihoods in the figure!!"
 		
-		self.likelihood_image = self.ax.imshow(self.reduced_likelihood.transpose(),origin="lower",cmap=plt.cm.binary_r,extent=self.extent,aspect="auto")
+		self.likelihood_image = self.ax.imshow(reduced_likelihood.transpose(),origin="lower",cmap=plt.cm.binary_r,extent=self.extent,aspect="auto")
 		self.colorbar = plt.colorbar(self.likelihood_image,ax=self.ax)
 		
 
@@ -431,7 +526,9 @@ class ContourPlot(object):
 
 		self.ax.set_xlabel(self.parameter_labels[self.remaining_parameters[0]],fontsize=fontsize)
 		self.ax.set_ylabel(self.parameter_labels[self.remaining_parameters[1]],fontsize=fontsize)
-		self.ax.set_title(self.title_label,fontsize=fontsize)
+
+		if hasattr(self,"title_label"):
+			self.ax.set_title(self.title_label,fontsize=fontsize)
 
 		if contour_label is not None:
 			self.ax.legend(self.ax.proxy,contour_label,**kwargs)
@@ -516,11 +613,16 @@ class ContourPlot(object):
 		if not hasattr(self,"likelihood_values"):
 			self.getLikelihoodValues(levels=[0.683,0.95,0.997])
 
+		if hasattr(self,"reduced_likelihood"):
+			reduced_likelihood = self.reduced_likelihood
+		else:
+			reduced_likelihood = self.likelihood
+
 		assert len(colors) >= len(self.likelihood_values)
-		assert self.reduced_likelihood.ndim==2,"this routine plots 2D contours only!!"
+		assert reduced_likelihood.ndim==2,"this routine plots 2D contours only!!"
 
 		extent = self.extent
-		likelihood = self.reduced_likelihood.transpose()
+		likelihood = reduced_likelihood.transpose()
 		values = self.likelihood_values
 
 		unit_j = (extent[1] - extent[0])/(likelihood.shape[1] - 1)

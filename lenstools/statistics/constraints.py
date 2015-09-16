@@ -1000,7 +1000,7 @@ class Emulator(Analysis):
 
 		#Check that the observed feature columns and the Emulator columns correspond
 		for c in feature_names:
-			assert c in self.feature_names,"Feature '{0}'' is not present in the Emulator!".format(c)
+			assert c in self.feature_names,"Feature '{0}' is not present in the Emulator!".format(c)
 
 		#Reorder the parameters according to the ones in the Emulator
 		parameters = parameters[self.parameter_names]
