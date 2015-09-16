@@ -11,4 +11,5 @@ Gallery
 	examples/gaussian_random_field
 	examples/eb_decomposition
 	examples/design
-	examples/gadget_io.rst
+	examples/gadget_io
+	examples/confidence_contours

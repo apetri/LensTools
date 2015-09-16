@@ -364,10 +364,10 @@ class Ensemble(pd.DataFrame):
 		"""
 		Builds an Ensemble combining the columns of smaller Ensembles; each key in the ensemble_dict dictionary becomes an element in the top level of the resulting Ensemble index
 
-		:param ensemble_dict: dictionary that contains the Ensembles to combine
+		:param ensemble_dict: dictionary that contains the Ensembles to combine; the values in the dictionary must be Ensembles
 		:type ensemble_dict: dict.
 
-		:py:class:`Ensemble`
+		:rtype: :py:class:`Ensemble`
 
 		"""
 
