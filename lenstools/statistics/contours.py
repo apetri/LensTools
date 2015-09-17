@@ -95,7 +95,7 @@ class ContourPlot(object):
 	##############################################################
 
 	@classmethod 
-	def from_scores(cls,score_ensemble,parameters,plot_labels=None):
+	def from_scores(cls,score_ensemble,parameters,plot_labels=None,figsize=(8,8)):
 
 		"""
 		Build a ContourPlot instance out of an ensemble of scores
@@ -108,6 +108,9 @@ class ContourPlot(object):
 
 		:param plot_labels: plot labels for the parameters
 		:type plot_labels: list.
+
+		:param figsize: size of the plot
+		:type figsize: tuple.
 
 		:returns: list of ContourPlot
 
@@ -143,7 +146,7 @@ class ContourPlot(object):
 		feature_labels = filter(lambda l:l not in parameters,score_ensemble.columns)
 
 		#One contour plot for each label
-		fig,ax = plt.subplots()
+		fig,ax = plt.subplots(figsize=figsize)
 		for feature in feature_labels:
 			
 			contour = cls(fig,ax)
