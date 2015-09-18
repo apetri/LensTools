@@ -555,16 +555,26 @@ class Ensemble(pd.DataFrame):
 		return statistic.mean(0)
 
 
-	def principalComponents(self):
+	def principalComponents(self,location=None,scale=None):
 
 		"""
 		Computes the principal components of the Ensemble
+
+		:param location: compute the principal components with respect to this location; must have the same columns as the Ensemble
+		:type location: :py:class:`Series`
+
+		:param scale: compute the principal components applying this scaling on the Ensemble columns; must have the same columns as the Ensemble
+		:type scale: :py:class:`Ensemble`
 
 		:returns: pcaHandler instance
 
 		"""
 
-		pca = PCA(constructor_series=self._constructor_sliced,constructor_ensemble=self.__class__,columns=self.columns)
+		for l in [location,scale]:
+			if l is not None:
+				assert (l.index==self.columns).all(),"The column names do not match!"
+
+		pca = PCA(constructor_series=self._constructor_sliced,constructor_ensemble=self.__class__,columns=self.columns,location=location.values,scale=scale.values)
 		pca.fit(self.values)
 		return pca
 

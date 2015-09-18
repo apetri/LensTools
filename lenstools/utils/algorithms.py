@@ -17,20 +17,34 @@ class pcaHandler(object):
 
 	"""
 
-	def __init__(self,constructor_series,constructor_ensemble,columns):
+	def __init__(self,constructor_series,constructor_ensemble,columns,location,scale):
 		
 		self._constructor_series = constructor_series
 		self._constructor_ensemble = constructor_ensemble
 		self._columns = columns
+		self._location = location
+		self._scale = scale
 
 	def fit(self,data):
 
-		#Scale the data to zero mean and unit variance
-		self._pca_mean = data.mean(0)
-		self._pca_std = data.std(0)
+		#Subtract the mean 
+		if self._location is not None:
+			self._pca_mean = self._location
+		else:
+			self._pca_mean = data.mean(0)
+
+		#Scale by the measure units
+		if self._scale is not None:
+			self._pca_std = self._scale
+		else:
+			self._pca_std = data.std(0)
+
+		#Whiten the data
 		self._data_scaled = data.copy()
 		self._data_scaled -= self._pca_mean[None]
 		self._data_scaled /= self._pca_std[None]
+
+		#Scale by sqrt(N-1)
 		self._data_scaled /= np.sqrt(self._data_scaled.shape[0] - 1)
 
 		#Perform singular value decomposition
