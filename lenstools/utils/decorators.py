@@ -8,7 +8,7 @@ class Parallelize(object):
 	@classmethod
 	def masterworker(cls,func):
 
-		def spreaded_func(*args):
+		def spreaded_func(*args,**kwargs):
 
 			#MPI Pool
 			try:
@@ -22,8 +22,12 @@ class Parallelize(object):
 				MPI.Finalize()
 				sys.exit(0)
 
+			#Replace the pool in the arguments with the newly created one
+			if "pool" in kwargs.keys():
+				kwargs["pool"] = pool
+
 			#Execute
-			func(pool)
+			func(*args,**kwargs)
 
 			#Finish
 			if pool is not None:
