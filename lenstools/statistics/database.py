@@ -87,5 +87,11 @@ class Database(object):
 
 	#Read table in a database
 	def read_table(self,table_name):
-		assert table_name in self.tables,"Table {0} does not exist!".format(table_name)
-		return self._constructor_ensemble.read_sql_table(table_name,self.connection) 
+
+		if type(table_name)==str:
+			assert table_name in self.tables,"Table {0} does not exist!".format(table_name)
+			return self._constructor_ensemble.read_sql_table(table_name,self.connection) 
+		elif type(table_name)==int:
+			return self._constructor_ensemble.read_sql_table(self.tables[table_name],self.connection)
+		else:
+			raise TypeError("table_name type not recognized")
