@@ -574,7 +574,13 @@ class Ensemble(pd.DataFrame):
 			if l is not None:
 				assert (l.index==self.columns).all(),"The column names do not match!"
 
-		pca = PCA(constructor_series=self._constructor_sliced,constructor_ensemble=self.__class__,columns=self.columns,location=location.values,scale=scale.values)
+		if location is not None:
+			location = location.values
+
+		if scale is not None:
+			scale = scale.values
+
+		pca = PCA(constructor_series=self._constructor_sliced,constructor_ensemble=self.__class__,columns=self.columns,location=location,scale=scale)
 		pca.fit(self.values)
 		return pca
 

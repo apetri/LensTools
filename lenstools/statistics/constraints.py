@@ -833,14 +833,28 @@ class Emulator(Analysis):
 		if not hasattr(self,"_interpolator"):
 			self.train()
 
+		#Cast DataFrames to numpy arrays
+		if isinstance(parameters,pd.DataFrame):
+			assert (parameters.columns==self["parameters"].columns).all(),"Parameters do not match!"
+			parameters = parameters.values
+		elif isinstance(parameters,pd.Series):
+			assert (parameters.index==self["parameters"].columns).all(),"Parameters do not match!"
+			parameters = parameters.values
+
 		#Interpolate to compute the features
 		interpolated_feature = _predict(parameters,self._num_bins,self._interpolator)
 
 		#Return the result
-		if parameters.ndim == 1:
-			return interpolated_feature.reshape(self.feature_set.shape[1:])
+		if isinstance(parameters,pd.Series) or isinstance(parameters,pd.DataFrame):
+			if parameters.ndim==1:
+				return interpolated_feature.reshape(self.feature_set.shape[1:])
+			else:
+				return interpolated_feature.reshape((parameters.shape[0],) + self.feature_set.shape[1:])
 		else:
-			return interpolated_feature.reshape((parameters.shape[0],) + self.feature_set.shape[1:])
+			if parameters.ndim==1:
+				return Series(interpolated_feature.reshape(self.feature_set.shape[1:]),index=self[self.feature_names].columns)
+			else:
+				return Ensemble(interpolated_feature.reshape((parameters.shape[0],) + self.feature_set.shape[1:]),columns=self[self.feature_names].columns)
 
 
 	def chi2(self,parameters,observed_feature,features_covariance,split_chunks=None,pool=None):
