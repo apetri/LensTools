@@ -585,6 +585,34 @@ class Ensemble(pd.DataFrame):
 		return pca
 
 
+	def project(self,vectors,names=None):
+
+		"""
+		Projects the rows of the Ensemble on the hyperplane defined by N linearly independent vectors
+
+		:param vectors: linearly independent vectors on which to project the rows of the Ensemble
+		:type vectors: tuple.
+
+		:param names: optional names of the projected components
+		:type names: list.
+
+		:returns: projected Ensemble; the new rows contain the components of the old rows along the vectors
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		#Cast vector in matrix format, compute the cosines of the angles between all pairs of vector
+		vector_ensemble = self.__class__.from_records(vectors,index=names)
+		cosines = vector_ensemble.dot(vector_ensemble.T)
+
+		#Compute matrix of projectors along each of the basis vectors
+		projectors = self.__class__(np.linalg.solve(cosines.values,np.eye(len(vector_ensemble))),index=names,columns=names)
+		projection_matrix = vector_ensemble.T.dot(projectors)
+
+		#Return the projected Ensemble
+		return self.dot(projection_matrix)
+
+
 	def compare(self,rhs,**kwargs):
 
 		"""
