@@ -1,6 +1,7 @@
 from __future__ import division
 
 import numpy as np
+import pandas as pd
 
 #################################################################################################
 #############################Principal Component Analysis handler################################
@@ -74,10 +75,8 @@ class pcaHandler(object):
 
 	def transform(self,X):
 
-		try:
-			X = X.values
-		except AttributeError:
-			pass
+		if isinstance(X,pd.Series) or isinstance(X,pd.DataFrame):
+			X = X[self._columns].values
 
 		#Cast X to the right dimensions
 		if len(X.shape)==1:
