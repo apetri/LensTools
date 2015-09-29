@@ -344,7 +344,40 @@ class Ensemble(pd.DataFrame):
 				pickle.dump(self,fp)
 		else:
 			format(self,filename,**kwargs)
+
+
+	#################################################
+	#############Construct from meshgrid#############
+	#################################################
 	
+	@classmethod
+	def meshgrid(cls,labels,sort=None):
+
+		"""
+		Construct on Ensemble whose column values are arranged in a regularly spaced mesh grid
+
+		:param labels: dictionary whose keys are the Ensemble columns and whose values are the mesh grid axes values
+		:type labels: dict.
+
+		:param sort: optional dictionary that tells how the meshgrid columns should be sorted 
+		:type sort: dict.
+
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		#Get the column names and grid values
+		columns = labels.keys()
+		if sort is not None:
+			columns.sort(key=sort.__getitem__)
+
+		grid_axes = (labels[c] for c in columns)
+
+		#Construct the meshgrid
+		columns_grid = np.meshgrid(*grid_axes,indexing="ij")
+
+		#Construct the meshgrid Ensemble
+		return cls.from_dict(dict((c,columns_grid[n].flatten()) for n,c in enumerate(columns)))[columns]
 
 	####################################
 	#############Operations#############
