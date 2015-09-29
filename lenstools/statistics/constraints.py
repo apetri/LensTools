@@ -37,7 +37,6 @@ from ..utils.misc import _interpolate_wrapper
 #########################################################
 
 def gaussian_likelihood(chi2,norm=1.0):
-
 	return norm*np.exp(-0.5*chi2)
 
 ######################################################################
