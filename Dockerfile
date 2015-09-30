@@ -5,8 +5,8 @@ MAINTAINER Andrea Petri <apetri@phys.columbia.edu>
 RUN apt-get update
 RUN apt-get -y install liblapack-dev
 
-#Install requirements
-RUN pip install -r requirements.txt
+#Clone the LensTools repository 
+RUN git clone https://github.com/apetri/LensTools
 
-#Install lenstools
-RUN python setup.py install
+#Install requirements and LensTools
+RUN cd /LensTools ; git checkout 0.5-dev ; pip install -r requirements.txt ; python setup.py install
