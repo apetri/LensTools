@@ -9,4 +9,4 @@ RUN apt-get -y install liblapack-dev
 RUN git clone https://github.com/apetri/LensTools
 
 #Install requirements and LensTools
-RUN cd /LensTools ; git checkout 0.5-dev ; pip install -r requirements.txt ; python setup.py install
+RUN cd /LensTools ; git checkout docker ; pip install -r requirements.txt ; python setup.py install
