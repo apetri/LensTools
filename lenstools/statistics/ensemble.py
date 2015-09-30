@@ -94,6 +94,14 @@ class Series(pd.Series):
 		#Concatenate everything
 		return pd.concat(combined_columns)
 
+	def add_name(self,name):
+
+		"""
+		Add a name to the index
+
+		"""
+		self.index = self.__class__.make_index(pd.Index(self.index,name=name))
+
 ##########################################
 ########Ensemble class####################
 ##########################################
@@ -382,6 +390,14 @@ class Ensemble(pd.DataFrame):
 	####################################
 	#############Operations#############
 	####################################
+
+	def add_name(self,name):
+
+		"""
+		Add a name to the columns
+
+		"""
+		self.columns = Series.make_index(pd.Index(self.columns,name=name))
 
 	@classmethod 
 	def concat(cls,ensemble_list,**kwargs):
