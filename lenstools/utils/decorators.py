@@ -27,13 +27,17 @@ class Parallelize(object):
 				kwargs["pool"] = pool
 
 			#Execute
-			func(*args,**kwargs)
+			result = func(*args,**kwargs)
 
 			#Finish
 			if pool is not None:
 				pool.close()
 				pool.comm.Barrier()
 				MPI.Finalize()
+
+			#Return the result
+			if pool is None or pool.is_master():
+				return result
 		
 
 		return spreaded_func
