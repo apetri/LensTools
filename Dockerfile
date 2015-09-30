@@ -3,7 +3,7 @@ MAINTAINER Andrea Petri <apetri@phys.columbia.edu>
 
 #Install liblapack-dev
 RUN apt-get update
-RUN apt-get install liblapack-dev
+RUN apt-get -y install liblapack-dev
 
 #Install requirements
 RUN pip install requirements.txt
