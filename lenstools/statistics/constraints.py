@@ -106,7 +106,7 @@ class Analysis(Ensemble):
 		#If features and parameters are already in DataFrame instances then just append them
 		if isinstance(features,pd.DataFrame) and isinstance(parameters,pd.DataFrame):
 			assert len(parameters.columns.levels[0])==1 and parameters.columns.levels[0][0]=="parameters"
-			return cls(cls.concat(parameters,features),axis=1)
+			return cls.concat((parameters,features),axis=1)
 
 		#Cast shapes correctly
 		if len(features.shape)==1:

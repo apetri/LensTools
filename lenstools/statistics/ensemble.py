@@ -401,7 +401,7 @@ class Ensemble(pd.DataFrame):
 
 	@classmethod 
 	def concat(cls,ensemble_list,**kwargs):
-		return pd.concat(ensemble_list,**kwargs)
+		return cls(pd.concat(ensemble_list,**kwargs))
 
 	@classmethod
 	def merge(cls,*args,**kwargs):
