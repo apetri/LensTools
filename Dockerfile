@@ -8,7 +8,6 @@ RUN apt-get -y install liblapack-dev
 #Install numpy,scipy,matplotlib
 RUN apt-get -y install python-numpy
 RUN apt-get -y install python-scipy
-RUN apt-get -y install python-matplotlib
 
 #Clone the LensTools repository 
 RUN git clone https://github.com/apetri/LensTools
