@@ -16,3 +16,6 @@ RUN cd /LensTools ; git checkout docker ; pip install -r requirements.txt ; pyth
 
 #Point PYTHONPATH so that the python interpreter finds the scipy installation
 ENV PYTHONPATH=/usr/lib/python2.7/dist-packages:$PYTHONPATH
+
+#Nice colors
+ENV PS1="\t \[$(tput bold)\]\[$(tput setaf 3)\][\[$(tput setaf 5)\]\u\[$(tput setaf 3)\]@\[$(tput setaf 5)\]\h \[$(tput setaf 2)\]\W\[$(tput setaf 3)\]]\\$ \[$(tput sgr0)\]"
