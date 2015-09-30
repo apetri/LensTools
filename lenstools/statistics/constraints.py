@@ -106,7 +106,7 @@ class Analysis(Ensemble):
 		#If features and parameters are already in DataFrame instances then just append them
 		if isinstance(features,pd.DataFrame) and isinstance(parameters,pd.DataFrame):
 			assert len(parameters.columns.levels[0])==1 and parameters.columns.levels[0][0]=="parameters"
-			return cls(cls.concat(parameters,features),axis=1)
+			return cls.concat((parameters,features),axis=1)
 
 		#Cast shapes correctly
 		if len(features.shape)==1:
@@ -1034,14 +1034,15 @@ class Emulator(Analysis):
 
 			#Isolate the Emulator that concerns this feature only
 			sub_emulator = self.features(c)
+			sub_emulator_columns = sub_emulator[c].columns
 
 			#Isolate the observed sub_feature
-			sub_feature = observed_feature[c].values
+			sub_feature = observed_feature[c][sub_emulator_columns].values
 
 			#If the method is chi2, use the already implemented version of it
 			if method=="chi2":
 				sub_emulator.train()
-				sub_feature_covariance = features_covariance[c].loc[c].values
+				sub_feature_covariance = features_covariance[c][sub_emulator_columns].loc[c].loc[sub_emulator_columns].values
 				score_ensemble[c] = sub_emulator.chi2(parameters=parameters.values,observed_feature=sub_feature,features_covariance=sub_feature_covariance,**kwargs)
 			else:
 				score_ensemble[c] = method(sub_emulator,parameters.values,sub_feature,**kwargs)
