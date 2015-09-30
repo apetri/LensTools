@@ -5,6 +5,11 @@ MAINTAINER Andrea Petri <apetri@phys.columbia.edu>
 RUN apt-get update
 RUN apt-get -y install liblapack-dev
 
+#Install numpy,scipy,matplotlib
+RUN apt-get -y install numpy
+RUN apt-get -y install scipy
+RUN apt-get -y install matplotlib
+
 #Clone the LensTools repository 
 RUN git clone https://github.com/apetri/LensTools
 
