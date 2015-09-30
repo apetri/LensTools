@@ -1,4 +1,6 @@
 setuptools
+numpy
+matplotlib
 ipython
 pandas
 emcee
