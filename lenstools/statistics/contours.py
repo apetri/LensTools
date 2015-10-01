@@ -95,7 +95,7 @@ class ContourPlot(object):
 	##############################################################
 
 	@classmethod 
-	def from_scores(cls,score_ensemble,parameters,plot_labels=None,figsize=(8,8)):
+	def from_scores(cls,score_ensemble,parameters,feature_names=None,plot_labels=None,figsize=(8,8)):
 
 		"""
 		Build a ContourPlot instance out of an ensemble of scores
@@ -105,6 +105,9 @@ class ContourPlot(object):
 
 		:param parameters: columns names that contain the parameters
 		:type parameters: list.
+
+		:param feature_names: name of the features to generate the contour plot for
+		:type feature_names: list.
 
 		:param plot_labels: plot labels for the parameters
 		:type plot_labels: list.
@@ -143,7 +146,10 @@ class ContourPlot(object):
 
 		#Sort the score_ensemble so that the parameters ordered like a meshgrid
 		score_ensemble = score_ensemble.sort(parameters)
-		feature_labels = filter(lambda l:l not in parameters,score_ensemble.columns)
+		if feature_names is not None:
+			feature_labels = feature_names
+		else: 
+			feature_labels = filter(lambda l:l not in parameters,score_ensemble.columns)
 
 		#One contour plot for each label
 		fig,ax = plt.subplots(figsize=figsize)
