@@ -251,7 +251,7 @@ class Analysis(Ensemble):
 		return self.__class__.concat((new_parameters,reparametrized_analysis),axis=1)
 
 
-	def refeaturize(self,transformation,**kwargs):
+	def refeaturize(self,transformation,method="apply_row",**kwargs):
 
 		"""
 		Allows a general transformation on the feature set of the analysis by calling an arbitrary transformation function
@@ -277,7 +277,18 @@ class Analysis(Ensemble):
 		#Apply the transformations to each feature
 		transformed_features = list()
 		for n in self.feature_names:
-			transformed_feature = self[[n]].apply(transformation_dict[n],axis=1)
+			
+			if method=="apply_row":
+				transformed_feature = self[[n]].apply(transformation_dict[n],axis=1,**kwargs)
+			elif method=="apply_whole":
+				transformed_feature = transformation_dict[n](self[[n]],**kwargs)
+				transformed_feature.add_name(n)
+				transformed_feature.index = self.index
+			elif method=="dot":
+				transformed_feature = self[[n]].dot(transformation_dict[n]) 
+			else:
+				raise NotImplementedError("transformation method {0} not implemented!".format(method))
+
 			transformed_features.append(transformed_feature)
 
 		#Concatenate and return
