@@ -95,3 +95,50 @@ class Database(object):
 			return self._constructor_ensemble.read_sql_table(self.tables[table_name],self.connection)
 		else:
 			raise TypeError("table_name type not recognized")
+
+
+################################
+#####ScoreDatabase class########
+################################
+
+class ScoreDatabase(Database):
+
+	def __init__(self,*args,**kwargs):
+		super(ScoreDatabase,self).__init__(*args,**kwargs)
+		self._parameters = ["Om","w","sigma8"]
+
+	def set_parameters(self,parameters):
+		self._parameters = parameters
+
+	@property 
+	def parameters(self):
+		return self._parameters
+
+	def pull_features(self,feature_list,table_name="scores",score_type="likelihood"):
+
+		"""
+		Pull out the scores for a subset of features
+
+		:param feature_list: feature list to pull out from the database
+		:type feature_list: list.
+
+		:param score_type: name of the column that contains the particular score you are considering
+		:type score_type: str.
+
+		"""
+		if not len(feature_list):
+			raise ValueError("The feature_list is empty!")
+
+		quoted = ",".join(["'{0}'".format(f) for f in feature_list])
+
+		#Query the score database
+		query = "SELECT {0},feature_type,{1} FROM {2} WHERE feature_type IN ({3})".format(",".join(self.parameters),score_type,table_name,quoted)
+		print("[+] Executing SQL query: {0}".format(query))
+		scores = self.query(query)
+
+		#Pivot the database so that each feature has its own column,rename the columns
+		l,scores = scores.suppress_indices(by=self.parameters,suppress=["feature_type"],columns=[score_type])
+		rename = lambda s:l.query('suppress_group_id=={0}'.format(s[-1]))['feature_type'].iloc[0] if type(s)==tuple else s
+		scores.columns = map(rename,scores.columns)
+
+		return scores
