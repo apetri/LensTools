@@ -45,7 +45,7 @@ def gaussian_likelihood(chi2,norm=1.0):
 
 def chi2(parameters,*args,**kwargs):
 
-	model_feature = _predict(parameters,kwargs["num_bins"],kwargs["interpolator"])
+	model_feature = _predict(parameters,kwargs["interpolator"])
 	inverse_covariance = kwargs["inverse_covariance"]
 
 	if model_feature.ndim == 1:
@@ -64,22 +64,22 @@ def chi2(parameters,*args,**kwargs):
 #############Feature prediction wrapper################################
 #######################################################################
 
-def _predict(parameters,num_bins,interpolator):
+def _predict(parameters,interpolator):
 
 	#For each feature bin, compute its interpolated value
 	if parameters.ndim == 1:
 		
-		interpolated_feature = np.zeros(num_bins)
+		interpolated_feature = np.zeros(len(interpolator))
 
-		for n in range(num_bins):
-			interpolated_feature[n] = interpolator[n]()(*parameters)
+		for n,i in enumerate(interpolator):
+			interpolated_feature[n] = i()(*parameters)
 		
 	else:
 			
-		interpolated_feature = np.zeros((parameters.shape[0],num_bins))
+		interpolated_feature = np.zeros((parameters.shape[0],len(interpolator)))
 
-		for n in range(num_bins):
-			interpolated_feature[:,n] = interpolator[n]()(*parameters.transpose())
+		for n,i in enumerate(interpolator):
+			interpolated_feature[:,n] = i()(*parameters.transpose())
 
 	return interpolated_feature
 
@@ -852,7 +852,7 @@ class Emulator(Analysis):
 			parameters = parameters.values
 
 		#Interpolate to compute the features
-		interpolated_feature = _predict(parameters,self._num_bins,self._interpolator)
+		interpolated_feature = _predict(parameters,self._interpolator)
 
 		#Return the result
 		if isinstance(parameters,pd.Series) or isinstance(parameters,pd.DataFrame):
@@ -922,7 +922,7 @@ class Emulator(Analysis):
 		covinv = inv(features_covariance)
 
 		#Build the keyword argument dictionary to be passed to the chi2 calculator
-		kwargs = {"num_bins":self._num_bins,"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
+		kwargs = {"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
 
 		#Hack to make the chi2 pickleable (from emcee)
 		chi2_wrapper = _function_wrapper(chi2,tuple(),kwargs)
