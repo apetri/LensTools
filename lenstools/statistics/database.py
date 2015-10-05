@@ -12,7 +12,10 @@
 
 from __future__ import division,print_function,with_statement
 from .ensemble import Ensemble
+from ..simulations.logs import logdriver
+from ..utils.decorators import Parallelize
 
+import numpy as np
 import pandas as pd
 
 try:
@@ -133,7 +136,7 @@ class ScoreDatabase(Database):
 
 		#Query the score database
 		query = "SELECT {0},feature_type,{1} FROM {2} WHERE feature_type IN ({3})".format(",".join(self.parameters),score_type,table_name,quoted)
-		print("[+] Executing SQL query: {0}".format(query))
+		logdriver.info("Executing SQL query: {0}".format(query))
 		scores = self.query(query)
 
 		#Pivot the database so that each feature has its own column,rename the columns
@@ -142,3 +145,71 @@ class ScoreDatabase(Database):
 		scores.columns = map(rename,scores.columns)
 
 		return scores
+
+
+###################################################################
+#######Compute scores of a grid of parameter combinations##########
+###################################################################
+
+def chi2score(emulator,parameters,data,data_covariance,nchunks,pool):
+
+	#Score the data on each of the parameter combinations provided
+	scores = emulator.score(parameters,data,features_covariance=data_covariance,split_chunks=nchunks,pool=pool)
+
+	#Pop the parameter columns, compute the likelihoods out of the chi2
+	for p in parameters.columns:
+		scores.pop(p)
+
+	return scores,scores.apply(lambda c:np.exp(-0.5*c),axis=0)
+
+@Parallelize.masterworker
+def chi2database(db_name,parameters,specs,table_name="scores",pool=None,nchunks=None):
+
+	"""
+	Populate an SQL database with the scores of different parameter sets with respect to the data; supports multiple features
+
+	:param db_name: name of the database to populate
+	:type db_name: str.
+
+	:param parameters: parameter combinations to score
+ 	:type parameters: Ensemble
+
+ 	:param specs: dictionary that should contain the emulator,data, and covariance matrix of each feature to consider; each value in this dictionary must be a dictionary with keys 'emulator', 'data' and 'data covariance'
+ 	:type specs: dict.
+
+ 	:param table_name: table name to populate in the database
+ 	:type table_name: str.
+
+ 	:param pool: MPIPool to spread the calculations over (pass None for automatic pool handling)
+ 	:type pool: MPIPool
+
+ 	:param nchunks: number of chunks to split the parameter score calculations in (one chunk per processor ideally) 
+ 	:type nchunks: int.
+
+	"""
+
+	#Each processor should have the same exact workload
+	if nchunks is not None:
+		assert not len(parameters)%nchunks
+
+	#Database context manager
+	logdriver.info("Populating score database {0}...".format(db_name))
+	with ScoreDatabase(db_name) as db:
+
+		#Repeat the scoring for each key in the specs dictionary
+		for feature_type in specs.keys():
+
+			#Log
+			logdriver.info("Processing feature_type: {0} ({1} parameter combinations)...".format(feature_type,len(parameters)))
+			
+			#Score
+			chi2,likelihood = chi2score(emulator=specs[feature_type]["emulator"],parameters=parameters,data=specs[feature_type]["data"],data_covariance=specs[feature_type]["data_covariance"],nchunks=nchunks,pool=pool)
+			assert (chi2.columns==[feature_type]).all()
+
+			#Add to the database
+			db_chunk = parameters.copy()
+			db_chunk["feature_type"] = feature_type
+			db_chunk["chi2"] = chi2
+			db_chunk["likelihood"] = likelihood
+
+			db.insert(db_chunk,table_name)
