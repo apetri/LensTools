@@ -193,7 +193,7 @@ def chi2database(db_name,parameters,specs,table_name="scores",pool=None,nchunks=
 		assert not len(parameters)%nchunks
 
 	#Database context manager
-	logdriver.info("Populating score database {0}...".format(db_name))
+	logdriver.info("Populating table '{0}' of score database {1}...".format(table_name,db_name))
 	with ScoreDatabase(db_name) as db:
 
 		#Repeat the scoring for each key in the specs dictionary
