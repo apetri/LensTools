@@ -39,5 +39,8 @@ class Parallelize(object):
 			if pool is None or pool.is_master():
 				return result
 		
+		#Restore the documentation
+		spreaded_func.func_doc = func.func_doc
 
+		#Return
 		return spreaded_func
