@@ -101,6 +101,14 @@ class SimulationBatch(object):
 		env = EnvironmentSettings.read("environment.ini")
 		return cls(env,syshandler)
 
+	@property 
+	def home_subdir(self):
+		return self.environment.home
+
+	@property
+	def storage_subdir(self):
+		return self.environment.storage
+		
 
 	def __init__(self,environment,syshandler=configuration.syshandler):
 
