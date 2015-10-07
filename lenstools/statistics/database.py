@@ -135,7 +135,7 @@ class ScoreDatabase(Database):
 		quoted = ",".join(["'{0}'".format(f) for f in feature_list])
 
 		#Query the score database
-		query = "SELECT {0},feature_type,{1} FROM {2} WHERE feature_type IN ({3})".format(",".join(self.parameters),score_type,table_name,quoted)
+		query = "SELECT {0},feature_type,{1} FROM '{2}' WHERE feature_type IN ({3})".format(",".join(self.parameters),score_type,table_name,quoted)
 		logdriver.info("Executing SQL query: {0}".format(query))
 		scores = self.query(query)
 
