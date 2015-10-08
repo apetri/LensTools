@@ -11,11 +11,17 @@ Convergence maps
 
 .. autoclass:: lenstools.image.convergence.Mask
 
-Shear maps
-==========
+Shear maps and catalogs
+=======================
 
 .. autoclass:: lenstools.image.shear.ShearMap
 	:inherited-members:
+
+.. autoclass:: lenstools.catalog.shear.Catalog
+	:members: setSpatialInfo,pixelize,visualize,hstack,vstack
+
+.. autoclass:: lenstools.catalog.shear.ShearCatalog
+	:members: toMap,hstack,vstack
 
 Statistics
 ==========

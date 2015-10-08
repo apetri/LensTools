@@ -9,6 +9,7 @@ Gallery
 	examples/parallel_operations
 	examples/histograms
 	examples/gaussian_random_field
+	examples/catalog_to_map
 	examples/eb_decomposition
 	examples/design
 	examples/gadget_io
