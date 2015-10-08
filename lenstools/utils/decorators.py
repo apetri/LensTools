@@ -1,7 +1,10 @@
 import sys
 from .mpi import MPIWhirlPool
 
-from mpi4py import MPI
+try:
+	from mpi4py import MPI
+except ImportError:
+	MPI = None
 
 class Parallelize(object):
 
