@@ -8,45 +8,16 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import z_at_value
 
-from .remote import SystemHandler,LocalSystem,LocalGit
+import configuration
+from .configuration import LensToolsCosmology
+
+from .remote import SystemHandler,LocalGit
 from .settings import *
 
 from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2SnapshotDE
 
 from ..simulations.camb import CAMBSettings
-from ..simulations import Nicaea
-
-################################################################
-#######Useful LensToolsCosmology class##########################
-################################################################
-
-class LensToolsCosmology(Nicaea):
-
-	"""
-	LensTools pipeline cosmology handler
-
-	"""
-
-CosmoDefault = LensToolsCosmology() 
-
-###################################################################
-
-name2attr = dict()
-name2attr["Om"] = "Om0"
-name2attr["Ol"] = "Ode0"
-name2attr["w"] = "w0"
-name2attr["wa"] = "wa"
-name2attr["h"] = "h"
-name2attr["Ob"] = "Ob0"
-name2attr["si"] = "sigma8"
-name2attr["ns"] = "ns"
-
-#####################################################
-#########Local filesystem handling###################
-#####################################################
-
-syshandler = LocalSystem()
 
 #####################################################
 ############Parse cosmology from string##############
@@ -75,7 +46,7 @@ def string2cosmo(s):
 			if par=="h":
 				parameters_dict["H0"] = 100.0*float(val)
 			else: 
-				parameters_dict[name2attr[par]] = float(val)
+				parameters_dict[configuration.name2attr[par]] = float(val)
 		
 		except (ValueError,KeyError):
 			return None
@@ -111,7 +82,7 @@ class SimulationBatch(object):
 	"""
 
 	@classmethod
-	def current(cls,syshandler=syshandler):
+	def current(cls,syshandler=configuration.syshandler):
 
 		"""
 		This method looks in the current directory and looks for a configuration file named "environment.ini"; if it finds one, it returns a SimulationBatch instance that corresponds to the one pointed to by "environment.ini"
@@ -130,8 +101,16 @@ class SimulationBatch(object):
 		env = EnvironmentSettings.read("environment.ini")
 		return cls(env,syshandler)
 
+	@property 
+	def home_subdir(self):
+		return self.environment.home
 
-	def __init__(self,environment,syshandler=syshandler):
+	@property
+	def storage_subdir(self):
+		return self.environment.storage
+		
+
+	def __init__(self,environment,syshandler=configuration.syshandler):
 
 		"""
 		Gets the handler instance of a batch of simulations residing in the provided environment
@@ -495,7 +474,7 @@ class SimulationBatch(object):
 	####Duplicate#######
 	####################
 
-	def copyTree(self,path,syshandler=syshandler):
+	def copyTree(self,path,syshandler=configuration.syshandler):
 
 		"""
 		Copies the current batch directory tree into a separate path
@@ -1148,7 +1127,7 @@ class SimulationBatch(object):
 				if "raytracing_config_file" in kwargs.keys():
 					config_file = kwargs["raytracing_config_file"]
 				else:
-					config_file = "config.ini"
+					config_file = "configuration.ini"
 
 				#Make sure that there will be perfect load balancing at execution
 				if len(parts)==2:
@@ -1274,7 +1253,7 @@ class SimulationBatch(object):
 				if "config_file" in kwargs.keys():
 					config_file = kwargs["config_file"]
 				else:
-					config_file = "config.ini"
+					config_file = "configuration.ini"
 
 				executables.append(job_executable + " " + """-e {0} -c {1} "{2}" """.format(environment_file,config_file,realization_list[realizations_per_chunk*c+e]))
 
@@ -1325,7 +1304,12 @@ class SimulationModel(object):
 
 	"""
 
-	def __init__(self,cosmology=CosmoDefault,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
+	@property
+	def cosmo_id(self):
+		base = "{0}{1:."+str(configuration.cosmo_id_digits)+"f}"
+		return "_".join([ base.format(p,getattr(self.cosmology,configuration.name2attr[p])) for p in self.parameters if (hasattr(self.cosmology,configuration.name2attr[p]) and getattr(self.cosmology,configuration.name2attr[p]) is not None)])
+
+	def __init__(self,cosmology=configuration.CosmoDefault,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
 
 		"""
 		Set the base for the simulation
@@ -1357,9 +1341,6 @@ class SimulationModel(object):
 		self.kpc_over_h = u.def_unit("kpc/h",u.kpc/self.cosmology.h)
 		self.Mpc_over_h = u.def_unit("Mpc/h",u.Mpc/self.cosmology.h)
 
-		#Build the cosmo_id
-		self.cosmo_id = "_".join([ "{0}{1:.3f}".format(p,getattr(self.cosmology,name2attr[p])) for p in parameters if (hasattr(self.cosmology,name2attr[p]) and getattr(self.cosmology,name2attr[p]) is not None)])
-
 		#Create directories accordingly
 		self.home_subdir = os.path.join(self.environment.home,self.cosmo_id)
 		self.storage_subdir = os.path.join(self.environment.storage,self.cosmo_id)
@@ -1372,7 +1353,7 @@ class SimulationModel(object):
 
 		representation_parameters = []
 		for p in self.parameters:
-			representation_parameters.append("{0}={1:.3f}".format(p,getattr(self.cosmology,name2attr[p])))
+			representation_parameters.append(("{0}={1:."+str(configuration.cosmo_id_digits)+"f}").format(p,getattr(self.cosmology,configuration.name2attr[p])))
 
 		return "<"+ " , ".join(representation_parameters) + ">"
 
@@ -1475,6 +1456,27 @@ class SimulationModel(object):
 			return None
 
 		return full_path
+
+	################################################################################################################################
+
+	def ls(self,glob="*",where="storage_subdir"):
+
+		"""
+		Returns the list of files present either in the storage or home portion of the simulation batch
+
+		:param glob: glob string to filter file types
+		:type glob: str. 
+
+		:param where: specifies if to look into the storage or home part of the simulation batch
+		:type where: str.
+
+		:returns: list of files
+		:rtype: list.
+
+		"""
+
+		search_path = getattr(self,where)
+		return [os.path.basename(f) for f in self.syshandler.glob(os.path.join(search_path,glob))] 
 
 	################################################################################################################################
 

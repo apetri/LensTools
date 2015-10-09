@@ -95,7 +95,7 @@ class ContourPlot(object):
 	##############################################################
 
 	@classmethod 
-	def from_scores(cls,score_ensemble,parameters,plot_labels=None,figsize=(8,8)):
+	def from_scores(cls,score_ensemble,parameters,feature_names=None,plot_labels=None,fig=None,ax=None,figsize=(8,8)):
 
 		"""
 		Build a ContourPlot instance out of an ensemble of scores
@@ -105,6 +105,9 @@ class ContourPlot(object):
 
 		:param parameters: columns names that contain the parameters
 		:type parameters: list.
+
+		:param feature_names: name of the features to generate the contour plot for
+		:type feature_names: list.
 
 		:param plot_labels: plot labels for the parameters
 		:type plot_labels: list.
@@ -143,10 +146,15 @@ class ContourPlot(object):
 
 		#Sort the score_ensemble so that the parameters ordered like a meshgrid
 		score_ensemble = score_ensemble.sort(parameters)
-		feature_labels = filter(lambda l:l not in parameters,score_ensemble.columns)
+		if feature_names is not None:
+			feature_labels = feature_names
+		else: 
+			feature_labels = filter(lambda l:l not in parameters,score_ensemble.columns)
 
 		#One contour plot for each label
-		fig,ax = plt.subplots(figsize=figsize)
+		if (fig is None) or (ax is None):
+			fig,ax = plt.subplots(figsize=figsize)
+		
 		for feature in feature_labels:
 			
 			contour = cls(fig,ax)
@@ -612,7 +620,7 @@ class ContourPlot(object):
 	##############Plot the contours on top of the likelihood##############
 	######################################################################
 
-	def plotContours(self,colors=["red","green","blue"],display_percentages=True,display_maximum=True,fill=False,**kwargs):
+	def plotContours(self,colors=["red","green","blue"],display_percentages=True,display_maximum=True,color_maximum="green",fill=False,**kwargs):
 
 		"""
 		Display the confidence likelihood contours
@@ -661,8 +669,8 @@ class ContourPlot(object):
 			imax,jmax = np.where(likelihood==likelihood_max)
 
 			#Plot scaling to physical values
-			self.ax.plot(extent[0] + np.arange(likelihood.shape[1])*unit_j,np.ones(likelihood.shape[1])*imax[0]*unit_i + extent[2],linestyle="--",color="green")
-			self.ax.plot(extent[0] + np.ones(likelihood.shape[0])*jmax[0]*unit_j,extent[2] + np.arange(likelihood.shape[0])*unit_i,linestyle="--",color="green")
+			self.ax.plot(extent[0] + np.arange(likelihood.shape[1])*unit_j,np.ones(likelihood.shape[1])*imax[0]*unit_i + extent[2],linestyle="--",color=color_maximum)
+			self.ax.plot(extent[0] + np.ones(likelihood.shape[0])*jmax[0]*unit_j,extent[2] + np.arange(likelihood.shape[0])*unit_i,linestyle="--",color=color_maximum)
 
 
 	##################################################################################################

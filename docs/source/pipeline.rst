@@ -72,7 +72,7 @@ The argument "parameters" specifies which cosmological parameters you want to ke
 
 ::
 	
-	>>> from lenstools.pipeline.simulation import name2attr
+	>>> from lenstools.pipeline.configuration import name2attr
 	>>> name2attr
 
 	{'Ob': 'Ob0',
@@ -88,7 +88,7 @@ Note that lenstools informs you of the directories that are created on disk. You
 
 ::
 
-	>> batch.available
+	>> batch.models
 	[<Om=0.300 , Ol=0.700>]
 
 
@@ -276,7 +276,7 @@ You will have access to the default settings of the CAMB code; you can edit thes
 	
 	>>> environment = EnvironmentSettings(home="SimTest/Home",storage="SimTest/Storage")
 	>>> batch = SimulationBatch(environment)
-	>>> collection = batch.available[0].collections[0]
+	>>> collection = batch.models[0].collections[0]
 	>>> collection.writeCAMB(z=0.0,settings=camb_settings)
 
 	[+] SimTest/Home/Om0.300_Ol0.700/512b240/camb.param written on localhost

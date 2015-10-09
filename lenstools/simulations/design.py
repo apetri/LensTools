@@ -254,6 +254,9 @@ class Design(Ensemble):
 
 		"""
 
+		if _design is None:
+			raise ImportError("This method requires a working GSL installation!")
+
 		assert len(self)>2,"You must lay down at least 3 points!"
 		return _design.diagonalCost(len(self),Lambda)
 
@@ -271,6 +274,9 @@ class Design(Ensemble):
 		:returns: the value of the cost function
 
 		"""
+
+		if _design is None:
+			raise ImportError("This method requires a working GSL installation!")
 
 		assert self.shape[1]>1,"The design must have at least 2 dimensions to lay down points!"
 		assert len(self)>2,"You must lay down at least 3 points!"
@@ -297,6 +303,9 @@ class Design(Ensemble):
 		:returns: the relative change of the cost function the last time it varied during the sampling
 
 		"""
+
+		if _design is None:
+			raise ImportError("This method requires a working GSL installation!")
 
 		assert self.shape[1]>1,"The design must have at least 2 dimensions to lay down points!"
 		assert len(self)>2,"You must lay down at least 3 points!"

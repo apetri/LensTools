@@ -1,7 +1,10 @@
 import sys
 from .mpi import MPIWhirlPool
 
-from mpi4py import MPI
+try:
+	from mpi4py import MPI
+except ImportError:
+	MPI = None
 
 class Parallelize(object):
 
@@ -39,5 +42,8 @@ class Parallelize(object):
 			if pool is None or pool.is_master():
 				return result
 		
+		#Restore the documentation
+		spreaded_func.func_doc = func.func_doc
 
+		#Return
 		return spreaded_func
