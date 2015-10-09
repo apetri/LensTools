@@ -19,6 +19,9 @@ RUN apt-get update
 ######Dependencies to install with apt-get##############
 ########################################################
 
+#pkg-config
+RUN apt-get -y install pkg-config
+
 #git
 RUN apt-get -y install git
 
