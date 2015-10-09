@@ -3,6 +3,7 @@ from __future__ import division,with_statement
 import os
 import re
 import tarfile
+import json
 
 import numpy as np
 import astropy.units as u
@@ -70,6 +71,30 @@ def _camb2ngenic(k,P):
 
 	return lgk,lgP
 
+##############################################
+##############InfoDict class##################
+##############################################
+
+class InfoDict(object):
+
+	def __init__(self,batch):
+		
+		self.batch = batch
+		self._dictionary_file = os.path.join(batch.home_subdir,configuration.json_tree_file)
+		
+		if batch.syshandler.exists(self._dictionary_file):
+			with batch.syshandler.open(self._dictionary_file,"r") as fp:
+				self.dictionary = json.load(fp)
+		else:
+			self.dictionary = batch.info
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self,type,value,tb):
+		with self.batch.syshandler.open(self._dictionary_file,"w") as fp:
+			json.dump(self.dictionary,fp)
+
 #####################################################
 ##############SimulationBatch class##################
 #####################################################
@@ -82,7 +107,7 @@ class SimulationBatch(object):
 	"""
 
 	@classmethod
-	def current(cls,syshandler=configuration.syshandler):
+	def current(cls,syshandler=configuration.syshandler,indicize=False):
 
 		"""
 		This method looks in the current directory and looks for a configuration file named "environment.ini"; if it finds one, it returns a SimulationBatch instance that corresponds to the one pointed to by "environment.ini"
@@ -99,7 +124,7 @@ class SimulationBatch(object):
 			return None
 
 		env = EnvironmentSettings.read("environment.ini")
-		return cls(env,syshandler)
+		return cls(env,syshandler,indicize)
 
 	@property 
 	def home_subdir(self):
@@ -110,7 +135,7 @@ class SimulationBatch(object):
 		return self.environment.storage
 		
 
-	def __init__(self,environment,syshandler=configuration.syshandler):
+	def __init__(self,environment,syshandler=configuration.syshandler,indicize=False):
 
 		"""
 		Gets the handler instance of a batch of simulations residing in the provided environment
@@ -147,6 +172,10 @@ class SimulationBatch(object):
 			self.syshandler.mkdir(environment.storage)
 			print("[+] {0} created on {1}".format(environment.storage,self.syshandler.name))
 
+		#Indicize the simulation products
+		if indicize:
+			with InfoDict(self) as info:
+				pass
 
 	##############################################################################################################################
 
@@ -208,6 +237,13 @@ class SimulationBatch(object):
 		:returns: info in dictionary format
 
 		"""
+
+		#Load info from tree file if available
+		tree_file_path = os.path.join(self.home_subdir,configuration.json_tree_file)
+		if self.syshandler.exists(tree_file_path):
+			with self.syshandler.open(tree_file_path,"r") as fp:
+				info_dict = json.load(fp)
+			return info_dict
 
 		#Information will be returned in dictionary format
 		info_dict = dict()
