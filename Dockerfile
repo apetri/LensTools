@@ -32,8 +32,8 @@ RUN apt-get -y install libopenmpi-dev openmpi-bin
 #Python, with headers and pip
 RUN apt-get -y install python-dev python-pip 
 
-#LAPACK and scipy
-RUN apt-get -y install liblapack-dev python-scipy
+#LAPACK,scipy,matplotlib
+RUN apt-get -y install liblapack-dev python-scipy python-matplotlib
 
 #Clone the LensTools repository, install it along with its requirements 
 RUN git clone https://github.com/apetri/LensTools
