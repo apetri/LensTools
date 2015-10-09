@@ -19,6 +19,9 @@ RUN apt-get update
 ######Dependencies to install with apt-get##############
 ########################################################
 
+#git
+RUN apt-get -y install git
+
 #gfortran and OpenMPI
 RUN apt-get -y install gfortran
 RUN apt-get -y install libopenmpi-dev openmpi-bin
