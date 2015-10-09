@@ -1459,6 +1459,27 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
+	def ls(self,glob="*",where="storage_subdir"):
+
+		"""
+		Returns the list of files present either in the storage or home portion of the simulation batch
+
+		:param glob: glob string to filter file types
+		:type glob: str. 
+
+		:param where: specifies if to look into the storage or home part of the simulation batch
+		:type where: str.
+
+		:returns: list of files
+		:rtype: list.
+
+		"""
+
+		search_path = getattr(self,where)
+		return [os.path.basename(f) for f in self.syshandler.glob(os.path.join(search_path,glob))] 
+
+	################################################################################################################################
+
 	def execute(self,filename,callback=None,where="storage_subdir",**kwargs):
 
 		"""
