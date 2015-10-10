@@ -80,20 +80,19 @@ class InfoDict(object):
 	def __init__(self,batch):
 		
 		self.batch = batch
-		self._dictionary_file = os.path.join(batch.home_subdir,configuration.json_tree_file)
-		
-		if batch.syshandler.exists(self._dictionary_file):
-			with batch.syshandler.open(self._dictionary_file,"r") as fp:
-				self.dictionary = json.load(fp)
-		else:
-			self.dictionary = batch.info
+		self.dictionary = batch.info
 
 	def __enter__(self):
 		return self
 
 	def __exit__(self,type,value,tb):
-		with self.batch.syshandler.open(self._dictionary_file,"w") as fp:
-			json.dump(self.dictionary,fp)
+		pass
+
+	def update(self):
+		dictionary_file = os.path.join(self.batch.home_subdir,configuration.json_tree_file)
+		with self.batch.syshandler.open(dictionary_file,"w") as fp:
+			fp.write(json.dumps(self.dictionary))
+
 
 #####################################################
 ##############SimulationBatch class##################
@@ -175,7 +174,7 @@ class SimulationBatch(object):
 		#Indicize the simulation products
 		if indicize:
 			with InfoDict(self) as info:
-				pass
+				info.update()
 
 	##############################################################################################################################
 
@@ -242,7 +241,7 @@ class SimulationBatch(object):
 		tree_file_path = os.path.join(self.home_subdir,configuration.json_tree_file)
 		if self.syshandler.exists(tree_file_path):
 			with self.syshandler.open(tree_file_path,"r") as fp:
-				info_dict = json.load(fp)
+				info_dict = json.loads(fp.read())
 			return info_dict
 
 		#Information will be returned in dictionary format
