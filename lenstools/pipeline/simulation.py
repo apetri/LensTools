@@ -215,7 +215,12 @@ class SimulationBatch(object):
 		models = list()
 
 		#Check all available models in the home directory
-		dirnames = self.info.keys()
+		if self.syshandler.exists(self.infofile):
+			dirnames = self.info.keys()
+		else:
+			dirnames = [ os.path.basename(n) for n in self.syshandler.glob(os.path.join(self.environment.home,"*")) ]
+
+		#Cycle over directory names
 		for d in dirnames:
 			model = self.getModel(d)
 			if model is not None:
@@ -229,6 +234,9 @@ class SimulationBatch(object):
 		return self.available
 
 	##############################################################################################################################
+	@property
+	def infofile(self):
+		return os.path.join(self.home_subdir,configuration.json_tree_file)
 
 	@property
 	def info(self):
@@ -258,6 +266,7 @@ class SimulationBatch(object):
 			#Follow with the collections 
 			for collection in model.collections:
 				info_dict[model.cosmo_id][collection.geometry_id] = dict()
+				info_dict[model.cosmo_id][collection.geometry_id]["nbody"] = dict()
 				info_dict[model.cosmo_id][collection.geometry_id]["map_sets"] = dict()
 				info_dict[model.cosmo_id][collection.geometry_id]["catalogs"] = dict()
 
@@ -293,8 +302,8 @@ class SimulationBatch(object):
 				#Follow with the realizations
 				for r in collection.realizations:
 					
-					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index] = dict()
-					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"] = dict()
+					info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index] = dict()
+					info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index]["plane_sets"] = dict()
 
 					#Check if there are any plane sets present
 					try:
@@ -306,7 +315,7 @@ class SimulationBatch(object):
 									continue
 								
 								plane_set = r.getPlaneSet(line.strip("\n"))
-								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name] = dict()
+								info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index]["plane_sets"][plane_set.settings.directory_name] = dict()
 
 					except IOError:
 						pass
@@ -1336,6 +1345,10 @@ class SimulationModel(object):
 		return "_".join([ base.format(p,getattr(self.cosmology,configuration.name2attr[p])) for p in self.parameters if (hasattr(self.cosmology,configuration.name2attr[p]) and getattr(self.cosmology,configuration.name2attr[p]) is not None)])
 
 	@property
+	def infofile(self):
+		return os.path.join(self.environment.home,configuration.json_tree_file)
+
+	@property
 	def info(self):
 		with InfoDict(self.environment,syshandler=self.syshandler) as infodict:
 			return infodict.dictionary
@@ -1577,9 +1590,12 @@ class SimulationModel(object):
 
 		#Allow to pass a geometry_id as first argument
 		if type(box_size) in [str,unicode]:
-			parts = box_size.split("b")
-			nside = int(parts[0])
-			box_size = float(parts[1]) * self.Mpc_over_h
+			try:
+				parts = box_size.split("b")
+				nside = int(parts[0])
+				box_size = float(parts[1]) * self.Mpc_over_h
+			except (IndexError,ValueError):
+				return None
 
 		assert nside is not None,"if you did not specify the second argument, it means the first should be in the form 'xxxbyyy'"
 
@@ -1605,7 +1621,11 @@ class SimulationModel(object):
 
 		"""
 
-		collection_names = self.info[self.cosmo_id].keys()
+		if self.syshandler.exists(self.infofile):
+			collection_names = self.info[self.cosmo_id].keys()
+		else:
+			collection_names = [ os.path.basename(d) for d in self.syshandler.glob(os.path.join(self.home_subdir,"*")) ]
+
 		collection_list = list()
 
 		for name in collection_names:
@@ -1891,17 +1911,22 @@ class SimulationCollection(SimulationModel):
 
 		"""
 
+		if self.syshandler.exists(self.infofile):
+			ic_numbers = [ int(n) for n in self.info[self.cosmo_id][self.geometry_id]["nbody"].keys() ]
+		else:
+			ic_numbers = [ int(os.path.basename(d).strip("ic")) for d in self.syshandler.glob(os.path.join(self.home_subdir,"ic*")) ]
+		
 		ic_list = list()
-		ic_numbers = [ os.path.basename(d).strip("ic") for d in self.syshandler.glob(os.path.join(self.home_subdir,"ic*")) ]
 
 		for ic in ic_numbers:
 
-			seed = int(os.path.basename(self.syshandler.glob(os.path.join(self.home_subdir,"ic"+ic,"seed*"))[0]).strip("seed"))
-			ic_list.append(SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,int(ic),seed,syshandler=self.syshandler))
+			seed = int(os.path.basename(self.syshandler.glob(os.path.join(self.home_subdir,"ic"+str(ic),"seed*"))[0]).strip("seed"))
+			ic_list.append(SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,ic,seed,syshandler=self.syshandler))
 
 		#Sort according to ic_index
 		ic_list.sort(key=lambda r:r.ic_index)
 
+		#Return to user
 		return ic_list
 
 
@@ -1980,9 +2005,15 @@ class SimulationCollection(SimulationModel):
 		map_sets = list()
 		
 		try:
-			with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
-				for set_name in setsfile.readlines():
-					map_sets.append(self.getMapSet(set_name.strip("\n")))
+
+			if self.syshandler.exists(self.infofile):
+				for set_name in self.info[self.cosmo_id][self.geometry_id]["map_sets"].keys():
+					map_sets.append(self.getMapSet(set_name))
+			else:
+				with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
+					for set_name in setsfile.readlines():
+						map_sets.append(self.getMapSet(set_name.strip("\n")))
+
 		except IOError:
 			pass
 		finally:
@@ -2064,9 +2095,15 @@ class SimulationCollection(SimulationModel):
 		catalogs = list()
 		
 		try:
-			with self.syshandler.open(os.path.join(self.home_subdir,"catalogs.txt"),"r") as setsfile:
-				for catalog_name in setsfile.readlines():
-					catalogs.append(self.getCatalog(catalog_name.strip("\n")))
+			
+			if self.syshandler.exists(self.infofile):
+				for catalog_name in self.info[self.cosmo_id][self.geometry_id]["catalogs"].keys():
+					catalogs.append(self.getCatalog(catalog_name))
+			else:
+				with self.syshandler.open(os.path.join(self.home_subdir,"catalogs.txt"),"r") as setsfile:
+					for catalog_name in setsfile.readlines():
+						catalogs.append(self.getCatalog(catalog_name.strip("\n")))
+		
 		except IOError:
 			pass
 		finally:
@@ -2283,9 +2320,14 @@ class SimulationIC(SimulationCollection):
 		plane_sets = list()
 		
 		try:
-			with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
-				for set_name in setsfile.readlines():
-					plane_sets.append(self.getPlaneSet(set_name.strip("\n")))
+
+			if self.syshandler.exists(self.infofile):
+				for set_name in self.info[self.cosmo_id][self.geometry_id]["nbody"][str(self.ic_index)]["plane_sets"].keys():
+					plane_sets.append(self.getPlaneSet(set_name))
+			else:
+				with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"r") as setsfile:
+					for set_name in setsfile.readlines():
+						plane_sets.append(self.getPlaneSet(set_name.strip("\n")))
 		
 		except IOError:
 			pass
