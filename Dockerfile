@@ -40,7 +40,7 @@ RUN git clone https://github.com/apetri/LensTools
 RUN cd /LensTools ; git checkout docker-ubuntu ; pip install -r requirements.txt ; python setup.py install
 
 #Install fftw2, necessary for the N-body codes
-RUN cd /opt ; wget http://www.fftw.org/fftw-2.1.5.tar.gz ; ./configure --prefix=/usr/local --enable-type-prefix --enable-mpi ; make install
+RUN cd /opt ; wget http://www.fftw.org/fftw-2.1.5.tar.gz ; tar -xf fftw-2.1.5.tar.gz ; cd fftw-2.1.5 ; ./configure --prefix=/usr/local --enable-type-prefix --enable-mpi ; make install
 
 #Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
