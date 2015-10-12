@@ -77,10 +77,16 @@ def _camb2ngenic(k,P):
 
 class InfoDict(object):
 
-	def __init__(self,batch):
-		
-		self.batch = batch
-		self.dictionary = batch.info
+	def __init__(self,batch,**kwargs):
+
+		if isinstance(batch,SimulationBatch):
+			self.batch = batch
+		elif isinstance(batch,EnvironmentSettings):
+			self.batch = SimulationBatch(batch,**kwargs)
+		else:
+			raise TypeError("batch type not recognized!")
+
+		self.dictionary = self.batch.info
 
 	def __enter__(self):
 		return self
@@ -209,15 +215,12 @@ class SimulationBatch(object):
 		models = list()
 
 		#Check all available models in the home directory
-		dirnames = [ os.path.basename(n) for n in self.syshandler.glob(os.path.join(self.environment.home,"*")) ]
+		dirnames = self.info.keys()
+		for d in dirnames:
+			model = self.getModel(d)
+			if model is not None:
+				models.append(model)
 
-		#Decide which of the directories actually correspond to cosmological models
-		for dirname in dirnames:
-			cosmo_parsed = string2cosmo(dirname)
-			if cosmo_parsed is not None:
-				models.append(SimulationModel(cosmology=cosmo_parsed[0],environment=self.environment,parameters=cosmo_parsed[1],syshandler=self.syshandler))
-
-		#Return the list with the available models
 		return models
 
 	#Alias for available models
@@ -241,8 +244,8 @@ class SimulationBatch(object):
 		tree_file_path = os.path.join(self.home_subdir,configuration.json_tree_file)
 		if self.syshandler.exists(tree_file_path):
 			with self.syshandler.open(tree_file_path,"r") as fp:
-				info_dict = json.loads(fp.read())
-			return info_dict
+				return json.loads(fp.read())
+
 
 		#Information will be returned in dictionary format
 		info_dict = dict()
@@ -267,9 +270,7 @@ class SimulationBatch(object):
 							if line=="":
 								continue
 							map_set = collection.getMapSet(line.strip("\n"))
-							maps_on_disk = self.syshandler.glob(os.path.join(map_set.storage_subdir,"WL*"))
-							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name] = dict() 
-							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name]["num_maps"] = len(maps_on_disk)
+							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name] = dict()
 
 				except IOError:
 					pass
@@ -284,9 +285,7 @@ class SimulationBatch(object):
 								continue
 							
 							catalog = collection.getCatalog(line.strip("\n"))
-							catalogs_on_disk = self.syshandler.glob(os.path.join(catalog.storage_subdir,"WL*"))
 							info_dict[model.cosmo_id][collection.geometry_id]["catalogs"][catalog.settings.directory_name] = dict() 
-							info_dict[model.cosmo_id][collection.geometry_id]["catalogs"][catalog.settings.directory_name]["num_catalogs"] = len(catalogs_on_disk)
 
 				except IOError:
 					pass
@@ -296,12 +295,6 @@ class SimulationBatch(object):
 					
 					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index] = dict()
 					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"] = dict()
-
-					#Make number of ics and snapshots on disk available to user
-					ics_on_disk = self.syshandler.glob(os.path.join(r.ics_subdir,r.ICFilebase+"*"))
-					snap_on_disk = self.syshandler.glob(os.path.join(r.snapshot_subdir,r.SnapshotFileBase+"*"))
-					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["ics"] =  len(ics_on_disk)
-					info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["snapshots"] = len(snap_on_disk)
 
 					#Check if there are any plane sets present
 					try:
@@ -313,9 +306,7 @@ class SimulationBatch(object):
 									continue
 								
 								plane_set = r.getPlaneSet(line.strip("\n"))
-								planes_on_disk = self.syshandler.glob(os.path.join(plane_set.storage_subdir,"*Plane*"))
 								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name] = dict()
-								info_dict[model.cosmo_id][collection.geometry_id][r.ic_index]["plane_sets"][plane_set.settings.directory_name]["num_planes"] = len(planes_on_disk)
 
 					except IOError:
 						pass
@@ -1343,6 +1334,11 @@ class SimulationModel(object):
 	def cosmo_id(self):
 		base = "{0}{1:."+str(configuration.cosmo_id_digits)+"f}"
 		return "_".join([ base.format(p,getattr(self.cosmology,configuration.name2attr[p])) for p in self.parameters if (hasattr(self.cosmology,configuration.name2attr[p]) and getattr(self.cosmology,configuration.name2attr[p]) is not None)])
+
+	@property
+	def info(self):
+		with InfoDict(self.environment,syshandler=self.syshandler) as infodict:
+			return infodict.dictionary
 
 	def __init__(self,cosmology=configuration.CosmoDefault,environment=None,parameters=["Om","Ol","w","ns","si"],**kwargs):
 
