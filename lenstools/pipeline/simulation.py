@@ -111,6 +111,9 @@ class SimulationBatch(object):
 
 	"""
 
+	#Keep track of which batches are already loaded in memory (give the class a singleton--like aspect)
+	_in_memory = dict()
+
 	@classmethod
 	def current(cls,syshandler=configuration.syshandler,indicize=False):
 
@@ -156,6 +159,9 @@ class SimulationBatch(object):
 		#Type check
 		assert isinstance(environment,EnvironmentSettings)
 		assert isinstance(syshandler,SystemHandler)
+
+		if environment.home in self.__class__._in_memory.keys():
+			return
 		
 		self.environment = environment
 		self.syshandler = syshandler
@@ -181,6 +187,16 @@ class SimulationBatch(object):
 		if indicize:
 			with InfoDict(self) as info:
 				info.update()
+
+		#Keep track of this simulation batch
+		self.__class__._in_memory[self.home_subdir] = self
+
+	def __new__(cls,environment,*args,**kwargs):
+
+		if environment.home in cls._in_memory.keys():
+			return cls._in_memory[environment.home]
+		else:
+			return object.__new__(cls)
 
 	##############################################################################################################################
 
@@ -248,12 +264,16 @@ class SimulationBatch(object):
 
 		"""
 
+		#See if the info is already available
+		if hasattr(self,"_info"):
+			return self._info
+
 		#Load info from tree file if available
 		tree_file_path = os.path.join(self.home_subdir,configuration.json_tree_file)
 		if self.syshandler.exists(tree_file_path):
 			with self.syshandler.open(tree_file_path,"r") as fp:
-				return json.loads(fp.read())
-
+				self._info = json.loads(fp.read())
+				return self._info
 
 		#Information will be returned in dictionary format
 		info_dict = dict()
