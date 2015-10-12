@@ -1576,7 +1576,7 @@ class SimulationModel(object):
 	def getCollection(self,box_size,nside=None):
 
 		#Allow to pass a geometry_id as first argument
-		if type(box_size)==str:
+		if type(box_size) in [str,unicode]:
 			parts = box_size.split("b")
 			nside = int(parts[0])
 			box_size = float(parts[1]) * self.Mpc_over_h
@@ -1605,16 +1605,13 @@ class SimulationModel(object):
 
 		"""
 
-		collection_names = [ os.path.basename(d) for d in self.syshandler.glob(os.path.join(self.home_subdir,"*")) ]
+		collection_names = self.info[self.cosmo_id].keys()
 		collection_list = list()
 
 		for name in collection_names:
-			
-			try:
-				nside,box = name.split("b")
-				collection_list.append(SimulationCollection(self.cosmology,self.environment,self.parameters,box_size=float(box)*self.Mpc_over_h,nside=int(nside),syshandler=self.syshandler))
-			except ValueError:
-				pass
+			collection = self.getCollection(name)
+			if collection is not None:
+				collection_list.append(collection)
 
 		return collection_list
 
