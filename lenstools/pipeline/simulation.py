@@ -185,11 +185,11 @@ class SimulationBatch(object):
 
 		#Indicize the simulation products
 		if indicize:
-			with InfoDict(self) as info:
-				info.update()
+			self.update_changes()
 
 		#Keep track of this simulation batch
 		self.__class__._in_memory[self.home_subdir] = self
+
 
 	def __new__(cls,environment,*args,**kwargs):
 
@@ -197,6 +197,12 @@ class SimulationBatch(object):
 			return cls._in_memory[environment.home]
 		else:
 			return object.__new__(cls)
+
+	
+
+	def update_changes(self):
+		with InfoDict(self) as info:
+			info.update()
 
 	##############################################################################################################################
 
@@ -629,9 +635,12 @@ class SimulationBatch(object):
 				self.syshandler.mkdir(d)
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
+				#Update dictionary if the batch is indicized
+				if self.syshandler.exists(self.infofile):
+					self.info[newModel.cosmo_id] = dict()
+
 			else:
-				print("[-] Model {0} already exists!".format(newModel.cosmo_id))
-				
+				print("[-] Model {0} already exists!".format(newModel.cosmo_id))		
 
 		#Return to user
 		return newModel
@@ -1593,6 +1602,13 @@ class SimulationModel(object):
 				self.syshandler.mkdir(d)
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
+				#Update dictionary if the batch is indicized
+				if self.syshandler.exists(self.infofile):
+					self.info[newSimulation.cosmo_id][newSimulation.geometry_id] = dict()
+					self.info[newSimulation.cosmo_id][newSimulation.geometry_id]["nbody"] = dict()
+					self.info[newSimulation.cosmo_id][newSimulation.geometry_id]["map_sets"] = dict()
+					self.info[newSimulation.cosmo_id][newSimulation.geometry_id]["catalogs"] = dict()
+
 			else:
 				print("[-] Collection {0} already exists!".format(os.path.join(newSimulation.cosmo_id,newSimulation.geometry_id)))
 				return newSimulation
@@ -1892,6 +1908,11 @@ class SimulationCollection(SimulationModel):
 				self.syshandler.mkdir(d)
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
+				#Update dictionary if the batch is indicized
+				if self.syshandler.exists(self.infofile):
+					self.info[newIC.cosmo_id][newIC.geometry_id]["nbody"][str(newIC.ic_index)] = dict()
+					self.info[newIC.cosmo_id][newIC.geometry_id]["nbody"][str(newIC.ic_index)]["plane_sets"] = dict()
+
 		#Make new file with the number of the seed
 		with self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w") as seedfile:
 			pass
@@ -1975,6 +1996,10 @@ class SimulationCollection(SimulationModel):
 			if not self.syshandler.exists(d):
 				self.syshandler.mkdir(d)
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+
+				#Update dictionary if the batch is indicized
+				if self.syshandler.exists(self.infofile):
+					self.info[map_set.cosmo_id][map_set.geometry_id]["map_sets"][settings.directory_name] = dict()
 
 		#Save a picked copy of the settings to use for future reference
 		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
@@ -2064,6 +2089,10 @@ class SimulationCollection(SimulationModel):
 			if not self.syshandler.exists(d):
 				self.syshandler.mkdir(d)
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+
+				#Update dictionary if the batch is indicized
+				if self.syshandler.exists(self.infofile):
+					self.info[catalog.cosmo_id][catalog.geometry_id]["catalogs"][settings.directory_name] = dict()
 
 		#Save a picked copy of the settings to use for future reference
 		with self.syshandler.open(os.path.join(catalog.home_subdir,"settings.p"),"w") as settingsfile:
@@ -2289,6 +2318,10 @@ class SimulationIC(SimulationCollection):
 			if not(self.syshandler.exists(d)):
 				self.syshandler.mkdir(d)
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
+
+				#Update dictionary if the batch is indicized
+				if self.syshandler.exists(self.infofile):
+					self.info[new_plane_set.cosmo_id][new_plane_set.geometry_id]["nbody"][str(new_plane_set.ic_index)]["plane_sets"][settings.directory_name] = dict()
 
 		#Save a pickled copy of the settings for future reference
 		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
