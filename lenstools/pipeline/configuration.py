@@ -39,3 +39,9 @@ cosmo_id_digits = 3
 ########################
 
 syshandler = LocalSystem()
+
+###################################
+#Default simulation tree json file#
+###################################
+
+json_tree_file = ".tree.json"
