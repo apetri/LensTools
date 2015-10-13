@@ -185,6 +185,16 @@ class Analysis(Ensemble):
 			return self[["parameters"]+[names]].copy()
 		elif isinstance(names,list):
 			return self[["parameters"]+names].copy()
+		elif isinstance(names,dict):
+
+			pieces = [self[["parameters"]]]
+			for key in names.keys():
+				piece = self[key][names[key]]
+				piece.add_name(key)
+				pieces.append(piece)
+
+			return self.__class__.concat(pieces,axis=1)
+
 		else:
 			raise TypeError("names type not supported!")
 
