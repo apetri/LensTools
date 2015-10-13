@@ -206,25 +206,6 @@ if conf.getboolean("nicaea","install_python_bindings"):
 
 
 #################################################################################################
-#############################Extensions##########################################################
-#################################################################################################
-
-#Extension objects
-ext = list()
-
-for ext_module in external_sources.keys():
-
-	sources = list()
-	for source in external_sources[ext_module]:
-		sources.append(os.path.join(name,external_dir,source))
-
-	#Append external support sources too
-	if ext_module in external_support.keys():
-		sources += external_support[ext_module]
-
-	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
-
-#################################################################################################
 #############################Package data########################################################
 #################################################################################################
 
@@ -251,6 +232,28 @@ if platform.system() in ["Darwin","darwin"]:
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
 scripts_dir = "scripts"
+
+#################################################################################################
+#############################Extensions##########################################################
+#################################################################################################
+
+#Extension objects
+ext = list()
+
+for ext_module in external_sources.keys():
+
+	sources = list()
+	for source in external_sources[ext_module]:
+		sources.append(os.path.join(name,external_dir,source))
+
+	#Append external support sources too
+	if ext_module in external_support.keys():
+		sources += external_support[ext_module]
+
+	ext.append(Extension(ext_module,
+                             sources,
+                             extra_link_args=lenstools_link,
+                             include_dirs=lenstools_includes))
 
 #################################################################################################
 #############################Setup###############################################################
