@@ -50,7 +50,7 @@ def test_fisher():
 	assert f.feature_set.shape[0] == 4
 
 	#Compute the derivatives
-	derivatives = f.compute_derivatives()
+	derivatives = f.derivatives.values
 
 	#Sanity check
 	assert derivatives.shape == (3,len(l))
@@ -72,11 +72,11 @@ def test_fisher():
 
 	#Sample fit with diagonal covariance matrix
 	fitted_parameters = f.fit(P,features_covariance=covariance)
-	np.savetxt("fitted_parameters.txt",fitted_parameters)
+	np.savetxt("fitted_parameters.txt",fitted_parameters.values)
 
 	#Sample fisher matrix
 	fisher = f.fisher_matrix(simulated_features_covariance=covariance)
-	np.savetxt("fisher_constraints.txt",np.sqrt(np.linalg.inv(fisher).diagonal()))
+	np.savetxt("fisher_constraints.txt",np.sqrt(np.linalg.inv(fisher.values).diagonal()))
 
 #Test interpolation of power spectrum
 def test_interpolation():

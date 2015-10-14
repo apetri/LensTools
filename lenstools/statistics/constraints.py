@@ -532,8 +532,13 @@ class FisherAnalysis(Analysis):
 			derivatives[n]  = (self.feature_set[loc_varied[p]] - self.feature_set[self._fiducial]) / (self.parameter_set[loc_varied[p],p] - self.parameter_set[self._fiducial,p])
 
 		#set the derivatives attribute and return the result
-		self.derivatives = derivatives
-		return derivatives
+		self._derivatives = self.__class__(derivatives,index=self.parameter_names,columns=self[self.feature_names].columns)
+
+	@property 
+	def derivatives(self):
+		if not hasattr(self,"_derivatives"):
+			self.compute_derivatives()	
+		return self._derivatives
 
 
 	def chi2(self,observed_feature,features_covariance):
@@ -552,7 +557,14 @@ class FisherAnalysis(Analysis):
 
 		"""
 
+		#Cast pandas types
 		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+		
+		if isinstance(observed_feature,pd.Series) or isinstance(observed_feature,pd.DataFrame):
+			observed_feature = observed_feature.values
+
+		if isinstance(features_covariance,pd.DataFrame):
+			features_covariance = features_covariance.values
 
 		#Cast the observed feature in suitable shape
 		if len(observed_feature.shape)==1:
@@ -598,28 +610,34 @@ class FisherAnalysis(Analysis):
 
 		assert features_covariance is not None,"No science without the covariance matrix, you must provide one!"
 
+		#Cast pandas types
+		if isinstance(observed_feature,pd.Series) or isinstance(observed_feature,pd.DataFrame):
+			observed_feature = observed_feature.values
+
+		if isinstance(features_covariance,pd.DataFrame):
+			features_covariance = features_covariance.values
+
 		#Check for correct shape of input
 		assert observed_feature.shape==self.feature_set.shape[1:]
 		assert features_covariance.shape==observed_feature.shape * 2 or features_covariance.shape==observed_feature.shape
 
-		#If derivatives are not computed, compute them
-		if not hasattr(self,"derivatives"):
-			self.compute_derivatives()
+		#Compute the derivatives
+		self.compute_derivatives()
 
 		#Linear algebra manipulations (parameters = M x features)
 		if features_covariance.shape == observed_feature.shape * 2:
-			Y = solve(features_covariance,self.derivatives.transpose())
+			Y = solve(features_covariance,self.derivatives.values.transpose())
 		else:
-			Y = (1/features_covariance[:,np.newaxis]) * self.derivatives.transpose()
+			Y = (1/features_covariance[:,np.newaxis]) * self.derivatives.values.transpose()
 
-		XY = np.dot(self.derivatives,Y)
+		XY = np.dot(self.derivatives.values,Y)
 		M = solve(XY,Y.transpose())
 
 		#Compute difference in parameters (with respect to the fiducial model)
 		dP = np.dot(M,observed_feature - self.feature_set[self._fiducial])
 
 		#Return the actual best fit
-		return self.parameter_set[self._fiducial,self.varied] + dP
+		return self.__class__(self.parameter_set[self._fiducial,self.varied] + dP,columns=self.parameter_names)
 
 
 	def classify(self,observed_feature,features_covariance,labels=range(2),confusion=False):
@@ -679,12 +697,12 @@ class FisherAnalysis(Analysis):
 			#Return
 			return classes
 
+	###############################################################################################################################################################
 
-
-	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
+	def parameter_covariance(self,simulated_features_covariance,observed_features_covariance=None):
 
 		"""
-		Computes the Fisher matrix of the associated features, that in the end allows to compute the parameter confidence contours (around the fiducial value)
+		Computes the parameter covariance matrix using the associated features, that in the end allows to compute the parameter confidence contours (around the fiducial value)
 
 		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
 		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
@@ -692,31 +710,36 @@ class FisherAnalysis(Analysis):
 		:param observed_features_covariance: covariance matrix of the simulated features, if different from the simulated one; if None the simulated feature covariance is used
 		:type observed_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
 
-		:returns: 2 dimensional array with the Fisher matrix of the analysis
+		:returns: 2 dimensional array with the parameter covariance matrix of the analysis
 
 		"""
 
-		#Check for correct shape of input
 		assert simulated_features_covariance is not None,"No science without the covariance matrix, you must provide one!"
+
+		#Cast pandas types
+		if isinstance(simulated_features_covariance,pd.DataFrame):
+			simulated_features_covariance = simulated_features_covariance.values
+
+		if (observed_features_covariance is not None) and (isinstance(observed_features_covariance,pd.DataFrame)):
+			observed_features_covariance = observed_features_covariance.values
+
+		#Check for correct shape of input
 		assert simulated_features_covariance.shape == self.feature_set.shape[1:] * 2 or simulated_features_covariance.shape == self.feature_set.shape[1:]
 
-		#If derivatives are not computed, compute them
-		if not hasattr(self,"derivatives"):
-			self.compute_derivatives()
+		#Compute derivatives
+		self.compute_derivatives()
 
 		#Linear algebra manipulations (parameters = M x features)
 		if simulated_features_covariance.shape ==  self.feature_set.shape[1:] * 2:
-			Y = solve(simulated_features_covariance,self.derivatives.transpose())
+			Y = solve(simulated_features_covariance,self.derivatives.values.transpose())
 		else:
-			Y = (1/simulated_features_covariance[:,np.newaxis]) * self.derivatives.transpose()
+			Y = (1/simulated_features_covariance[:,np.newaxis]) * self.derivatives.values.transpose()
 		
-		XY = np.dot(self.derivatives,Y)
+		XY = np.dot(self.derivatives.values,Y)
 
 		#If we are using the same covariance matrix for observations and simulations, then XY is the Fisher matrix; otherwise we need to compute M too
 		if observed_features_covariance is None:
-			
-			return XY
-		
+			return self.__class__(XY,index=self.parameter_names,columns=self.parameter_names)
 		else:
 
 			assert observed_features_covariance.shape == self.feature_set.shape[1:] * 2 or observed_features_covariance.shape == self.feature_set.shape[1:]
@@ -728,7 +751,28 @@ class FisherAnalysis(Analysis):
 			else:
 				parameter_covariance = np.dot(M * observed_features_covariance,M.transpose())
 
-			return inv(parameter_covariance)
+			return self.__class__(parameter_covariance,index=self.parameter_names,columns=self.parameter_names)
+
+	
+	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
+
+		"""
+		Computes the parameter Fisher matrix using the associated features, that in the end allows to compute the parameter confidence contours (around the fiducial value)
+
+		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
+		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param observed_features_covariance: covariance matrix of the simulated features, if different from the simulated one; if None the simulated feature covariance is used
+		:type observed_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:returns: 2 dimensional array with the Fisher matrix of the analysis
+
+		"""
+
+		parcov = self.parameter_covariance(simulated_features_covariance,observed_features_covariance)
+		return self.__class__(inv(parcov.values),index=parcov.index,columns=parcov.columns)
+
+	###########################################################################################################################################
 
 
 	def reparametrize(self,formatter,*args,**kwargs):
