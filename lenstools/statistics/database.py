@@ -200,7 +200,7 @@ def chi2database(db_name,parameters,specs,table_name="scores",pool=None,nchunks=
 		for feature_type in specs.keys():
 
 			#Log
-			logdriver.info("Processing feature_type: {0} ({1} parameter combinations)...".format(feature_type,len(parameters)))
+			logdriver.info("Processing feature_type: {0} ({1} feature dimensions, {2} parameter combinations)...".format(feature_type,len(specs[feature_type]["data"]),len(parameters)))
 			
 			#Score
 			chi2,likelihood = chi2score(emulator=specs[feature_type]["emulator"],parameters=parameters,data=specs[feature_type]["data"],data_covariance=specs[feature_type]["data_covariance"],nchunks=nchunks,pool=pool)
