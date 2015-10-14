@@ -171,7 +171,7 @@ def test_interpolation():
 
 	#Give it a shot with two points in parameter space to test vectorization
 	two_parameter_points = np.array((training_models[0].squeeze(),testing_model.squeeze()))
-	two_predicted_Pl = emulator.predict(two_parameter_points)
+	two_predicted_Pl = emulator.predict(two_parameter_points).values
 
 	fig,ax = plt.subplots(2,1,figsize=(16,8))
 

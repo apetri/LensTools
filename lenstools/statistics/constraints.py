@@ -532,7 +532,7 @@ class FisherAnalysis(Analysis):
 			derivatives[n]  = (self.feature_set[loc_varied[p]] - self.feature_set[self._fiducial]) / (self.parameter_set[loc_varied[p],p] - self.parameter_set[self._fiducial,p])
 
 		#set the derivatives attribute and return the result
-		self._derivatives = self.__class__(derivatives,index=self.parameter_names,columns=self[self.feature_names].columns)
+		self._derivatives = self.__class__(derivatives,index=[self.parameter_names[n] for n in par_varied],columns=self[self.feature_names].columns)
 
 	@property 
 	def derivatives(self):
@@ -637,7 +637,10 @@ class FisherAnalysis(Analysis):
 		dP = np.dot(M,observed_feature - self.feature_set[self._fiducial])
 
 		#Return the actual best fit
-		return self.__class__(self.parameter_set[self._fiducial,self.varied] + dP,columns=self.parameter_names)
+		if dP.ndim==1:
+			return self._constructor_sliced(self.parameter_set[self._fiducial,self.varied] + dP,index=self.derivatives.index)
+		else:
+			return self.__class__(self.parameter_set[self._fiducial,self.varied] + dP,columns=self.derivatives.index)
 
 
 	def classify(self,observed_feature,features_covariance,labels=range(2),confusion=False):
@@ -739,7 +742,7 @@ class FisherAnalysis(Analysis):
 
 		#If we are using the same covariance matrix for observations and simulations, then XY is the Fisher matrix; otherwise we need to compute M too
 		if observed_features_covariance is None:
-			return self.__class__(XY,index=self.parameter_names,columns=self.parameter_names)
+			return self.__class__(XY,index=self.derivatives.index,columns=self.derivatives.index)
 		else:
 
 			assert observed_features_covariance.shape == self.feature_set.shape[1:] * 2 or observed_features_covariance.shape == self.feature_set.shape[1:]
@@ -751,7 +754,7 @@ class FisherAnalysis(Analysis):
 			else:
 				parameter_covariance = np.dot(M * observed_features_covariance,M.transpose())
 
-			return self.__class__(parameter_covariance,index=self.parameter_names,columns=self.parameter_names)
+			return self.__class__(parameter_covariance,index=self.derivatives.index,columns=self.derivatives.index)
 
 	
 	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
