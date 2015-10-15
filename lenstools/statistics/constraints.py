@@ -21,11 +21,15 @@ import cPickle as pickle
 
 import numpy as np
 import pandas as pd
-from numpy.linalg import solve,inv
-from scipy.interpolate import interp1d,Rbf
+
+from scipy import stats,interpolate
 
 from emcee.ensemble import _function_wrapper
 
+try:
+	from matplotlib.patches import Ellipse
+except ImportError:
+	Ellipse = None
 
 #########################################################
 
@@ -584,7 +588,7 @@ class FisherAnalysis(Analysis):
 		if features_covariance.shape==self.feature_set.shape[-1:]:
 			result = ((difference**2)/features_covariance[None]).sum(-1)
 		else:
-			result = (difference * solve(features_covariance,difference.transpose()).transpose()).sum(-1)
+			result = (difference * np.linalg.solve(features_covariance,difference.transpose()).transpose()).sum(-1)
 
 		#Return the result
 		if single:
@@ -623,12 +627,12 @@ class FisherAnalysis(Analysis):
 
 		#Linear algebra manipulations (parameters = M x features)
 		if features_covariance.shape == observed_feature.shape * 2:
-			Y = solve(features_covariance,self.derivatives.values.transpose())
+			Y = np.linalg.solve(features_covariance,self.derivatives.values.transpose())
 		else:
 			Y = (1/features_covariance[:,np.newaxis]) * self.derivatives.values.transpose()
 
 		XY = np.dot(self.derivatives.values,Y)
-		M = solve(XY,Y.transpose())
+		M = np.linalg.solve(XY,Y.transpose())
 
 		#Compute difference in parameters (with respect to the fiducial model)
 		dP = np.dot(M,observed_feature - self.feature_set[self._fiducial])
@@ -728,7 +732,7 @@ class FisherAnalysis(Analysis):
 
 		#Linear algebra manipulations (parameters = M x features)
 		if simulated_features_covariance.shape ==  self.feature_set.shape[1:] * 2:
-			Y = solve(simulated_features_covariance,self.derivatives.values.transpose())
+			Y = np.linalg.solve(simulated_features_covariance,self.derivatives.values.transpose())
 		else:
 			Y = (1/simulated_features_covariance[:,np.newaxis]) * self.derivatives.values.transpose()
 		
@@ -736,12 +740,12 @@ class FisherAnalysis(Analysis):
 
 		#If we are using the same covariance matrix for observations and simulations, then XY is the Fisher matrix; otherwise we need to compute M too
 		if observed_features_covariance is None:
-			return self.__class__(XY,index=self.derivatives.index,columns=self.derivatives.index)
+			return self.__class__(np.linalg.inv(XY),index=self.derivatives.index,columns=self.derivatives.index)
 		else:
 
 			assert observed_features_covariance.shape == self.feature_set.shape[1:] * 2 or observed_features_covariance.shape == self.feature_set.shape[1:]
 			
-			M = solve(XY,Y.transpose())
+			M = np.linalg.solve(XY,Y.transpose())
 			
 			if observed_features_covariance.shape == self.feature_set.shape[1:] * 2:
 				parameter_covariance = np.dot(M,np.dot(observed_features_covariance,M.transpose()))
@@ -767,7 +771,66 @@ class FisherAnalysis(Analysis):
 		"""
 
 		parcov = self.parameter_covariance(simulated_features_covariance,observed_features_covariance)
-		return self.__class__(inv(parcov.values),index=parcov.index,columns=parcov.columns)
+		return self.__class__(np.linalg.inv(parcov.values),index=parcov.index,columns=parcov.columns)
+
+
+	def ellipse(self,simulated_features_covariance,observed_feature=None,observed_features_covariance=None,parameters=["Om","w"],p_value=0.684,**kwargs):
+
+		"""
+
+		Draws a confidence ellipse of a specified p-value in parameter space, corresponding to fit an observed feature for the cosmological parameters
+
+		:param observed_feature: observed feature to fit, the last dimenstion must have the same shape as self.feature_set[0]
+		:type observed_feature: array
+
+		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
+		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param observed_features_covariance: covariance matrix of the simulated features, if different from the simulated one; if None the simulated feature covariance is used
+		:type observed_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param parameters: parameters to compute the condifence contour of
+		:type parameters: list.
+
+		:param p_value: p-value to calculate
+		:type p_value: float.
+
+		:param kwargs: the keyword arguments are passed to the matplotlib Ellipse method
+		:type kwargs: dict.
+
+		:returns: matplotlib ellipse object
+		:rtype: Ellipse
+
+		"""
+
+		#Check that ellipse patch is available
+		if Ellipse is None:
+			raise ImportError("The matplotlib Ellipse patch is necessary to use this method!")
+
+		if len(parameters)!=2:
+			raise ValueError("You must specify exactly two parameters to draw the ellipse of!")
+
+		#If the observed feature is not provided, the center of the ellipse is (0,0)
+		if observed_feature is None:
+			center = (0,0)
+		else:
+			#Fit the observed feature and put the center here
+			p_fit = self.fit(observed_feature,simulated_features_covariance)
+			center = tuple(p_fit[parameters])
+
+		#The parameter covariance sets the size and orientation of the ellipse
+		p_cov = self.parameter_covariance(simulated_features_covariance,observed_features_covariance)[parameters].loc[parameters]
+		w,v = np.linalg.eigh(p_cov.values)
+		width,height = np.sqrt(w * stats.chi2(2).ppf(p_value))
+
+		try:
+			angle = 180.*np.arctan(v[1,0] / v[0,0]) / np.pi
+		except ZeroDivisionError:
+			angle = 90.
+
+		#Draw the ellipse
+		return Ellipse(center,width,height,angle=angle,**kwargs)
+
 
 	###########################################################################################################################################
 
@@ -912,7 +975,7 @@ class Emulator(Analysis):
 		self._interpolator = list()
 
 		for n in range(self._num_bins):
-			self._interpolator.append(_interpolate_wrapper(Rbf,args=(tuple(used_parameters) + (flattened_feature_set[:,n],)),kwargs=kwargs))
+			self._interpolator.append(_interpolate_wrapper(interpolate.Rbf,args=(tuple(used_parameters) + (flattened_feature_set[:,n],)),kwargs=kwargs))
 
 		return None
 
@@ -1007,7 +1070,7 @@ class Emulator(Analysis):
 			raise ValueError("split_chunks must be >0!!")
 
 		#Compute the inverse of the covariance matrix once and for all
-		covinv = inv(features_covariance)
+		covinv = np.linalg.inv(features_covariance)
 
 		#Build the keyword argument dictionary to be passed to the chi2 calculator
 		kwargs = {"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
@@ -1058,7 +1121,7 @@ class Emulator(Analysis):
 		residuals = observed_feature - self.predict(parameters)
 
 		#Compute the inverse covariance
-		covinv = inv(features_covariance)
+		covinv = np.linalg.inv(features_covariance)
 
 		#Compute the hits map
 		return np.outer(residuals,residuals) * covinv

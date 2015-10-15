@@ -78,6 +78,17 @@ def test_fisher():
 	fisher = f.fisher_matrix(simulated_features_covariance=covariance)
 	np.savetxt("fisher_constraints.txt",np.sqrt(np.linalg.inv(fisher.values).diagonal()))
 
+	#Confidence ellipse
+	fig,ax = plt.subplots()
+	e = f.ellipse(covariance,observed_feature=P,parameters=["Om","si8"],fill=True,edgecolor="black",alpha=0.3)
+	ax.add_artist(e)
+	ax.set_xlim(0.26-5.0e-3,0.26+5.0e-3)
+	ax.set_ylim(0.85-5.0e-3,0.85+5.0e-3)
+	ax.legend([e],["contour"],loc="upper left")
+	ax.set_xlabel(r"$\Omega_m$")
+	ax.set_ylabel(r"$\sigma_8$")
+	fig.savefig("fisher_contours.png")
+
 #Test interpolation of power spectrum
 def test_interpolation():
 
