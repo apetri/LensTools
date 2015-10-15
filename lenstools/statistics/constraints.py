@@ -621,9 +621,6 @@ class FisherAnalysis(Analysis):
 		assert observed_feature.shape==self.feature_set.shape[1:]
 		assert features_covariance.shape==observed_feature.shape * 2 or features_covariance.shape==observed_feature.shape
 
-		#Compute the derivatives
-		self.compute_derivatives()
-
 		#Linear algebra manipulations (parameters = M x features)
 		if features_covariance.shape == observed_feature.shape * 2:
 			Y = solve(features_covariance,self.derivatives.values.transpose())
@@ -729,9 +726,6 @@ class FisherAnalysis(Analysis):
 		#Check for correct shape of input
 		assert simulated_features_covariance.shape == self.feature_set.shape[1:] * 2 or simulated_features_covariance.shape == self.feature_set.shape[1:]
 
-		#Compute derivatives
-		self.compute_derivatives()
-
 		#Linear algebra manipulations (parameters = M x features)
 		if simulated_features_covariance.shape ==  self.feature_set.shape[1:] * 2:
 			Y = solve(simulated_features_covariance,self.derivatives.values.transpose())
@@ -836,6 +830,43 @@ class Emulator(Analysis):
 
 		if "_likelihood_function" not in self._metadata:
 			self._metadata.append("_likelihood_function")
+
+	#######################################################################################################################################
+
+	def approximate_linear(self,center,derivative_precision=0.1):
+
+		"""
+		Construct a FisherAnalysis by approximating the Emulator as a linear expansion along a chosen center
+
+		:param center: center point in parameter space
+		:type center: Series
+
+		:param derivative_precision: percentage step for the finite difference derivatives
+		:type derivative_precision: float.
+
+		:returns: linearly approximated Fisher analysis
+		:rtype: FisherAnalysis
+
+		"""
+
+		npar = len(self.parameter_names)
+
+		#Construct the parameter set for the Fisher Analysis
+		parameters_fisher = Ensemble(np.zeros((npar+1,npar)),columns=self.parameter_names)
+
+		#Fiducial
+		for n in range(len(parameters_fisher)):
+			parameters_fisher.iloc[n] = center
+
+		#Variations
+		for n in range(1,len(parameters_fisher)):
+			parameters_fisher.iloc[n,n-1] += np.abs(parameters_fisher.iloc[n,n-1])*derivative_precision
+
+		#Predict the features with the emulator, build the Fisher Analysis
+		features = self.predict(parameters_fisher)
+		parameters_fisher.add_name("parameters")
+
+		return FisherAnalysis.from_features(features,parameters=parameters_fisher)
 
 	#######################################################################################################################################
 
