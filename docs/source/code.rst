@@ -18,10 +18,10 @@ Shear maps and catalogs
 	:inherited-members:
 
 .. autoclass:: lenstools.catalog.shear.Catalog
-	:members: setSpatialInfo,pixelize,visualize,hstack,vstack
+	:members: setSpatialInfo,pixelize,visualize
 
 .. autoclass:: lenstools.catalog.shear.ShearCatalog
-	:members: toMap,hstack,vstack
+	:members: toMap
 
 Statistics
 ==========
@@ -32,6 +32,12 @@ Statistics
 .. autoclass:: lenstools.statistics.database.Database
 	:inherited-members:
 
+.. autoclass:: lenstools.statistics.database.ScoreDatabase
+	:inherited-members:
+
+.. automodule:: lenstools.statistics.database
+	:members: chi2database
+
 Constraining cosmology
 ======================
 
@@ -39,10 +45,10 @@ Constraining cosmology
 	:members: from_features,feature_names,parameter_names,parameter_set,feature_set,parameters,features,add_models,reparametrize,refeaturize,combine_features,find
 
 .. autoclass:: lenstools.statistics.constraints.FisherAnalysis
-	:members: set_fiducial,fiducial,variations,check,where,varied,compute_derivatives,chi2,fit,classify,fisher_matrix
+	:members: set_fiducial,fiducial,variations,check,where,varied,compute_derivatives,derivatives,chi2,fit,classify,parameter_covariance,fisher_matrix,ellipse
 
 .. autoclass:: lenstools.statistics.constraints.Emulator
-	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score
+	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score,approximate_linear
 
 .. autoclass:: lenstools.statistics.contours.ContourPlot
 	:inherited-members:
