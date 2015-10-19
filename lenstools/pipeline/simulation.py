@@ -2006,8 +2006,9 @@ class SimulationCollection(SimulationModel):
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
-		with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
-			setsfile.write("{0}\n".format(settings.directory_name))
+		if not self.syshandler.exists(self.infofile):
+			with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
+				setsfile.write("{0}\n".format(settings.directory_name))
 
 		#Return to user
 		return map_set
@@ -2099,8 +2100,9 @@ class SimulationCollection(SimulationModel):
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
-		with self.syshandler.open(os.path.join(self.home_subdir,"catalogs.txt"),"a") as setsfile:
-			setsfile.write("{0}\n".format(settings.directory_name))
+		if not self.syshandler.exists(self.infofile):
+			with self.syshandler.open(os.path.join(self.home_subdir,"catalogs.txt"),"a") as setsfile:
+				setsfile.write("{0}\n".format(settings.directory_name))
 
 		#Return to user
 		return catalog
@@ -2328,8 +2330,9 @@ class SimulationIC(SimulationCollection):
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the plane batch to a summary file
-		with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
-			setsfile.write("{0}\n".format(settings.directory_name))
+		if not self.syshandler.exists(self.infofile):
+			with self.syshandler.open(os.path.join(self.home_subdir,"sets.txt"),"a") as setsfile:
+				setsfile.write("{0}\n".format(settings.directory_name))
 
 		#Return the created instance
 		return new_plane_set
