@@ -15,6 +15,7 @@ from __future__ import print_function,division,with_statement
 import os
 import logging
 
+from .constraints import FisherAnalysis
 
 import numpy as np
 from scipy import stats
@@ -512,7 +513,7 @@ class ContourPlot(object):
 		self.ax.set_ylim(self.extent[2],self.extent[3])
 
 
-	def show(self):
+	def show(self,cmap=plt.cm.binary_r,interpolation="nearest"):
 
 		"""
 		Show the 2D marginalized likelihood
@@ -526,7 +527,7 @@ class ContourPlot(object):
 
 		assert reduced_likelihood.ndim == 2,"Can show only 2 dimensional likelihoods in the figure!!"
 		
-		self.likelihood_image = self.ax.imshow(reduced_likelihood.transpose(),origin="lower",cmap=plt.cm.binary_r,extent=self.extent,interpolation="nearest",aspect="auto")
+		self.likelihood_image = self.ax.imshow(reduced_likelihood.transpose(),origin="lower",cmap=cmap,extent=self.extent,interpolation=interpolation,aspect="auto")
 		self.colorbar = plt.colorbar(self.likelihood_image,ax=self.ax)
 		
 
@@ -615,6 +616,68 @@ class ContourPlot(object):
 		self.likelihood_values = values
 		
 		return values
+
+	######################################################################################
+	##############Plot the Gaussian approximation to the confidence contours##############
+	######################################################################################
+
+	def plotEllipse(self,colors=["red"],levels=[0.683],**kwargs):
+
+		"""
+		Plot the Gaussian approximation to the confidence contours
+
+		:param colors: colors of the confidence ellipses
+		:type colors: list.
+
+		:param levels: p_values of the confidence ellipses
+		:type levels: list.
+
+		:param kwargs: additional keyword arguments are passed to the Ellipse patch method
+		:type kwargs: dict.
+
+		"""
+
+		if hasattr(self,"reduced_likelihood"):
+			likelihood = np.log(self.reduced_likelihood)
+		else:
+			likelihood = np.log(self.likelihood)
+
+		#Find the maximum of the likelihood and compute the hessian matrix around it
+		assert likelihood.ndim==2,"The likelihood must be 2-dimensional"
+
+		#Find the names of the relevant parameters
+		if hasattr(self,"remaining_parameters"):
+			parameters = self.remaining_parameters
+		else:
+			parameters = self.parameter_axes.keys()
+
+		assert len(parameters)==2,"There should be only 2 parameters!"
+
+		parameters.sort(key=self.parameter_axes.get)
+
+		#Find the maximum and the center of the ellipse
+		imax,jmax = [ l[0] for l in np.where(likelihood==likelihood.max()) ]
+		center = tuple([ self.min[p] + self.unit[p]*(imax,jmax)[n] for n,p in enumerate(parameters) ])
+
+		#Compute the hessian
+		hessian = np.zeros((2,2))
+		hessian[0,0] = (likelihood[imax,jmax+2] + likelihood[imax,jmax-2] - 2*likelihood[imax,jmax]) / 4.
+		hessian[1,1] = (likelihood[imax+2,jmax] + likelihood[imax-2,jmax] - 2*likelihood[imax,jmax]) / 4.
+		hessian[1,0] = (likelihood[imax+1,jmax+1] + likelihood[imax-1,jmax-1] - likelihood[imax+1,jmax-1] - likelihood[imax-1,jmax+1]) / 4.
+
+		#Scale the hessian to parameter units
+		hessian[0,0] /= (self.unit[parameters[0]]**2)
+		hessian[1,1] /= (self.unit[parameters[1]]**2)
+		hessian[1,0] /= (self.unit[parameters[0]]*self.unit[parameters[1]])
+		hessian[0,1] = hessian[1,0]
+
+		#Compute the parameter covariance matrix
+		pcov = np.linalg.inv(-hessian)
+
+		#Plot an ellipse for each p-value
+		for n,level in enumerate(levels):
+			self.ax.add_artist(FisherAnalysis.ellipse(center,pcov,level,edgecolor=colors[n],**kwargs))
+
 
 	######################################################################
 	##############Plot the contours on top of the likelihood##############

@@ -362,6 +362,48 @@ class Analysis(Ensemble):
 		search_result = np.all(np.isclose(self.parameter_set,parameters,rtol=rtol),axis=1)
 		return np.where(search_result==True)[0]
 
+	###############################################################################################################################
+
+	@staticmethod
+	def ellipse(center,covariance,p_value=0.684,**kwargs):
+
+		"""
+
+		Draws a confidence ellipse using matplotlib Ellipse patch
+
+		:param center: center of the ellipse
+		:type center: tuple.
+
+		:param covariance: parameters covariance matrix
+		:type covariance: 2D-array.
+
+		:param p_value: p-value to calculate
+		:type p_value: float.
+						
+		:param kwargs: the keyword arguments are passed to the matplotlib Ellipse method
+		:type kwargs: dict.
+
+		:returns: matplotlib ellipse object
+		:rtype: Ellipse
+
+		"""
+
+		#Check that ellipse patch is available
+		if Ellipse is None:
+			raise ImportError("The matplotlib Ellipse patch is necessary to use this method!")
+
+		#Compute the directions and sizes of the ellipse axes
+		w,v = np.linalg.eigh(covariance)
+		width,height = np.sqrt(w * stats.chi2(2).ppf(p_value))
+
+		try:
+			angle = 180.*np.arctan(v[1,0] / v[0,0]) / np.pi
+		except ZeroDivisionError:
+			angle = 90.
+
+		#Draw the ellipse
+		return Ellipse(center,width,height,angle=angle,**kwargs)
+
 
 ###################################################
 #############Fisher matrix analysis################
@@ -774,7 +816,7 @@ class FisherAnalysis(Analysis):
 		return self.__class__(np.linalg.inv(parcov.values),index=parcov.index,columns=parcov.columns)
 
 
-	def ellipse(self,simulated_features_covariance,observed_feature=None,observed_features_covariance=None,parameters=["Om","w"],p_value=0.684,**kwargs):
+	def confidence_ellipse(self,simulated_features_covariance,observed_feature=None,observed_features_covariance=None,parameters=["Om","w"],p_value=0.684,**kwargs):
 
 		"""
 
@@ -803,10 +845,6 @@ class FisherAnalysis(Analysis):
 
 		"""
 
-		#Check that ellipse patch is available
-		if Ellipse is None:
-			raise ImportError("The matplotlib Ellipse patch is necessary to use this method!")
-
 		if len(parameters)!=2:
 			raise ValueError("You must specify exactly two parameters to draw the ellipse of!")
 
@@ -820,16 +858,9 @@ class FisherAnalysis(Analysis):
 
 		#The parameter covariance sets the size and orientation of the ellipse
 		p_cov = self.parameter_covariance(simulated_features_covariance,observed_features_covariance)[parameters].loc[parameters]
-		w,v = np.linalg.eigh(p_cov.values)
-		width,height = np.sqrt(w * stats.chi2(2).ppf(p_value))
-
-		try:
-			angle = 180.*np.arctan(v[1,0] / v[0,0]) / np.pi
-		except ZeroDivisionError:
-			angle = 90.
-
-		#Draw the ellipse
-		return Ellipse(center,width,height,angle=angle,**kwargs)
+		
+		#Return Ellipse object to user
+		return self.ellipse(center,p_cov.values,p_value,**kwargs)
 
 
 	###########################################################################################################################################
