@@ -394,7 +394,7 @@ class Analysis(Ensemble):
 
 		#Compute the directions and sizes of the ellipse axes
 		w,v = np.linalg.eigh(covariance)
-		width,height = np.sqrt(w * stats.chi2(2).ppf(p_value))
+		width,height = 2*np.sqrt(w * stats.chi2(2).ppf(p_value))
 
 		try:
 			angle = 180.*np.arctan(v[1,0] / v[0,0]) / np.pi

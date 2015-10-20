@@ -661,8 +661,8 @@ class ContourPlot(object):
 
 		#Compute the hessian
 		hessian = np.zeros((2,2))
-		hessian[0,0] = (likelihood[imax,jmax+2] + likelihood[imax,jmax-2] - 2*likelihood[imax,jmax]) / 4.
-		hessian[1,1] = (likelihood[imax+2,jmax] + likelihood[imax-2,jmax] - 2*likelihood[imax,jmax]) / 4.
+		hessian[0,0] = (likelihood[imax+2,jmax] + likelihood[imax-2,jmax] - 2*likelihood[imax,jmax]) / 4.
+		hessian[1,1] = (likelihood[imax,jmax+2] + likelihood[imax,jmax-2] - 2*likelihood[imax,jmax]) / 4.
 		hessian[1,0] = (likelihood[imax+1,jmax+1] + likelihood[imax-1,jmax-1] - likelihood[imax+1,jmax-1] - likelihood[imax-1,jmax+1]) / 4.
 
 		#Scale the hessian to parameter units
