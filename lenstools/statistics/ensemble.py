@@ -539,9 +539,9 @@ class Ensemble(pd.DataFrame):
 		else:
 			raise NotImplementedError("Grouping scheme '{0}' not implemented".format(kind))
 
+	##########################################################################################################################################################################
 
-	#TODO: reimplement bootstraping method
-	def covariance(self,bootstrap=False,**kwargs):
+	def covariance(self,bootstrap=False,bootstrap_size=10,resample=10,seed=None,pool=None):
 
 		"""
 		Computes the ensemble covariance matrix
@@ -549,21 +549,29 @@ class Ensemble(pd.DataFrame):
 		:param bootstrap: if True the covariance matrix is computed with a bootstrap estimate
 		:type bootstrap: bool.
 
-		:param kwargs: the keyword arguments are passed to the bootstrap method
-		:type kwargs: dict.
+		:param bootstrap_size: size of the resampled ensembles used in the bootstraping; must be less than or equal to the number of realizations in the Ensemble
+		:type bootstrap_size: int.
+
+		:param seed: if not None, this is the random seed of the random resamples 
+		:type seed: int.
+
+		:param resample: number of times the Ensemble is resampled
+		:type resample: int.
+
+		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
+		:type pool: MPI pool object
 
 		:returns: ndarray with the covariance matrix, has shape (self.data[1],self.data[1]) 
 
 		""" 
 
 		if bootstrap:
-			raise NotImplementedError
+			return self.bootstrap(lambda e:e.cov(),bootstrap_size=bootstrap_size,resample=resample,seed=seed,pool=pool,assemble=lambda l:self._constructor_expanddim(dict((n,e) for n,e in enumerate(l))))
 		else:
 			return self.cov()
 
 
-	#TODO: reimplement
-	def bootstrap(self,callback,bootstrap_size=10,resample=10,seed=None):
+	def bootstrap(self,callback,bootstrap_size=10,resample=10,seed=None,assemble=np.array,pool=None,**kwargs):
 
 		"""
 		Computes a custom statistic on the Ensemble using the bootstrap method
@@ -580,7 +588,17 @@ class Ensemble(pd.DataFrame):
 		:param seed: if not None, this is the random seed of the random resamples 
 		:type seed: int.
 
-		:returns: the bootstraped Ensemble statistic
+		:param assemble: method that gets called on the resampled statistic list to make it into an Ensemble
+		:type assemble: callable
+
+		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
+		:type pool: MPI pool object
+
+		:param kwargs: passed to the callback function
+		:type kwargs: dict.
+
+		:returns: the bootstraped statistic
+		:rtype: assemble return type
 
 		"""
 
@@ -591,18 +609,25 @@ class Ensemble(pd.DataFrame):
 		if seed is not None:
 			np.random.seed(seed)
 
-		#TODO: Parallelize
-		M = map
+		#Build a function wrapper of the callback loader, so it becomes pickleable
+		_callback_wrapper = _function_wrapper(callback,args=tuple(),kwargs=kwargs)
+
+		#MPI Pool
+		if pool is None:
+			M = map
+		else:
+			M = pool.map
 
 		#Construct the randomization matrix
 		randomizer = np.random.randint(self.nobs,size=(resample,bootstrap_size))
 
 		#Compute the statistic with the callback
-		statistic = np.array(M(callback,self.iloc[randomizer]))
+		statistic = assemble(M(_callback_wrapper,[ self.reindex(r) for r in randomizer ]))
 
-		#Return the bootstraped statistic expectation value
-		return statistic.mean(0)
+		#Return the bootstraped statistic
+		return statistic
 
+	##########################################################################################################################################################################
 
 	def principalComponents(self,location=None,scale=None):
 
