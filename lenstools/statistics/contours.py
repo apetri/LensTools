@@ -146,7 +146,7 @@ class ContourPlot(object):
 			parameter_values_dict[p] = parameter_values
 
 		#Sort the score_ensemble so that the parameters ordered like a meshgrid
-		score_ensemble = score_ensemble.sort(parameters)
+		score_ensemble = score_ensemble.sort_values(by=parameters)
 		if feature_names is not None:
 			feature_labels = feature_names
 		else: 
