@@ -35,7 +35,7 @@ npyinfo
 -------
 
 lenstools.confidencecontour
------------------
+---------------------------
 
 lenstools.view
 --------------
