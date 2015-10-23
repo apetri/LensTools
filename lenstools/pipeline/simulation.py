@@ -4,6 +4,7 @@ import os
 import re
 import tarfile
 import json
+import StringIO
 
 import numpy as np
 import astropy.units as u
@@ -2641,10 +2642,12 @@ class SimulationPlanes(SimulationIC):
 
 		"""
 
+		s = StringIO.StringIO()
 		info_filename = os.path.join(self.storage_subdir,"info.txt")
 
 		#Look at all the planes present in the storage directory
 		plane_files = self.syshandler.glob(os.path.join(self.storage_subdir,"snap*_potentialPlane0_normal0.fits"))
+		plane_files.sort(key=lambda pf:int(os.path.basename(pf).split("_")[0].strip("snap")))
 
 		#Write a line for each file
 		with self.syshandler.open(info_filename,"w") as fp:
@@ -2653,10 +2656,15 @@ class SimulationPlanes(SimulationIC):
 				#Header and snapsnot number
 				header = PotentialPlane.readHeader(pf)
 				nsnap = os.path.basename(pf).split("_")[0].strip("snap")
-				fp.write("s={0},d={1} Mpc/h,z={2}\n".format(nsnap,header["CHI"],header["Z"]))
+				buf = "s={0},d={1} Mpc/h,z={2}\n".format(nsnap,header["CHI"],header["Z"])
+				fp.write(buf)
+				s.write(buf)
 
 		#Report to user
 		print("[+] Wrote {0} plane information lines to {1}".format(n+1,info_filename))
+		s.seek(0)
+
+		return s.read()
 
 
 ##############################################################
