@@ -1410,11 +1410,7 @@ class SimulationModel(object):
 
 		"""
 
-		full_path = self.syshandler.map(os.path.join(getattr(self,where),filename))
-		if not(self.syshandler.exists(full_path)):
-			return None
-
-		return full_path
+		return self.syshandler.map(os.path.join(getattr(self,where),filename))
 
 	def ls(self,glob="*",where="storage_subdir"):
 

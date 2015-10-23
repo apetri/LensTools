@@ -49,7 +49,7 @@ def main(pool,batch,settings,id):
 
 	#Instantiate the appropriate SimulationIC object
 	realization = model.getCollection(box_size,nside).getRealization(ic)
-	snapshot_path = realization.snapshots
+	snapshot_path = realization.snapshot_subdir
 	
 	#Base name of the snapshot files
 	SnapshotFileBase = realization.SnapshotFileBase + "_"
@@ -121,7 +121,7 @@ def main(pool,batch,settings,id):
 	for n in range(first_snapshot,last_snapshot+1):
 
 		#Open the snapshot
-		snap = Gadget2SnapshotDE.open(batch.syshandler.map(os.path.join(snapshot_path,SnapshotFileBase+"{0:03d}".format(n))),pool=pool)
+		snap = Gadget2SnapshotDE.open(realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir"),pool=pool)
 
 		if pool is not None:
 			logdriver.info("Rank {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
