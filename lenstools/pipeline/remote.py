@@ -36,6 +36,10 @@ class SystemHandler(object):
 		pass
 
 	@abstractmethod
+	def map(self,d):
+		pass
+
+	@abstractmethod
 	def mkdir(self,d):
 		pass
 
@@ -86,6 +90,9 @@ class LocalSystem(SystemHandler):
 
 	def init(self,d):
 		self.mkdir(d)
+
+	def map(self,d):
+		return d
 
 	def mkdir(self,d):
 
@@ -153,6 +160,9 @@ class UnixSSH(SystemHandler):
 	def init(self,d):
 		self.mkdir(d)
 
+	def map(self,d):
+		return d
+
 	def mkdir(self,d):
 		stdin,stdout,stderr = self.client.exec_command("mkdir {0}".format(d))
 
@@ -216,6 +226,8 @@ class LocalGit(SystemHandler):
 	def init(self,d):
 		self.repository = Repository.init(d)
 
+	def map(self,d):
+		return d
 
 	def mkdir(self,d):
 		os.mkdir(d)
