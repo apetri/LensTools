@@ -1548,7 +1548,7 @@ class SimulationModel(object):
 
 		"""
 
-		full_path = os.path.join(getattr(self,where),filename)
+		full_path = self.syshandler.map(os.path.join(getattr(self,where),filename))
 		if not(self.syshandler.exists(full_path)):
 			return None
 
@@ -2679,19 +2679,19 @@ class SimulationPlanes(SimulationIC):
 		"""
 
 		s = StringIO.StringIO()
-		info_filename = os.path.join(self.storage_subdir,"info.txt")
+		info_filename = os.path.join(self.storage,"info.txt")
 
 		#Look at all the planes present in the storage directory
-		plane_files = self.syshandler.glob(os.path.join(self.storage_subdir,"snap*_potentialPlane0_normal0.fits"))
-		plane_files.sort(key=lambda pf:int(os.path.basename(pf).split("_")[0].strip("snap")))
+		plane_files = self.ls(glob="snap*_potentialPlane0_normal0.fits")
+		plane_files.sort(key=lambda pf:int(pf.split("_")[0].strip("snap")))
 
 		#Write a line for each file
 		with self.syshandler.open(info_filename,"w") as fp:
 			for n,pf in enumerate(plane_files):
 
 				#Header and snapsnot number
-				header = PotentialPlane.readHeader(pf)
-				nsnap = os.path.basename(pf).split("_")[0].strip("snap")
+				header = PotentialPlane.readHeader(self.path(pf))
+				nsnap = pf.split("_")[0].strip("snap")
 				buf = "s={0},d={1} Mpc/h,z={2}\n".format(nsnap,header["CHI"],header["Z"])
 				fp.write(buf)
 				s.write(buf)
