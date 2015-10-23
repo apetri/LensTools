@@ -1394,6 +1394,47 @@ class SimulationModel(object):
 	def infofile(self):
 		return os.path.join(self.environment.home,configuration.json_tree_file)
 
+	def path(self,filename,where="storage_subdir"):
+
+		"""
+		Returns the complete path to the resource corresponding to filename; returns None if the resource does not exist
+
+		:param filename: name of the resource
+		:type filename: str.
+
+		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
+		:type where: str.
+
+		:returns: full path to the resource
+		:rtype: str.
+
+		"""
+
+		full_path = self.syshandler.map(os.path.join(getattr(self,where),filename))
+		if not(self.syshandler.exists(full_path)):
+			return None
+
+		return full_path
+
+	def ls(self,glob="*",where="storage_subdir"):
+
+		"""
+		Returns the list of files present either in the storage or home portion of the simulation batch
+
+		:param glob: glob string to filter file types
+		:type glob: str. 
+
+		:param where: specifies if to look into the storage or home part of the simulation batch
+		:type where: str.
+
+		:returns: list of files
+		:rtype: list.
+
+		"""
+
+		search_path = getattr(self,where)
+		return [os.path.basename(f) for f in self.syshandler.glob(os.path.join(search_path,glob))]
+
 	####################################################################################################
 
 	@property
@@ -1532,48 +1573,7 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
-	def path(self,filename,where="storage_subdir"):
-
-		"""
-		Returns the complete path to the resource corresponding to filename; returns None if the resource does not exist
-
-		:param filename: name of the resource
-		:type filename: str.
-
-		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
-		:type where: str.
-
-		:returns: full path to the resource
-		:rtype: str.
-
-		"""
-
-		full_path = self.syshandler.map(os.path.join(getattr(self,where),filename))
-		if not(self.syshandler.exists(full_path)):
-			return None
-
-		return full_path
-
-	################################################################################################################################
-
-	def ls(self,glob="*",where="storage_subdir"):
-
-		"""
-		Returns the list of files present either in the storage or home portion of the simulation batch
-
-		:param glob: glob string to filter file types
-		:type glob: str. 
-
-		:param where: specifies if to look into the storage or home part of the simulation batch
-		:type where: str.
-
-		:returns: list of files
-		:rtype: list.
-
-		"""
-
-		search_path = getattr(self,where)
-		return [os.path.basename(f) for f in self.syshandler.glob(os.path.join(search_path,glob))] 
+	 
 
 	################################################################################################################################
 
