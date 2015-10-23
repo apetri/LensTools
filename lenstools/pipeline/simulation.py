@@ -17,6 +17,7 @@ from .settings import *
 
 from .deploy import JobHandler
 from ..simulations import Gadget2Settings,Gadget2SnapshotDE
+from ..simulations.raytracing import PotentialPlane
 
 from ..simulations.camb import CAMBSettings
 
@@ -2632,6 +2633,30 @@ class SimulationPlanes(SimulationIC):
 		#Build the new representation string
 		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
 		return " | ".join(parent_repr)
+
+	def mkinfo(self):
+
+		"""
+		Write the plane info file in the storage subdirectory
+
+		"""
+
+		info_filename = os.path.join(self.storage_subdir,"info.txt")
+
+		#Look at all the planes present in the storage directory
+		plane_files = self.syshandler.glob(os.path.join(self.storage_subdir,"snap*_potentialPlane0_normal0.fits"))
+
+		#Write a line for each file
+		with self.syshandler.open(info_filename,"w") as fp:
+			for n,pf in enumerate(plane_files):
+
+				#Header and snapsnot number
+				header = PotentialPlane.readHeader(pf)
+				nsnap = os.path.basename(pf).split("_")[0].strip("snap")
+				fp.write("s={0},d={1} Mpc/h,z={2}\n".format(nsnap,header["CHI"],header["Z"]))
+
+		#Report to user
+		print("[+] Wrote {0} plane information lines to {1}".format(n+1,info_filename))
 
 
 ##############################################################

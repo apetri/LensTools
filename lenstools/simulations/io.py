@@ -20,6 +20,11 @@ except ImportError:
 #######################FITS format##################################
 ####################################################################
 
+#Header
+def readFITSHeader(filename):
+	with fits.open(filename) as fp:
+		return fp[0].header
+
 #Read
 def readFITS(cls,filename,init_cosmology=True):
 

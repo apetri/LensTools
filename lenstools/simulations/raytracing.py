@@ -25,7 +25,7 @@ fftengine = NUMPYFFTPack()
 
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
-from .io import readFITS,saveFITS
+from .io import readFITSHeader,readFITS,saveFITS
 
 #Enable garbage collection if not active already
 if not gc.isenabled():
@@ -71,6 +71,38 @@ class Plane(Spin0):
 		else:
 			raise TypeError("data type not supported!")
 
+	@staticmethod
+	def readHeader(filename,format=None):
+
+		"""
+		Read the header of the file on which the plane is contained
+
+		:param filename: name of the file
+		:type filename: str.
+
+		:param format: format of the file, only FITS implemented so far; if None, it's detected automatically from the filename
+		:type format: str.
+
+		:returns: header object
+
+		"""
+
+		if format is None:
+			
+			extension = filename.split(".")[-1]
+			if extension in ["fit","fits"]:
+				format="fits"
+			else:
+				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
+
+
+		if format=="fits":
+			return readFITSHeader(filename)
+		else:
+			raise ValueError("Format {0} not implemented yet!!".format(format))
+
+
+	##########################################################################################################################################################
 	
 
 	def angular(self,length_scale):
