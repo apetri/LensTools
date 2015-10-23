@@ -49,7 +49,7 @@ def main(pool,batch,settings,id):
 
 	#Instantiate the appropriate SimulationIC object
 	realization = model.getCollection(box_size,nside).getRealization(ic)
-	snapshot_path = realization.snapshot_subdir
+	snapshot_path = realization.snapshots
 	
 	#Base name of the snapshot files
 	SnapshotFileBase = realization.SnapshotFileBase + "_"
@@ -60,12 +60,12 @@ def main(pool,batch,settings,id):
 
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
 	plane_batch = realization.getPlaneSet(settings.directory_name)
-	save_path = plane_batch.storage_subdir
+	save_path = plane_batch.storage
 
 	#Override with pickled options in storage subdir if prompted by user
 	if settings.override_with_local:
 		
-		local_settings_file = os.path.join(plane_batch.home_subdir,"settings.p")
+		local_settings_file = os.path.join(plane_batch.home,"settings.p")
 		
 		with open(local_settings_file,"r") as settingsfile:
 			settings = cPickle.load(settingsfile)

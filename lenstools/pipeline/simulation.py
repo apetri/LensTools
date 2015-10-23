@@ -143,6 +143,14 @@ class SimulationBatch(object):
 	@property
 	def storage_subdir(self):
 		return self.environment.storage
+
+	@property
+	def home(self):
+		return self.home_subdir
+
+	@property
+	def storage(self):
+		return self.storage_subdir
 		
 
 	def __init__(self,environment,syshandler=configuration.syshandler,indicize=False):
@@ -1370,14 +1378,28 @@ class SimulationModel(object):
 
 	"""
 
+	#######
+	#Paths#
+	#######
+
 	@property
-	def cosmo_id(self):
-		base = "{0}{1:."+str(configuration.cosmo_id_digits)+"f}"
-		return "_".join([ base.format(p,getattr(self.cosmology,configuration.name2attr[p])) for p in self.parameters if (hasattr(self.cosmology,configuration.name2attr[p]) and getattr(self.cosmology,configuration.name2attr[p]) is not None)])
+	def home(self):
+		return self.home_subdir
+
+	@property
+	def storage(self):
+		return self.storage_subdir
 
 	@property
 	def infofile(self):
 		return os.path.join(self.environment.home,configuration.json_tree_file)
+
+	####################################################################################################
+
+	@property
+	def cosmo_id(self):
+		base = "{0}{1:."+str(configuration.cosmo_id_digits)+"f}"
+		return "_".join([ base.format(p,getattr(self.cosmology,configuration.name2attr[p])) for p in self.parameters if (hasattr(self.cosmology,configuration.name2attr[p]) and getattr(self.cosmology,configuration.name2attr[p]) is not None)])
 
 	@property
 	def info(self):
@@ -2273,6 +2295,20 @@ class SimulationIC(SimulationCollection):
 
 		return super(SimulationIC,self).__repr__() + " | ic={0},seed={1} | IC files on disk: {2} | Snapshot files on disk: {3}".format(self.ic_index,self.seed,len(ics_on_disk),len(snap_on_disk))
 
+	#######
+	#Paths#
+	#######
+
+	@property
+	def ics(self):
+		return self.ics_subdir
+
+	@property
+	def snapshots(self):
+		return self.snapshot_subdir
+
+	###########################################################################
+
 	def newRealization(self,seed):
 		raise TypeError("This method should be called on SimulationCollection instances!")
 
@@ -2424,7 +2460,7 @@ class SimulationIC(SimulationCollection):
 
 			#Base names for outputs
 			paramfile.write("FileBase			{0}\n".format(self.ICFilebase))
-			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.ics_subdir)))
+			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.ics)))
 
 			#Glass file
 			paramfile.write("GlassFile			{0}\n".format(os.path.abspath(settings.GlassFile)))
@@ -2517,9 +2553,9 @@ class SimulationIC(SimulationCollection):
 		with self.syshandler.open(filename,"w") as paramfile:
 
 			#File names for initial condition and outputs
-			initial_condition_file = os.path.join(os.path.abspath(self.ics_subdir),self.ICFilebase)
+			initial_condition_file = os.path.join(os.path.abspath(self.ics),self.ICFilebase)
 			paramfile.write("InitCondFile			{0}\n".format(initial_condition_file))
-			paramfile.write("OutputDir			{0}{1}\n".format(self.snapshot_subdir,os.path.sep))
+			paramfile.write("OutputDir			{0}{1}\n".format(self.snapshots,os.path.sep))
 			paramfile.write("EnergyFile			{0}\n".format(settings.EnergyFile))
 			paramfile.write("InfoFile			{0}\n".format(settings.InfoFile))
 			paramfile.write("TimingsFile			{0}\n".format(settings.TimingsFile))

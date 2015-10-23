@@ -92,7 +92,7 @@ def singleRedshift(pool,batch,settings,id):
 	#Override the settings with the previously pickled ones, if prompted by user
 	if settings.override_with_local:
 
-		local_settings_file = os.path.join(map_batch.home_subdir,"settings.p")
+		local_settings_file = os.path.join(map_batch.home,"settings.p")
 
 		with open(local_settings_file,"r") as settingsfile:
 			settings = cPickle.load(settingsfile)
@@ -172,11 +172,11 @@ def singleRedshift(pool,batch,settings,id):
 
 	if (pool is None) or (pool.is_master()):
 		for c,coll in enumerate(collection):
-			logdriver.info("Reading planes from {0}".format(plane_path.format(coll.storage_subdir,"-".join([str(n) for n in nbody_realizations[c]]),plane_set[c])))
+			logdriver.info("Reading planes from {0}".format(plane_path.format(coll.storage,"-".join([str(n) for n in nbody_realizations[c]]),plane_set[c])))
 
 	#Plane info file is the same for all collections
 	if (not hasattr(settings,"plane_info_file")) or (settings.plane_info_file is None):
-		info_filename = os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt")
+		info_filename = os.path.join(plane_path.format(collection[0].storage,nbody_realizations[0][0],plane_set[0]),"info.txt")
 	else:
 		info_filename = settings.plane_info_file
 
@@ -188,7 +188,7 @@ def singleRedshift(pool,batch,settings,id):
 		num_snapshots = len(infofile.readlines())
 
 	#Save path for the maps
-	save_path = map_batch.storage_subdir
+	save_path = map_batch.storage
 
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Lensing maps will be saved to {0}".format(save_path))
@@ -249,7 +249,7 @@ def singleRedshift(pool,batch,settings,id):
 
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][nbody],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][cut],normals[c][normal]))
+			plane_name = os.path.join(plane_path.format(collection[c].storage,nbody_realizations[c][nbody],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][cut],normals[c][normal]))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
@@ -348,7 +348,7 @@ def simulatedCatalog(pool,batch,settings,id):
 	#Override the settings with the previously pickled ones, if prompted by user
 	if settings.override_with_local:
 
-		local_settings_file = os.path.join(catalog.home_subdir,"settings.p")
+		local_settings_file = os.path.join(catalog.home,"settings.p")
 
 		with open(local_settings_file,"r") as settingsfile:
 			settings = cPickle.load(settingsfile)
@@ -368,7 +368,7 @@ def simulatedCatalog(pool,batch,settings,id):
 		np.random.seed(settings.seed)
 
 	#Read the catalog save path from the settings
-	catalog_save_path = catalog.storage_subdir
+	catalog_save_path = catalog.storage
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Lensing catalogs will be saved to {0}".format(catalog_save_path))
 
@@ -461,7 +461,7 @@ def simulatedCatalog(pool,batch,settings,id):
 
 
 	#Planes will be read from this path
-	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
+	plane_path = os.path.join(collection.storage,"ic{0}",settings.plane_set)
 
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
