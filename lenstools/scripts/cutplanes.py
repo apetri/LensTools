@@ -60,7 +60,7 @@ def main(pool,batch,settings,id):
 
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
 	plane_batch = realization.getPlaneSet(settings.directory_name)
-	save_path = plane_batch.storage
+	save_path = plane_batch.storage_subdir
 
 	#Override with pickled options in storage subdir if prompted by user
 	if settings.override_with_local:
@@ -79,7 +79,7 @@ def main(pool,batch,settings,id):
 		
 		logdriver.info("Planes will be saved to {0}".format(save_path))
 		#Open the info file to save the planes information
-		infofile = open(os.path.join(save_path,"info.txt"),"w")
+		infofile = open(plane_batch.path("info.txt"),"w")
 
 	#Read from PlaneSettings
 	plane_resolution = settings.plane_resolution
@@ -142,7 +142,7 @@ def main(pool,batch,settings,id):
 
 				#Do the cutting
 				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,**kwargs)
-				plane_file = os.path.join(save_path,"snap{0}_potentialPlane{1}_normal{2}.{3}".format(n,cut,normal,settings.format))
+				plane_file = batch.syshandler.map(os.path.join(save_path,"snap{0}_potentialPlane{1}_normal{2}.{3}".format(n,cut,normal,settings.format)))
 
 				if pool is None or pool.is_master():
 			

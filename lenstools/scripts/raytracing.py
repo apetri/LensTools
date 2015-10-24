@@ -92,7 +92,7 @@ def singleRedshift(pool,batch,settings,id):
 	#Override the settings with the previously pickled ones, if prompted by user
 	if settings.override_with_local:
 
-		local_settings_file = os.path.join(map_batch.home,"settings.p")
+		local_settings_file = os.path.join(map_batch.home_subdir,"settings.p")
 
 		with open(local_settings_file,"r") as settingsfile:
 			settings = cPickle.load(settingsfile)
@@ -172,11 +172,11 @@ def singleRedshift(pool,batch,settings,id):
 
 	if (pool is None) or (pool.is_master()):
 		for c,coll in enumerate(collection):
-			logdriver.info("Reading planes from {0}".format(plane_path.format(coll.storage,"-".join([str(n) for n in nbody_realizations[c]]),plane_set[c])))
+			logdriver.info("Reading planes from {0}".format(plane_path.format(coll.storage_subdir,"-".join([str(n) for n in nbody_realizations[c]]),plane_set[c])))
 
 	#Plane info file is the same for all collections
 	if (not hasattr(settings,"plane_info_file")) or (settings.plane_info_file is None):
-		info_filename = os.path.join(plane_path.format(collection[0].storage,nbody_realizations[0][0],plane_set[0]),"info.txt")
+		info_filename = batch.syshandler.map(os.path.join(plane_path.format(collection[0].storage_subdir,nbody_realizations[0][0],plane_set[0]),"info.txt"))
 	else:
 		info_filename = settings.plane_info_file
 
@@ -188,7 +188,7 @@ def singleRedshift(pool,batch,settings,id):
 		num_snapshots = len(infofile.readlines())
 
 	#Save path for the maps
-	save_path = map_batch.storage
+	save_path = map_batch.storage_subdir
 
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Lensing maps will be saved to {0}".format(save_path))
@@ -249,7 +249,7 @@ def singleRedshift(pool,batch,settings,id):
 
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = os.path.join(plane_path.format(collection[c].storage,nbody_realizations[c][nbody],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][cut],normals[c][normal]))
+			plane_name = batch.syshandler.map(os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][nbody],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][cut],normals[c][normal])))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
@@ -282,7 +282,7 @@ def singleRedshift(pool,batch,settings,id):
 		if settings.convergence:
 		
 			convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
-			savename = os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
+			savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 			logdriver.info("Saving convergence map to {0}".format(savename)) 
 			convMap.save(savename)
 
@@ -291,7 +291,7 @@ def singleRedshift(pool,batch,settings,id):
 		if settings.shear:
 		
 			shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
-			savename = os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
+			savename = batch.syshandler.map(os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 			logdriver.info("Saving shear map to {0}".format(savename))
 			shearMap.save(savename) 
 
@@ -300,7 +300,7 @@ def singleRedshift(pool,batch,settings,id):
 		if settings.omega:
 		
 			omegaMap = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
-			savename = os.path.join(save_path,"WLomega_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format))
+			savename = batch.syshandler.map(os.path.join(save_path,"WLomega_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 			logdriver.info("Saving omega map to {0}".format(savename))
 			omegaMap.save(savename)
 
@@ -348,7 +348,7 @@ def simulatedCatalog(pool,batch,settings,id):
 	#Override the settings with the previously pickled ones, if prompted by user
 	if settings.override_with_local:
 
-		local_settings_file = os.path.join(catalog.home,"settings.p")
+		local_settings_file = os.path.join(catalog.home_subdir,"settings.p")
 
 		with open(local_settings_file,"r") as settingsfile:
 			settings = cPickle.load(settingsfile)
@@ -368,7 +368,7 @@ def simulatedCatalog(pool,batch,settings,id):
 		np.random.seed(settings.seed)
 
 	#Read the catalog save path from the settings
-	catalog_save_path = catalog.storage
+	catalog_save_path = catalog.storage_subdir
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Lensing catalogs will be saved to {0}".format(catalog_save_path))
 
@@ -461,13 +461,13 @@ def simulatedCatalog(pool,batch,settings,id):
 
 
 	#Planes will be read from this path
-	plane_path = os.path.join(collection.storage,"ic{0}",settings.plane_set)
+	plane_path = os.path.join(collection.storage_subdir,"ic{0}",settings.plane_set)
 
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Reading planes from {0}".format(plane_path.format("-".join([str(n) for n in nbody_realizations]))))
 
 	#Read how many snapshots are available
-	with open(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt"),"r") as infofile:
+	with open(batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt")),"r") as infofile:
 		num_snapshots = len(infofile.readlines())
 
 
@@ -524,7 +524,7 @@ def simulatedCatalog(pool,batch,settings,id):
 
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]]))
+			plane_name = batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]])))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
@@ -560,9 +560,9 @@ def simulatedCatalog(pool,batch,settings,id):
 		
 			#Build savename
 			if len(catalog_subdirectory):
-				shear_catalog_savename = os.path.join(catalog_save_path,catalog_subdirectory[r//realizations_in_subdir],"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
+				shear_catalog_savename = batch.syshandler.map(os.path.join(catalog_save_path,catalog_subdirectory[r//realizations_in_subdir],"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format)))
 			else:
-				shear_catalog_savename = os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format))
+				shear_catalog_savename = batch.syshandler.map(os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format)))
 			
 			logdriver.info("Saving simulated shear catalog to {0}".format(shear_catalog_savename))
 			shear_catalog[galaxies_before:galaxies_before+galaxies_in_catalog[n]].write(shear_catalog_savename,overwrite=True)
