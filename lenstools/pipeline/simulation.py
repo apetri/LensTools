@@ -1388,7 +1388,7 @@ class SimulationModel(object):
 
 	@property
 	def storage(self):
-		return self.storage_subdir
+		return self.syshandler.map(self.storage_subdir)
 
 	@property
 	def infofile(self):
@@ -2297,11 +2297,11 @@ class SimulationIC(SimulationCollection):
 
 	@property
 	def ics(self):
-		return self.ics_subdir
+		return self.syshandler.map(self.ics_subdir)
 
 	@property
 	def snapshots(self):
-		return self.snapshot_subdir
+		return self.syshandler.map(self.snapshot_subdir)
 
 	###########################################################################
 
@@ -2675,7 +2675,7 @@ class SimulationPlanes(SimulationIC):
 		"""
 
 		s = StringIO.StringIO()
-		info_filename = os.path.join(self.storage,"info.txt")
+		info_filename = self.path("info.txt")
 
 		#Look at all the planes present in the storage directory
 		plane_files = self.ls(glob="snap*_potentialPlane0_normal0.fits")
