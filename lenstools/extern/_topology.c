@@ -25,6 +25,8 @@ static char hessian_docstring[] = "Compute the hessian of a 2D image";
 static char minkowski_docstring[] = "Measure the three Minkowski functionals of a 2D image";
 static char rfft2_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 2D image";
 static char rfft3_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 3D scalar field";
+static char rfft3_azimuthal_bispectrum_docstring[] = "Measure angular averaged bispectrum of Fourier transforms of 3D scalar field";
+static char rfft3_bispectrum_docstring[] = "Measure full bispectrum of Fourier transforms of 3D scalar field";
 
 //method declarations
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
@@ -34,6 +36,8 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args);
 static PyObject *_topology_minkowski(PyObject *self,PyObject *args);
 static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args);
 static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args);
+static PyObject *_topology_rfft3_azimuthal_bispectrum(PyObject *self,PyObject *args);
+static PyObject *_topology_rfft3_bispectrum(PyObject *self,PyObject *args);
 
 
 //_topology method definitions
@@ -46,6 +50,8 @@ static PyMethodDef module_methods[] = {
 	{"minkowski",_topology_minkowski,METH_VARARGS,minkowski_docstring},
 	{"rfft2_azimuthal",_topology_rfft2_azimuthal,METH_VARARGS,rfft2_azimuthal_docstring},
 	{"rfft3_azimuthal",_topology_rfft3_azimuthal,METH_VARARGS,rfft3_azimuthal_docstring},
+	{"rfft3_azimuthal_bispectrum",_topology_rfft3_azimuthal_bispectrum,METH_VARARGS,rfft3_azimuthal_bispectrum_docstring},
+	{"rfft3_bispectrum",_topology_rfft3_bispectrum,METH_VARARGS,rfft3_bispectrum_docstring},
 	{NULL,NULL,0,NULL}
 
 } ;
@@ -971,4 +977,246 @@ static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args){
 
 	return output;
 }
+
+// rfft3_azimuthal_bispectrum() implementation
+static PyObject *_topology_rfft3_azimuthal_bispectrum(PyObject *self,PyObject *args){
+
+	/*These are the inputs: the Fourier transforms of the two maps, the size of the pixel in k space, the k bin extremes at which calculate the azimuthal averages*/
+	PyObject *ft_map1_obj,*ft_map2_obj,*ft_map3_obj, *ksmall_obj, *klarge_obj;
+	double kpixX,kpixY,kpixZ;
+	int size_small_x, size_small_y, size_small_z;
+
+	/*Parse input tuple*/
+	if(!PyArg_ParseTuple(args,"OOOdddiiiOO",&ft_map1_obj,&ft_map2_obj,&ft_map3_obj, &kpixX,&kpixY,&kpixZ,&size_small_x,&size_small_y,&size_small_z, &ksmall_obj, &klarge_obj)){
+		return NULL;
+	}
+
+	/*Interpret the parsed objects as numpy arrays*/
+	PyObject *ft_map1_array = PyArray_FROM_OTF(ft_map1_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map2_array = PyArray_FROM_OTF(ft_map2_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map3_array = PyArray_FROM_OTF(ft_map3_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ksmall_array = PyArray_FROM_OTF(ksmall_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *klarge_array = PyArray_FROM_OTF(klarge_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+
+	/*Check if anything failed*/
+	if(ft_map1_array==NULL || ksmall_array==NULL || ft_map2_array==NULL || ft_map3_array==NULL  || klarge_array==NULL){
+
+		Py_XDECREF(ft_map1_array);
+		Py_XDECREF(ft_map2_array);
+		Py_XDECREF(ft_map3_array);
+		Py_XDECREF(ksmall_array);
+		Py_XDECREF(klarge_array);
+		
+		return NULL;
+	}
+
+	/*Get the size of the map fourier transform*/
+	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
+	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+	int Nside_z = (int)PyArray_DIM(ft_map1_array,2);
+
+	/*Get the number of k bin edges*/
+	int Nlarge = (int)PyArray_DIM(klarge_array,0);
+	int Nsmall = (int)PyArray_DIM(ksmall_array,0);
+
+	/*Build the arrays that will contain the output:bispectrum and hits*/
+	npy_intp dims[] = {(npy_intp) Nsmall - 1,(npy_intp) Nlarge-1};
+	PyObject *bispectrum_array = PyArray_ZEROS(2,dims,NPY_DOUBLE,0);
+	PyObject *hits_array = PyArray_ZEROS(2,dims,NPY_LONG,0);
+
+	/*Check for failure*/
+	if(bispectrum_array==NULL || hits_array==NULL){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+	}
+
+	/*Call the C backend azimuthal average function*/
+	if(azimuthal_bispectrum_rfft3((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),(double _Complex *)PyArray_DATA(ft_map3_array),Nside_x,Nside_y,Nside_z,size_small_x,size_small_y,size_small_z,kpixX,kpixY,kpixZ,Nsmall,Nlarge,(double *)PyArray_DATA(ksmall_array),(double *)PyArray_DATA(klarge_array),(double *)PyArray_DATA(bispectrum_array),(long *)PyArray_DATA(hits_array))){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	/*If the call succeeded, build the output tuple and quit*/
+	PyObject *output = PyTuple_New(2);
+	if(PyTuple_SetItem(output,0,hits_array)){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(output,1,bispectrum_array)){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	//Cleanup and return
+	Py_DECREF(ft_map1_array);
+	Py_DECREF(ft_map2_array);
+	Py_DECREF(ft_map3_array);
+	Py_DECREF(ksmall_array);
+	Py_DECREF(klarge_array);
+
+	return output;
+}
+
+
+// rfft3_bispectrum() implementation
+static PyObject *_topology_rfft3_bispectrum(PyObject *self,PyObject *args){
+
+	/*These are the inputs: the Fourier transforms of the two maps, the size of the pixel in k space, the k bin extremes at which calculate the azimuthal averages*/
+	PyObject *ft_map1_obj,*ft_map2_obj,*ft_map3_obj, *ksmall_obj, *klarge_obj, *cosine_obj;
+	double kpixX,kpixY,kpixZ;
+	int size_small_x, size_small_y, size_small_z;
+
+	/*Parse input tuple*/
+	if(!PyArg_ParseTuple(args,"OOOdddiiiOOO",&ft_map1_obj,&ft_map2_obj,&ft_map3_obj, &kpixX,&kpixY,&kpixZ, &size_small_x, &size_small_y, &size_small_z,&ksmall_obj, &klarge_obj, &cosine_obj)){
+		return NULL;
+	}
+
+	/*Interpret the parsed objects as numpy arrays*/
+	PyObject *ft_map1_array = PyArray_FROM_OTF(ft_map1_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map2_array = PyArray_FROM_OTF(ft_map2_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map3_array = PyArray_FROM_OTF(ft_map3_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ksmall_array = PyArray_FROM_OTF(ksmall_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *klarge_array = PyArray_FROM_OTF(klarge_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *cosine_array = PyArray_FROM_OTF(cosine_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+
+	/*Check if anything failed*/
+	if(ft_map1_array==NULL || ksmall_array==NULL || ft_map2_array==NULL || ft_map3_array==NULL  || klarge_array==NULL || cosine_array==NULL){
+
+		Py_XDECREF(ft_map1_array);
+		Py_XDECREF(ft_map2_array);
+		Py_XDECREF(ft_map3_array);
+		Py_XDECREF(ksmall_array);
+		Py_XDECREF(klarge_array);
+		Py_XDECREF(cosine_array);
+		
+		return NULL;
+	}
+
+	/*Get the size of the map fourier transform*/
+	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
+	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+	int Nside_z = (int)PyArray_DIM(ft_map1_array,2);
+
+	/*Get the number of k bin edges*/
+	int Nlarge = (int)PyArray_DIM(klarge_array,0);
+	int Nsmall = (int)PyArray_DIM(ksmall_array,0);
+	int Ncosine = (int)PyArray_DIM(cosine_array,0);
+
+	/*Build the arrays that will contain the output:bispectrum and hits*/
+	npy_intp dims[] = {(npy_intp) Nsmall - 1,(npy_intp) Nlarge-1, (npy_intp) Ncosine-1};
+	PyObject *bispectrum_array = PyArray_ZEROS(3,dims,NPY_DOUBLE,0);
+	PyObject *hits_array = PyArray_ZEROS(3,dims,NPY_LONG,0);
+
+	/*Check for failure*/
+	if(bispectrum_array==NULL || hits_array==NULL){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_DECREF(cosine_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+		//Py_XDECREF(hits_test);
+
+		return NULL;
+	}
+
+	/*Call the C backend bispectrum function*/
+	if(bispectrum_rfft3((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),(double _Complex *)PyArray_DATA(ft_map3_array),Nside_x,Nside_y,Nside_z,size_small_x,size_small_y,size_small_z,kpixX,kpixY,kpixZ,Nsmall,Nlarge,Ncosine,(double *)PyArray_DATA(ksmall_array),(double *)PyArray_DATA(klarge_array),(double *)PyArray_DATA(cosine_array),(double *)PyArray_DATA(bispectrum_array),(long *)PyArray_DATA(hits_array))){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_DECREF(cosine_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	/*If the call succeeded, build the output tuple and quit*/
+	PyObject *output = PyTuple_New(2);
+	if(PyTuple_SetItem(output,0,hits_array)){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_DECREF(cosine_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(output,1,bispectrum_array)){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(ksmall_array);
+		Py_DECREF(klarge_array);
+		Py_DECREF(cosine_array);
+		Py_XDECREF(bispectrum_array);
+		Py_XDECREF(hits_array);
+
+		return NULL;
+
+	}
+
+	//Cleanup and return
+	Py_DECREF(ft_map1_array);
+	Py_DECREF(ft_map2_array);
+	Py_DECREF(ft_map3_array);
+	Py_DECREF(ksmall_array);
+	Py_DECREF(klarge_array);
+	Py_DECREF(cosine_array);
+
+	return output;
+}
+
+
 

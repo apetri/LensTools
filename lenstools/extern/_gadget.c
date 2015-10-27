@@ -20,6 +20,8 @@ static char getPosVel_docstring[] = "Gets the positions or velocities of the par
 static char getID_docstring[] = "Gets the 4 byte int particles IDs from the Gadget2 snapshot";
 static char write_docstring[] = "Writes the particles information to a Gadget snapshot, with a proper header";
 static char grid3d_docstring[] = "Put the snapshot particles on a regularly spaced grid";
+static char mass_grid3d_docstring[] = "Put the snapshot particles on a regularly spaced grid and compute mass density";
+static char massfluc_grid3d_docstring[] = "Put the snapshot particles on a regularly spaced grid and compute mass density fluctuation";
 static char adaptive_docstring[] = "Put the snapshot particles on a regularly spaced grid using adaptive smoothing";
 
 //Method declarations
@@ -28,6 +30,8 @@ static PyObject *_gadget_getPosVel(PyObject *self,PyObject *args);
 static PyObject *_gadget_getID(PyObject *self,PyObject *args);
 static PyObject * _gadget_write(PyObject *self,PyObject *args);
 static PyObject * _gadget_grid3d(PyObject *self,PyObject *args);
+static PyObject * _gadget_mass_grid3d(PyObject *self,PyObject *args);
+static PyObject * _gadget_massfluc_grid3d(PyObject *self,PyObject *args);
 static PyObject * _gadget_adaptive(PyObject *self,PyObject *args);
 
 //_gadget method definitions
@@ -38,6 +42,8 @@ static PyMethodDef module_methods[] = {
 	{"getID",_gadget_getID,METH_VARARGS,getID_docstring},
 	{"write",_gadget_write,METH_VARARGS,write_docstring},
 	{"grid3d",_gadget_grid3d,METH_VARARGS,grid3d_docstring},
+	{"mass_grid3d",_gadget_mass_grid3d,METH_VARARGS,mass_grid3d_docstring},
+	{"massfluc_grid3d",_gadget_massfluc_grid3d,METH_VARARGS,massfluc_grid3d_docstring},
 	{"adaptive",_gadget_adaptive,METH_VARARGS,adaptive_docstring},
 	{NULL,NULL,0,NULL}
 
@@ -441,6 +447,154 @@ static PyObject *_gadget_grid3d(PyObject *self,PyObject *args){
 	Py_DECREF(binsY_array);
 	Py_DECREF(binsZ_array);
 
+	return grid_array;
+
+}
+
+
+//mass_grid3d() implementation
+static PyObject *_gadget_mass_grid3d(PyObject *self,PyObject *args){
+
+	PyObject *positions_obj,*bins_obj;
+
+	//parse input tuple
+	if(!PyArg_ParseTuple(args,"OO",&positions_obj,&bins_obj)){
+		return NULL;
+	}
+
+	//interpret parsed objects as arrays
+	PyObject *positions_array = PyArray_FROM_OTF(positions_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+	PyObject *binsX_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,0),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binsY_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,1),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binsZ_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,2),NPY_DOUBLE,NPY_IN_ARRAY);
+
+
+	//check if anything failed
+	if(positions_array==NULL || binsX_array==NULL || binsY_array==NULL || binsZ_array==NULL){
+		
+		Py_XDECREF(positions_array);
+		Py_XDECREF(binsX_array);
+		Py_XDECREF(binsY_array);
+		Py_XDECREF(binsZ_array);
+
+		return NULL;
+	}
+
+	//Get data pointers
+	float *positions_data = (float *)PyArray_DATA(positions_array);
+	double *binsX_data = (double *)PyArray_DATA(binsX_array);
+	double *binsY_data = (double *)PyArray_DATA(binsY_array);
+	double *binsZ_data = (double *)PyArray_DATA(binsZ_array);
+
+	//Get info about the number of bins
+	int NumPart = (int)PyArray_DIM(positions_array,0);
+	int nx = (int)PyArray_DIM(binsX_array,0) - 1;
+	int ny = (int)PyArray_DIM(binsY_array,0) - 1;
+	int nz = (int)PyArray_DIM(binsZ_array,0) - 1;
+
+	//Allocate the new array for the grid
+	npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
+	PyObject *grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
+
+	if(grid_array==NULL){
+
+		Py_DECREF(positions_array);
+		Py_DECREF(binsX_array);
+		Py_DECREF(binsY_array);
+		Py_DECREF(binsZ_array);
+
+		return NULL;
+
+	}
+
+	//Get a data pointer
+	float *grid_data = (float *)PyArray_DATA(grid_array);
+
+	//Snap the particles on the grid
+	mass_grid3d(positions_data,NumPart,binsX_data[0],binsY_data[0],binsZ_data[0],binsX_data[1] - binsX_data[0],binsY_data[1] - binsY_data[0],binsZ_data[1] - binsZ_data[0],nx,ny,nz,grid_data);
+
+	//return the grid
+	Py_DECREF(positions_array);
+	Py_DECREF(binsX_array);
+	Py_DECREF(binsY_array);
+	Py_DECREF(binsZ_array);
+
+	//printf("NumPart = %d, nx = %d, ny = %d, nz = %d, bins_data[0] = %f,bins_data[1] = %f,bins_data[2] = %f \n", NumPart,nx,ny,nz,binsX_data[0], binsX_data[1],binsX_data[2]);
+	//printf("positions_data[0] = %f, positions_data[1] = %f, positions_data[2] = %f \n",positions_data[0],positions_data[1],positions_data[2]);
+	return grid_array;
+
+}
+
+//massfluc_grid3d() implementation
+static PyObject *_gadget_massfluc_grid3d(PyObject *self,PyObject *args){
+
+	PyObject *positions_obj,*bins_obj;
+	double rho_0;
+
+	//parse input tuple
+	if(!PyArg_ParseTuple(args,"OOd",&positions_obj,&bins_obj,&rho_0)){
+		return NULL;
+	}
+
+	//interpret parsed objects as arrays
+	PyObject *positions_array = PyArray_FROM_OTF(positions_obj,NPY_FLOAT32,NPY_IN_ARRAY);
+	PyObject *binsX_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,0),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binsY_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,1),NPY_DOUBLE,NPY_IN_ARRAY);
+	PyObject *binsZ_array = PyArray_FROM_OTF(PyTuple_GET_ITEM(bins_obj,2),NPY_DOUBLE,NPY_IN_ARRAY);
+
+
+	//check if anything failed
+	if(positions_array==NULL || binsX_array==NULL || binsY_array==NULL || binsZ_array==NULL){
+		
+		Py_XDECREF(positions_array);
+		Py_XDECREF(binsX_array);
+		Py_XDECREF(binsY_array);
+		Py_XDECREF(binsZ_array);
+
+		return NULL;
+	}
+
+	//Get data pointers
+	float *positions_data = (float *)PyArray_DATA(positions_array);
+	double *binsX_data = (double *)PyArray_DATA(binsX_array);
+	double *binsY_data = (double *)PyArray_DATA(binsY_array);
+	double *binsZ_data = (double *)PyArray_DATA(binsZ_array);
+
+	//Get info about the number of bins
+	int NumPart = (int)PyArray_DIM(positions_array,0);
+	int nx = (int)PyArray_DIM(binsX_array,0) - 1;
+	int ny = (int)PyArray_DIM(binsY_array,0) - 1;
+	int nz = (int)PyArray_DIM(binsZ_array,0) - 1;
+
+	//Allocate the new array for the grid
+	npy_intp gridDims[] = {(npy_intp) nx,(npy_intp) ny,(npy_intp) nz};
+	PyObject *grid_array = PyArray_ZEROS(3,gridDims,NPY_FLOAT32,0);
+
+	if(grid_array==NULL){
+
+		Py_DECREF(positions_array);
+		Py_DECREF(binsX_array);
+		Py_DECREF(binsY_array);
+		Py_DECREF(binsZ_array);
+
+		return NULL;
+
+	}
+
+	//Get a data pointer
+	float *grid_data = (float *)PyArray_DATA(grid_array);
+
+	//Snap the particles on the grid
+	massfluc_grid3d(positions_data,NumPart,binsX_data[0],binsY_data[0],binsZ_data[0],binsX_data[1] - binsX_data[0],binsY_data[1] - binsY_data[0],binsZ_data[1] - binsZ_data[0],nx,ny,nz,rho_0,grid_data);
+
+	//return the grid
+	Py_DECREF(positions_array);
+	Py_DECREF(binsX_array);
+	Py_DECREF(binsY_array);
+	Py_DECREF(binsZ_array);
+
+	//printf("NumPart = %d, nx = %d, ny = %d, nz = %d, bins_data[0] = %f,bins_data[1] = %f,bins_data[2] = %f \n", NumPart,nx,ny,nz,binsX_data[0], binsX_data[1],binsX_data[2]);
+	//printf("positions_data[0] = %f, positions_data[1] = %f, positions_data[2] = %f \n",positions_data[0],positions_data[1],positions_data[2]);
 	return grid_array;
 
 }
