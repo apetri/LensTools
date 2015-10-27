@@ -1569,7 +1569,23 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
-	 
+	def mkfifo(self,names,where="storage_subdir"):
+
+		"""
+		Makes a list of named pipes
+
+		:param names: names of the named pipes
+		:type names: list.
+
+		:param where: where to put the named pipes, default is "storage_subdir"
+		:type where: str.
+
+		"""
+
+		for name in names:
+			pipe_name = self.syshandler.map(os.path.join(getattr(self,where),name))
+			os.mkfifo(pipe_name)
+			print("[+] Created named pipe {0}".format(pipe_name)) 
 
 	################################################################################################################################
 
