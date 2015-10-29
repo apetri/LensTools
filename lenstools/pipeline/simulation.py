@@ -4,6 +4,7 @@ import os
 import re
 import tarfile
 import json
+import itertools
 import StringIO
 
 import numpy as np
@@ -2354,6 +2355,25 @@ class SimulationIC(SimulationCollection):
 			return None
 
 		return full_path
+
+	####################################################################################################################################
+
+	def pipe_snapshots(self,nsnap,files_per_snapshot=16):
+
+		"""
+		Create named pipes for nbody snapshots (to pipe them directly into the lens planes generation)
+
+		:param nsnap: number of the snapshots to pipe
+		:type nsnap: list.
+
+		:param files_per_snapshot: number of files per snapshot
+		:type files_per_snapshot: int.
+
+		"""
+
+		snap_names = [ self.SnapshotFileBase+"_{0:03d}.{1}".format(i,j) for i,j in itertools.product(nsnap,range(files_per_snapshot)) ]
+		self.mkfifo(snap_names)
+
 
 	####################################################################################################################################
 
