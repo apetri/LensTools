@@ -2371,8 +2371,12 @@ class SimulationIC(SimulationCollection):
 
 		"""
 
-		snap_names = [ self.SnapshotFileBase+"_{0:03d}.{1}".format(i,j) for i,j in itertools.product(nsnap,range(files_per_snapshot)) ]
-		self.mkfifo(snap_names)
+		if files_per_snapshot>1:
+			snap_names = [ self.SnapshotFileBase+"_{0:03d}.{1}".format(i,j) for i,j in itertools.product(nsnap,range(files_per_snapshot)) ]
+		else:
+			snap_names = [ self.SnapshotFileBase+"_{0:03d}".format(n) for n in nsnap ] 
+
+		self.mkfifo(snap_names,where="snapshot_subdir")
 
 
 	####################################################################################################################################
