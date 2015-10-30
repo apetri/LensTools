@@ -11,8 +11,9 @@ from lenstools.simulations.logs import logdriver
 
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
+import lenstools.pipeline.configuration as configuration
 
-from lenstools.simulations import Gadget2SnapshotDE,PotentialPlane
+from lenstools.simulations import PotentialPlane
 from lenstools.utils import MPIWhirlPool
 
 import numpy as np
@@ -121,13 +122,17 @@ def main(pool,batch,settings,id):
 	for n in range(first_snapshot,last_snapshot+1):
 
 		#Open the snapshot
-		snap = Gadget2SnapshotDE.open(realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir"),pool=pool)
+		snap = configuration.snapshot_handler.open(realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir"),pool=pool)
 
 		if pool is not None:
 			logdriver.info("Rank {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
 
 		#Get the positions of the particles
-		snap.getPositions()
+		if not hasattr(snap,"positions"):
+			snap.getPositions()
+
+		#Close the snapshot file
+		snap.fp.close()
 
 		#Update the summary info file
 		if (pool is None) or (pool.is_master()):

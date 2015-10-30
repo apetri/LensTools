@@ -1,5 +1,6 @@
 from .remote import LocalSystem
 from ..simulations import Nicaea
+from ..simulations.gadget2 import Gadget2SnapshotDE
 
 ###################
 #Default cosmology#
@@ -45,3 +46,9 @@ syshandler = LocalSystem()
 ###################################
 
 json_tree_file = ".tree.json"
+
+##########################
+#Default snapshot handler#
+##########################
+
+snapshot_handler = Gadget2SnapshotDE
