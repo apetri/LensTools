@@ -98,6 +98,12 @@ class NbodySnapshot(object):
 
 	####################################################################################################################
 
+	def __enter__(self):
+		return self
+
+	def __exit__(self,type,value,tb):
+		self.fp.close()
+
 	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
 
 		self.pool = pool
@@ -142,8 +148,7 @@ class NbodySnapshot(object):
 			#Scale masses to correct units
 			if h>0.0:
 				self._header["masses"] *= (self._mass_unit / self._header["h"])
-				self._header["masses"] *= g
-				self._header["masses"] = self._header["masses"].to(Msun) 
+				self._header["masses"] = (self._header["masses"]*g).to(Msun) 
 
 			#Scale Hubble parameter to correct units
 			self._header["H0"] = self._header["h"] * 100 * km / (s*Mpc)

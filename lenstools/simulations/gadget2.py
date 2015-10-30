@@ -717,3 +717,26 @@ class Gadget2Snapshot(Gadget2SnapshotDE):
 
 		return self._header 
 
+
+##################################################################
+#################Gadget2SnapshotPipe class########################
+##################################################################
+
+class Gadget2SnapshotPipe(Gadget2SnapshotDE):
+
+	"""
+	Read in the particle positions when calling the constructor, without calling fseek
+
+	"""
+
+	def __init__(self,*args,**kwargs):
+
+		#Call parent constructor
+		super(Gadget2SnapshotPipe,self).__init__(*args,**kwargs)
+
+		#Read in the positions 
+		npart = self.header["num_particles_file"]
+		self.fp.read(8)
+		self.positions = (np.fromstring(self.fp.read(4*3*npart),dtype=np.float32).reshape(npart,3) * self.kpc_over_h).to(self.Mpc_over_h)
+
+
