@@ -1570,7 +1570,7 @@ class SimulationModel(object):
 
 	################################################################################################################################
 
-	def mkfifo(self,names,where="storage_subdir"):
+	def mkfifo(self,names,method=None,where="storage_subdir"):
 
 		"""
 		Makes a list of named pipes
@@ -1583,9 +1583,12 @@ class SimulationModel(object):
 
 		"""
 
+		if method is None:
+			method = lambda n:os.mkfifo(n)
+
 		for name in names:
 			pipe_name = self.syshandler.map(os.path.join(getattr(self,where),name))
-			os.mkfifo(pipe_name)
+			method(pipe_name)
 			print("[+] Created named pipe {0}".format(pipe_name)) 
 
 	################################################################################################################################
@@ -2358,7 +2361,7 @@ class SimulationIC(SimulationCollection):
 
 	####################################################################################################################################
 
-	def pipe_snapshots(self,nsnap,files_per_snapshot=16):
+	def pipe_snapshots(self,nsnap=None,method=None):
 
 		"""
 		Create named pipes for nbody snapshots (to pipe them directly into the lens planes generation)
@@ -2366,17 +2369,21 @@ class SimulationIC(SimulationCollection):
 		:param nsnap: number of the snapshots to pipe
 		:type nsnap: list.
 
-		:param files_per_snapshot: number of files per snapshot
-		:type files_per_snapshot: int.
+		:param method: method to call on the filenames to make the named pipes
+		:type method: callable
 
 		"""
+
+		files_per_snapshot = self.gadget_settings.NumFilesPerSnapshot
+		if nsnap is None:
+			nsnap = range(len(self.gadget_settings.OutputScaleFactor))
 
 		if files_per_snapshot>1:
 			snap_names = [ self.SnapshotFileBase+"_{0:03d}.{1}".format(i,j) for i,j in itertools.product(nsnap,range(files_per_snapshot)) ]
 		else:
 			snap_names = [ self.SnapshotFileBase+"_{0:03d}".format(n) for n in nsnap ] 
 
-		self.mkfifo(snap_names,where="snapshot_subdir")
+		self.mkfifo(snap_names,method=method,where="snapshot_subdir")
 
 
 	####################################################################################################################################

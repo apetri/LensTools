@@ -742,4 +742,9 @@ class Gadget2SnapshotPipe(Gadget2SnapshotDE):
 		#Read the rest
 		self.fp.read()
 
+		#Particles do not have structure
+		self.weights = None
+		self.virial_radius = None
+		self.concentration = None
+
 
