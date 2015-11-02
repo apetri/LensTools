@@ -170,6 +170,8 @@ def main(pool,batch,settings,id):
 						plane_wrap = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=snap.header["redshift"],comoving_distance=snap.header["comoving_distance"],cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
 					elif kind=="density":
 						plane_wrap = DensityPlane(plane,angle=snap.header["box_size"],redshift=snap.header["redshift"],comoving_distance=snap.header["comoving_distance"],cosmology=snap.cosmology,num_particles=NumPart)
+					else:
+						raise NotImplementedError("Plane of kind '{0}' not implemented!".format(kind))
 
 					#Save the result
 					logdriver.info("Saving plane to {0}".format(plane_file))
