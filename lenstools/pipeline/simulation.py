@@ -2571,6 +2571,9 @@ class SimulationIC(SimulationCollection):
 		with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"w") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
+		#Update the instance settings
+		self.ngenic_settings = settings
+
 		#Log and return
 		print("[+] NGenIC parameter file {0} written on {1}".format(filename,self.syshandler.name))
 
@@ -2670,6 +2673,9 @@ class SimulationIC(SimulationCollection):
 		#Save a pickled copy of the settings for future reference
 		with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"w") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
+
+		#Update the instance settings
+		self.gadget_settings = settings
 
 		#Log and exit
 		print("[+] Gadget2 parameter file {0} written on {1}".format(filename,self.syshandler.name))
