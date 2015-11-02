@@ -117,6 +117,11 @@ class PlaneSettings(object):
 		self.length_unit = u.Mpc
 		self.normals = range(3)
 
+		#Optional, not usually changed
+		self.thickness_resolution = 1
+		self.smooth = 1
+		self.kind = "potential"
+
 		#Allow for kwargs override
 		for key in kwargs.keys():
 			setattr(self,key,kwargs[key])
@@ -151,6 +156,22 @@ class PlaneSettings(object):
 
 		#Normals
 		settings.normals = [ int(n) for n in options.get(section,"normals").split(",") ]
+
+		#Optionals
+		try:
+			settings.thickness_resolution = options.getint(section,"thickness_resolution")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.smooth = options.getint(section,"smooth")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.kind = options.get(section,"kind")
+		except NoOptionError:
+			pass
 
 		#Return to user
 		return settings

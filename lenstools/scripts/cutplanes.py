@@ -13,7 +13,7 @@ from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
 import lenstools.pipeline.configuration as configuration
 
-from lenstools.simulations import PotentialPlane
+from lenstools.simulations import DensityPlane,PotentialPlane
 from lenstools.utils import MPIWhirlPool
 
 import numpy as np
@@ -89,6 +89,9 @@ def main(pool,batch,settings,id):
 	cut_points = settings.cut_points
 	normals = settings.normals
 	thickness = settings.thickness
+	thickness_resolution = settings.thickness_resolution
+	smooth = settings.smooth
+	kind = settings.kind
 
 	#Place holder for the lensing density on the plane
 	density_projected = np.empty((plane_resolution,)*2,dtype=np.float32)
@@ -111,9 +114,9 @@ def main(pool,batch,settings,id):
 	kwargs = {
 
 	"plane_resolution" : plane_resolution,
-	"thickness_resolution" : 1,
-	"smooth" : 1,
-	"kind" : "potential",
+	"thickness_resolution" : thickness_resolution,
+	"smooth" : smooth,
+	"kind" : kind,
 	"density_placeholder" : density_projected,
 	"l_squared" : l_squared
 
@@ -121,6 +124,10 @@ def main(pool,batch,settings,id):
 
 	for n in range(first_snapshot,last_snapshot+1):
 
+		#Log
+		if (pool is None) or (pool.is_master()):
+			logdriver.info("Waiting for input files from snapshot {0}...".format(n))
+		
 		#Open the snapshot
 		snap = configuration.snapshot_handler.open(realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir"),pool=pool)
 
@@ -143,25 +150,33 @@ def main(pool,batch,settings,id):
 			for normal in normals:
 
 				if pool is None or pool.is_master():
-					logdriver.info("Cutting plane at {0} with normal {1},thickness {2}, of size {3} x {3}".format(pos,normal,thickness,snap.header["box_size"]))
+					logdriver.info("Cutting {0} plane at {1} with normal {2},thickness {3}, of size {4} x {4}".format(kind,pos,normal,thickness,snap.header["box_size"]))
 
-				#Do the cutting
+				############################
+				#####Do the cutting#########
+				############################
+				
 				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,**kwargs)
-				plane_file = batch.syshandler.map(os.path.join(save_path,"snap{0}_potentialPlane{1}_normal{2}.{3}".format(n,cut,normal,settings.format)))
+				
+				#######################################################################################################################################
+
+				#Save the plane
+				plane_file = batch.syshandler.map(os.path.join(save_path,"snap{0}_{1}Plane{2}_normal{3}.{4}".format(n,kind,cut,normal,settings.format)))
 
 				if pool is None or pool.is_master():
 			
 					#Wrap the plane in a PotentialPlane object
-					potential_plane = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=snap.header["redshift"],comoving_distance=snap.header["comoving_distance"],cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
+					if kind=="potential":
+						plane_wrap = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=snap.header["redshift"],comoving_distance=snap.header["comoving_distance"],cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
+					elif kind=="density":
+						plane_wrap = DensityPlane(plane,angle=snap.header["box_size"],redshift=snap.header["redshift"],comoving_distance=snap.header["comoving_distance"],cosmology=snap.cosmology,num_particles=NumPart)
 
 					#Save the result
 					logdriver.info("Saving plane to {0}".format(plane_file))
-					potential_plane.save(plane_file)
+					plane_wrap.save(plane_file)
 			
-			
+				#Safety barrier sync
 				if pool is not None:
-			
-					#Safety barrier sync
 					pool.comm.Barrier()
 
 
