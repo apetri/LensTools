@@ -60,8 +60,6 @@ class Catalog(tbl.Table):
 			if fitsio is not None:
 				with fitsio.FITS(filename,"r") as hdulist:
 					return cls(hdulist[1].read())
-			else:
-				print("[+] Warning: trying to read FITS file with astropy readed, this might lead to memory leaks")
 		
 		return super(Catalog,cls).read(filename,*args,**kwargs)
 
