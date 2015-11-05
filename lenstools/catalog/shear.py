@@ -16,6 +16,11 @@ import astropy.table as tbl
 import astropy.units as u
 
 try:
+	import fitsio
+except ImportError:
+	fitsio = None
+
+try:
 	import matplotlib.pyplot as plt
 	from matplotlib import cm
 	matplotlib = True
@@ -43,6 +48,19 @@ class Catalog(tbl.Table):
 
 		#Set spatial information
 		self.setSpatialInfo()
+
+	########################################################################################
+
+	@classmethod
+	def read(cls,filename,*args,**kwargs):
+
+		#Use fitsio to read in table if the format is FITS
+		if (fitsio is not None) and (filename.endswith(".fit") or filename.endswith(".fits")):
+			print("[+] Using fitsio reader")
+			with fitsio.FITS(filename,"r") as hdulist:
+				return cls(hdulist[1].read())
+		else:
+			return super(Catalog,cls).read(filename,*args,**kwargs)
 
 
 	########################################################################################
