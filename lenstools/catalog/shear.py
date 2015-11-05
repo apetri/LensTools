@@ -55,12 +55,15 @@ class Catalog(tbl.Table):
 	def read(cls,filename,*args,**kwargs):
 
 		#Use fitsio to read in table if the format is FITS
-		if (fitsio is not None) and (filename.endswith(".fit") or filename.endswith(".fits")):
-			print("[+] Using fitsio reader")
-			with fitsio.FITS(filename,"r") as hdulist:
-				return cls(hdulist[1].read())
-		else:
-			return super(Catalog,cls).read(filename,*args,**kwargs)
+		if (filename.endswith(".fit") or filename.endswith(".fits")):
+			
+			if fitsio is not None:
+				with fitsio.FITS(filename,"r") as hdulist:
+					return cls(hdulist[1].read())
+			else:
+				print("[+] Warning: trying to read FITS file with astropy readed, this might lead to memory leaks")
+		
+		return super(Catalog,cls).read(filename,*args,**kwargs)
 
 
 	########################################################################################
