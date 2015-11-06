@@ -1243,6 +1243,74 @@ class Emulator(Analysis):
 		#Return the score ensemble
 		return score_ensemble
 
+	############################################################################################################################################
+
+	def sample_posterior(self,observed_feature,sample="emcee",**kwargs):
+
+		"""
+		Sample the parameter posterior distribution
+
+ 		:param observed_feature: observed feature to score
+ 		:type observed_feature: Series
+
+ 		:param sample: posterior sampling method
+ 		:type sample: str. or callable
+
+ 		:returns: samples from the posterior distribution
+ 		:rtype: dict. 
+
+		"""
+		raise NotImplementedError
+
+		if sample=="emcee":
+			pass
+
+		#Get the names of the features to use
+		feature_names = list(observed_feature.index.levels[0])
+		try:
+			feature_names.remove("parameters")
+		except ValueError:
+			pass
+
+		#Check that the observed feature columns and the Emulator columns correspond
+		for c in feature_names:
+			assert c in self.feature_names,"Feature '{0}' is not present in the Emulator!".format(c)
+
+		#Check if the user provides a covariance matrix
+		if "features_covariance" in kwargs.keys():
+			features_covariance = kwargs["features_covariance"]
+			del(kwargs["features_covariance"])
+			assert (features_covariance.index==observed_feature.index).all()
+			assert (features_covariance.columns==observed_feature.index).all()
+		else:
+			features_covariance = None
+
+		#Parameter samples
+		samples = dict()
+
+		#For each feature, compute the score
+		for c in feature_names:
+
+			#Isolate the Emulator that concerns this feature only
+			sub_emulator = self.features(c)
+			sub_emulator_columns = sub_emulator[c].columns
+
+			#Isolate the observed sub_feature
+			sub_feature = observed_feature[c][sub_emulator_columns].values
+
+			#Train the emulator
+			sub_emulator.train()
+
+			#Isolate the sub feature covariance matrix, proceed with the sampling
+			if features_covariance is not None:
+				sub_feature_covariance = features_covariance[c][sub_emulator_columns].loc[c].loc[sub_emulator_columns].values
+				samples[c] = sample(emulator=sub_emulator,observed_feature=sub_feature,features_covariance=sub_feature_covariance,**kwargs)
+			else:
+				samples[c] = sample(emulator=sub_emulator,observed_feature=sub_feature,**kwargs)
+
+		#Done, return the sampled points
+		return samples
+				
 
 	############################################################################################################################################
 
