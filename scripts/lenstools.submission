@@ -25,6 +25,8 @@ type2section = {
 #Dictionary that converts command line argument into the appropriate job handler
 system2handler = {
 "Stampede" : StampedeHandler,
+"stampede" : StampedeHandler,
+"Edison" : EdisonHandler,
 "edison" : EdisonHandler
 }
 
