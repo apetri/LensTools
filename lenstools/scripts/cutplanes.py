@@ -6,6 +6,7 @@ from __future__ import division
 
 import sys,os
 import cPickle
+import json
 
 from lenstools.simulations.logs import logdriver
 
@@ -28,7 +29,7 @@ fftengine = NUMPYFFTPack()
 #######################################################
 
 
-def main(pool,batch,settings,id):
+def main(pool,batch,settings,id,override):
 
 	#Safety check
 	assert isinstance(pool,MPIWhirlPool) or (pool is None)
@@ -62,6 +63,21 @@ def main(pool,batch,settings,id):
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
 	plane_batch = realization.getPlaneSet(settings.directory_name)
 	save_path = plane_batch.storage_subdir
+
+	#Override settings from the command line
+	if override is not None:
+		
+		override_dict = json.loads(override)
+		for key in override_dict.keys():
+
+			if not hasattr(settings,key):
+				raise AttributeError("Plane settings have no such attribute: '{0}'".format(key))
+
+			if (pool is None) or (pool.is_master()):
+				logdriver.info("Overriding original setting {0}={1} with command line value {0}={2}".format(key,getattr(settings,key),override_dict[key]))
+
+			setattr(settings,key,override_dict[key])
+
 
 	#Override with pickled options in storage subdir if prompted by user
 	if settings.override_with_local:
