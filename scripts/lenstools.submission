@@ -46,7 +46,7 @@ parser.add_argument("model_file",nargs="?",default=None,help="text file that con
 cmd_args = parser.parse_args()
 
 #Check that all the required command line arguments are provided
-if (cmd_args.job_type is None) or (cmd_args.model_file is None):
+if (cmd_args.job_type is None):
 	parser.print_help()
 	sys.exit(0)
 
@@ -81,11 +81,16 @@ print("[*] Current batch mass storage: {0}".format(environment.storage))
 #Instantiate the simulation batch
 batch = SimulationBatch(environment)
 
-#Read the realizations to include in the job submission
-print("[*] Realizations to include in this submission will be read from {0}".format(cmd_args.model_file))
-with open(cmd_args.model_file,"r") as modelfile:
-	realizations = [ l.strip("\n") for l in modelfile.readlines() if l!="" ]
+#Read the realizations to include in the job submission (if no file is provided read from stdin)
+if cmd_args.model_file is not None:
+	print("[*] Realizations to include in this submission will be read from {0}".format(cmd_args.model_file))
+	with open(cmd_args.model_file,"r") as modelfile:
+		realizations = [ l.strip("\n") for l in modelfile.readlines() if l!="" ]
+else:
+	print("[*] Realizations to include in this submission will be read from stdin")
+	realizations = [ l.strip("\n") for l in sys.stdin.readlines() if l!="" ]
 
+#Log to user
 print("[+] Found {0} realizations to include in job submission, to be split in {1} chunks".format(len(realizations),cmd_args.chunks))
 
 #Now decide which type of submission are we generating, and generate the script
