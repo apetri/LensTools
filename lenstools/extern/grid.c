@@ -63,7 +63,8 @@ int grid2d(double *x,double *y,double *s,double *map,int Nobjects,int Npixel,dou
 
 	}
 
-
+	//Release allocated memory and return to user
+	free(discovered);
 	return 0;
 }
 
