@@ -302,7 +302,7 @@ class Ensemble(pd.DataFrame):
 		else:
 			M = map
 
-		full_data = assemble(M(_callback_wrapper,file_list))
+		full_data = assemble(filter(lambda r:r is not None,M(_callback_wrapper,file_list)))
 
 		#Check if user provided column labels
 		if "columns" in kwargs.keys():
