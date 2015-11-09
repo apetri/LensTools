@@ -35,6 +35,7 @@ except ImportError:
 
 from .ensemble import Series,Ensemble,Panel 
 from ..utils.misc import _interpolate_wrapper
+import samplers
 
 #########################################################
 #############Default Gaussian data likelihood############
@@ -1011,7 +1012,7 @@ class Emulator(Analysis):
 		return None
 
 
-	def predict(self,parameters):
+	def predict(self,parameters,raw=False):
 
 		"""
 		Predicts the feature at a new point in parameter space using the bin interpolators, trained with the simulated features
@@ -1037,7 +1038,7 @@ class Emulator(Analysis):
 		interpolated_feature = _predict(parameters,self._interpolator)
 
 		#Return the result
-		if isinstance(parameters,pd.Series) or isinstance(parameters,pd.DataFrame):
+		if raw:
 			if parameters.ndim==1:
 				return interpolated_feature.reshape(self.feature_set.shape[1:])
 			else:
@@ -1260,10 +1261,9 @@ class Emulator(Analysis):
  		:rtype: dict. 
 
 		"""
-		raise NotImplementedError
 
 		if sample=="emcee":
-			pass
+			sample = samplers.emcee_sampler
 
 		#Get the names of the features to use
 		feature_names = list(observed_feature.index.levels[0])
