@@ -50,43 +50,43 @@ def gaussian_likelihood(chi2,norm=1.0):
 
 def chi2(parameters,*args,**kwargs):
 
-	model_feature = _predict(parameters,kwargs["interpolator"])
+	model_feature = _predict(parameters,kwargs["parameter_grid"],kwargs["interpolator"],kwargs["weights"],kwargs["epsilon"])
 	inverse_covariance = kwargs["inverse_covariance"]
 
-	if model_feature.ndim == 1:
+	if model_feature.ndim==1:
 		observed_feature = kwargs["observed_feature"]
 	else: 
-		observed_feature = kwargs["observed_feature"][np.newaxis,:]
+		observed_feature = kwargs["observed_feature"][None,:]
 
 	inverse_covariance_dot = np.dot(observed_feature - model_feature,inverse_covariance)
 
 	return ((observed_feature - model_feature) * inverse_covariance_dot).sum(-1)
 	
 
-	
-
 #######################################################################
 #############Feature prediction wrapper################################
 #######################################################################
 
-def _predict(parameters,interpolator):
+def _predict(parameters,parameter_grid,interpolator,weights,epsilon):
 
-	#For each feature bin, compute its interpolated value
-	if parameters.ndim == 1:
-		
-		interpolated_feature = np.zeros(len(interpolator))
+	#Cast to higher dimension
+	parameters = np.atleast_2d(parameters)
 
-		for n,i in enumerate(interpolator):
-			interpolated_feature[n] = i()(*parameters)
+	if isinstance(interpolator,list):
 		
-	else:
-			
+		#For each feature bin, compute its interpolated value
 		interpolated_feature = np.zeros((parameters.shape[0],len(interpolator)))
 
 		for n,i in enumerate(interpolator):
-			interpolated_feature[:,n] = i()(*parameters.transpose())
+			interpolated_feature[:,n] = i()(*parameters.T)
 
-	return interpolated_feature
+	else:
+
+		#Compute interpolation with kernel
+		kernel = interpolator(((parameter_grid[None]-parameters[:,None])**2).sum(-1),epsilon)
+		interpolated_feature = kernel.dot(weights)
+
+	return np.squeeze(interpolated_feature)
 
 
 ##############################################
@@ -975,13 +975,16 @@ class Emulator(Analysis):
 		assert function is not None
 		self._likelihood_function = function
 
-	def train(self,use_parameters="all",**kwargs):
+	def train(self,use_parameters="all",method="Rbf",**kwargs):
 
 		"""
 		Builds the interpolators for each of the feature bins using a radial basis function approach
 
 		:param use_parameters: which parameters actually vary in the supplied parameter set (it doesn't make sense to interpolate over the constant ones)
 		:type use_parameters: list. or "all"
+
+		:param method: interpolation method; can be 'Rbf' or callable. If callable, it must take two arguments, a square distance and a square length smoothing scale
+		:type method: str. or callable
 
 		:param kwargs: keyword arguments to be passed to the interpolator constructor
 
@@ -990,9 +993,9 @@ class Emulator(Analysis):
 		#input sanity check
 		if use_parameters != "all":
 			assert type(use_parameters) == list
-			used_parameters = self.parameter_set[:,use_parameters].transpose()
+			used_parameters = self.parameter_set[:,use_parameters]
 		else:
-			used_parameters = self.parameter_set.transpose()
+			used_parameters = self.parameter_set
 
 		#Compute total number of feature bins and reshape the training set accordingly
 		if "_num_bins" not in self._metadata:
@@ -1001,15 +1004,38 @@ class Emulator(Analysis):
 
 		flattened_feature_set = self.feature_set.reshape((self.feature_set.shape[0],self._num_bins))
 
-		#Build one interpolator for each feature bin (not optimal but we suck it up for now)
+		#Build the interpolator
 		if "_interpolator" not in self._metadata:
 			self._metadata.append("_interpolator")
-		self._interpolator = list()
 
-		for n in range(self._num_bins):
-			self._interpolator.append(_interpolate_wrapper(interpolate.Rbf,args=(tuple(used_parameters) + (flattened_feature_set[:,n],)),kwargs=kwargs))
+		if method=="Rbf":
 
-		return None
+			#Scipy Rbf method
+			self._interpolator = list()
+			self._weights = None
+			self._epsilon = None
+
+			for n in range(self._num_bins):
+				self._interpolator.append(_interpolate_wrapper(interpolate.Rbf,args=(tuple(used_parameters.T) + (flattened_feature_set[:,n],)),kwargs=kwargs))
+
+		else:
+
+			#Custom interpolation kernel
+			self._interpolator = method
+
+			#Compute pairwise square distance between points
+			distances = ((used_parameters[None] - used_parameters[:,None])**2).sum(-1)
+			mean_distance = distances[np.triu_indices(len(distances),k=1)].mean()
+			kernel = method(distances,mean_distance)
+
+			#Compute interpolation weights 
+			self._metadata.append("_weights")
+			self._metadata.append("_epsilon")
+			self._weights = np.linalg.solve(kernel,self.feature_set)
+			self._epsilon = mean_distance
+
+
+	###############################################################################################################################################################
 
 
 	def predict(self,parameters,raw=False):
@@ -1034,15 +1060,17 @@ class Emulator(Analysis):
 			assert (parameters.index==self["parameters"].columns).all(),"Parameters do not match!"
 			parameters = parameters.values
 
-		#Interpolate to compute the features
-		interpolated_feature = _predict(parameters,self._interpolator)
+		#####################################
+		#Interpolate to compute the features#
+		#####################################
+
+		interpolated_feature = _predict(parameters,self.parameter_set,self._interpolator,self._weights,self._epsilon)
+
+		############################################################################################
 
 		#Return the result
 		if raw:
-			if parameters.ndim==1:
-				return interpolated_feature.reshape(self.feature_set.shape[1:])
-			else:
-				return interpolated_feature.reshape((parameters.shape[0],) + self.feature_set.shape[1:])
+			return interpolated_feature
 		else:
 			if parameters.ndim==1:
 				return Series(interpolated_feature.reshape(self.feature_set.shape[1:]),index=self[self.feature_names].columns)
@@ -1105,7 +1133,7 @@ class Emulator(Analysis):
 		covinv = np.linalg.inv(features_covariance)
 
 		#Build the keyword argument dictionary to be passed to the chi2 calculator
-		kwargs = {"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
+		kwargs = {"interpolator":self._interpolator,"parameter_grid":self.parameter_set,"weights":self.weights,"epsilon":self._epsilon,"inverse_covariance":covinv,"observed_feature":observed_feature}
 
 		#Hack to make the chi2 pickleable (from emcee)
 		chi2_wrapper = _function_wrapper(chi2,tuple(),kwargs)
