@@ -34,7 +34,6 @@ except ImportError:
 #########################################################
 
 from .ensemble import Series,Ensemble,Panel 
-from ..utils.misc import _interpolate_wrapper
 import samplers
 
 #########################################################
@@ -1387,3 +1386,26 @@ class EmulatorPanel(Panel):
 	@property 
 	def _constructor_sliced(self):
 		return Emulator
+
+#########################################################################################################################################################################################
+
+###########################################################################
+###########Hack to make scipy interpolate objects pickleable###############
+###########################################################################
+
+class _interpolate_wrapper(object):
+
+	def __init__(self,f,args,kwargs):
+		self.f = f
+		self.args = args
+		self.kwargs = kwargs
+	
+	def __call__(self):
+		try:
+			return self.f(*self.args,**self.kwargs)
+		except:
+			import traceback
+			print("lenstools: Exception while building the interpolators")
+			print(" exception:")
+			traceback.print_exc()
+			raise 

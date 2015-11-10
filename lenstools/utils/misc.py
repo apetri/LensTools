@@ -36,24 +36,3 @@ def ifht(n,l_binned,func,**kwargs):
 	transform = integrate.simps(integrand,l_binned,axis=0)
 	
 	return theta,transform
-
-###########################################################################
-###########Hack to make scipy interpolate objects pickleable###############
-###########################################################################
-
-class _interpolate_wrapper(object):
-
-	def __init__(self,f,args,kwargs):
-		self.f = f
-		self.args = args
-		self.kwargs = kwargs
-	
-	def __call__(self):
-		try:
-			return self.f(*self.args,**self.kwargs)
-		except:
-			import traceback
-			print("lenstools: Exception while building the interpolators")
-			print(" exception:")
-			traceback.print_exc()
-			raise 
