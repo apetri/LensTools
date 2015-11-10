@@ -1042,6 +1042,9 @@ class Emulator(Analysis):
 		:param raw: if True returns raw numpy arrays
 		:type raw: bool.
 
+		:returns: predicted features
+		:rtype: array or :py:class:`Ensemble`
+
 		"""
 
 		#If you didn't do training before, train now with the default settings

@@ -18,7 +18,29 @@ import emcee
 from .ensemble import Ensemble
 from ..simulations.logs import logdriver
 
+###############################
+######Multiquadric kernel######
+###############################
+
+def multiquadric(x,e):
+	return np.sqrt(1.+x/e)
+
+##################################
+##Log of the gaussian likelihood##
+##################################
+
+def lnprobgauss(p,emulator,data,icov):
+	diff = data - emulator.predict(p,raw=True)
+	return -0.5*diff.dot(icov).dot(diff)
+
+###############################
+######emcee sampler############
+###############################
+
 def emcee_sampler(emulator,observed_feature,features_covariance,nwalkers=16,nburn=100,nchain=1000,pool=None):
+
+	#Train the emulator with fast interpolation
+	emulator.train(method=multiquadric)
 
 	#Parameter space to sample
 	parameters = emulator["parameters"].values
@@ -26,11 +48,6 @@ def emcee_sampler(emulator,observed_feature,features_covariance,nwalkers=16,nbur
 
 	#Feature name
 	feature_name = emulator.feature_names[0]
-	
-	#Define the log likelihood
-	def lnprob(p,emulator,data,icov):
-		diff = data - emulator.predict(p,raw=True)
-		return -0.5*diff.dot(icov).dot(diff)
 
 	#Compute the inverse covariance
 	icov = np.linalg.inv(features_covariance)
@@ -40,7 +57,7 @@ def emcee_sampler(emulator,observed_feature,features_covariance,nwalkers=16,nbur
 	p0 = pmin + np.random.uniform(size=(nwalkers,ndim))*(pmax-pmin)
 
 	#Initialize the sampler
-	sampler = emcee.EnsembleSampler(nwalkers,ndim,lnprob,args=[emulator,observed_feature,icov],pool=pool)
+	sampler = emcee.EnsembleSampler(nwalkers,ndim,lnprobgauss,args=[emulator,observed_feature,icov],pool=pool)
 
 	#Burn-in
 	logdriver.info("Running emcee burn-in: feature name={0}, feature dimension={1}, parameter dimension={2}, steps={3}".format(feature_name,len(observed_feature),ndim,nburn))
