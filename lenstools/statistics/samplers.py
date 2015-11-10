@@ -39,6 +39,35 @@ def lnprobgauss(p,emulator,data,icov):
 
 def emcee_sampler(emulator,observed_feature,features_covariance,nwalkers=16,nburn=100,nchain=1000,pool=None):
 
+	"""
+	Parameter posterior sampling based on the MCMC algorithm implemented by the emcee package
+
+	:param emulator: feature emulator
+	:type emulator: :py:class:`Emulator`
+
+	:param observed_feature: observed feature to condition the parameter estimation
+	:type observed_feature: array
+
+	:param features_covariance: covariance matrix of the features
+	:type features_covariance: array
+
+	:param nwalkers: number of chains
+	:type nwalkers: int.
+
+	:param nburn: length of the burn-in chain
+	:type nburn: int.
+
+	:param nchain: length of the MCMC chain
+	:type nchain: int.
+
+	:param pool: MPI Pool for parallelization of computations
+	:type pool: MPIPool
+
+	:returns: ensemble of samples from the posterior probability distribution
+	:rtype: :py:class:`Ensemble`
+
+	"""
+
 	#Train the emulator with fast interpolation
 	emulator.train(method=multiquadric)
 

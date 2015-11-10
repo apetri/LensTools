@@ -38,17 +38,33 @@ Statistics
 .. automodule:: lenstools.statistics.database
 	:members: chi2database
 
-Constraining cosmology
-======================
+Cosmological parameter estimation
+=================================
 
 .. autoclass:: lenstools.statistics.constraints.Analysis
 	:members: from_features,feature_names,parameter_names,parameter_set,feature_set,parameters,features,add_models,reparametrize,refeaturize,combine_features,find
 
+Fisher matrix calculations
+--------------------------
+
 .. autoclass:: lenstools.statistics.constraints.FisherAnalysis
 	:members: set_fiducial,fiducial,variations,check,where,varied,compute_derivatives,derivatives,chi2,fit,classify,parameter_covariance,fisher_matrix,ellipse,confidence_ellipse
 
+Non linear parameter dependence
+-------------------------------
+
 .. autoclass:: lenstools.statistics.constraints.Emulator
 	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score,approximate_linear
+
+Posterior samplers
+------------------
+
+.. automodule:: lenstools.statistics.samplers
+	:members: emcee_sampler
+
+
+Confidence contour plotting
+---------------------------
 
 .. autoclass:: lenstools.statistics.contours.ContourPlot
 	:inherited-members:
@@ -95,6 +111,10 @@ Gadget2 snapshot handling
 
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
+
+.. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotDE
+
+.. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotPipe
 
 Ray tracing simulations
 =======================
