@@ -50,7 +50,7 @@ def gaussian_likelihood(chi2,norm=1.0):
 
 def chi2(parameters,*args,**kwargs):
 
-	model_feature = _predict(parameters,kwargs["parameter_grid"],kwargs["interpolator"],kwargs["weights"],kwargs["epsilon"])
+	model_feature = _predict(parameters,kwargs["interpolator"])
 	inverse_covariance = kwargs["inverse_covariance"]
 
 	if model_feature.ndim==1:
@@ -67,13 +67,16 @@ def chi2(parameters,*args,**kwargs):
 #############Feature prediction wrapper################################
 #######################################################################
 
-def _predict(parameters,parameter_grid,interpolator,weights,epsilon):
+#Fast interpolation method
+def _interpolate_fast(p,parameter_grid,method,weights,epsilon):
+	return method(((parameter_grid[None]-p[:,None])**2).sum(-1),epsilon).dot(weights)
+
+def _predict(parameters,interpolator):
 
 	#Cast to higher dimension
 	parameters = np.atleast_2d(parameters)
 
 	if isinstance(interpolator,list):
-		
 		#For each feature bin, compute its interpolated value
 		interpolated_feature = np.zeros((parameters.shape[0],len(interpolator)))
 
@@ -81,10 +84,8 @@ def _predict(parameters,parameter_grid,interpolator,weights,epsilon):
 			interpolated_feature[:,n] = i()(*parameters.T)
 
 	else:
-
-		#Compute interpolation with kernel
-		kernel = interpolator(((parameter_grid[None]-parameters[:,None])**2).sum(-1),epsilon)
-		interpolated_feature = kernel.dot(weights)
+		#Compute fast interpolation
+		interpolated_feature = interpolator(parameters)
 
 	return np.squeeze(interpolated_feature)
 
@@ -1012,31 +1013,23 @@ class Emulator(Analysis):
 
 			#Scipy Rbf method
 			self._interpolator = list()
-			self._weights = None
-			self._epsilon = None
 
 			for n in range(self._num_bins):
 				self._interpolator.append(_interpolate_wrapper(interpolate.Rbf,args=(tuple(used_parameters.T) + (flattened_feature_set[:,n],)),kwargs=kwargs))
 
 		else:
 
-			#Custom interpolation kernel
-			self._interpolator = method
-
 			#Compute pairwise square distance between points
 			distances = ((used_parameters[None] - used_parameters[:,None])**2).sum(-1)
-			mean_distance = distances[np.triu_indices(len(distances),k=1)].mean()
-			kernel = method(distances,mean_distance)
+			epsilon = distances[np.triu_indices(len(distances),k=1)].mean()
+			kernel = method(distances,epsilon)
+			weights = np.linalg.solve(kernel,self.feature_set)
 
-			#Compute interpolation weights 
-			self._metadata.append("_weights")
-			self._metadata.append("_epsilon")
-			self._weights = np.linalg.solve(kernel,self.feature_set)
-			self._epsilon = mean_distance
+			#Wrap interpolator
+			self._interpolator = _function_wrapper(_interpolate_fast,args=[],kwargs={"parameter_grid":used_parameters,"method":method,"weights":weights,"epsilon":epsilon})
 
 
 	###############################################################################################################################################################
-
 
 	def predict(self,parameters,raw=False):
 
@@ -1045,6 +1038,9 @@ class Emulator(Analysis):
 
 		:param parameters: new points in parameter space on which to compute the chi2 statistic; it'a (N,p) array where N is the number of points and p the number of parameters, or array of size p if there is only one point
 		:type parameters: array  
+
+		:param raw: if True returns raw numpy arrays
+		:type raw: bool.
 
 		"""
 
@@ -1064,7 +1060,7 @@ class Emulator(Analysis):
 		#Interpolate to compute the features#
 		#####################################
 
-		interpolated_feature = _predict(parameters,self.parameter_set,self._interpolator,self._weights,self._epsilon)
+		interpolated_feature = _predict(parameters,self._interpolator)
 
 		############################################################################################
 
@@ -1076,6 +1072,9 @@ class Emulator(Analysis):
 				return Series(interpolated_feature.reshape(self.feature_set.shape[1:]),index=self[self.feature_names].columns)
 			else:
 				return Ensemble(interpolated_feature.reshape((parameters.shape[0],) + self.feature_set.shape[1:]),columns=self[self.feature_names].columns)
+
+
+	###############################################################################################################################################################
 
 
 	def chi2(self,parameters,observed_feature,features_covariance,split_chunks=None,pool=None):
@@ -1133,7 +1132,7 @@ class Emulator(Analysis):
 		covinv = np.linalg.inv(features_covariance)
 
 		#Build the keyword argument dictionary to be passed to the chi2 calculator
-		kwargs = {"interpolator":self._interpolator,"parameter_grid":self.parameter_set,"weights":self.weights,"epsilon":self._epsilon,"inverse_covariance":covinv,"observed_feature":observed_feature}
+		kwargs = {"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
 
 		#Hack to make the chi2 pickleable (from emcee)
 		chi2_wrapper = _function_wrapper(chi2,tuple(),kwargs)
