@@ -145,10 +145,14 @@ def main(pool,batch,settings,id,override):
 			logdriver.info("Waiting for input files from snapshot {0}...".format(n))
 		
 		#Open the snapshot
-		snap = configuration.snapshot_handler.open(realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir"),pool=pool)
+		snapshot_filename = realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir")
+		if pool is not None:
+			logdriver.info("Task {0} reading nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
+
+		snap = configuration.snapshot_handler.open(snapshot_filename,pool=pool)
 
 		if pool is not None:
-			logdriver.info("Task {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
+			logdriver.debug("Task {0} read nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
 
 		#Get the positions of the particles
 		if not hasattr(snap,"positions"):
@@ -192,6 +196,7 @@ def main(pool,batch,settings,id,override):
 					#Save the result
 					logdriver.info("Saving plane to {0}".format(plane_file))
 					plane_wrap.save(plane_file)
+					logdriver.debug("Saved plane to {0}".format(plane_file))
 			
 				#Safety barrier sync
 				if pool is not None:

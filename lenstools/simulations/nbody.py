@@ -608,7 +608,20 @@ class NbodySnapshot(object):
 		else:
 			rv = None
 
+		#Log
+		if self.pool is not None:
+			logplanes.debug("Task {0} began gridding procedure".format(self.pool.rank))
+		else:
+			logplanes.debug("Began gridding procedure")
+
+		#Gridding
 		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
+
+		#Log
+		if self.pool is not None:
+			logplanes.debug("Task {0} done with gridding procedure".format(self.pool.rank))
+		else:
+			logplanes.debug("Done with gridding procedure")
 
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():
