@@ -148,7 +148,7 @@ def main(pool,batch,settings,id,override):
 		snap = configuration.snapshot_handler.open(realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir"),pool=pool)
 
 		if pool is not None:
-			logdriver.info("Rank {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
+			logdriver.info("Task {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
 
 		#Get the positions of the particles
 		if not hasattr(snap,"positions"):
