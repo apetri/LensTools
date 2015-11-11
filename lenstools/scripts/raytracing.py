@@ -285,6 +285,7 @@ def singleRedshift(pool,batch,settings,id):
 			savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 			logdriver.info("Saving convergence map to {0}".format(savename)) 
 			convMap.save(savename)
+			logdriver.debug("Saved convergence map to {0}".format(savename)) 
 
 		##############################################################################################################################
 	

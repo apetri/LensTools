@@ -945,11 +945,17 @@ class RayTracer(object):
 			if type(lens[k])==PotentialPlane:
 				current_lens = lens[k]
 			elif type(lens[k])==str:
+				
 				logray.info("Reading plane from {0}...".format(lens[k]))
 				current_lens = PotentialPlane.load(lens[k])
+				logray.info("Read plane from {0}...".format(lens[k]))
+				
 				np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens {0} redshift does not match info file specifications!".format(lens[k]))
+				
 				logray.info("Randomly rolling lens {0} along its axes...".format(k))
 				current_lens.randomRoll()
+				logray.info("Rolled lens {0} along its axes...".format(k))
+
 			else:
 				raise TypeError("Lens format not recognized!")
 
