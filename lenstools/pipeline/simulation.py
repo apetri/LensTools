@@ -102,6 +102,58 @@ class InfoDict(object):
 		with self.batch.syshandler.open(dictionary_file,"w") as fp:
 			fp.write(json.dumps(self.dictionary))
 
+#############################################################
+##############Convenient resource retrieval##################
+#############################################################
+
+def _retrieve(self,s):
+
+	#Break down search string into single components
+	search = "mcrpMCS"
+	nsteps = len(filter(lambda c:c in search,s))
+
+	if not nsteps:
+		return None
+
+	s_pieces = re.match(r"([{0}][0-9]+)".format(search)*nsteps,s).groups()
+
+	#Walk to the pieces and return the corresponding resource
+	current = self
+	for p in s_pieces:
+
+		#Split into resoure and index number
+		resource,index = re.match(r"([{0}])([0-9]+)".format(search),p).groups()
+
+		#model
+		if resource=="m":
+			current = current.models[int(index)]
+
+		#collection
+		if resource=="c":
+			current = current.collections[int(index)]
+
+		#realization
+		if resource=="r":
+			current = current.realizations[int(index)]
+
+		#plane set
+		if resource=="p":
+			current = current.planesets[int(index)]
+
+		#map set
+		if resource=="M":
+			current = current.mapsets[int(index)]
+
+		#catalog
+		if resource=="C":
+			current = current.catalogs[int(index)]
+
+		#sub-catalog
+		if resource=="S":
+			current = current.subcatalogs[int(index)]
+
+	#Return resource to user
+	return current
 
 #####################################################
 ##############SimulationBatch class##################
@@ -214,6 +266,12 @@ class SimulationBatch(object):
 	def update_changes(self):
 		with InfoDict(self) as info:
 			info.update()
+
+	##############################################################################################################################
+
+	#Convenient resource retrieval
+	def __getitem__(self,s):
+		return _retrieve(self,s)
 
 	##############################################################################################################################
 
@@ -1492,6 +1550,10 @@ class SimulationModel(object):
 
 		return "<"+ " , ".join(representation_parameters) + ">"
 
+
+	#Convenient resource retrieval
+	def __getitem__(self,s):
+		return _retrieve(self,s)
 
 	################################################################################################################################
 
