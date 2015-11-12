@@ -209,6 +209,7 @@ class MapSettings(object):
 		self.override_with_local = True
 
 		self.format = "fits"
+		self.plane_format = "fits"
 		self.map_resolution = 128
 		self.map_angle = 1.6 * u.deg
 		self.angle_unit = u.deg
@@ -264,6 +265,12 @@ class MapSettings(object):
 		self.directory_name = options.get(section,"directory_name")
 		self.override_with_local = options.getboolean(section,"override_with_local")
 		self.format = options.get(section,"format")
+		
+		try:
+			self.plane_format = options.get(section,"plane_format")
+		except NoOptionError:
+			pass
+		
 		self.map_resolution = options.getint(section,"map_resolution")
 		
 		self.angle_unit = getattr(u,options.get(section,"angle_unit"))
@@ -362,6 +369,7 @@ class CatalogSettings(object):
 
 		#Format of the simulated catalog files
 		self.format = "fits"
+		self.plane_format = "fits"
 
 		#Random seed used to generate multiple catalog realizations
 		self.seed = 0
@@ -405,6 +413,11 @@ class CatalogSettings(object):
 
 		#Format of the simulated catalog files
 		settings.format = options.get(section,"format")
+
+		try:
+			self.plane_format = options.get(section,"plane_format")
+		except NoOptionError:
+			pass
 
 		#Set of lens planes to be used during ray tracing
 		settings.seed = options.getint(section,"seed")
