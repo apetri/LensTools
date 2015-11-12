@@ -427,11 +427,11 @@ class SimulationBatch(object):
 		"""
 		Lists the available resources in the simulation batch (collections,mapsets,etc...)
 
-		:param resource: custom function to call on each batch.available element, must return a string. If None the list of Storage model directories is returned
+		:param resource: custom function to call on each batch.models element, must return a string. If None the list of Storage model directories is returned
 		:type resource: None or callable
 
-		:param which: extremes of the model numbers to get (if None all models are processed)
-		:type which: tuple. 
+		:param which: extremes of the model numbers to get (if None all models are processed); if callable, filter(which,self.models) gives the models to archive
+		:type which: tuple. or callable
 
 		:param chunk_size: size of output chunk
 		:type chunk_size: int.
@@ -446,9 +446,12 @@ class SimulationBatch(object):
 
 		#Available models
 		if which is None:
-			models = self.available
+			models = self.models
+		elif isinstance(which,tuple):
+			models = self.models.__getslice__(*which)
 		else:
-			models = self.available.__getslice__(*which)
+			models = filter(which,self.models)
+
 
 		#Return chunks
 		chunks = list()
