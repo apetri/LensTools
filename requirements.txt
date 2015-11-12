@@ -7,4 +7,3 @@ pandas
 emcee
 astropy
 numexpr
-mpi4py
