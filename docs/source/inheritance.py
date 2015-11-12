@@ -46,5 +46,5 @@ pgm.add_edge("catalog","subcatalog")
 
 #Render and save
 pgm.render()
-pgm.figure.savefig("inheritance.png")
+pgm.figure.savefig("figures/inheritance.png")
 

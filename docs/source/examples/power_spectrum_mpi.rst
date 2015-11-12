@@ -60,4 +60,4 @@ This is the actual code:
 
 And this is the result 
 
-.. figure:: ../../../examples/power_ensemble.png
+.. figure:: ../figures/power_ensemble.png

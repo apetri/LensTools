@@ -89,9 +89,9 @@ Here it is a simple example on how can you build your own simulation design usin
 
 This is how your design looks like in 3D space and on the :math:`(\Omega_m,\sigma_8)` projection
 
-.. figure:: ../../../examples/design_3d.png
-.. figure:: ../../../examples/design_2d.png
+.. figure:: ../figures/design_3d.png
+.. figure:: ../figures/design_2d.png
 
 And this is the evolution of the cost function 
 
-.. figure:: ../../../examples/cost.png
+.. figure:: ../figures/cost.png

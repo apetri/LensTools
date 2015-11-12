@@ -12,7 +12,7 @@ Pipeline workflow
 
 .. _flow:
 
-.. figure:: flow.png
+.. figure:: figures/flow.png
 
 	A scheme of the pipeline workflow 
 
@@ -1030,7 +1030,7 @@ Class inheritance
 
 This is a simplifying scheme of the class inheritance used in the lenstools pipeline 
 
-.. figure:: inheritance.png
+.. figure:: figures/inheritance.png
 
 
 

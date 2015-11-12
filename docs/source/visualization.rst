@@ -7,14 +7,14 @@ Three dimensional density field visualization
 
 This is how a Gadget snapshot looks like 
 
-.. figure:: ../../visualization/snapshot1.png 
-.. figure:: ../../visualization/snapshot2.png
+.. figure:: figures/snapshot1.png 
+.. figure:: figures/snapshot2.png
 
 Lens plane visualization
 ------------------------
 
 And this is how a lens plane looks like 
 
-.. figure:: ../../visualization/lens_plane1.png
-.. figure:: ../../visualization/lens_plane2.png
-.. figure:: ../../visualization/lens_plane3.png
+.. figure:: figures/lens_plane1.png
+.. figure:: figures/lens_plane2.png
+.. figure:: figures/lens_plane3.png

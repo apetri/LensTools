@@ -32,4 +32,4 @@ Note that 'shear_map' now is a :py:class:`~lenstools.image.shear.ShearMap` insta
 	
 	convergence_map.visualize(colorbar=True,cbar_label=r"$\kappa$")
 
-.. figure:: ../../../examples/catalog_to_convergence.png
+.. figure:: ../figures/catalog_to_convergence.png

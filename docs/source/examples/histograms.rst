@@ -155,7 +155,7 @@ Or, if you have a MPI installation and want to run on multiple processors::
 
 This is how the result looks like 
 
-.. figure:: ../../../examples/histograms.png
+.. figure:: ../figures/histograms.png
 
 
 

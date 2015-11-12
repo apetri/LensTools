@@ -70,5 +70,5 @@ pgm.add_edge("ray","p1")
 
 #Render and save
 pgm.render()
-pgm.figure.savefig("flow.png")
+pgm.figure.savefig("figures/flow.png")
 
