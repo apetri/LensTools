@@ -497,7 +497,7 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
-	def archive(self,name,pool=None,**kwargs):
+	def archive(self,name,pool=None,chunk_size=1,**kwargs):
 
 		"""
 		Archives a batch available resource to a tar gzipped archive; the resource file/directory names are retrieved with the list method. The archives will be written to the simulation batch storage directory 
@@ -514,7 +514,7 @@ class SimulationBatch(object):
 		"""
 
 		#Retrieve resource chunks
-		resource_chunks = self.list(**kwargs)
+		resource_chunks = self.list(chunk_size=chunk_size,**kwargs)
 
 		#Get archive names
 		if type(name)==str:
