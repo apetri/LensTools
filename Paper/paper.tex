@@ -28,6 +28,7 @@
 \newcommand{\bbh}[1]{\mathbf{\hat{#1}}}
 \newcommand{\h}[1]{\hat{#1}}
 \newcommand{\ttt}[1]{\texttt{#1}}
+\newcommand{\LT}{\texttt{LensTools} }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -45,7 +46,7 @@
 \label{firstpage}
 
 \begin{abstract}
-We present a newly developed software package which implements a wide range of routines frequently used in Weak Gravitational Lensing (WL). With the continuously increasing size of the WL scientific community we feel that easy to use APIs for common calculations are a necessity to ensure efficiency and coordination across different working groups. Coupled with existing open source codes, such as \ttt{CAMB}\citep{CAMB} and \ttt{GADGET2}\citep{Gadget2}, \ttt{LensTools} brings together a fully functional cosmic shear simulation pipeline which, coupled with a variety of WL feature measurement tools and parameter sampling routines, provides easy access to the numerics for theoretical studies of WL as well as for experiment forecasts. Being implemented in \ttt{python}\citep{python}, \ttt{LensTools} takes full advantage of a range of state--of--the art techniques developed by the large and growing open--source software community.    
+We present a newly developed software package which implements a wide range of routines frequently used in Weak Gravitational Lensing (WL). With the continuously increasing size of the WL scientific community we feel that easy to use APIs for common calculations are a necessity to ensure efficiency and coordination across different working groups. Coupled with existing open source codes, such as \ttt{CAMB}\citep{CAMB} and \ttt{GADGET2}\citep{Gadget2}, \LT brings together a fully functional cosmic shear simulation pipeline which, complemented with a variety of WL feature measurement tools and parameter sampling routines, provides easy access to the numerics for theoretical studies of WL as well as for experiment forecasts. Being implemented in \ttt{python}\citep{python}, \LT takes full advantage of a range of state--of--the art techniques developed by the large and growing open--source software community \citep{scipy,pandas,astropy}.    
     
 \end{abstract}
 
@@ -60,16 +61,54 @@ We present a newly developed software package which implements a wide range of r
 
 \section{Introduction}
 %
-Cosmology is entering a new, data driven era. After the Cosmic Microwave Background (CMB) \citep{WMAP,PlanckXVI2013} provided strong experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameters \citep{WLprimer}. Because WL probes are sensitive to the late universe, where the density fluctuations are in the non--linear regime, the cosmological information might not be all contained in quadratic features such as two--point correlation functions. In the theoretical study of more complicated WL features (see for example \citep{3pcf1,bispectrum1,moments1,peaks1} for a non comprehensive list), simulation pipelines play a vital role as in general these features cannot be predicted analitically from the cosmological parameters. In this work we present a flexible, customizable and easy to deploy WL simulation pipeline that bridegs the gap between simulations of shear fields, feature measurement from simulated images and cosmological parameter estimation. The paper is organized as follows: first we give an overview of the code structure, highlight the core routines and present the benchmarks and complexity of the expensive computing steps. We complement the work with some illustrative examples on how to use \ttt{LensTools} for some of the former tasks. We finally discuss the future prospects of the software development.     
+Cosmology is entering a new, data driven era. After the Cosmic Microwave Background (CMB) \citep{WMAP,PlanckXVI2013} provided strong experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameters \citep{WLprimer}. Because WL probes are sensitive to the late universe, where the density fluctuations are in the non--linear regime, the cosmological information might not be all contained in quadratic features such as two--point correlation functions. In the theoretical study of more complicated WL features (see for example \citep{3pcf1,bispectrum1,moments1,peaks1} for a non comprehensive list), simulation pipelines play a vital role as in general these features cannot be predicted analitically from the cosmological parameters. In this work we present a flexible, customizable and easy to deploy WL simulation pipeline that bridegs the gap between simulations of shear fields, feature measurement from simulated images and cosmological parameter estimation. The paper is organized as follows: first we give an overview of the code structure, highlight the core routines and present the benchmarks and complexity of the expensive computing steps. We complement the work with some illustrative examples on how to use \LT for some of the former tasks. We finally discuss the future prospects of the software development.     
 
 %%%%%%%%%%%%%%%%%%% CODE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Code} 
 
 \subsection{Shear field simulations}
+%
+In this paragraph we give an overview of the \LT shear field simulation pipeline. This is a series of routines that, broadly speaking, take a vector of cosmological parameters $\bb{p}$ and some resolution parameters to produce random realizations of shear fields $\pmb{\gamma}(\pmb{\theta})$ in that particular cosmology ($\pmb{\theta}=(\theta_x,\theta_y)$ is the angle on sky as seen from the observer). Given a background source at redshift $z_s$, the matter density fluctuations $\delta(\bb{x},z)$ in between the observer and the source will cause its apparent shape to be distorted; the cosmic shear $\pmb{\gamma}$ is a measurement of the apparent source ellipticity, assuming the unperturbed shape is a circle. The multi--lens--plane algorithm \citep{RayTracingHartlap} is a popular techique to compute light ray deflections across the path $z\in[z_s,0]$ and hence to compute the apparent source shape distortion. The mass distribution between the source and the observer is approximated as a sequence of two dimensional lenses perpendicular to the line of sight, of thickness $\Delta$ and a surface density $\sigma$ given by 
+
+\begin{equation}
+\sigma(\bb{x},z) = \frac{3H_0^2\Omega_m\chi(z)}{2c^2a(z)}\int_\Delta dz'\delta(\bb{x},z')
+\end{equation}
+%
+Where $\chi$ is the lens comoving distance and $a=(1/1+z)$ the scale factor. A light ray crossing a lens at redshift $z$ at a transverse position $\bb{x}$ will be deflected by a small angle $\pmb{\alpha}$ which can be shown to be the gradient of the 2D gravitational potential $\phi$ (see again \citep{RayTracingHartlap}) 
+%
+\begin{equation}
+\begin{matrix}
+& \nabla^2_\bb{x} \phi(\bb{x},z) = 2\sigma(\bb{x},z) \\ \\
+& \pmb{\alpha}(\bb{x},z) = \nabla_\bb{x} \phi(\bb{x},z) \\ \\
+& \bb{T}(\bb{x},z) = \nabla_\bb{x}\nabla_\bb{x}^T \phi(\bb{x},z)
+\end{matrix}
+\end{equation}
+%
+where we indicated $\bb{T}$ as the gradient of the deflection, which will be called \textit{shear tensor} throughout the rest of the paper. The trajectory of a light ray $\bb{x}(z)$ follows the geodesic equation
+
+\begin{equation}
+\label{geodesic3D}
+\frac{d^2\bb{x}}{d\chi^2} = -\frac{2}{c^2}\nabla_\bb{x_\perp}\Phi(\bb{x},z)
+\end{equation}
+%
+which can be translated into a second order differential equation for the light ray angular position $\pmb{\beta}(z)=\bb{x}(z)/\chi(z)$ as seen from the observer. Following \citep{RayTracingHartlap}, the trajectory of each light ray originating at $\pmb{\beta}(0)=\pmb{\theta}$ can be calculated solving numerically a discretized version of (\ref{geodesic3D}), assuming a finite number of lenses placed at regular intervals spaced $\Delta$:
+%
+\begin{equation}
+\begin{matrix}
+& \pmb{\beta}_{k} = \sum_{i=1}^k\delta\pmb{\beta}_k \\ \\
+& \delta\pmb{\beta}_k = (A_k-1)\delta\pmb{\beta}_{k-1} + C_k\pmb{\alpha}_k \\ \\
+& \bb{U}_{k} = \sum_{i=1}^k\delta\bb{U}_k \\ \\
+& \delta\bb{U}_k = (A_k-1)\delta\bb{U}_{k-1} + C_k\bb{T}_k\bb{U}_k
+\end{matrix} 
+\end{equation}
+%
+where $\bb{U}$ is the jacobian matrix of the trajectory $\pmb{\beta}$ with respect to the initial light ray position $\pmb{\theta}$, $\bb{U}_k=\nabla_{\pmb{\theta}}\pmb{\beta}_k(\pmb{\theta})$.
 
 \begin{figure*}
 \includegraphics[scale=0.6]{Figures/flow.eps}
+\caption{Schematic of the \LT WL shear simulation pipeline}
+\label{pipescheme}
 \end{figure*}
 
 \begin{table*}
