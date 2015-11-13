@@ -6,7 +6,7 @@ from __future__ import division,with_statement
 import sys,os
 import time
 import cPickle
-import resource
+import gc,resource
 
 from operator import add
 from functools import reduce
@@ -201,6 +201,10 @@ def singleRedshift(pool,batch,settings,id):
 		#Instantiate the RayTracer
 		tracer = RayTracer()
 
+		#Force garbage collection
+		gc.collect()
+
+		#Start timestep
 		start = time.time()
 		last_timestamp = start
 
@@ -490,6 +494,10 @@ def simulatedCatalog(pool,batch,settings,id):
 		#Instantiate the RayTracer
 		tracer = RayTracer()
 
+		#Force garbage collection
+		gc.collect()
+
+		#Start timestep
 		start = time.time()
 		last_timestamp = start
 
