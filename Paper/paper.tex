@@ -60,7 +60,7 @@ We present a newly developed software package which implements a wide range of r
 
 \section{Introduction}
 %
-Cosmology is entering a new, data driven era. After the Cosmic Microwave Background (CMB) (cite) provided one of the first experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameters. Because... 
+Cosmology is entering a new, data driven era. After the Cosmic Microwave Background (CMB) \citep{WMAP,PlanckXVI2013} provided strong experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameters \citep{WLprimer}. Because WL probes are sensitive to the late universe, where the density fluctuations are in the non--linear regime, the cosmological information might not be all contained in quadratic features such as two--point correlation functions. In the theoretical study of more complicated WL features (see for example \citep{3pcf1,bispectrum1,moments1,peaks1} for a non comprehensive list), simulation pipelines play a vital role as in general these features cannot be predicted analitically from the cosmological parameters. In this work we present a flexible, customizable and easy to deploy WL simulation pipeline that bridegs the gap between simulations of shear fields, feature measurement from simulated images and cosmological parameter estimation. The paper is organized as follows: first we give an overview of the code structure, highlight the core routines and present the benchmarks and complexity of the expensive computing steps. We complement the work with some illustrative examples on how to use \ttt{LensTools} for some of the former tasks. We finally discuss the future prospects of the software development.     
 
 %%%%%%%%%%%%%%%%%%% CODE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -71,6 +71,30 @@ Cosmology is entering a new, data driven era. After the Cosmic Microwave Backgro
 \begin{figure*}
 \includegraphics[scale=0.6]{Figures/flow.eps}
 \end{figure*}
+
+\begin{table*}
+\begin{tabular}{l|c|c|c}
+\toprule
+{Step} &            Complexity &            Test case &           Runtime \\ \hline \hline
+\midrule
+\multicolumn{4}{c}{\textbf{Lens generation}} \\ \hline
+Snapshot input & $O(N_p/N_t)$  & $N_p=512^3$, $N_t=16$  &  \\
+Gridding        & $O(N_p/N_t)$   & $N_p=512^3$, $N_t=16$  &  \\
+MPI Communication  & $O(L_p\log{N_t})$   & $N_t=16$, $L_p=4096^2$  &   \\
+Poisson solver           & $O(L_p\log{L_p})$ & $L_p=4096^2$  &      \\
+Lens output           & $O(L_p)$ & $L_p=4096^2$   &   \\ \hline \hline
+
+\multicolumn{4}{c}{\textbf{Ray tracing}} \\ \hline
+Lens input &  $O(L_p)$ & $L_p=4096^2$ &  \\
+Random lens shift &  $O(L_p)$ & $L_p=4096^2$ &  \\
+Deflection calculation        &  $O(M_p)$ & $M_p=2048^2$   &  \\
+Shear tensor product               &  $O(M_p)$ & $M_p=2048^2$   &   \\ \hline \hline
+
+\bottomrule
+\end{tabular}
+\caption{Ray tracing benchmarks}
+\label{benchmarktable}
+\end{table*}
 
 
 
