@@ -84,7 +84,7 @@ def load_fits_default_shear(filename):
 ##########Default callback loader, loads in the measured power spectrum#########
 ################################################################################
 
-def default_callback_loader(filename,l_edges,columns=None):
+def measure_power_spectrum(filename,l_edges,columns=None):
 	"""
 	
 	Default ensemble loader: reads a FITS data file containing a convergence map and measures its power spectrum
@@ -111,62 +111,6 @@ def peaks_loader(filename,thresholds,columns=None):
 
 	v,pk = conv_map.peakCount(thresholds,norm=True)
 	return pk
-
-#TODO: update
-def convergence_measure_all(filename,index,fits_loader=None):
-
-	"""
-	Measures all the statistical descriptors of a convergence map as indicated by the index instance
-	
-	"""
-
-	logging.debug("Processing {0}".format(filename))
-
-	#Load the map
-	if fits_loader is not None:
-		conv_map = ConvergenceMap.load(filename,format=fits_loader)
-	else: 
-		conv_map = ConvergenceMap.load(filename,format=load_fits_default_convergence)
-
-	#Allocate memory for observables
-	descriptors = index
-	observables = np.zeros(descriptors.size)
-
-	#Measure descriptors as directed by input
-	for n in range(descriptors.num_descriptors):
-
-		
-		if type(descriptors[n]) == PowerSpectrum:
-			
-			l,observables[descriptors[n].first:descriptors[n].last] = conv_map.powerSpectrum(descriptors[n].l_edges)
-
-		elif type(descriptors[n]) == Moments:
-
-			observables[descriptors[n].first:descriptors[n].last] = conv_map.moments(connected=descriptors[n].connected)
-		
-		elif type(descriptors[n]) == Peaks:
-			
-			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.peakCount(descriptors[n].thresholds,norm=descriptors[n].norm)
-
-		elif type(descriptors[n]) == PDF:
-
-			v,observables[descriptors[n].first:descriptors[n].last] = conv_map.pdf(descriptors[n].thresholds,norm=descriptors[n].norm)
-		
-		elif type(descriptors[n]) == MinkowskiAll:
-			
-			v,V0,V1,V2 = conv_map.minkowskiFunctionals(descriptors[n].thresholds,norm=descriptors[n].norm)
-			observables[descriptors[n].first:descriptors[n].last] = np.hstack((V0,V1,V2))
-		
-		elif type(descriptors[n]) == MinkowskiSingle:
-			
-			raise ValueError("Due to computational performance you have to measure all Minkowski functionals at once!")
-		
-		else:
-			
-			raise ValueError("Measurement of this descriptor not implemented!!!")
-
-	#Return
-	return observables
 
 
 ####################################################################################

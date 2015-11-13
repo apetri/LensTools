@@ -208,15 +208,14 @@ Cluster deployment
 Cluster specific settings
 -------------------------
 
-.. autoclass:: lenstools.pipeline.cluster.StampedeHandler
+.. automodule:: lenstools.pipeline.cluster
+	:inherited-members:
 
-.. autoclass:: lenstools.pipeline.cluster.EdisonHandler
-
-
-Observation sets
-================
+Real observation sets
+=====================
 
 .. automodule:: lenstools.observations
+	:inherited-members:
 
 .. autoclass:: lenstools.observations.CFHTLens
 	:inherited-members:
@@ -232,7 +231,7 @@ Defaults
 ========
 
 .. automodule:: lenstools.utils.defaults
-	:members: load_fits_default_convergence,load_fits_default_shear,default_callback_loader,convergence_measure_all
+	:members: load_fits_default_convergence,load_fits_default_shear,measure_power_spectrum
 
 MPI
 ===

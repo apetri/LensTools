@@ -38,6 +38,11 @@ class JobHandler(object):
 		self.setDirectives()
 		self.setClusterSpecs()
 
+	def __repr__(self):
+		directives = "\n".join([ "{0} : {1}".format(k,getattr(self.directives,k)) for k in self.directives._metadata])
+		cluster = "\n".join([ "{0} : {1}".format(k,getattr(self.cluster_specs,k)) for k in self.cluster_specs._metadata])
+		return "Directives:\n" + directives + "\n\nCluster specifications:\n" + cluster
+
 	@property
 	def directives(self):
 		return self._directives
@@ -195,8 +200,11 @@ class Directives(object):
 
 	def __init__(self,**kwargs):
 
-		for key in kwargs.keys():
+		self._metadata = list()
+
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
+			self._metadata.append(key)
 
 
 ############################################
@@ -208,8 +216,11 @@ class ClusterSpecs(object):
 
 	def __init__(self,**kwargs):
 
-		for key in kwargs.keys():
+		self._metadata = list()
+
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
+			self._metadata.append(key)
 
 
 
