@@ -27,7 +27,9 @@ system2handler = {
 "Stampede" : StampedeHandler,
 "stampede" : StampedeHandler,
 "Edison" : EdisonHandler,
-"edison" : EdisonHandler
+"edison" : EdisonHandler,
+"Cori" : CoriHandler,
+"cori" : CoriHandler,
 }
 
 #Parse command line options

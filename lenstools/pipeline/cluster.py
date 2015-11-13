@@ -8,7 +8,6 @@ import astropy.units as u
 
 _SLURMspecs = {
 "directive_prefix" : "#SBATCH",
-"charge_account_switch" : "-A ",
 "job_name_switch" : "-J ",
 "stdout_switch" : "-o ",
 "stderr_switch" : "-e ",
@@ -23,7 +22,6 @@ _SLURMspecs = {
 
 _PBSspecs = {
 "directive_prefix" : "#PBS",
-"charge_account_switch" : None,
 "job_name_switch" : "-N ",
 "stdout_switch" : "-o ",
 "stderr_switch" : "-e ",
@@ -43,6 +41,7 @@ _PBSspecs = {
 _StampedeClusterSpecs = {
 "shell_prefix" : "#!/bin/bash",
 "execution_preamble" : None,
+"charge_account_switch" : "-A ",
 "job_starter" : "ibrun",
 "cores_per_node" : 16,
 "memory_per_node" : 32.0*u.Gbyte,
@@ -55,9 +54,23 @@ _StampedeClusterSpecs = {
 _EdisonClusterSpecs = {
 "shell_prefix" : "#!/bin/bash",
 "execution_preamble" : None,
+"charge_account_switch" : None,
 "job_starter" : "aprun",
 "cores_per_node" : 24,
 "memory_per_node" : 64.0*u.Gbyte,
+"cores_at_execution_switch" : "-n ",
+"offset_switch" : None,
+"wait_switch" : "wait",
+"multiple_executables_on_node" : False	
+} 
+
+_CoriClusterSpecs = {
+"shell_prefix" : "#!/bin/bash -l",
+"execution_preamble" : None,
+"charge_account_switch" : None,
+"job_starter" : "srun",
+"cores_per_node" : 32,
+"memory_per_node" : 128.0*u.Gbyte,
 "cores_at_execution_switch" : "-n ",
 "offset_switch" : None,
 "wait_switch" : "wait",
@@ -106,3 +119,25 @@ class EdisonHandler(JobHandler):
 
 	def setClusterSpecs(self):
 		self._cluster_specs = ClusterSpecs(**_EdisonClusterSpecs)
+
+
+######################################################
+###########CoriHandler class##########################
+######################################################
+
+class CoriHandler(JobHandler):
+
+	"""
+	Job handler for the NERSC Cori Phase 1 cluster
+
+	"""
+
+	#############################################
+	######Abstract method definitions############
+	#############################################
+
+	def setDirectives(self):
+		self._directives = Directives(**_SLURMspecs)
+
+	def setClusterSpecs(self):
+		self._cluster_specs = ClusterSpecs(**_CoriClusterSpecs)	
