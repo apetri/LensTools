@@ -253,7 +253,7 @@ def singleRedshift(pool,batch,settings,id):
 
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = batch.syshandler.map(os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][nbody],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.{3}".format(snapshot_number,cut_points[c][cut],normals[c][normal],settings.plane_format)))
+			plane_name = batch.syshandler.map(os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][nbody],plane_set[c]),settings.plane_name_format.format(snapshot_number,cut_points[c][cut],normals[c][normal],settings.plane_format)))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
@@ -533,7 +533,7 @@ def simulatedCatalog(pool,batch,settings,id):
 
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.{3}".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]],settings.plane_format)))
+			plane_name = batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),settings.plane_name_format.format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]],settings.plane_format)))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile

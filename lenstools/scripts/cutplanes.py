@@ -181,7 +181,7 @@ def main(pool,batch,settings,id,override):
 				#######################################################################################################################################
 
 				#Save the plane
-				plane_file = batch.syshandler.map(os.path.join(save_path,"snap{0}_{1}Plane{2}_normal{3}.{4}".format(n,kind,cut,normal,settings.format)))
+				plane_file = batch.syshandler.map(os.path.join(save_path,settings.name_format.format(n,kind,cut,normal,settings.format)))
 
 				if pool is None or pool.is_master():
 			

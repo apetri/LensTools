@@ -109,6 +109,8 @@ class PlaneSettings(object):
 		self.override_with_local = True
 
 		self.format = "fits"
+		self.name_format = "snap{0}_{1}Plane{2}_normal{3}.{4}"
+
 		self.plane_resolution = 128
 		self.first_snapshot = 46
 		self.last_snapshot = 58
@@ -142,7 +144,13 @@ class PlaneSettings(object):
 		
 		settings.directory_name = options.get(section,"directory_name")
 		settings.override_with_local = options.getboolean(section,"override_with_local")
+		
 		settings.format = options.get(section,"format")
+		try:
+			settings.name_format = options.get(section,"name_format")
+		except NoOptionError:
+			pass
+		
 		settings.plane_resolution = options.getint(section,"plane_resolution")
 		settings.first_snapshot = options.getint(section,"first_snapshot")
 		settings.last_snapshot = options.getint(section,"last_snapshot")
@@ -210,6 +218,8 @@ class MapSettings(object):
 
 		self.format = "fits"
 		self.plane_format = "fits"
+		self.plane_name_format = "snap{0}_potentialPlane{1}_normal{2}.{3}"
+
 		self.map_resolution = 128
 		self.map_angle = 1.6 * u.deg
 		self.angle_unit = u.deg
@@ -268,6 +278,11 @@ class MapSettings(object):
 		
 		try:
 			self.plane_format = options.get(section,"plane_format")
+		except NoOptionError:
+			pass
+
+		try:
+			self.plane_name_format = options.get(section,"plane_name_format")
 		except NoOptionError:
 			pass
 		
@@ -370,6 +385,7 @@ class CatalogSettings(object):
 		#Format of the simulated catalog files
 		self.format = "fits"
 		self.plane_format = "fits"
+		self.plane_name_format = "snap{0}_potentialPlane{1}_normal{2}.{3}"
 
 		#Random seed used to generate multiple catalog realizations
 		self.seed = 0
@@ -416,6 +432,11 @@ class CatalogSettings(object):
 
 		try:
 			self.plane_format = options.get(section,"plane_format")
+		except NoOptionError:
+			pass
+
+		try:
+			self.plane_name_format = options.get(section,"plane_name_format")
 		except NoOptionError:
 			pass
 
