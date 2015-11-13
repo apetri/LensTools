@@ -247,13 +247,13 @@ class Gadget2Header(dict):
 		return merged_header
 
 ##############################################################
-#################Gadget2SnapshotDE class######################
+#################Gadget2Snapshot class######################
 ##############################################################
 
-class Gadget2SnapshotDE(NbodySnapshot):
+class Gadget2Snapshot(NbodySnapshot):
 
 	"""
-	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics.Inherits from the abstract NbodySnapshot; assumes that the header includes Dark Energy information
+	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics.Inherits from the abstract NbodySnapshot
 
 	"""
 
@@ -273,6 +273,11 @@ class Gadget2SnapshotDE(NbodySnapshot):
 
 	def getHeader(self):
 		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
+
+		self._header["w0"] = -1.0
+		self._header["wa"] = 0.0
+		self._header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["Om0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
+
 		return self._header 
 
 	############################################################################################
@@ -698,23 +703,19 @@ class Gadget2SnapshotDE(NbodySnapshot):
 
 
 ##############################################################
-#################Gadget2Snapshot class########################
+#################Gadget2SnapshotDE class########################
 ##############################################################
 
-class Gadget2Snapshot(Gadget2SnapshotDE):
+class Gadget2SnapshotDE(Gadget2Snapshot):
 
 	"""
-	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics.Inherits from Gadget2SnapshotDE; assumes that the dark energy is described by (w0,wa)=(-1,0)
+	A class that handles Gadget2 snapshots, mainly I/O from the binary format and spatial information statistics.Inherits from Gadget2Snapshot; assumes that the header includes Dark Energy information
 
 	"""
 
 	def getHeader(self):
 		
 		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
-		self._header["w0"] = -1.0
-		self._header["wa"] = 0.0
-		self._header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["Om0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
-
 		return self._header 
 
 
@@ -737,7 +738,11 @@ class Gadget2SnapshotPipe(Gadget2SnapshotDE):
 		#Read in the positions 
 		npart = self.header["num_particles_file"]
 		self.fp.read(8)
-		self.positions = (np.fromstring(self.fp.read(4*3*npart),dtype=np.float32).reshape(npart,3) * self.kpc_over_h).to(self.Mpc_over_h)
+		
+		try:
+			self.positions = (np.fromstring(self.fp.read(4*3*npart),dtype=np.float32).reshape(npart,3) * self.kpc_over_h).to(self.Mpc_over_h)
+		except AttributeError:
+			pass
 
 		#Read the rest
 		self.fp.read()

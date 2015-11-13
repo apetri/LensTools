@@ -898,7 +898,7 @@ class SimulationBatch(object):
 
 		for c in range(chunks):
 		
-			#Arguments for the executable
+			#Arguments for executable
 			exec_args = list()
 
 			for realization in realization_list[realizations_per_chunk*c:realizations_per_chunk*(c+1)]:
@@ -921,8 +921,9 @@ class SimulationBatch(object):
 					raise IOError("NGenIC parameter file at {0} does not exist yet!".format(parameter_file))
 
 				exec_args.append(parameter_file)
-
-			executable = job_settings.path_to_executable + " " + " ".join(exec_args)
+			
+			#Executable
+			executables = [ job_settings.path_to_executable + " " + " ".join(exec_args) ]
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
@@ -948,7 +949,7 @@ class SimulationBatch(object):
 					scriptfile.write(job_handler.writePreamble(job_settings))
 			
 			with self.syshandler.open(script_filename,"a") as scriptfile:
-				scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
+				scriptfile.write(job_handler.writeExecution(executables,[job_settings.num_cores]*len(executables),job_settings))
 
 			#Log to user and return
 			if (not one_script) or (not c):	
@@ -1035,7 +1036,10 @@ class SimulationBatch(object):
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("Gadget2 parameter file at {0} does not exist yet!".format(parameter_file))
 
-				executables.append(job_settings.path_to_executable + " " + "{0} {1} {2}".format(1,job_settings.cores_per_simulation,parameter_file))
+				if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+					executables.append(job_settings.path_to_executable + " " + "{0} {1} {2}".format(1,job_settings.cores_per_simulation,parameter_file))
+				else:
+					executables.append(job_settings.path_to_executable + " " + "{0}".format(parameter_file))
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
@@ -2574,9 +2578,8 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("GlassFile			{0}\n".format(os.path.abspath(settings.GlassFile)))
 
 			#Tiling
-			glass = Gadget2SnapshotDE.open(os.path.abspath(settings.GlassFile))
-			nside_glass = glass.header["num_particles_total_side"]
-			glass.close()
+			with configuration.snapshot_handler.open(os.path.abspath(settings.GlassFile)) as glass: 
+				nside_glass = glass.header["num_particles_total_side"]
 			paramfile.write("TileFac			{0}\n".format(self.nside//nside_glass))
 
 			#Cosmological parameters
@@ -2584,22 +2587,26 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("OmegaLambda			{0:.6f}\n".format(self.cosmology.Ode0))
 			paramfile.write("OmegaBaryon			{0:.6f}\n".format(self.cosmology.Ob0))
 			paramfile.write("HubbleParam			{0:.6f}\n".format(self.cosmology.h))
-			paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
-			paramfile.write("wa			{0:.6f}\n".format(self.cosmology.wa))
+
+			if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+				paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
+				paramfile.write("wa			{0:.6f}\n".format(self.cosmology.wa))
 
 			#Initial redshift
 			paramfile.write("Redshift 			{0:.6f}\n".format(settings.Redshift))
 
-			#Compute the growth and velocity prefactors
-			print("[+] Solving the linear growth ODE for {0}...".format(self.cosmo_id))
-			g = self.cosmology.growth_factor([settings._zmaxact,settings.Redshift,0.0])
+			if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+			
+				#Compute the growth and velocity prefactors
+				print("[+] Solving the linear growth ODE for {0}...".format(self.cosmo_id))
+				g = self.cosmology.growth_factor([settings._zmaxact,settings.Redshift,0.0])
 
-			print("[+] Computing prefactors...".format(self.cosmo_id))
-			growth_prefactor = g[2,0] / g[1,0]
-			vel_prefactor = -0.1 * np.sqrt(1+settings.Redshift) *(self.cosmology.H(settings.Redshift)/self.cosmology.H(0)).value * g[1,1] / g[1,0]
+				print("[+] Computing prefactors...".format(self.cosmo_id))
+				growth_prefactor = g[2,0] / g[1,0]
+				vel_prefactor = -0.1 * np.sqrt(1+settings.Redshift) *(self.cosmology.H(settings.Redshift)/self.cosmology.H(0)).value * g[1,1] / g[1,0]
 
-			paramfile.write("GrowthFactor			{0:.6f}\n".format(growth_prefactor))
-			paramfile.write("VelocityPrefactor			{0:.6f}\n".format(vel_prefactor))
+				paramfile.write("GrowthFactor			{0:.6f}\n".format(growth_prefactor))
+				paramfile.write("VelocityPrefactor			{0:.6f}\n".format(vel_prefactor))
 
 			#Sigma8
 			paramfile.write("Sigma8				{0:.6f}\n".format(self.cosmology.sigma8))
@@ -2689,7 +2696,7 @@ class SimulationIC(SimulationCollection):
 			ic_filenames = self.syshandler.glob(initial_condition_file+"*")
 
 			try:
-				ic_snapshot = Gadget2SnapshotDE.open(ic_filenames[0])
+				ic_snapshot = configuration.snapshot_handler.open(ic_filenames[0])
 				paramfile.write("TimeBegin			{0}\n".format(ic_snapshot.header["scale_factor"]))
 				ic_snapshot.close()
 			except (IndexError,IOError):
@@ -2711,8 +2718,10 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("OmegaBaryon			{0:.6f}\n".format(self.cosmology.Ob0))
 			paramfile.write("HubbleParam			{0:.6f}\n".format(self.cosmology.h))
 			paramfile.write("BoxSize			{0:.6f}\n".format(self.box_size.to(self.kpc_over_h).value))
-			paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
-			paramfile.write("wa			{0:.6f}\n\n".format(self.cosmology.wa))
+
+			if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+				paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
+				paramfile.write("wa			{0:.6f}\n\n".format(self.cosmology.wa))
 
 			#Output frequency section
 			paramfile.write(settings.writeSection("output_frequency"))
