@@ -27,12 +27,13 @@
 \newcommand{\bb}[1]{\mathbf{#1}}
 \newcommand{\bbh}[1]{\mathbf{\hat{#1}}}
 \newcommand{\h}[1]{\hat{#1}}
+\newcommand{\ttt}[1]{\texttt{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
 
-\title{Weak Lensing simulations: the LensTools computing package}
+\title{Mocking the Weak Lensing universe: the LensTools computing package}
 
 \author{Andrea Petri}
 \email{apetri@phys.columbia.edu}
@@ -44,7 +45,7 @@
 \label{firstpage}
 
 \begin{abstract}
-Cosmosis at \citep{cosmosis}. The \texttt{SimulationBatch} class
+We present a newly developed software package which implements a wide range of routines frequently used in Weak Gravitational Lensing (WL). With the continuously increasing size of the WL scientific community we feel that easy to use APIs for common calculations are a necessity to ensure efficiency and coordination across different working groups. Coupled with existing open source codes, such as \ttt{CAMB}\citep{CAMB} and \ttt{GADGET2}\citep{Gadget2}, \ttt{LensTools} brings together a fully functional cosmic shear simulation pipeline which, coupled with a variety of WL feature measurement tools and parameter sampling routines, provides easy access to the numerics for theoretical studies of WL as well as for experiment forecasts. Being implemented in \ttt{python}\citep{python}, \ttt{LensTools} takes full advantage of a range of state--of--the art techniques developed by the large and growing open--source software community.    
     
 \end{abstract}
 
@@ -59,7 +60,7 @@ Cosmosis at \citep{cosmosis}. The \texttt{SimulationBatch} class
 
 \section{Introduction}
 %
-Weak Gravitational lensing is a promising cosmological probe...  
+Cosmology is entering a new, data driven era. After the Cosmic Microwave Background (CMB) (cite) provided one of the first experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameters. Because... 
 
 %%%%%%%%%%%%%%%%%%% CODE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -70,6 +71,8 @@ Weak Gravitational lensing is a promising cosmological probe...
 \begin{figure*}
 \includegraphics[scale=0.6]{Figures/flow.eps}
 \end{figure*}
+
+
 
 \subsection{Weak lensing features}
 
