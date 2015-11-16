@@ -143,7 +143,7 @@ Directory tree handling
 -----------------------
 
 .. autoclass:: lenstools.pipeline.SimulationBatch
-	:members: current,available,info,newModel,getModel,writeCAMBSubmission,writeNGenICSubmission,writeGadget2Submission,writePlaneSubmission,writeRaySubmission
+	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationModel
 	:members: path,mkdir,newCollection,getCollection,collections,newTelescopicMapSet,getTelescopicMapSet,telescopicmapsets

@@ -959,10 +959,10 @@ class SimulationBatch(object):
 	############################################################################################################################################
 
 
-	def writeGadget2Submission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeNbodySubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
 		
 		"""
-		Writes Gadget2 submission script
+		Writes N-body simulation submission script
 
 		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
 		:type realization_list: list. of str.
