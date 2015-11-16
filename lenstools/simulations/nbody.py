@@ -62,6 +62,10 @@ class NbodySnapshot(object):
 
 	@abstractmethod
 	def buildFilename(cls,root,pool,**kwargs):
+		pass
+
+	@abstractmethod
+	def int2root(cls,name,n):
 		pass	
 
 	@abstractmethod

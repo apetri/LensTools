@@ -269,6 +269,10 @@ class Gadget2Snapshot(NbodySnapshot):
 		else:
 			return root
 
+	@classmethod
+	def int2root(cls,name,n):
+		return name + "_{0:03d}".format(n)
+
 	############################################################################################
 
 	def getHeader(self):

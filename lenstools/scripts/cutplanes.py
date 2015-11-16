@@ -54,7 +54,7 @@ def main(pool,batch,settings,id,override):
 	snapshot_path = realization.snapshot_subdir
 	
 	#Base name of the snapshot files
-	SnapshotFileBase = realization.SnapshotFileBase + "_"
+	SnapshotFileBase = realization.SnapshotFileBase
 
 	#Log to user
 	if (pool is None) or (pool.is_master()):
@@ -145,7 +145,7 @@ def main(pool,batch,settings,id,override):
 			logdriver.info("Waiting for input files from snapshot {0}...".format(n))
 		
 		#Open the snapshot
-		snapshot_filename = realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir")
+		snapshot_filename = realization.path(configuration.snapshot_handler.int2root(SnapshotFileBase,n),where="snapshot_subdir")
 		if pool is not None:
 			logdriver.info("Task {0} reading nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
 
