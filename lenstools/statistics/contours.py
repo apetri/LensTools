@@ -22,6 +22,7 @@ from scipy import stats
 from scipy import integrate
 
 try: 
+	import matplotlib
 	import matplotlib.pyplot as plt
 	from matplotlib import rc
 except ImportError:
@@ -520,12 +521,15 @@ class ContourPlot(object):
 		self.ax.set_ylim(self.extent[2],self.extent[3])
 
 
-	def show(self,cmap=plt.cm.binary_r,interpolation="nearest"):
+	def show(self,cmap=None,interpolation="nearest"):
 
 		"""
 		Show the 2D marginalized likelihood
 
 		"""
+
+		if cmap is None:
+			cmap = plt.cmap.binary_r
 
 		if hasattr(self,"reduced_likelihood"):
 			reduced_likelihood = self.reduced_likelihood

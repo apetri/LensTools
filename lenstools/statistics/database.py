@@ -91,7 +91,7 @@ class Database(object):
 	#Read table in a database
 	def read_table(self,table_name):
 
-		if type(table_name)==str:
+		if type(table_name) in [str,unicode]:
 			assert table_name in self.tables,"Table {0} does not exist!".format(table_name)
 			return self._constructor_ensemble.read_sql_table(table_name,self.connection) 
 		elif type(table_name)==int:
