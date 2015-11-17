@@ -20,8 +20,12 @@ from .constraints import FisherAnalysis
 import numpy as np
 from scipy import stats
 from scipy import integrate
-import matplotlib.pyplot as plt
-from matplotlib import rc
+
+try: 
+	import matplotlib.pyplot as plt
+	from matplotlib import rc
+except ImportError:
+	matplotlib = None
 
 import pandas as pd
 
@@ -147,13 +151,18 @@ class ContourPlot(object):
 
 		#Sort the score_ensemble so that the parameters ordered like a meshgrid
 		score_ensemble = score_ensemble.sort_values(by=parameters)
+
+		#Check the feature names used to plot the contours (one contour plot for each feature name)
+		if type(feature_names) in [str,unicode]:
+			feature_names = [feature_names]
+
 		if feature_names is not None:
 			feature_labels = feature_names
 		else: 
 			feature_labels = filter(lambda l:l not in parameters,score_ensemble.columns)
 
 		#One contour plot for each label
-		if (fig is None) or (ax is None):
+		if (matplotlib is not None) and ((fig is None) or (ax is None)):
 			fig,ax = plt.subplots(figsize=figsize)
 		
 		for feature in feature_labels:
@@ -210,8 +219,6 @@ class ContourPlot(object):
 					self.ax.proxy = list()
 
 		except:
-
-			print("Warning, no matplotlib functionalities!")
 			pass
 		
 		self.min = dict()
@@ -616,6 +623,54 @@ class ContourPlot(object):
 		self.likelihood_values = values
 		
 		return values
+
+	################################################################################
+	###############Compute the area enclosed by the confidence contours#############
+	################################################################################
+
+	def confidenceArea(self):
+
+		"""
+		Computes the area enclosed by the parameter confidence contours
+
+		:returns: area enclosed by the confidence contours
+		:rtype: dict.
+
+		"""
+
+		if hasattr(self,"reduced_likelihood"):
+			likelihood = self.reduced_likelihood
+		else:
+			likelihood = self.likelihood
+
+		#Find the maximum of the likelihood and compute the hessian matrix around it
+		assert likelihood.ndim==2,"The likelihood must be 2-dimensional"
+
+		#Find the names of the relevant parameters
+		if hasattr(self,"remaining_parameters"):
+			parameters = self.remaining_parameters
+		else:
+			parameters = self.parameter_axes.keys()
+
+		assert len(parameters)==2,"There should be only 2 parameters!"
+
+		parameters.sort(key=self.parameter_axes.get)
+
+		#This is the area of a pixel in parameter space
+		pixel_area = self.unit[parameters[0]] * self.unit[parameters[1]]
+
+		#Check that the values of the likelihood levels have been computed already
+		if not hasattr(self,"computed_p_values"):
+			raise AttributeError("No likelihood values computed, please run getLikelihoodValues() first to compute the desired likelihood values!!")
+
+		#Compute the enclosed area for each contour
+		confidence_area = dict()
+		for n,p_value in enumerate(self.computed_p_values):
+			confidence_area[p_value] = (likelihood>self.likelihood_values[n]).sum() * pixel_area
+
+		#Return to user
+		return confidence_area
+
 
 	######################################################################################
 	##############Plot the Gaussian approximation to the confidence contours##############
