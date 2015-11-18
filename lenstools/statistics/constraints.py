@@ -300,7 +300,9 @@ class Analysis(Ensemble):
 				transformed_feature.add_name(n)
 				transformed_feature.index = self.index
 			elif method=="dot":
-				transformed_feature = self[[n]].dot(transformation_dict[n]) 
+				transformed_feature = self[[n]].dot(transformation_dict[n])
+				transformed_feature.add_name(n)
+				transformed_feature.index = self.index 
 			else:
 				raise NotImplementedError("transformation method {0} not implemented!".format(method))
 
