@@ -170,10 +170,13 @@ class SimulationBatch(object):
 	_in_memory = dict()
 
 	@classmethod
-	def current(cls,syshandler=configuration.syshandler,indicize=False):
+	def current(cls,name="environment.ini",syshandler=configuration.syshandler,indicize=False):
 
 		"""
-		This method looks in the current directory and looks for a configuration file named "environment.ini"; if it finds one, it returns a SimulationBatch instance that corresponds to the one pointed to by "environment.ini"
+		This method looks in the current directory and looks for a configuration file named "environment.ini"; if it finds one, it returns a SimulationBatch instance that corresponds to the one pointed to by "environment.ini" (default)
+
+		:param name: name of the INI file with the environment settings, defaults to 'environment.ini'
+		:type name: str.
 
 		:param syshandler: system handler that allows to override the methods used to create directories and do I/O from files, must implement the abstract type SystemHandler
 		:type syshandler: SystemHandler
@@ -183,10 +186,10 @@ class SimulationBatch(object):
 
 		"""
 
-		if not(os.path.exists("environment.ini")):
+		if not(os.path.exists(name)):
 			return None
 
-		env = EnvironmentSettings.read("environment.ini")
+		env = EnvironmentSettings.read(name)
 		return cls(env,syshandler,indicize)
 
 	@property 
