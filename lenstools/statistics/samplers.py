@@ -17,6 +17,7 @@ import emcee
 
 from .ensemble import Ensemble
 from ..simulations.logs import logdriver
+from ..utils.algorithms import precision_bias_correction
 
 ###############################
 ######Multiquadric kernel######
@@ -49,7 +50,7 @@ def lnprobgauss(p,emulator,data,icov,pslice_values,sample_indices):
 ######emcee sampler############
 ###############################
 
-def emcee_sampler(emulator,observed_feature,features_covariance,pslice=None,nwalkers=16,nburn=100,nchain=1000,pool=None):
+def emcee_sampler(emulator,observed_feature,features_covariance,correct=None,pslice=None,nwalkers=16,nburn=100,nchain=1000,pool=None):
 
 	"""
 	Parameter posterior sampling based on the MCMC algorithm implemented by the emcee package
@@ -62,6 +63,9 @@ def emcee_sampler(emulator,observed_feature,features_covariance,pslice=None,nwal
 
 	:param features_covariance: covariance matrix of the features
 	:type features_covariance: array
+
+	:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+	:type correct: int.
 
 	:param pslice: specify slices of the parameter space in which some parameters are keps as constants
 	:type pslice: dict.
@@ -107,6 +111,8 @@ def emcee_sampler(emulator,observed_feature,features_covariance,pslice=None,nwal
 
 	#Compute the inverse covariance
 	icov = np.linalg.inv(features_covariance)
+	if correct is not None:
+		icov *= precision_bias_correction(correct,len(icov))
 
 	#Initialize the walkers positions
 	ndim = len(pmin)
