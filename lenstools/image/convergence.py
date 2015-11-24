@@ -996,9 +996,16 @@ class Spin0(object):
 		l_squared = lx[:,None]**2 + ly[None,:]**2
 
 		#Count how many of these pixels fall inside each bin
-		num_modes = (l_squared[None] < l_edges[:,None,None]**2).sum((1,2)).astype(np.float)
+		modes_on = l_squared[None] < l_edges[:,None,None]**2
+		modes_ly_0 = modes_on.copy()
+		modes_ly_0[:,:,1:] = 0
 
-		return np.diff(num_modes)
+		#Count the total number of modes, and the number of modes with ly=0 
+		num_modes = np.diff(modes_on.sum((1,2)).astype(np.float))
+		num_modes_ly_0 = np.diff(modes_ly_0.sum((1,2)).astype(np.float))
+
+		#Return the corrected number of modes that yields the right variance in the Gaussian case
+		return num_modes**2/(num_modes+num_modes_ly_0)
 
 
 
