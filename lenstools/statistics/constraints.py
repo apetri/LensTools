@@ -799,9 +799,9 @@ class FisherAnalysis(Analysis):
 		#If we are using the same covariance matrix for observations and simulations, then XY is the Fisher matrix; otherwise we need to compute M too
 		if observed_features_covariance is None:
 			if correct is not None:
-				return self.__class__(np.linalg.inv(XY),index=self.derivatives.index,columns=self.derivatives.index)
-			else:
 				return self.__class__(np.linalg.inv(XY),index=self.derivatives.index,columns=self.derivatives.index) / precision_bias_correction(correct,len(simulated_features_covariance))
+			else:
+				return self.__class__(np.linalg.inv(XY),index=self.derivatives.index,columns=self.derivatives.index)
 		else:
 
 			assert observed_features_covariance.shape == self.feature_set.shape[1:] * 2 or observed_features_covariance.shape == self.feature_set.shape[1:]
