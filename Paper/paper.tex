@@ -96,24 +96,42 @@ where we indicated $\bb{T}$ as the gradient of the deflection, which will be cal
 %
 which can be translated into a second order differential equation for the light ray angular position $\pmb{\beta}(z)=\bb{x}_\perp(z)/\chi(z)$ as seen from the observer. Following \citep{RayTracingHartlap}, the trajectory of each light ray originating at $\pmb{\beta}(0)=\pmb{\theta}$ can be calculated solving numerically a discretized version of (\ref{geodesic3D}), assuming a finite number of lenses placed at a finite number of redshifts $\{z_k\}$:
 %
+
+\begin{widetext}
+
 \begin{equation}
 \label{geodesic2D}
-\begin{matrix}
-& \pmb{\beta}_{k} = \sum_{i=1}^k\delta\pmb{\beta}_k \\ \\
-& \delta\pmb{\beta}_k = (A_k-1)\delta\pmb{\beta}_{k-1} + C_k\pmb{\alpha}_k \\ \\
-& \bb{U}_{k} = \sum_{i=1}^k\delta\bb{U}_k \\ \\
-& \delta\bb{U}_k = (A_k-1)\delta\bb{U}_{k-1} + C_k\bb{T}_k\bb{U}_k
-\end{matrix} 
+\pmb{\beta}_{k} = \sum_{i=1}^k\delta\pmb{\beta}_k 
 \end{equation}
+
+\begin{equation}
+\delta\pmb{\beta}_k = (A_k-1)\delta\pmb{\beta}_{k-1} + C_k\pmb{\alpha}_k 
+\end{equation}
+
+\begin{equation}
+\bb{U}_{k} = \sum_{i=1}^k\delta\bb{U}_k 
+\end{equation}
+
+\begin{equation}
+\delta\bb{U}_k = (A_k-1)\delta\bb{U}_{k-1} + C_k\bb{T}_k\bb{U}_k
+\end{equation}
+
+\end{widetext}
 %
 where $\bb{U}$ is the jacobian matrix of the trajectory $\pmb{\beta}$ with respect to the initial light ray position $\pmb{\theta}$, $\bb{U}_k=\nabla_{\pmb{\theta}}\pmb{\beta}_k(\pmb{\theta})$. The factors $A_k,C_k$ depend on the geometry of the lens system
 
+\begin{widetext}
+
 \begin{equation}
-\begin{matrix}
-& A_k = \frac{\chi_{k+1}}{\chi_{k+2}}\left(1 + \frac{\chi_{k+2}-\chi_{k+1}}{\chi_{k+1}-\chi_k}\right) \\ \\
-& C_k = \frac{\chi_{k+1}}{\chi_{k+2}} - 1 \\ \\
-\end{matrix} 
+A_k = \frac{\chi_{k+1}}{\chi_{k+2}}\left(1 + \frac{\chi_{k+2}-\chi_{k+1}}{\chi_{k+1}-\chi_k}\right) \\ \\
 \end{equation} 
+
+\begin{equation}
+C_k = \frac{\chi_{k+1}}{\chi_{k+2}} - 1 \\ \\
+\end{equation} 
+
+\end{widetext}
+
 %
 where we use the subscript $k$ to indicate the redshift $z_k$ of the $k$--th lens for notational simplicity. After tracing the evolution of $\bb{U}$ from the observer to the source at $z_s$, we are able to evaluate the cosmic shear $\pmb{\gamma}$ and convergence $\kappa$ at $z_s$ looking at the components of $\bb{U}$
 \begin{equation}
