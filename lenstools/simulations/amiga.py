@@ -73,7 +73,7 @@ class AmigaHalos(NbodySnapshot):
 		header["num_files"] = 1
 
 		#Finally compute the comoving distance
-		header["comoving_distance"] = w0waCDM(H0=h*100,Om0=header["Om0"],Ode0=header["Ode0"],w0=header["w0"],wa=header["wa"]).comoving_distance(header["redshift"]).to(u.kpc) / h
+		header["comoving_distance"] = w0waCDM(H0=h*100,Om0=header["Om0"],Ode0=header["Ode0"],w0=header["w0"],wa=header["wa"]).comoving_distance(header["redshift"]).to(u.kpc).value / h
 
 		#Return to user
 		return header
@@ -91,7 +91,7 @@ class AmigaHalos(NbodySnapshot):
 		else:
 			m,x,y,z,rv,c = np.loadtxt(self.fp,usecols=(3,5,6,7,11,42))[first:last].T
 		
-		positions = np.array((x,y,z)).astype(np.float).T * self.kpc_over_h
+		positions = np.array((x,y,z)).astype(np.float32).T * self.kpc_over_h
 		self.virial_radius = rv * self.kpc_over_h * self._header["scale_factor"]
 		self.concentration = c
 		self.weights = ((1./(4*np.pi)) * (c**3/(np.log(1.+c)-c/(1.+c))) * m*(u.Msun/self.header["h"]) / (rhoM*(self.virial_radius**3))).decompose().value
