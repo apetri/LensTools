@@ -276,13 +276,14 @@ class Gadget2Snapshot(NbodySnapshot):
 	############################################################################################
 
 	def getHeader(self):
-		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
+		
+		header = Gadget2Header(ext._gadget2.getHeader(self.fp))
 
-		self._header["w0"] = -1.0
-		self._header["wa"] = 0.0
-		self._header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["Om0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
+		header["w0"] = -1.0
+		header["wa"] = 0.0
+		header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["Om0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
 
-		return self._header 
+		return header 
 
 	############################################################################################
 
@@ -718,10 +719,8 @@ class Gadget2SnapshotDE(Gadget2Snapshot):
 	"""
 
 	def getHeader(self):
-		
-		self._header = Gadget2Header(ext._gadget2.getHeader(self.fp))
-		return self._header 
-
+		return Gadget2Header(ext._gadget2.getHeader(self.fp))
+		 
 
 ##################################################################
 #################Gadget2SnapshotPipe class########################
