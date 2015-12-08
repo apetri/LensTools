@@ -80,8 +80,8 @@ class AmigaHalos(NbodySnapshot):
 
 	def getPositions(self,first=None,last=None,save=True):
 
-		#Matter density at snapshot redshift
-		rhoM = self.cosmology.critical_density(self.header["redshift"]) * self.cosmology.Om(self.header["redshift"])
+		#Matter density today
+		rhoM = self.cosmology.critical_density0 * self.cosmology.Om0
 
 		if first is None:
 			first = 0
@@ -92,7 +92,7 @@ class AmigaHalos(NbodySnapshot):
 			m,x,y,z,rv,c = np.loadtxt(self.fp,usecols=(3,5,6,7,11,42))[first:last].T
 		
 		positions = np.array((x,y,z)).astype(np.float32).T * self.kpc_over_h
-		self.virial_radius = rv * self.kpc_over_h * self._header["scale_factor"]
+		self.virial_radius = rv * self.kpc_over_h 
 		self.concentration = c
 		self.weights = ((1./(4*np.pi)) * (c**3/(np.log(1.+c)-c/(1.+c))) * m*(u.Msun/self.header["h"]) / (rhoM*(self.virial_radius**3))).decompose().value
 
