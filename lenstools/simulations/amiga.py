@@ -18,6 +18,8 @@ class AmigaHalos(NbodySnapshot):
 	"""
 	A class that handles the Amiga Halo Finder (AHF) halo output files. Inherits from the abstract NbodySnapshot
 
+	:warning: Not tested yet!
+
 	"""
 
 	###############################################################################################

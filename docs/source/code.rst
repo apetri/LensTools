@@ -54,7 +54,7 @@ Non linear parameter dependence
 -------------------------------
 
 .. autoclass:: lenstools.statistics.constraints.Emulator
-	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score,approximate_linear
+	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score,sample_posterior,approximate_linear
 
 Posterior samplers
 ------------------
@@ -106,8 +106,8 @@ Nicaea bindings
 .. autoclass:: lenstools.simulations.Nicaea
 	:members: fromCosmology,convergencePowerSpectrum,shearTwoPoint
 
-Gadget2 snapshot handling
-==========================
+N-body simulation snapshot handling
+===================================
 
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
@@ -115,6 +115,9 @@ Gadget2 snapshot handling
 .. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotDE
 
 .. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotPipe
+
+.. autoclass:: lenstools.simulations.amiga.AmigaHalos 
+	
 
 Ray tracing simulations
 =======================
