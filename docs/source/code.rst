@@ -94,7 +94,7 @@ Simulation design
 =================
 
 .. autoclass:: lenstools.simulations.Design
-	:members: parameters,from_specs,write,visualize,savefig,set_title,diagonalCost,cost,sample
+	:members: parameters,from_specs,write,visualize,savefig,set_title,diagonalCost,cost,sample,sample_ellipse
 
 
 Nicaea bindings

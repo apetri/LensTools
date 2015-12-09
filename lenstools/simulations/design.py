@@ -6,10 +6,11 @@ try:
 except AttributeError:
 	_design = None
 
-from ..statistics.ensemble import Ensemble
+from ..statistics.ensemble import Ensemble,Series
 
 import numpy as np
 from astropy.table import Table,Column,hstack
+import astropy.units as u
 
 try:
 	import matplotlib.pyplot as plt
@@ -283,7 +284,7 @@ class Design(Ensemble):
 
 		return _design.cost(self._raw,p,Lambda)**(1.0/Lambda)
 
-	def sample(self,p,Lambda,seed=0,maxIterations=10000):
+	def sample(self,p=2.0,Lambda=1.0,seed=0,maxIterations=10000):
 
 		"""
 		Evenly samples the parameter space by minimizing the cost function computed with the metric parameters (p,Lambda); this operation works inplace
@@ -328,3 +329,51 @@ class Design(Ensemble):
 			self.cost_values = self.cost_values[:cut]
 
 		return deltaPerc
+
+
+	#Sample points in an elliptical parameter space
+	@classmethod
+	def sample_ellipse(cls,npoints,parameters,minor,major,angle,**kwargs):
+
+		"""
+		Sample points in a two dimensional parameter space whose boundary has the shape of an ellipse
+
+		:param npoints: number of points in the design
+		:type npoints: int.
+
+		:param parameters: name of the parameters, the list must have 2 elements
+		:type parameters: list.
+
+		:param minor: length of the semi-minor axis
+		:type minor: float.
+
+		:param major: length of the semi-major axis
+		:type major: float.
+
+		:param angle: rotation angle of the major axis with respect to the horizontal (degrees counterclockwise)
+		:type angle: float.
+
+		:param kwargs: the keyword arguments are passed to the sample() method
+		:type kwarges: dict.
+
+		:returns:
+		:rtype: :py:class:`Design`
+
+		"""
+
+		#Two dimensional rotation matrix
+		if hasattr(angle,"unit"):
+			angle_rad = angle.to(u.rad)
+		else:
+			angle_rad = angle*np.pi/180.
+
+		rotator = np.array([[np.cos(angle_rad),np.sin(angle_rad)],[-np.sin(angle_rad),np.cos(angle_rad)]])
+
+		#First sample the parameter space in (r,phi) coordinates
+		polar_design = cls.from_specs(npoints,[("r","r",0.,1.),("phi","phi",0.,2*np.pi)])
+		polar_design.sample(**kwargs) 
+
+		#Transform into (x,y) coordinates by performing a rotation
+		return polar_design.apply(lambda r:Series([major*r["r"]*np.cos(r["phi"]),minor*r["r"]*np.sin(r["phi"])],index=parameters),axis=1).dot(Ensemble(rotator,index=parameters,columns=parameters))
+
+
