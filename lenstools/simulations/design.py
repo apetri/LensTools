@@ -374,6 +374,6 @@ class Design(Ensemble):
 		polar_design.sample(**kwargs) 
 
 		#Transform into (x,y) coordinates by performing a rotation
-		return polar_design.apply(lambda r:Series([major*r["r"]*np.cos(r["phi"]),minor*r["r"]*np.sin(r["phi"])],index=parameters),axis=1).dot(Ensemble(rotator,index=parameters,columns=parameters))
+		return polar_design.apply(lambda r:Series([major*np.sqrt(r["r"])*np.cos(r["phi"]),minor*np.sqrt(r["r"])*np.sin(r["phi"])],index=parameters),axis=1).dot(Ensemble(rotator,index=parameters,columns=parameters))
 
 
