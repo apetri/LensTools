@@ -1,4 +1,4 @@
-from .remote import LocalSystem
+from ..pipeline.remote import LocalSystem
 from ..simulations import Nicaea
 from ..simulations.gadget2 import Gadget2SnapshotPipe
 

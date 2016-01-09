@@ -11,8 +11,8 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import z_at_value
 
-import configuration
-from .configuration import LensToolsCosmology
+from ..utils import configuration
+from ..utils.configuration import LensToolsCosmology
 
 from .remote import SystemHandler,LocalGit
 from .settings import *

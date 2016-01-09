@@ -12,10 +12,10 @@ from lenstools.simulations.logs import logdriver
 
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
-import lenstools.pipeline.configuration as configuration
-
 from lenstools.simulations import DensityPlane,PotentialPlane
+
 from lenstools.utils import MPIWhirlPool
+import lenstools.utils.configuration as configuration
 
 import numpy as np
 
