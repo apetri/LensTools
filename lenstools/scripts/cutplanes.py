@@ -15,14 +15,12 @@ from lenstools.pipeline.settings import PlaneSettings
 from lenstools.simulations import DensityPlane,PotentialPlane
 
 from lenstools.utils import MPIWhirlPool
-import lenstools.utils.configuration as configuration
+from lenstools import configuration
 
 import numpy as np
 
 #FFT engine
-from ..utils.fft import NUMPYFFTPack
-fftengine = NUMPYFFTPack()
-
+fftengine = configuration.fftengine()
 
 #######################################################
 ################Main execution#########################

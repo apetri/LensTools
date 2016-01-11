@@ -7,6 +7,8 @@
 
 __version__ = "0.5"
 
+import lenstools.utils.configuration as configuration
+
 from image.convergence import ConvergenceMap,Mask
 from image.shear import ShearMap
 from image.noise import GaussianNoiseGenerator
@@ -15,7 +17,6 @@ from .statistics.ensemble import Ensemble
 import statistics.contours as contours
 import statistics.constraints as constraints
 
-import lenstools.utils.configuration as configuration
 from lenstools.pipeline.simulation import SimulationBatch
 
 import legacy.index as index

@@ -9,7 +9,7 @@ import argparse
 sys.modules["mpi4py"] = None
 
 from lenstools import data as lensData
-from lenstools.pipeline import SimulationBatch
+from lenstools import SimulationBatch
 from lenstools.pipeline.settings import *
 from lenstools.pipeline.cluster import *
 

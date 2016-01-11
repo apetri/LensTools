@@ -4,7 +4,7 @@ from importlib import import_module
 import sys
 import argparse
 
-from lenstools.pipeline import SimulationBatch
+from lenstools import SimulationBatch
 from lenstools.pipeline.settings import EnvironmentSettings
 from lenstools.scripts.nbody import powerSpectrumExecution
 

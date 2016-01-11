@@ -8,7 +8,7 @@ from astropy.cosmology import FlatwCDM
 from astropy.io import fits
 from astropy.units import deg
 
-from .. import ConvergenceMap
+from ..image.convergence import ConvergenceMap
 
 
 ######################################

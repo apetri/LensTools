@@ -5,7 +5,7 @@ import argparse
 from distutils import config
 
 import lenstools.scripts.raytracing
-from lenstools.pipeline import SimulationBatch
+from lenstools import SimulationBatch
 from lenstools.pipeline.settings import EnvironmentSettings,CatalogSettings,MapSettings
 
 import logging
