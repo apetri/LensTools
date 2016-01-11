@@ -545,6 +545,10 @@ class NbodySnapshot(object):
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 
+		#Redshift must be bigger than 0 or we cannot proceed
+		if self.header["redshift"]<=0.0:
+			raise ValueError("The snapshot redshift must be >0 for the lensing density to be defined!")
+
 		#Cosmological normalization factor
 		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
 
