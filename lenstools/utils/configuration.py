@@ -1,7 +1,7 @@
 from ..pipeline.remote import LocalSystem
 from ..simulations import Nicaea
 from ..simulations.gadget2 import Gadget2SnapshotPipe
-from .fft import NUMPYFFTHandler
+from .fft import NUMPYFFTPack
 
 ###################
 #Default cosmology#
@@ -58,4 +58,4 @@ snapshot_handler = Gadget2SnapshotPipe
 #Fast Fourier Transforms#
 #########################
 
-fftengine = NUMPYFFTHandler
+fftengine = NUMPYFFTPack

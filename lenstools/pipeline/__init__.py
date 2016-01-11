@@ -8,5 +8,3 @@
 
 
 """
-
-from .simulation import SimulationBatch

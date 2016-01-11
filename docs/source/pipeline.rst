@@ -25,7 +25,7 @@ lenstools provides a set of routines for managing the simulations directory tree
 
 ::
 	
-	>>> from lenstools.pipeline import SimulationBatch
+	>>> from lenstools.pipeline.simulation import SimulationBatch
 	>>> from lenstools.pipeline.settings import EnvironmentSettings
 
 You will need to choose where you want to store your files: in each simulation batch there are two distinct locations files will be saved in. The "home" location is reserved for small files such as code parameter files, tabulated power spectra and other book--keeping necessary files. The "storage" location is used to store large production files, such as :math:`N`--body simulation boxes, lensing planes and weak lensing maps. These locations need to be specified upon the batch creation

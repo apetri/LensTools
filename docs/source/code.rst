@@ -145,7 +145,7 @@ Weak Lensing Simulation Pipeline
 Directory tree handling
 -----------------------
 
-.. autoclass:: lenstools.pipeline.SimulationBatch
+.. autoclass:: lenstools.pipeline.simulation.SimulationBatch
 	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationModel
