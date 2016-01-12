@@ -333,7 +333,7 @@ class Design(Ensemble):
 
 	#Sample points in an elliptical parameter space
 	@classmethod
-	def sample_ellipse(cls,npoints,parameters,minor,major,angle,**kwargs):
+	def sample_ellipse(cls,npoints,parameters,center,minor,major,angle,radial_power=0.5,**kwargs):
 
 		"""
 		Sample points in a two dimensional parameter space whose boundary has the shape of an ellipse
@@ -344,6 +344,9 @@ class Design(Ensemble):
 		:param parameters: name of the parameters, the list must have 2 elements
 		:type parameters: list.
 
+		:param center: center of the ellipse
+		:type center: tuple.
+
 		:param minor: length of the semi-minor axis
 		:type minor: float.
 
@@ -352,6 +355,9 @@ class Design(Ensemble):
 
 		:param angle: rotation angle of the major axis with respect to the horizontal (degrees counterclockwise)
 		:type angle: float.
+
+		:param radial_power: this parameter controls the density of points around the center (higher for higher density); 0.5 corresponds to uniform sampling
+		:type radial_power: float.
 
 		:param kwargs: the keyword arguments are passed to the sample() method
 		:type kwarges: dict.
@@ -374,6 +380,13 @@ class Design(Ensemble):
 		polar_design.sample(**kwargs) 
 
 		#Transform into (x,y) coordinates by performing a rotation
-		return polar_design.apply(lambda r:Series([major*np.sqrt(r["r"])*np.cos(r["phi"]),minor*np.sqrt(r["r"])*np.sin(r["phi"])],index=parameters),axis=1).dot(Ensemble(rotator,index=parameters,columns=parameters))
+		cartesian_design = polar_design.apply(lambda r:Series([major*(r["r"]**radial_power)*np.cos(r["phi"]),minor*(r["r"]**radial_power)*np.sin(r["phi"])],index=parameters),axis=1).dot(Ensemble(rotator,index=parameters,columns=parameters))
+
+		#Shift to the provided center
+		for c in range(2):
+			cartesian_design[cartesian_design.columns[c]] += center[c]
+
+		#Return to user
+		return cartesian_design
 
 
