@@ -7,7 +7,7 @@
 
 __version__ = "0.5"
 
-import lenstools.utils.configuration as configuration
+from lenstools.utils.configuration import configuration
 
 from image.convergence import ConvergenceMap,Mask
 from image.shear import ShearMap

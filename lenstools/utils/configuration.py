@@ -1,7 +1,13 @@
 from ..pipeline.remote import LocalSystem
 from ..simulations import Nicaea
 from ..simulations.gadget2 import Gadget2SnapshotPipe
-from .fft import NUMPYFFTPack
+from .fft import FFTEngine,NUMPYFFTPack
+
+#Import all the modules that use FFT operations
+from ..image import convergence,shear,noise
+from ..simulations import nbody,raytracing
+
+modules_with_fft = [convergence,shear,noise,nbody,raytracing]
 
 ###################
 #Default cosmology#
@@ -14,48 +20,75 @@ class LensToolsCosmology(Nicaea):
 
 	"""
 
-CosmoDefault = LensToolsCosmology() 
 
-##############################################
-#Parametere name to attribute name dictionary#
-##############################################
+#####################
+#Configuration class#
+#####################
 
-name2attr = dict()
-name2attr["Om"] = "Om0"
-name2attr["Ol"] = "Ode0"
-name2attr["w"] = "w0"
-name2attr["wa"] = "wa"
-name2attr["h"] = "h"
-name2attr["Ob"] = "Ob0"
-name2attr["si"] = "sigma8"
-name2attr["ns"] = "ns"
+class Configuration(object):
 
-############################################
-#Number of digits of precision for cosmo_id#
-############################################
+	def __init__(self):
+		
+		self.CosmoDefault = LensToolsCosmology() 
 
-cosmo_id_digits = 3
+		##############################################
+		#Parametere name to attribute name dictionary#
+		##############################################
 
-########################
-#Default system handler#
-########################
+		self.name2attr = dict()
+		self.name2attr["Om"] = "Om0"
+		self.name2attr["Ol"] = "Ode0"
+		self.name2attr["w"] = "w0"
+		self.name2attr["wa"] = "wa"
+		self.name2attr["h"] = "h"
+		self.name2attr["Ob"] = "Ob0"
+		self.name2attr["si"] = "sigma8"
+		self.name2attr["ns"] = "ns"
 
-syshandler = LocalSystem()
+		############################################
+		#Number of digits of precision for cosmo_id#
+		############################################
 
-###################################
-#Default simulation tree json file#
-###################################
+		self.cosmo_id_digits = 3
 
-json_tree_file = ".tree.json"
+		########################
+		#Default system handler#
+		########################
 
-##########################
-#Default snapshot handler#
-##########################
+		self.syshandler = LocalSystem()
 
-snapshot_handler = Gadget2SnapshotPipe
+		###################################
+		#Default simulation tree json file#
+		###################################
 
-#########################
-#Fast Fourier Transforms#
-#########################
+		self.json_tree_file = ".tree.json"
 
-fftengine = NUMPYFFTPack
+		##########################
+		#Default snapshot handler#
+		##########################
+
+		self.snapshot_handler = Gadget2SnapshotPipe
+
+		#########################
+		#Fast Fourier Transforms#
+		#########################
+
+		self.fftengine = NUMPYFFTPack
+
+	def __setattr__(self,a,v):
+		
+		super(Configuration,self).__setattr__(a,v)
+
+		#Update FFT engine in all the modules that make use of it
+		if a=="fftengine":
+			fftengine = v()
+			assert isinstance(fftengine,FFTEngine)
+			for module in modules_with_fft:
+				module.fftengine = fftengine
+
+
+#######################
+#Default configuration#
+#######################
+
+configuration = Configuration()
