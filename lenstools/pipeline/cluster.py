@@ -52,10 +52,10 @@ _StampedeClusterSpecs = {
 }
 
 _EdisonClusterSpecs = {
-"shell_prefix" : "#!/bin/bash",
+"shell_prefix" : "#!/bin/bash -l",
 "execution_preamble" : None,
 "charge_account_switch" : None,
-"job_starter" : "aprun",
+"job_starter" : "srun",
 "cores_per_node" : 24,
 "memory_per_node" : 64.0*u.Gbyte,
 "cores_at_execution_switch" : "-n ",
@@ -115,7 +115,7 @@ class EdisonHandler(JobHandler):
 	#############################################
 
 	def setDirectives(self):
-		self._directives = Directives(**_PBSspecs)
+		self._directives = Directives(**_SLURMspecs)
 
 	def setClusterSpecs(self):
 		self._cluster_specs = ClusterSpecs(**_EdisonClusterSpecs)
