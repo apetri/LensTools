@@ -56,6 +56,7 @@ def main(pool,batch,settings,id,override):
 
 	#Log to user
 	if (pool is None) or (pool.is_master()):
+		logdriver.info("Fast Fourier Transform operations handler: {0}".format(fftengine.__class__.__name__))
 		logdriver.info("Reading snapshots from {0}".format(os.path.join(snapshot_path,SnapshotFileBase+"*")))
 
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
