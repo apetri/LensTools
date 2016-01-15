@@ -529,7 +529,7 @@ class ContourPlot(object):
 		"""
 
 		if cmap is None:
-			cmap = plt.cmap.binary_r
+			cmap = plt.get_cmap("binary_r")
 
 		if hasattr(self,"reduced_likelihood"):
 			reduced_likelihood = self.reduced_likelihood
