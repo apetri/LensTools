@@ -630,6 +630,9 @@ class Spin0(object):
 		return midpoints,hist*sigma
 
 
+	################################################################################################################################################
+
+
 	def peakCount(self,thresholds,norm=False):
 		
 		"""
@@ -678,6 +681,49 @@ class Spin0(object):
 			sigma = 1.0
 
 		return midpoints,_topology.peakCount(self.data,mask_profile,thresholds,sigma)
+
+
+	def peakHistogram(self,thresholds,norm=False,fig=None,ax=None,**kwargs):
+
+		"""
+		Plot the peak histogram of the map
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot plot the peak histogram!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Count the peaks
+		v,pk = self.peakCount(thresholds,norm)
+
+		#Plot the peak histogram
+		self.ax.plot(v,pk*(thresholds[1:]-thresholds[:-1]),**kwargs)
+		self.ax.set_yscale("log")
+
+		#Adjust the labels
+		if norm:
+			self.ax.set_xlabel(r"$\sigma_{\kappa}$",fontsize=22)
+			self.ax.set_ylabel(r"$N_{\rm pk}(\sigma_\kappa)$",fontsize=22)
+		else:
+			s = self.data.std()
+			ax_top = self.ax.twiny()
+			ax_top.set_xticks(self.ax.get_xticks())
+			ax_top.set_xlim(self.ax.get_xlim())
+			ax_top.set_xticklabels([ "{0:.2f}".format(n/s) for n in ax_top.get_xticks() ])
+
+			self.ax.set_xlabel(r"$\kappa$",fontsize=22)
+			ax_top.set_xlabel(r"$\kappa/\sigma_\kappa$",fontsize=22)
+			self.ax.set_ylabel(r"$N_{\rm pk}(\kappa)$",fontsize=22)
 
 
 	def locatePeaks(self,thresholds,norm=False):
@@ -734,6 +780,9 @@ class Spin0(object):
 		peak_values,peak_locations = _topology.peakLocations(self.data,mask_profile,thresholds,sigma,relevant_pixels)
 
 		return peak_values,(peak_locations*self.resolution).to(self.side_angle.unit)
+
+
+	################################################################################################################################################
 
 
 	def minkowskiFunctionals(self,thresholds,norm=False):
@@ -885,6 +934,8 @@ class Spin0(object):
 		#Return the array
 		return np.array([sigma0,sigma1,S0,S1,S2,K0,K1,K2,K3])
 
+	################################################################################################################################################
+
 	def powerSpectrum(self,l_edges):
 
 		"""
@@ -919,6 +970,49 @@ class Spin0(object):
 
 		#Output the power spectrum
 		return l,power_spectrum
+
+
+	def plotPowerSpectrum(self,l_edges,angle_unit=u.arcmin,fig=None,ax=None,**kwargs):
+
+		"""
+		Plot the power spectrum of the map
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot plot the power spectrum!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Calculate the power spectrum
+		l,Pl = self.powerSpectrum(l_edges)
+
+		#Plot
+		self.ax.plot(l,l*(l+1.)*Pl/(2*np.pi),**kwargs)
+		self.ax.set_xscale("log")
+		self.ax.set_yscale("log")
+
+		#Upper scale shows the angle
+		ax_top = self.ax.twiny()
+		ax_top.set_xticks(self.ax.get_xticks())
+		ax_top.set_xlim(self.ax.get_xlim())
+		ax_top.set_xticklabels(["{0:.2f}".format(((2*np.pi/ell)*u.rad).to(angle_unit).value) for ell in self.ax.get_xticks()])
+
+		#Labels
+		self.ax.set_xlabel(r"$\ell$",fontsize=22)
+		ax_top.set_xlabel(r"$\theta$({0})".format(angle_unit.to_string()),fontsize=22)
+		self.ax.set_ylabel(r"$\ell(\ell+1)P_\ell^{\kappa\kappa}/2\pi$",fontsize=22)
+
+
+	################################################################################################################################################
 
 
 	def twoPointFunction(self,algorithm="FFT",**kwargs):
