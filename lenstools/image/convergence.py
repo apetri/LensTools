@@ -591,6 +591,8 @@ class Spin0(object):
 
 			return hessian_xx,hessian_yy,hessian_xy
 
+	################################################################################################################################################
+
 	def pdf(self,thresholds,norm=False):
 
 		"""
@@ -628,6 +630,48 @@ class Spin0(object):
 
 		#Return
 		return midpoints,hist*sigma
+
+
+	def plotPDF(self,thresholds,norm=False,fig=None,ax=None,**kwargs):
+
+		"""
+		Plot the PDF of the map
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot plot the PDF!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Measure the PDF of the pixels
+		kappa,pdf = self.pdf(thresholds,norm)
+
+		#Plot the PDF
+		self.ax.plot(kappa,pdf,**kwargs)
+
+		#Adjust the labels
+		if norm:
+			self.ax.set_xlabel(r"$\sigma_{\kappa}$",fontsize=22)
+			self.ax.set_ylabel(r"$N_{\rm pk}(\sigma_\kappa)$",fontsize=22)
+		else:
+			s = self.data.std()
+			ax_top = self.ax.twiny()
+			ax_top.set_xticks(self.ax.get_xticks())
+			ax_top.set_xlim(self.ax.get_xlim())
+			ax_top.set_xticklabels([ "{0:.2f}".format(n/s) for n in ax_top.get_xticks() ])
+
+			self.ax.set_xlabel(r"$\kappa$",fontsize=22)
+			ax_top.set_xlabel(r"$\kappa/\sigma_\kappa$",fontsize=22)
+			self.ax.set_ylabel(r"${\rm PDF}(\kappa)$",fontsize=22)
 
 
 	################################################################################################################################################
@@ -704,10 +748,10 @@ class Spin0(object):
 			self.ax = ax
 
 		#Count the peaks
-		v,pk = self.peakCount(thresholds,norm)
+		kappa,pk = self.peakCount(thresholds,norm)
 
 		#Plot the peak histogram
-		self.ax.plot(v,pk*(thresholds[1:]-thresholds[:-1]),**kwargs)
+		self.ax.plot(kappa,pk*(thresholds[1:]-thresholds[:-1]),**kwargs)
 		self.ax.set_yscale("log")
 
 		#Adjust the labels
