@@ -1197,7 +1197,7 @@ class Spin0(object):
 			lx = fftengine.fftfreq(self.data.shape[0])
 			ly = fftengine.rfftfreq(self.data.shape[1])
 			l_squared = lx[:,None]**2 + ly[None,:]**2
-			smoothed_data = fftengine.irfft2(np.exp(-0.5*l_squared*(smoothing_scale_pixel**2))*fftengine.rfft2(self.data))
+			smoothed_data = fftengine.irfft2(np.exp(-0.5*l_squared*(2*np.pi*smoothing_scale_pixel)**2)*fftengine.rfft2(self.data))
 		
 		else:
 			raise NotImplementedError("Smoothing algorithm {0} not implemented!".format(kind))
