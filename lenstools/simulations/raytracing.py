@@ -451,7 +451,7 @@ class PotentialPlane(Plane):
 			raise ValueError("space must be either real or fourier!")
 
 		#Scale to units
-		deflection *= self.unit
+		deflection = deflection * self.unit
 		deflection /= self.resolution
 		
 		if self.side_angle.unit.physical_type=="length":
@@ -531,7 +531,7 @@ class PotentialPlane(Plane):
 
 
 		#Scale units
-		tensor *= self.unit
+		tensor = tensor * self.unit
 		tensor /= self.resolution**2
 
 		if self.side_angle.unit.physical_type=="length":
@@ -591,7 +591,7 @@ class PotentialPlane(Plane):
 			raise ValueError("space must be either real or fourier!")
 
 		#Scale the units
-		laplacian *= self.unit
+		laplacian = laplacian * self.unit
 		laplacian /= self.resolution**2
 
 		if self.side_angle.unit.physical_type=="length":

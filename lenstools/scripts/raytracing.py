@@ -11,7 +11,7 @@ import gc,resource
 from operator import add
 from functools import reduce
 
-from lenstools.simulations.logs import logdriver
+from lenstools.simulations.logs import logdriver,logstderr
 
 from lenstools.utils.mpi import MPIWhirlPool
 
@@ -168,6 +168,7 @@ def singleRedshift(pool,batch,settings,id):
 	if pool is None:
 		first_map_realization = 0
 		last_map_realization = map_realizations
+		realizations_per_task = map_realizations
 		logdriver.debug("Generating lensing map realizations from {0} to {1}".format(first_map_realization+1,last_map_realization))
 	else:
 		assert map_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, map_realizations must be a multiple of the number of MPI tasks!"
@@ -205,7 +206,7 @@ def singleRedshift(pool,batch,settings,id):
 	begin = time.time()
 
 	#We need one of these for cycles for each map random realization
-	for r in range(first_map_realization,last_map_realization):
+	for rloc,r in enumerate(range(first_map_realization,last_map_realization)):
 
 		#Instantiate the RayTracer
 		tracer = RayTracer()
@@ -319,8 +320,14 @@ def singleRedshift(pool,batch,settings,id):
 			omegaMap.save(savename)
 
 		now = time.time()
+		
+		#Log peak memory usage to stdout
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
 		logdriver.info("Peak memory usage (per task): {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+
+		#Log progress and peak memory usage to stderr
+		if (pool is None) or (pool.is_master()):
+			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}GB".format(100*(rloc+1.)/realizations_per_task,resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
 	
 	#Safety sync barrier
 	if pool is not None:
@@ -465,6 +472,7 @@ def simulatedCatalog(pool,batch,settings,id):
 	if pool is None:
 		first_realization = 0
 		last_realization = catalog_realizations
+		realizations_per_task = catalog_realizations
 		logdriver.debug("Generating lensing catalog realizations from {0} to {1}".format(first_realization+1,last_realization))
 	else:
 		assert catalog_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, catalog_realizations must be a multiple of the number of MPI tasks!"
@@ -498,7 +506,7 @@ def simulatedCatalog(pool,batch,settings,id):
 	begin = time.time()
 
 	#We need one of these for cycles for each map random realization
-	for r in range(first_realization,last_realization):
+	for rloc,r in enumerate(range(first_realization,last_realization)):
 
 		#Instantiate the RayTracer
 		tracer = RayTracer()
@@ -586,8 +594,14 @@ def simulatedCatalog(pool,batch,settings,id):
 			shear_catalog[galaxies_before:galaxies_before+galaxies_in_catalog[n]].write(shear_catalog_savename,overwrite=True)
 
 		now = time.time()
+
+		#Log peak memory usage to stdout
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
 		logdriver.info("Peak memory usage (per task): {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+
+		#Log progress and peak memory usage to stderr
+		if (pool is None) or (pool.is_master()):
+			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}GB".format(100*(rloc+1.)/realizations_per_task,resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
 
 
 	#Safety sync barrier
