@@ -1227,24 +1227,29 @@ class Spin0(object):
 		"""
 
 		assert not self._masked,"You cannot smooth a masked convergence map!!"
-		assert scale_angle.unit.physical_type==self.side_angle.unit.physical_type
 
-		#Compute the smoothing scale in pixel units
-		smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value
-
-		#Perform the smoothing
-		if kind=="gaussian":
-			smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
-		
-		elif kind=="gaussianFFT":
-
-			lx = fftengine.fftfreq(self.data.shape[0])
-			ly = fftengine.rfftfreq(self.data.shape[1])
-			l_squared = lx[:,None]**2 + ly[None,:]**2
-			smoothed_data = fftengine.irfft2(np.exp(-0.5*l_squared*(2*np.pi*smoothing_scale_pixel)**2)*fftengine.rfft2(self.data))
-		
+		if kind=="kernelFFT":
+			smoothed_data = fftengine.irfft2(scale_angle*fftengine.rfft2(self.data)) 
 		else:
-			raise NotImplementedError("Smoothing algorithm {0} not implemented!".format(kind))
+			
+			assert scale_angle.unit.physical_type==self.side_angle.unit.physical_type
+
+			#Compute the smoothing scale in pixel units
+			smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value
+
+			#Perform the smoothing
+			if kind=="gaussian":
+				smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
+		
+			elif kind=="gaussianFFT":
+
+				lx = fftengine.fftfreq(self.data.shape[0])
+				ly = fftengine.rfftfreq(self.data.shape[1])
+				l_squared = lx[:,None]**2 + ly[None,:]**2
+				smoothed_data = fftengine.irfft2(np.exp(-0.5*l_squared*(2*np.pi*smoothing_scale_pixel)**2)*fftengine.rfft2(self.data))
+		
+			else:
+				raise NotImplementedError("Smoothing algorithm {0} not implemented!".format(kind))
 
 		#Return the result
 		if inplace:
