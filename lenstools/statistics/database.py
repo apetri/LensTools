@@ -30,13 +30,14 @@ except ImportError:
 
 class Database(object):
 
+	_constructor_ensemble = Ensemble
+
 	#Create a connection to a database
 	def __init__(self,name):
 
 		if sqlalchemy is None:
 			raise ImportError("sqlalchemy is not installed!!")
 
-		self._constructor_ensemble = Ensemble
 		self.connection = sqlalchemy.create_engine("sqlite:///"+name)
 
 
@@ -58,7 +59,7 @@ class Database(object):
 
 		"""
 		:param df: records to insert in the database, in Ensemble (or pandas DataFrame) format
-		:type df: Ensemble
+		:type df: :py:class:`Ensemble`
 
 		"""
 
@@ -72,11 +73,38 @@ class Database(object):
 		:param sql: sql query string
 		:type sql: str.
 
-		:returns: Ensemble
+		:returns: :py:class:`Ensemble`
 
 		"""
 
 		return self._constructor_ensemble.read_sql_query(sql,self.connection)
+
+	#Query a list of databases and combine the results
+	@classmethod
+	def query_all(cls,db_names,sql):
+
+		"""
+		Perform the same SQL query on a list of databases and combine the results
+
+		:param db_names: list of names of the databases to query
+		:type db_names: list.
+
+		:param sql: sql query string
+		:type sql: str.
+
+		:returns: :py:class:`Ensemble`
+
+		"""
+
+		all_results = list()
+
+		#Query each database
+		for db_name in db_names:
+			with cls(db_name) as db:
+				all_results.append(db.query(sql))
+
+		#Combine and return
+		return cls._constructor_ensemble.concat(all_results,axis=0,ignore_index=True)
 
 	#Visualize information about a table in the database
 	def info(self,table_name="data"):
@@ -98,6 +126,34 @@ class Database(object):
 			return self._constructor_ensemble.read_sql_table(self.tables[table_name],self.connection)
 		else:
 			raise TypeError("table_name type not recognized")
+
+	#Read table in a list of databases and combine the results
+	@classmethod
+	def read_table_all(cls,db_names,table_name):
+
+
+		"""
+		Read the same SQL table from a list of databases and combine the results
+
+		:param db_names: list of names of the databases to query
+		:type db_names: list.
+
+		:param table: table to read
+		:type table: str.
+
+		:returns: :py:class:`Ensemble`
+
+		"""
+
+		all_results = list()
+
+		#Query each database
+		for db_name in db_names:
+			with cls(db_name) as db:
+				all_results.append(db.read_table(table_name))
+
+		#Combine and return
+		return cls._constructor_ensemble.concat(all_results,axis=0,ignore_index=True)
 
 
 ################################
@@ -172,7 +228,7 @@ def chi2database(db_name,parameters,specs,table_name="scores",pool=None,nchunks=
 	:type db_name: str.
 
 	:param parameters: parameter combinations to score
- 	:type parameters: Ensemble
+ 	:type parameters: :py:class:`Ensemble`
 
  	:param specs: dictionary that should contain the emulator,data, and covariance matrix of each feature to consider; each value in this dictionary must be a dictionary with keys 'emulator', 'data' and 'data covariance'
  	:type specs: dict.
