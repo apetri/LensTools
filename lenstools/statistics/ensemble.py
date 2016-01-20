@@ -36,6 +36,12 @@ try:
 except ImportError:
 	pd = None
 
+try:
+	import sqlalchemy
+	sqlalchemy=sqlalchemy
+except ImportError:
+	sqlalchemy=None
+
 
 ##############################################################
 #################Series class#################################
@@ -200,8 +206,10 @@ class Ensemble(pd.DataFrame):
 
 		"""
 
-		if callback_loader is None:
+		if filename.endswith(".pkl"):
 			callback_loader = pd.read_pickle
+		elif filename.endswith(".sqlite"):
+			callback_loader = cls._read_sql
 
 		#Read the Ensemble
 		loaded_ensemble = callback_loader(filename,**kwargs)
@@ -253,6 +261,13 @@ class Ensemble(pd.DataFrame):
 	@classmethod
 	def read_sql_table(cls,table_name,con,**kwargs):
 		return cls(pd.read_sql_table(table_name,con,**kwargs))
+
+	@classmethod
+	def _read_sql(cls,fname,table_name,**kwargs):
+		con = sqlalchemy.create_engine("sqlite:///"+fname)
+		ensemble = cls.read_sql_table(table_name,con,**kwargs)
+		con.dispose()
+		return ensemble 
 
 	@classmethod
 	def compute(cls,file_list,callback_loader=None,pool=None,index=None,assemble=np.array,**kwargs):
