@@ -3,7 +3,7 @@
 ########################################################
 from __future__ import division,with_statement
 
-import sys,os
+import sys,os,platform
 import time
 import cPickle
 import gc,resource
@@ -25,6 +25,15 @@ from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,Catalo
 
 import numpy as np
 import astropy.units as u
+
+#Multiplicative factor to convert resource output into GB
+ostype = platform.system()
+if ostype in ["Darwin","darwin"]:
+	to_gbyte = 1024.**3
+elif ostype in ["Linux","linux"]:
+	to_gbyte = 1024.**2
+else:
+	to_gbyte = np.nan
 
 #############################################################
 #########Spilt realizations in subdirectories################
@@ -311,7 +320,7 @@ def singleRedshift(pool,batch,settings,id):
 
 		now = time.time()
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
+		logdriver.info("Peak memory usage (per task): {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
 	
 	#Safety sync barrier
 	if pool is not None:
@@ -578,7 +587,7 @@ def simulatedCatalog(pool,batch,settings,id):
 
 		now = time.time()
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
+		logdriver.info("Peak memory usage (per task): {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
 
 
 	#Safety sync barrier
