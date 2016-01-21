@@ -43,6 +43,17 @@ elif ostype in ["Linux","linux"]:
 else:
 	to_gbyte = np.nan
 
-#Get the peak memory usage
+#Get the peak memory usage for a single task
 def peakMemory():
 	return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*u.Gbyte/to_gbyte
+
+#Get the peak memory usage for all tasks
+def peakMemoryAll(pool):
+	memory_task = peakMemory()
+	if pool is None:
+		return memory_task,1
+	memory_task_raw,unit = np.array([memory_task.value]),memory_task.unit
+	memory_task_all = np.zeros(1)
+	pool.comm.Reduce(memory_task_raw,memory_task_all)
+
+	return memory_task_all[0]*unit,pool.size+1

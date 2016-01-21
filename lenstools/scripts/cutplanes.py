@@ -8,7 +8,7 @@ import sys,os
 import cPickle
 import json
 
-from lenstools.simulations.logs import logdriver,logstderr,peakMemory
+from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemoryAll
 
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
@@ -138,8 +138,9 @@ def main(pool,batch,settings,id,override):
 	}
 
 	#Log the initial memory load
+	peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 	if (pool is None) or (pool.is_master()):
-		logstderr.info("Initial memory usage (per task): {0:.3f}".format(peakMemory()))
+		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 
 	for n in range(first_snapshot,last_snapshot+1):
 
@@ -201,8 +202,11 @@ def main(pool,batch,settings,id,override):
 					plane_wrap.save(plane_file)
 					logdriver.debug("Saved plane to {0}".format(plane_file))
 
-					#Log the peak memory usage
-					logstderr.info("Peak memory usage (per task): {0:.3f}".format(peakMemory()))
+
+				#Log peak memory usage
+				peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
+				if (pool is None) or (pool.is_master()):
+					logstderr.info("Peak memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 			
 				#Safety barrier sync
 				if pool is not None:

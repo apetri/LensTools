@@ -11,7 +11,7 @@ import gc
 from operator import add
 from functools import reduce
 
-from lenstools.simulations.logs import logdriver,logstderr,peakMemory
+from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemoryAll
 
 from lenstools.utils.mpi import MPIWhirlPool
 
@@ -197,8 +197,9 @@ def singleRedshift(pool,batch,settings,id):
 	begin = time.time()
 
 	#Log initial memory load
+	peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 	if (pool is None) or (pool.is_master()):
-		logstderr.info("Initial memory usage (per task): {0:.3f}".format(peakMemory()))
+		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 
 	#We need one of these for cycles for each map random realization
 	for rloc,r in enumerate(range(first_map_realization,last_map_realization)):
@@ -317,12 +318,13 @@ def singleRedshift(pool,batch,settings,id):
 		now = time.time()
 		
 		#Log peak memory usage to stdout
+		peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Peak memory usage (per task): {0:.3f}".format(peakMemory()))
+		logdriver.info("Peak memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 
 		#Log progress and peak memory usage to stderr
 		if (pool is None) or (pool.is_master()):
-			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}".format(100*(rloc+1.)/realizations_per_task,peakMemory()))
+			logstderr.info("Progress: {0:.2f}%, peak memory usage: {1:.3f} (task), {2[0]:.3f} (all {2[1]} tasks)".format(100*(rloc+1.)/realizations_per_task,peak_memory_task,peak_memory_all))
 	
 	#Safety sync barrier
 	if pool is not None:
@@ -501,8 +503,9 @@ def simulatedCatalog(pool,batch,settings,id):
 	begin = time.time()
 
 	#Log initial memory load
+	peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 	if (pool is None) or (pool.is_master()):
-		logstderr.info("Initial memory usage (per task): {0:.3f}".format(peakMemory()))
+		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 
 	#We need one of these for cycles for each map random realization
 	for rloc,r in enumerate(range(first_realization,last_realization)):
@@ -595,12 +598,13 @@ def simulatedCatalog(pool,batch,settings,id):
 		now = time.time()
 
 		#Log peak memory usage to stdout
+		peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Peak memory usage (per task): {0:.3f}".format(peakMemory()))
+		logdriver.info("Peak memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 
 		#Log progress and peak memory usage to stderr
 		if (pool is None) or (pool.is_master()):
-			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}".format(100*(rloc+1.)/realizations_per_task,peakMemory()))
+			logstderr.info("Progress: {0:.2f}%, peak memory usage: {1:.3f} (task), {2[0]:.3f} (all {2[1]} tasks)".format(100*(rloc+1.)/realizations_per_task,peak_memory_task,peak_memory_all))
 
 
 	#Safety sync barrier
