@@ -63,11 +63,11 @@ We present a newly developed software package which implements a wide range of r
 %
 Cosmology is entering a new, data driven era. After the Cosmic Microwave Background (CMB) \citep{WMAP,PlanckXVI2013} provided strong experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameters \citep{WLprimer}. Because WL probes are sensitive to the late universe, where the density fluctuations are in the non--linear regime, the cosmological information might not be all contained in quadratic features such as two--point correlation functions. In the theoretical study of more complicated WL features (see for example \citep{3pcf1,bispectrum1,moments1,peaks1} for a non comprehensive list), simulation pipelines play a vital role as in general these features cannot be predicted analitically from the cosmological parameters. In this work we present a flexible, customizable and easy to deploy WL simulation pipeline that bridegs the gap between simulations of shear fields, feature measurement from simulated images and cosmological parameter estimation. The paper is organized as follows: first we give an overview of the code structure, highlight the core routines and present the benchmarks and complexity of the expensive computing steps. We complement the work with some illustrative examples on how to use \LT for some of the former tasks. We finally discuss the future prospects of the software development.     
 
-%%%%%%%%%%%%%%%%%%% CODE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%% Shear simulations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Code} 
+\section{Shear simulations} 
 
-\subsection{Shear field simulations}
+\subsection{Formalism}
 %
 In this paragraph we give an overview of the \LT shear field simulation pipeline. This is a series of routines that, broadly speaking, take a vector of cosmological parameters $\bb{p}$ and some resolution parameters to produce random realizations of shear fields $\pmb{\gamma}(\pmb{\theta})$ in that particular cosmology ($\pmb{\theta}=(\theta_x,\theta_y)$ is the angle on sky as seen from the observer). Given a background source at redshift $z_s$, the matter density fluctuations $\delta(\bb{x},z)$ in between the observer and the source will cause its apparent shape to be distorted; the cosmic shear $\pmb{\gamma}$ is a measurement of the apparent source ellipticity, assuming the unperturbed shape is a circle. The multi--lens--plane algorithm \citep{RayTracingHartlap} is a popular techique to compute light ray deflections across the path $z\in[z_s,0]$ and hence to compute the apparent source shape distortion. The mass distribution between the source and the observer is approximated as a sequence of two dimensional lenses perpendicular to the line of sight, of thickness $\Delta$ and a surface density $\sigma$ given by 
 
@@ -101,7 +101,7 @@ which can be translated into a second order differential equation for the light 
 
 \begin{equation}
 \label{geodesic2D}
-\pmb{\beta}_{k} = \sum_{i=1}^k\delta\pmb{\beta}_k 
+\pmb{\beta}_{k} = \sum_{i=1}^k\delta\pmb{\beta}_i 
 \end{equation}
 
 \begin{equation}
@@ -109,7 +109,7 @@ which can be translated into a second order differential equation for the light 
 \end{equation}
 
 \begin{equation}
-\bb{U}_{k} = \sum_{i=1}^k\delta\bb{U}_k 
+\bb{U}_{k} = \sum_{i=1}^k\delta\bb{U}_i 
 \end{equation}
 
 \begin{equation}
@@ -123,11 +123,7 @@ where $\bb{U}$ is the jacobian matrix of the trajectory $\pmb{\beta}$ with respe
 \begin{widetext}
 
 \begin{equation}
-A_k = \frac{\chi_{k+1}}{\chi_{k+2}}\left(1 + \frac{\chi_{k+2}-\chi_{k+1}}{\chi_{k+1}-\chi_k}\right) \\ \\
-\end{equation} 
-
-\begin{equation}
-C_k = \frac{\chi_{k+1}}{\chi_{k+2}} - 1 \\ \\
+A_k = \frac{\chi_{k+1}}{\chi_{k+2}}\left(1 + \frac{\chi_{k+2}-\chi_{k+1}}{\chi_{k+1}-\chi_k}\right) \,\,\,\, ; \,\,\,\, C_k = \frac{\chi_{k+1}}{\chi_{k+2}} - 1 \\ \\
 \end{equation} 
 
 \end{widetext}
@@ -138,7 +134,14 @@ where we use the subscript $k$ to indicate the redshift $z_k$ of the $k$--th len
 \bb{U}(\pmb{\theta},z_s) = (1-\kappa(\pmb{\theta}))\mathds{1}_{2\times2} - \gamma^1(\pmb{\theta})\sigma^3 - \gamma^2(\pmb{\theta})\sigma^1
 \end{equation}
 %
-where we indicated $\mathds{1}_{2\times2}$ as the identity matrix and $\sigma^{1,3}$ as the first and third Pauli matrices. The iterative solution of (\ref{geodesic2D}) requires the knowledge of the density fluctuation $\delta(\bb{x},z)$, from which the lens surface density $\sigma$ and gravitational potential $\phi$ can be inferred. $\delta$ can be calculated running $N$--body simulations, in which the matter distribution in the universe is approximated as a set of $N_p$ particles of mass $M_p$, which evolve gravitationally. For this purpose we use the publicly available code \ttt{GADGET2}\citep{Gadget2}, although alternatives can be adopted (see \citep{HACC} for example). Once the $N$--body simulations are ran, \LT provides a \ttt{python} implementation of the multi--lens--plane algorithm \citep{RayTracingHartlap} described above, which takes care of projecting the density fluctuation on two dimensional lenses as in (\ref{surfacedensity}), solving the Poisson equation as in (\ref{poisson}), and computing the light ray deflections as in (\ref{geodesic2D}). Table \ref{benchmarktable} shows a summary of the ray tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case.  
+where we indicated $\mathds{1}_{2\times2}$ as the identity matrix and $\sigma^{1,3}$ as the first and third Pauli matrices. The iterative solution of (\ref{geodesic2D}) requires the knowledge of the density fluctuation $\delta(\bb{x},z)$, from which the lens surface density $\sigma$ and gravitational potential $\phi$ can be inferred. $\delta$ can be calculated running $N$--body simulations, in which the matter distribution in the universe is approximated as a set of $N_p$ particles of mass $M_p$, which evolve gravitationally. For this purpose we use the publicly available code \ttt{GADGET2}\citep{Gadget2}, although alternatives can be adopted (see \citep{HACC} for example). Once the $N$--body simulations are ran, \LT provides a \ttt{python} implementation of the multi--lens--plane algorithm \citep{RayTracingHartlap} described above, which takes care of projecting the density fluctuation on two dimensional lenses as in (\ref{surfacedensity}), solving the Poisson equation as in (\ref{poisson}), and computing the light ray deflections as in (\ref{geodesic2D}). 
+
+\subsection{Code}
+%
+
+\subsection{Performance}
+%
+Table \ref{benchmarktable} shows a summary of the ray--tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case.  
 
 \begin{table*}
 \begin{tabular}{l|c|c|c}
@@ -160,7 +163,7 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &   \\ \hline \h
 
 \bottomrule
 \end{tabular}
-\caption{Summary of the raytracing benchmarks: each $N$--body snapshot is divided in $N_t$ files, which are read in parallel and contain a total of $N_p$ particles. After the gridding procedure (\ref{surfacedensity}) is performed by each task, the total sufrace density (computed for a plane of $L_p$ pixels) is collected by the master task, which then proceeds in solving the Poission equation (\ref{poisson}) via Fast Fourier Transforms and saves the output to disk. In a subsequent step, the lens densities are read from disk, and the geodesic equations (\ref{geodesic2D}) are solved for $N_r$ different starting positions $\pmb{\theta}$ that allow to reconstruct the shear and convergence fields $\pmb{\gamma},\kappa$.}
+\caption{Summary of the ray--tracing benchmarks: each $N$--body snapshot is divided in $N_t$ files, which are read in parallel and contain a total of $N_p$ particles. After the gridding procedure (\ref{surfacedensity}) is performed by each task, the total sufrace density (computed for a plane of $L_p$ pixels) is collected by the master task, which then proceeds in solving the Poission equation (\ref{poisson}) via Fast Fourier Transforms and saves the output to disk. In a subsequent step, the lens densities are read from disk, and the geodesic equations (\ref{geodesic2D}) are solved for $N_r$ different starting positions $\pmb{\theta}$ that allow to reconstruct the shear and convergence fields $\pmb{\gamma},\kappa$.}
 \label{benchmarktable}
 \end{table*}
 
@@ -170,20 +173,19 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &   \\ \hline \h
 \label{pipescheme}
 \end{figure*}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Image analysis}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Cosmology constraints}
 
-\subsection{Weak lensing features}
-
-\subsection{Parameter estimation}
-
-\subsection{Code features}
-\citep{lenstoolsdocs}
-
-%%%%%%%%%%%%%%%%%%% EXAMPLES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Examples}
+\begin{figure}
+\includegraphics[scale=0.4]{Figures/parameter_sampling.eps}
+\caption{Parameter sampling examples}
+\label{samplingfig}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%% FUTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
