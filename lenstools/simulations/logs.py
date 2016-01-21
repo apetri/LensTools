@@ -1,5 +1,13 @@
-import sys
+import sys,platform
+import resource
 import logging
+
+import numpy as np
+import astropy.units as u
+
+#########
+#Logging#
+#########
 
 formatter = logging.Formatter("%(asctime)s.%(msecs)d:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M:%S')
 
@@ -21,3 +29,20 @@ for logger in [logpreamble,logdriver,logplanes,logray]:
 
 logstderr.addHandler(console_error)
 logstderr.propagate = False
+
+#######################
+#Peak memory usage log#
+#######################
+
+#Multiplicative factor to convert resource output into GB
+ostype = platform.system()
+if ostype in ["Darwin","darwin"]:
+	to_gbyte = 1024.**3
+elif ostype in ["Linux","linux"]:
+	to_gbyte = 1024.**2
+else:
+	to_gbyte = np.nan
+
+#Get the peak memory usage
+def peakMemory():
+	return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*u.Gbyte/to_gbyte

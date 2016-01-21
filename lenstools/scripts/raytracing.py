@@ -3,15 +3,15 @@
 ########################################################
 from __future__ import division,with_statement
 
-import sys,os,platform
+import sys,os
 import time
 import cPickle
-import gc,resource
+import gc
 
 from operator import add
 from functools import reduce
 
-from lenstools.simulations.logs import logdriver,logstderr
+from lenstools.simulations.logs import logdriver,logstderr,peakMemory
 
 from lenstools.utils.mpi import MPIWhirlPool
 
@@ -25,15 +25,6 @@ from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,Catalo
 
 import numpy as np
 import astropy.units as u
-
-#Multiplicative factor to convert resource output into GB
-ostype = platform.system()
-if ostype in ["Darwin","darwin"]:
-	to_gbyte = 1024.**3
-elif ostype in ["Linux","linux"]:
-	to_gbyte = 1024.**2
-else:
-	to_gbyte = np.nan
 
 #############################################################
 #########Spilt realizations in subdirectories################
@@ -207,7 +198,7 @@ def singleRedshift(pool,batch,settings,id):
 
 	#Log initial memory load
 	if (pool is None) or (pool.is_master()):
-		logstderr.info("Initial memory usage (per task): {0:.3f}GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+		logstderr.info("Initial memory usage (per task): {0:.3f}".format(peakMemory()))
 
 	#We need one of these for cycles for each map random realization
 	for rloc,r in enumerate(range(first_map_realization,last_map_realization)):
@@ -327,11 +318,11 @@ def singleRedshift(pool,batch,settings,id):
 		
 		#Log peak memory usage to stdout
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Peak memory usage (per task): {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+		logdriver.info("Peak memory usage (per task): {0:.3f}".format(peakMemory()))
 
 		#Log progress and peak memory usage to stderr
 		if (pool is None) or (pool.is_master()):
-			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}GB".format(100*(rloc+1.)/realizations_per_task,resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}".format(100*(rloc+1.)/realizations_per_task,peakMemory()))
 	
 	#Safety sync barrier
 	if pool is not None:
@@ -511,7 +502,7 @@ def simulatedCatalog(pool,batch,settings,id):
 
 	#Log initial memory load
 	if (pool is None) or (pool.is_master()):
-		logstderr.info("Initial memory usage (per task): {0:.3f}GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+		logstderr.info("Initial memory usage (per task): {0:.3f}".format(peakMemory()))
 
 	#We need one of these for cycles for each map random realization
 	for rloc,r in enumerate(range(first_realization,last_realization)):
@@ -605,11 +596,11 @@ def simulatedCatalog(pool,batch,settings,id):
 
 		#Log peak memory usage to stdout
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Peak memory usage (per task): {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+		logdriver.info("Peak memory usage (per task): {0:.3f}".format(peakMemory()))
 
 		#Log progress and peak memory usage to stderr
 		if (pool is None) or (pool.is_master()):
-			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}GB".format(100*(rloc+1.)/realizations_per_task,resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/to_gbyte))
+			logstderr.info("Progress: {0:.2f}%, peak memory usage (per task): {1:.3f}".format(100*(rloc+1.)/realizations_per_task,peakMemory()))
 
 
 	#Safety sync barrier
