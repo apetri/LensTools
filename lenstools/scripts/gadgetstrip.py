@@ -1,10 +1,10 @@
-from ..simulations import Gadget2Snapshot
+from .. import configuration
 
 def main(filename):
 
 	#Open snapshot
 	try:
-		snap = Gadget2Snapshot.open(filename)
+		snap = configuration.snapshot_handler.open(filename)
 	except IOError,e:
 		print("{0} : {1}".format(filename,e))
 		return

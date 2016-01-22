@@ -1,4 +1,4 @@
-from ..simulations import Gadget2Snapshot
+from .. import configuration
 import sys
 import argparse
 
@@ -16,7 +16,7 @@ def main(args=None):
 	try:
 		
 		for filename in args.filename:
-			snap = Gadget2Snapshot.open(filename)
+			snap = configuration.snapshot_handler.open(filename)
 			
 			print("")
 			print(filename+":")
