@@ -7,7 +7,7 @@ from functools import reduce
 
 import sys,os
 
-from .logs import logplanes
+from .logs import logplanes,logstderr,peakMemory
 import logging
 
 from .. import extern as ext
@@ -634,6 +634,9 @@ class NbodySnapshot(object):
 		else:
 			logplanes.debug("Done with gridding procedure")
 
+		if (self.pool is None) or (self.pool.is_master()):
+			logstderr.debug("Done with gridding procedure: peak memory usage {0:.3f} (task)".format(peakMemory()))
+
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():
 
@@ -688,6 +691,7 @@ class NbodySnapshot(object):
 		#Log
 		if (self.pool is not None) and self.pool.is_master():
 			logplanes.debug("Received particles from all tasks: collected {0:.3e} particles".format(NumPartTotal))
+			logstderr.debug("Received particles from all tasks: peak memory usage {0:.3f} (task)".format(peakMemory()))
 
 		#If this task is not the master, we can return now
 		if (self.pool is not None) and not(self.pool.is_master()):
@@ -747,6 +751,8 @@ class NbodySnapshot(object):
 
 			if (self.pool is None) or (self.pool.is_master()):
 				logplanes.debug("Done with density FFT operations...")
+				logstderr.debug("Done with density FFT operations: peak memory usage {0:.3f} (task)".format(peakMemory()))
+
 
 		else:
 

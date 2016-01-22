@@ -5,7 +5,7 @@ import sys
 import time
 import gc
 
-from .logs import logplanes,logray
+from .logs import logplanes,logray,logstderr,peakMemory
 
 from operator import mul
 from functools import reduce
@@ -949,12 +949,14 @@ class RayTracer(object):
 				logray.info("Reading plane from {0}...".format(lens[k]))
 				current_lens = PotentialPlane.load(lens[k])
 				logray.info("Read plane from {0}...".format(lens[k]))
+				logstderr.debug("Read plane: peak memory usage {0:.3f} (task)".format(peakMemory()))
 				
 				np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens {0} redshift does not match info file specifications!".format(lens[k]))
 				
 				logray.info("Randomly rolling lens {0} along its axes...".format(k))
 				current_lens.randomRoll()
 				logray.info("Rolled lens {0} along its axes...".format(k))
+				logstderr.debug("Rolled lens: peak memory usage {0:.3f} (task)".format(peakMemory()))
 
 			else:
 				raise TypeError("Lens format not recognized!")
@@ -972,6 +974,7 @@ class RayTracer(object):
 
 			now = time.time()
 			logray.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
+			logstderr.debug("Retrieval of deflection angles: peak memory usage {0:.3f} (task)".format(peakMemory()))
 			last_timestamp = now
 
 			#If we are tracing jacobians we need to retrieve the shear matrices too
@@ -984,6 +987,7 @@ class RayTracer(object):
 
 				now = time.time()
 				logray.debug("Shear matrices retrieved in {0:.3f}s".format(now-last_timestamp))
+				logstderr.debug("Shear matrices retrieved: peak memory usage {0:.3f} (task)".format(peakMemory()))
 				last_timestamp = now
 			
 			#####################################################################################
@@ -1014,6 +1018,7 @@ class RayTracer(object):
 				
 				now = time.time()
 				logray.debug("Shear matrix products computed in {0:.3f}s".format(now-last_timestamp))
+				logstderr.debug("Shear matrix products completed: peak memory usage {0:.3f} (task)".format(peakMemory()))
 				last_timestamp = now
 
 			###########################################################################################
@@ -1045,6 +1050,7 @@ class RayTracer(object):
 
 			now = time.time()
 			logray.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
+			logstderr.debug("Addition of deflections completed: peak memory usage {0:.3f} (task)".format(peakMemory()))
 			last_timestamp = now
 
 			#Save the intermediate positions if option was specified
@@ -1058,6 +1064,7 @@ class RayTracer(object):
 			#Log timestamp to cross lens
 			now = time.time()
 			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logstderr.debug("Lens {0} crossed: peak memory usage {1:.3f} (task)".format(k,peakMemory()))
 
 
 		#Return the final positions of the light rays (or jacobians)

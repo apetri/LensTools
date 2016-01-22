@@ -142,6 +142,11 @@ def main(pool,batch,settings,id,override):
 	if (pool is None) or (pool.is_master()):
 		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 
+
+	num_planes_total = len(range(first_snapshot,last_snapshot+1))*len(cut_points)*len(normals)
+	nplane = 1 
+
+	#Cycle over each plane
 	for n in range(first_snapshot,last_snapshot+1):
 
 		#Log
@@ -161,6 +166,10 @@ def main(pool,batch,settings,id,override):
 		#Get the positions of the particles
 		if not hasattr(snap,"positions"):
 			snap.getPositions()
+
+		#Log memory usage
+		if (pool is None) or (pool.is_master()):
+			logstderr.debug("Read particle positions: peak memory usage {0:.3f} (task)".format(peakMemory()))
 
 		#Close the snapshot file
 		snap.fp.close()
@@ -206,7 +215,9 @@ def main(pool,batch,settings,id,override):
 				#Log peak memory usage
 				peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 				if (pool is None) or (pool.is_master()):
-					logstderr.info("Peak memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
+					logstderr.info("Plane {0} of {1} completed, peak memory usage: {2:.3f} (task), {3[0]:.3f} (all {3[1]} tasks)".format(nplane,num_planes_total,peak_memory_task,peak_memory_all))
+
+				nplane += 1
 			
 				#Safety barrier sync
 				if pool is not None:
