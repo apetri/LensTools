@@ -11,8 +11,8 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import z_at_value
 
-import configuration
-from .configuration import LensToolsCosmology
+from .. import configuration
+from ..utils.configuration import LensToolsCosmology
 
 from .remote import SystemHandler,LocalGit
 from .settings import *
@@ -102,6 +102,58 @@ class InfoDict(object):
 		with self.batch.syshandler.open(dictionary_file,"w") as fp:
 			fp.write(json.dumps(self.dictionary))
 
+#############################################################
+##############Convenient resource retrieval##################
+#############################################################
+
+def _retrieve(self,s):
+
+	#Break down search string into single components
+	search = "mcrpMCS"
+	nsteps = len(filter(lambda c:c in search,s))
+
+	if not nsteps:
+		return None
+
+	s_pieces = re.match(r"([{0}][0-9]+)".format(search)*nsteps,s).groups()
+
+	#Walk to the pieces and return the corresponding resource
+	current = self
+	for p in s_pieces:
+
+		#Split into resoure and index number
+		resource,index = re.match(r"([{0}])([0-9]+)".format(search),p).groups()
+
+		#model
+		if resource=="m":
+			current = current.models[int(index)]
+
+		#collection
+		if resource=="c":
+			current = current.collections[int(index)]
+
+		#realization
+		if resource=="r":
+			current = current.realizations[int(index)]
+
+		#plane set
+		if resource=="p":
+			current = current.planesets[int(index)]
+
+		#map set
+		if resource=="M":
+			current = current.mapsets[int(index)]
+
+		#catalog
+		if resource=="C":
+			current = current.catalogs[int(index)]
+
+		#sub-catalog
+		if resource=="S":
+			current = current.subcatalogs[int(index)]
+
+	#Return resource to user
+	return current
 
 #####################################################
 ##############SimulationBatch class##################
@@ -118,10 +170,13 @@ class SimulationBatch(object):
 	_in_memory = dict()
 
 	@classmethod
-	def current(cls,syshandler=configuration.syshandler,indicize=False):
+	def current(cls,name="environment.ini",syshandler=configuration.syshandler,indicize=False):
 
 		"""
-		This method looks in the current directory and looks for a configuration file named "environment.ini"; if it finds one, it returns a SimulationBatch instance that corresponds to the one pointed to by "environment.ini"
+		This method looks in the current directory and looks for a configuration file named "environment.ini"; if it finds one, it returns a SimulationBatch instance that corresponds to the one pointed to by "environment.ini" (default)
+
+		:param name: name of the INI file with the environment settings, defaults to 'environment.ini'
+		:type name: str.
 
 		:param syshandler: system handler that allows to override the methods used to create directories and do I/O from files, must implement the abstract type SystemHandler
 		:type syshandler: SystemHandler
@@ -131,10 +186,10 @@ class SimulationBatch(object):
 
 		"""
 
-		if not(os.path.exists("environment.ini")):
+		if not(os.path.exists(name)):
 			return None
 
-		env = EnvironmentSettings.read("environment.ini")
+		env = EnvironmentSettings.read(name)
 		return cls(env,syshandler,indicize)
 
 	@property 
@@ -214,6 +269,12 @@ class SimulationBatch(object):
 	def update_changes(self):
 		with InfoDict(self) as info:
 			info.update()
+
+	##############################################################################################################################
+
+	#Convenient resource retrieval
+	def __getitem__(self,s):
+		return _retrieve(self,s)
 
 	##############################################################################################################################
 
@@ -369,11 +430,11 @@ class SimulationBatch(object):
 		"""
 		Lists the available resources in the simulation batch (collections,mapsets,etc...)
 
-		:param resource: custom function to call on each batch.available element, must return a string. If None the list of Storage model directories is returned
+		:param resource: custom function to call on each batch.models element, must return a string. If None the list of Storage model directories is returned
 		:type resource: None or callable
 
-		:param which: extremes of the model numbers to get (if None all models are processed)
-		:type which: tuple. 
+		:param which: extremes of the model numbers to get (if None all models are processed); if callable, filter(which,self.models) gives the models to archive
+		:type which: tuple. or callable
 
 		:param chunk_size: size of output chunk
 		:type chunk_size: int.
@@ -388,9 +449,12 @@ class SimulationBatch(object):
 
 		#Available models
 		if which is None:
-			models = self.available
+			models = self.models
+		elif isinstance(which,tuple):
+			models = self.models.__getslice__(*which)
 		else:
-			models = self.available.__getslice__(*which)
+			models = filter(which,self.models)
+
 
 		#Return chunks
 		chunks = list()
@@ -436,7 +500,7 @@ class SimulationBatch(object):
 
 	##############################################################################################################################################
 
-	def archive(self,name,pool=None,**kwargs):
+	def archive(self,name,pool=None,chunk_size=1,**kwargs):
 
 		"""
 		Archives a batch available resource to a tar gzipped archive; the resource file/directory names are retrieved with the list method. The archives will be written to the simulation batch storage directory 
@@ -453,7 +517,7 @@ class SimulationBatch(object):
 		"""
 
 		#Retrieve resource chunks
-		resource_chunks = self.list(**kwargs)
+		resource_chunks = self.list(chunk_size=chunk_size,**kwargs)
 
 		#Get archive names
 		if type(name)==str:
@@ -837,7 +901,7 @@ class SimulationBatch(object):
 
 		for c in range(chunks):
 		
-			#Arguments for the executable
+			#Arguments for executable
 			exec_args = list()
 
 			for realization in realization_list[realizations_per_chunk*c:realizations_per_chunk*(c+1)]:
@@ -860,8 +924,9 @@ class SimulationBatch(object):
 					raise IOError("NGenIC parameter file at {0} does not exist yet!".format(parameter_file))
 
 				exec_args.append(parameter_file)
-
-			executable = job_settings.path_to_executable + " " + " ".join(exec_args)
+			
+			#Executable
+			executables = [ job_settings.path_to_executable + " " + " ".join(exec_args) ]
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
@@ -887,7 +952,7 @@ class SimulationBatch(object):
 					scriptfile.write(job_handler.writePreamble(job_settings))
 			
 			with self.syshandler.open(script_filename,"a") as scriptfile:
-				scriptfile.write(job_handler.writeExecution([executable],[job_settings.num_cores],job_settings))
+				scriptfile.write(job_handler.writeExecution(executables,[job_settings.num_cores]*len(executables),job_settings))
 
 			#Log to user and return
 			if (not one_script) or (not c):	
@@ -897,10 +962,10 @@ class SimulationBatch(object):
 	############################################################################################################################################
 
 
-	def writeGadget2Submission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeNbodySubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
 		
 		"""
-		Writes Gadget2 submission script
+		Writes N-body simulation submission script
 
 		:param realization_list: list of ics to generate in the form "cosmo_id|geometry_id|icN"
 		:type realization_list: list. of str.
@@ -974,7 +1039,10 @@ class SimulationBatch(object):
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("Gadget2 parameter file at {0} does not exist yet!".format(parameter_file))
 
-				executables.append(job_settings.path_to_executable + " " + "{0} {1} {2}".format(1,job_settings.cores_per_simulation,parameter_file))
+				if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+					executables.append(job_settings.path_to_executable + " " + "{0} {1} {2}".format(1,job_settings.cores_per_simulation,parameter_file))
+				else:
+					executables.append(job_settings.path_to_executable + " " + "{0}".format(parameter_file))
 
 			#Write the script
 			script_filename = os.path.join(self.environment.home,"Jobs",job_settings.job_script_file)
@@ -1209,18 +1277,22 @@ class SimulationBatch(object):
 
 					try:
 						raytracing_settings = MapSettings.read(config_file)
-						assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
+						if raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation:
+							raise ValueError("The number of map realizations must be a multiple of the number of cores per simulation!")
+
 					except AssertionError:
 						raytracing_settings = CatalogSettings.read(config_file)
-						assert raytracing_settings.lens_catalog_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
+						if raytracing_settings.lens_catalog_realizations%job_settings.cores_per_simulation:
+							raise ValueError("The number of map realizations must be a multiple of the number of cores per simulation!")
 
 				elif len(parts)==1:
+					
 					raytracing_settings = TelescopicMapSettings.read(config_file)
-					assert raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation==0,"The number of map realizations must be a multiple of the number of cores per simulation!"
+					if raytracing_settings.lens_map_realizations%job_settings.cores_per_simulation:
+						raise ValueError("The number of map realizations must be a multiple of the number of cores per simulation!")
+
 				else:
 					raise ValueError("There are too many '|'' into your id: {0}".format(realizations_in_chunk[e]))
-
-				
 
 				executables.append(job_settings.path_to_executable + " " + """-e {0} -c {1} "{2}" """.format(environment_file,config_file,realization_list[realizations_per_chunk*c+e]))
 
@@ -1492,6 +1564,10 @@ class SimulationModel(object):
 
 		return "<"+ " , ".join(representation_parameters) + ">"
 
+
+	#Convenient resource retrieval
+	def __getitem__(self,s):
+		return _retrieve(self,s)
 
 	################################################################################################################################
 
@@ -2509,9 +2585,8 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("GlassFile			{0}\n".format(os.path.abspath(settings.GlassFile)))
 
 			#Tiling
-			glass = Gadget2SnapshotDE.open(os.path.abspath(settings.GlassFile))
-			nside_glass = glass.header["num_particles_total_side"]
-			glass.close()
+			with configuration.snapshot_handler.open(os.path.abspath(settings.GlassFile)) as glass: 
+				nside_glass = glass.header["num_particles_total_side"]
 			paramfile.write("TileFac			{0}\n".format(self.nside//nside_glass))
 
 			#Cosmological parameters
@@ -2519,22 +2594,26 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("OmegaLambda			{0:.6f}\n".format(self.cosmology.Ode0))
 			paramfile.write("OmegaBaryon			{0:.6f}\n".format(self.cosmology.Ob0))
 			paramfile.write("HubbleParam			{0:.6f}\n".format(self.cosmology.h))
-			paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
-			paramfile.write("wa			{0:.6f}\n".format(self.cosmology.wa))
+
+			if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+				paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
+				paramfile.write("wa			{0:.6f}\n".format(self.cosmology.wa))
 
 			#Initial redshift
 			paramfile.write("Redshift 			{0:.6f}\n".format(settings.Redshift))
 
-			#Compute the growth and velocity prefactors
-			print("[+] Solving the linear growth ODE for {0}...".format(self.cosmo_id))
-			g = self.cosmology.growth_factor([settings._zmaxact,settings.Redshift,0.0])
+			if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+			
+				#Compute the growth and velocity prefactors
+				print("[+] Solving the linear growth ODE for {0}...".format(self.cosmo_id))
+				g = self.cosmology.growth_factor([settings._zmaxact,settings.Redshift,0.0])
 
-			print("[+] Computing prefactors...".format(self.cosmo_id))
-			growth_prefactor = g[2,0] / g[1,0]
-			vel_prefactor = -0.1 * np.sqrt(1+settings.Redshift) *(self.cosmology.H(settings.Redshift)/self.cosmology.H(0)).value * g[1,1] / g[1,0]
+				print("[+] Computing prefactors...".format(self.cosmo_id))
+				growth_prefactor = g[2,0] / g[1,0]
+				vel_prefactor = -0.1 * np.sqrt(1+settings.Redshift) *(self.cosmology.H(settings.Redshift)/self.cosmology.H(0)).value * g[1,1] / g[1,0]
 
-			paramfile.write("GrowthFactor			{0:.6f}\n".format(growth_prefactor))
-			paramfile.write("VelocityPrefactor			{0:.6f}\n".format(vel_prefactor))
+				paramfile.write("GrowthFactor			{0:.6f}\n".format(growth_prefactor))
+				paramfile.write("VelocityPrefactor			{0:.6f}\n".format(vel_prefactor))
 
 			#Sigma8
 			paramfile.write("Sigma8				{0:.6f}\n".format(self.cosmology.sigma8))
@@ -2624,7 +2703,7 @@ class SimulationIC(SimulationCollection):
 			ic_filenames = self.syshandler.glob(initial_condition_file+"*")
 
 			try:
-				ic_snapshot = Gadget2SnapshotDE.open(ic_filenames[0])
+				ic_snapshot = configuration.snapshot_handler.open(ic_filenames[0])
 				paramfile.write("TimeBegin			{0}\n".format(ic_snapshot.header["scale_factor"]))
 				ic_snapshot.close()
 			except (IndexError,IOError):
@@ -2646,8 +2725,10 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("OmegaBaryon			{0:.6f}\n".format(self.cosmology.Ob0))
 			paramfile.write("HubbleParam			{0:.6f}\n".format(self.cosmology.h))
 			paramfile.write("BoxSize			{0:.6f}\n".format(self.box_size.to(self.kpc_over_h).value))
-			paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
-			paramfile.write("wa			{0:.6f}\n\n".format(self.cosmology.wa))
+
+			if issubclass(configuration.snapshot_handler,Gadget2SnapshotDE):
+				paramfile.write("w0			{0:.6f}\n".format(self.cosmology.w0))
+				paramfile.write("wa			{0:.6f}\n\n".format(self.cosmology.wa))
 
 			#Output frequency section
 			paramfile.write(settings.writeSection("output_frequency"))

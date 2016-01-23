@@ -30,7 +30,6 @@ from astropy.io import fits
 try:
 	import matplotlib.pyplot as plt
 	from matplotlib.colors import LogNorm
-	from matplotlib import cm
 	matplotlib = True
 except ImportError:
 	matplotlib = False
@@ -300,7 +299,7 @@ class Spin1(object):
 		else:
 
 			for i in range(self.data.shape[0]):
-				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=getattr(cm,cmap),**kwargs)
+				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=plt.get_cmap(cmap),**kwargs)
 
 		#Axes labels
 		for i in range(self.data.shape[0]):

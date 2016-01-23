@@ -4,7 +4,7 @@ import sys
 import argparse
 
 import lenstools.scripts.cutplanes
-from lenstools.pipeline import SimulationBatch
+from lenstools import SimulationBatch
 from lenstools.pipeline.settings import EnvironmentSettings,PlaneSettings
 
 import logging

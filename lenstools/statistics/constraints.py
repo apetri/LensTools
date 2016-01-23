@@ -33,6 +33,7 @@ except ImportError:
 
 #########################################################
 
+from ..utils.algorithms import precision_bias_correction
 from .ensemble import Series,Ensemble,Panel 
 import samplers
 
@@ -300,7 +301,9 @@ class Analysis(Ensemble):
 				transformed_feature.add_name(n)
 				transformed_feature.index = self.index
 			elif method=="dot":
-				transformed_feature = self[[n]].dot(transformation_dict[n]) 
+				transformed_feature = self[[n]].dot(transformation_dict[n])
+				transformed_feature.add_name(n)
+				transformed_feature.index = self.index 
 			else:
 				raise NotImplementedError("transformation method {0} not implemented!".format(method))
 
@@ -588,7 +591,7 @@ class FisherAnalysis(Analysis):
 		return self._derivatives
 
 
-	def chi2(self,observed_feature,features_covariance):
+	def chi2(self,observed_feature,features_covariance,correct=None):
 
 		"""
 		Computes the chi2 between an observed feature and the fiducial feature, using the provided covariance
@@ -598,6 +601,9 @@ class FisherAnalysis(Analysis):
 
 		:param features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
 		:type features_covariance: 2 dimensional array (or 1 dimensional if diagonal)
+
+		:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+		:type correct: int.
 
 		:returns: chi2 of the comparison
 		:rtype: float.
@@ -631,7 +637,10 @@ class FisherAnalysis(Analysis):
 		if features_covariance.shape==self.feature_set.shape[-1:]:
 			result = ((difference**2)/features_covariance[None]).sum(-1)
 		else:
-			result = (difference * np.linalg.solve(features_covariance,difference.transpose()).transpose()).sum(-1)
+			if correct is not None:
+				result = (difference * np.linalg.solve(features_covariance/precision_bias_correction(correct,len(features_covariance)),difference.transpose()).transpose()).sum(-1)
+			else:
+				result = (difference * np.linalg.solve(features_covariance,difference.transpose()).transpose()).sum(-1)
 
 		#Return the result
 		if single:
@@ -687,7 +696,7 @@ class FisherAnalysis(Analysis):
 			return self.__class__(self.parameter_set[self._fiducial,self.varied] + dP,columns=self.derivatives.index)
 
 
-	def classify(self,observed_feature,features_covariance,labels=range(2),confusion=False):
+	def classify(self,observed_feature,features_covariance,correct=None,labels=range(2),confusion=False):
 
 		"""
 		Performs a Fisher classification of the observed feature, choosing the most probable label based on the value of the chi2
@@ -697,6 +706,9 @@ class FisherAnalysis(Analysis):
 
 		:param features_covariance: covariance matrix of the simulated features, must be provided for a correct classification!
 		:type features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+		:type correct: int.
 
 		:param labels: labels of the classification, must be the indices of the available classes (from 0 to feature_set.shape[0])
 		:type labels: iterable
@@ -715,7 +727,7 @@ class FisherAnalysis(Analysis):
 		all_chi2 = list()
 		for l in labels:
 			self.set_fiducial(l)
-			all_chi2.append(self.chi2(observed_feature,features_covariance))
+			all_chi2.append(self.chi2(observed_feature,features_covariance,correct=correct))
 
 		self.set_fiducial(fiducial_original)
 
@@ -746,13 +758,16 @@ class FisherAnalysis(Analysis):
 
 	###############################################################################################################################################################
 
-	def parameter_covariance(self,simulated_features_covariance,observed_features_covariance=None):
+	def parameter_covariance(self,simulated_features_covariance,correct=None,observed_features_covariance=None):
 
 		"""
 		Computes the parameter covariance matrix using the associated features, that in the end allows to compute the parameter confidence contours (around the fiducial value)
 
 		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
 		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+		:type correct: int.
 
 		:param observed_features_covariance: covariance matrix of the simulated features, if different from the simulated one; if None the simulated feature covariance is used
 		:type observed_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
@@ -783,7 +798,10 @@ class FisherAnalysis(Analysis):
 
 		#If we are using the same covariance matrix for observations and simulations, then XY is the Fisher matrix; otherwise we need to compute M too
 		if observed_features_covariance is None:
-			return self.__class__(np.linalg.inv(XY),index=self.derivatives.index,columns=self.derivatives.index)
+			if correct is not None:
+				return self.__class__(np.linalg.inv(XY),index=self.derivatives.index,columns=self.derivatives.index) / precision_bias_correction(correct,len(simulated_features_covariance))
+			else:
+				return self.__class__(np.linalg.inv(XY),index=self.derivatives.index,columns=self.derivatives.index)
 		else:
 
 			assert observed_features_covariance.shape == self.feature_set.shape[1:] * 2 or observed_features_covariance.shape == self.feature_set.shape[1:]
@@ -798,13 +816,16 @@ class FisherAnalysis(Analysis):
 			return self.__class__(parameter_covariance,index=self.derivatives.index,columns=self.derivatives.index)
 
 	
-	def fisher_matrix(self,simulated_features_covariance,observed_features_covariance=None):
+	def fisher_matrix(self,simulated_features_covariance,correct=None,observed_features_covariance=None):
 
 		"""
 		Computes the parameter Fisher matrix using the associated features, that in the end allows to compute the parameter confidence contours (around the fiducial value)
 
 		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
 		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+		:type correct: int.
 
 		:param observed_features_covariance: covariance matrix of the simulated features, if different from the simulated one; if None the simulated feature covariance is used
 		:type observed_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
@@ -813,11 +834,11 @@ class FisherAnalysis(Analysis):
 
 		"""
 
-		parcov = self.parameter_covariance(simulated_features_covariance,observed_features_covariance)
+		parcov = self.parameter_covariance(simulated_features_covariance,correct,observed_features_covariance)
 		return self.__class__(np.linalg.inv(parcov.values),index=parcov.index,columns=parcov.columns)
 
 
-	def confidence_ellipse(self,simulated_features_covariance,observed_feature=None,observed_features_covariance=None,parameters=["Om","w"],p_value=0.684,**kwargs):
+	def confidence_ellipse(self,simulated_features_covariance,correct=None,observed_feature=None,observed_features_covariance=None,parameters=["Om","w"],p_value=0.684,**kwargs):
 
 		"""
 
@@ -828,6 +849,9 @@ class FisherAnalysis(Analysis):
 
 		:param simulated_features_covariance: covariance matrix of the simulated features, must be provided for a correct fit!
 		:type simulated_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
+
+		:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+		:type correct: int.
 
 		:param observed_features_covariance: covariance matrix of the simulated features, if different from the simulated one; if None the simulated feature covariance is used
 		:type observed_features_covariance: 2 dimensional array (or 1 dimensional if assumed diagonal)
@@ -858,7 +882,7 @@ class FisherAnalysis(Analysis):
 			center = tuple(p_fit[parameters])
 
 		#The parameter covariance sets the size and orientation of the ellipse
-		p_cov = self.parameter_covariance(simulated_features_covariance,observed_features_covariance)[parameters].loc[parameters]
+		p_cov = self.parameter_covariance(simulated_features_covariance,correct,observed_features_covariance)[parameters].loc[parameters]
 		
 		#Return Ellipse object to user
 		return self.ellipse(center,p_cov.values,p_value,**kwargs)
@@ -1079,7 +1103,7 @@ class Emulator(Analysis):
 	###############################################################################################################################################################
 
 
-	def chi2(self,parameters,observed_feature,features_covariance,split_chunks=None,pool=None):
+	def chi2(self,parameters,observed_feature,features_covariance,correct=None,split_chunks=None,pool=None):
 
 		"""
 		Computes the chi2 part of the parameter likelihood with the usual sandwich product with the covariance matrix; the model features are computed with the interpolators
@@ -1092,6 +1116,9 @@ class Emulator(Analysis):
 
 		:param features_covariance: covariance matrix of the features, must be supplied
 		:type features_covariance: array
+
+		:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+		:type correct: int.
 
 		:param split_chunks: if set to an integer bigger than 0, splits the calculation of the chi2 into subsequent chunks, each that takes care of an equal number of points. Each chunk could be taken care of by a different processor
 		:type split_chunks: int.
@@ -1132,6 +1159,8 @@ class Emulator(Analysis):
 
 		#Compute the inverse of the covariance matrix once and for all
 		covinv = np.linalg.inv(features_covariance)
+		if correct is not None:
+			covinv *= precision_bias_correction(correct,len(covinv))
 
 		#Build the keyword argument dictionary to be passed to the chi2 calculator
 		kwargs = {"interpolator":self._interpolator,"inverse_covariance":covinv,"observed_feature":observed_feature}
@@ -1150,7 +1179,7 @@ class Emulator(Analysis):
 		return np.array(chi2_list).reshape(num_points)
 
 
-	def chi2Contributions(self,parameters,observed_feature,features_covariance): 
+	def chi2Contributions(self,parameters,observed_feature,features_covariance,correct=None): 
 
 		"""
 		Computes the individual contributions of each feature bin to the chi2; the model features are computed with the interpolators. The full chi2 is the sum of the individual contributions
@@ -1163,6 +1192,9 @@ class Emulator(Analysis):
 
 		:param features_covariance: covariance matrix of the features, must be supplied
 		:type features_covariance: array
+
+		:param correct: if not None, correct for the bias in the inverse covariance estimator assuming the covariance was estimated by 'correct' simulations
+		:type correct: int.
 
 		:returns: numpy 2D array with the contributions to the chi2 (off diagonal elements are the contributions of the cross correlation between bins)
 
@@ -1183,6 +1215,8 @@ class Emulator(Analysis):
 
 		#Compute the inverse covariance
 		covinv = np.linalg.inv(features_covariance)
+		if correct is not None:
+			covinv *= precision_bias_correction(correct,len(inverse_covariance_dot))
 
 		#Compute the hits map
 		return np.outer(residuals,residuals) * covinv

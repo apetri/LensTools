@@ -70,7 +70,7 @@ Finally we plot the (alpha,beta) confidence contours
 
 This is how the result looks like 
 
-.. figure:: ../../../examples/contour_example.png
+.. figure:: ../figures/contour_example.png
 
 
 

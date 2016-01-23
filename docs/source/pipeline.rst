@@ -12,7 +12,7 @@ Pipeline workflow
 
 .. _flow:
 
-.. figure:: flow.png
+.. figure:: figures/flow.png
 
 	A scheme of the pipeline workflow 
 
@@ -25,7 +25,7 @@ lenstools provides a set of routines for managing the simulations directory tree
 
 ::
 	
-	>>> from lenstools.pipeline import SimulationBatch
+	>>> from lenstools.pipeline.simulation import SimulationBatch
 	>>> from lenstools.pipeline.settings import EnvironmentSettings
 
 You will need to choose where you want to store your files: in each simulation batch there are two distinct locations files will be saved in. The "home" location is reserved for small files such as code parameter files, tabulated power spectra and other book--keeping necessary files. The "storage" location is used to store large production files, such as :math:`N`--body simulation boxes, lensing planes and weak lensing maps. These locations need to be specified upon the batch creation
@@ -550,6 +550,12 @@ lenstools provides a command line script, lenstools.submission, that will take c
 
 	lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede SimTest/Home/realizations.txt
 
+or, if you prefer, lenstools.submission can read from stdin too, and hence you can use shell pipes 
+
+::
+	
+	cat SimTest/Home/realizations.txt | lenstools.submission -e SimTest/Home/environment.ini -j job.ini -t gadget2 -s Stampede 
+
 In short, the "-e" switch will make sure that we are pointing to the right simulation batch, the "-j" switch will point to the correct platform--independent job option file, the "-t" switch specifies which job submission script we are generating and the realizations.txt file contains a list of the realizations that the script will process. For example if the contents of "realizations.txt" are
 
 ::
@@ -1030,7 +1036,7 @@ Class inheritance
 
 This is a simplifying scheme of the class inheritance used in the lenstools pipeline 
 
-.. figure:: inheritance.png
+.. figure:: figures/inheritance.png
 
 
 

@@ -36,7 +36,6 @@ from astropy.io import fits
 
 try:
 	import matplotlib.pyplot as plt
-	from matplotlib import cm
 	matplotlib = True
 except ImportError:
 	matplotlib = False
@@ -313,7 +312,7 @@ class Spin0(object):
 			self.ax = ax
 
 		#Plot the map
-		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=getattr(cm,cmap),**kwargs)
+		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=plt.get_cmap(cmap),**kwargs)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 
@@ -592,6 +591,8 @@ class Spin0(object):
 
 			return hessian_xx,hessian_yy,hessian_xy
 
+	################################################################################################################################################
+
 	def pdf(self,thresholds,norm=False):
 
 		"""
@@ -629,6 +630,51 @@ class Spin0(object):
 
 		#Return
 		return midpoints,hist*sigma
+
+
+	def plotPDF(self,thresholds,norm=False,fig=None,ax=None,**kwargs):
+
+		"""
+		Plot the PDF of the map
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot plot the PDF!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Measure the PDF of the pixels
+		kappa,pdf = self.pdf(thresholds,norm)
+
+		#Plot the PDF
+		self.ax.plot(kappa,pdf,**kwargs)
+
+		#Adjust the labels
+		if norm:
+			self.ax.set_xlabel(r"$\sigma_{\kappa}$",fontsize=22)
+			self.ax.set_ylabel(r"$N_{\rm pk}(\sigma_\kappa)$",fontsize=22)
+		else:
+			s = self.data.std()
+			ax_top = self.ax.twiny()
+			ax_top.set_xticks(self.ax.get_xticks())
+			ax_top.set_xlim(self.ax.get_xlim())
+			ax_top.set_xticklabels([ "{0:.2f}".format(n/s) for n in ax_top.get_xticks() ])
+
+			self.ax.set_xlabel(r"$\kappa$",fontsize=22)
+			ax_top.set_xlabel(r"$\kappa/\sigma_\kappa$",fontsize=22)
+			self.ax.set_ylabel(r"${\rm PDF}(\kappa)$",fontsize=22)
+
+
+	################################################################################################################################################
 
 
 	def peakCount(self,thresholds,norm=False):
@@ -679,6 +725,49 @@ class Spin0(object):
 			sigma = 1.0
 
 		return midpoints,_topology.peakCount(self.data,mask_profile,thresholds,sigma)
+
+
+	def peakHistogram(self,thresholds,norm=False,fig=None,ax=None,**kwargs):
+
+		"""
+		Plot the peak histogram of the map
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot plot the peak histogram!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Count the peaks
+		kappa,pk = self.peakCount(thresholds,norm)
+
+		#Plot the peak histogram
+		self.ax.plot(kappa,pk*(thresholds[1:]-thresholds[:-1]),**kwargs)
+		self.ax.set_yscale("log")
+
+		#Adjust the labels
+		if norm:
+			self.ax.set_xlabel(r"$\sigma_{\kappa}$",fontsize=22)
+			self.ax.set_ylabel(r"$N_{\rm pk}(\sigma_\kappa)$",fontsize=22)
+		else:
+			s = self.data.std()
+			ax_top = self.ax.twiny()
+			ax_top.set_xticks(self.ax.get_xticks())
+			ax_top.set_xlim(self.ax.get_xlim())
+			ax_top.set_xticklabels([ "{0:.2f}".format(n/s) for n in ax_top.get_xticks() ])
+
+			self.ax.set_xlabel(r"$\kappa$",fontsize=22)
+			ax_top.set_xlabel(r"$\kappa/\sigma_\kappa$",fontsize=22)
+			self.ax.set_ylabel(r"$N_{\rm pk}(\kappa)$",fontsize=22)
 
 
 	def locatePeaks(self,thresholds,norm=False):
@@ -735,6 +824,9 @@ class Spin0(object):
 		peak_values,peak_locations = _topology.peakLocations(self.data,mask_profile,thresholds,sigma,relevant_pixels)
 
 		return peak_values,(peak_locations*self.resolution).to(self.side_angle.unit)
+
+
+	################################################################################################################################################
 
 
 	def minkowskiFunctionals(self,thresholds,norm=False):
@@ -886,6 +978,8 @@ class Spin0(object):
 		#Return the array
 		return np.array([sigma0,sigma1,S0,S1,S2,K0,K1,K2,K3])
 
+	################################################################################################################################################
+
 	def powerSpectrum(self,l_edges):
 
 		"""
@@ -920,6 +1014,49 @@ class Spin0(object):
 
 		#Output the power spectrum
 		return l,power_spectrum
+
+
+	def plotPowerSpectrum(self,l_edges,angle_unit=u.arcmin,fig=None,ax=None,**kwargs):
+
+		"""
+		Plot the power spectrum of the map
+
+		"""
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot plot the power spectrum!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Calculate the power spectrum
+		l,Pl = self.powerSpectrum(l_edges)
+
+		#Plot
+		self.ax.plot(l,l*(l+1.)*Pl/(2*np.pi),**kwargs)
+		self.ax.set_xscale("log")
+		self.ax.set_yscale("log")
+
+		#Upper scale shows the angle
+		ax_top = self.ax.twiny()
+		ax_top.set_xticks(self.ax.get_xticks())
+		ax_top.set_xlim(self.ax.get_xlim())
+		ax_top.set_xticklabels(["{0:.2f}".format(((2*np.pi/ell)*u.rad).to(angle_unit).value) for ell in self.ax.get_xticks()])
+
+		#Labels
+		self.ax.set_xlabel(r"$\ell$",fontsize=22)
+		ax_top.set_xlabel(r"$\theta$({0})".format(angle_unit.to_string()),fontsize=22)
+		self.ax.set_ylabel(r"$\ell(\ell+1)P_\ell^{\kappa\kappa}/2\pi$",fontsize=22)
+
+
+	################################################################################################################################################
 
 
 	def twoPointFunction(self,algorithm="FFT",**kwargs):
@@ -996,9 +1133,16 @@ class Spin0(object):
 		l_squared = lx[:,None]**2 + ly[None,:]**2
 
 		#Count how many of these pixels fall inside each bin
-		num_modes = (l_squared[None] < l_edges[:,None,None]**2).sum((1,2)).astype(np.float)
+		modes_on = l_squared[None] < l_edges[:,None,None]**2
+		modes_ly_0 = modes_on.copy()
+		modes_ly_0[:,:,1:] = 0
 
-		return np.diff(num_modes)
+		#Count the total number of modes, and the number of modes with ly=0 
+		num_modes = np.diff(modes_on.sum((1,2)).astype(np.float))
+		num_modes_ly_0 = np.diff(modes_ly_0.sum((1,2)).astype(np.float))
+
+		#Return the corrected number of modes that yields the right variance in the Gaussian case
+		return num_modes**2/(num_modes+num_modes_ly_0)
 
 
 
@@ -1083,24 +1227,29 @@ class Spin0(object):
 		"""
 
 		assert not self._masked,"You cannot smooth a masked convergence map!!"
-		assert scale_angle.unit.physical_type==self.side_angle.unit.physical_type
 
-		#Compute the smoothing scale in pixel units
-		smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value
-
-		#Perform the smoothing
-		if kind=="gaussian":
-			smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
-		
-		elif kind=="gaussianFFT":
-
-			lx = fftengine.fftfreq(self.data.shape[0])
-			ly = fftengine.rfftfreq(self.data.shape[1])
-			l_squared = lx[:,None]**2 + ly[None,:]**2
-			smoothed_data = fftengine.irfft2(np.exp(-0.5*l_squared*(smoothing_scale_pixel**2))*fftengine.rfft2(self.data))
-		
+		if kind=="kernelFFT":
+			smoothed_data = fftengine.irfft2(scale_angle*fftengine.rfft2(self.data)) 
 		else:
-			raise NotImplementedError("Smoothing algorithm {0} not implemented!".format(kind))
+			
+			assert scale_angle.unit.physical_type==self.side_angle.unit.physical_type
+
+			#Compute the smoothing scale in pixel units
+			smoothing_scale_pixel = (scale_angle * self.data.shape[0] / (self.side_angle)).decompose().value
+
+			#Perform the smoothing
+			if kind=="gaussian":
+				smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
+		
+			elif kind=="gaussianFFT":
+
+				lx = fftengine.fftfreq(self.data.shape[0])
+				ly = fftengine.rfftfreq(self.data.shape[1])
+				l_squared = lx[:,None]**2 + ly[None,:]**2
+				smoothed_data = fftengine.irfft2(np.exp(-0.5*l_squared*(2*np.pi*smoothing_scale_pixel)**2)*fftengine.rfft2(self.data))
+		
+			else:
+				raise NotImplementedError("Smoothing algorithm {0} not implemented!".format(kind))
 
 		#Return the result
 		if inplace:

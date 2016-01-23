@@ -1,0 +1,9 @@
+setuptools
+numpy
+scipy
+matplotlib
+ipython
+pandas
+emcee
+astropy
+numexpr

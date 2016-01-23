@@ -7,7 +7,7 @@ from functools import reduce
 
 import sys,os
 
-from .logs import logplanes
+from .logs import logplanes,logstderr,peakMemory
 import logging
 
 from .. import extern as ext
@@ -62,6 +62,10 @@ class NbodySnapshot(object):
 
 	@abstractmethod
 	def buildFilename(cls,root,pool,**kwargs):
+		pass
+
+	@abstractmethod
+	def int2root(cls,name,n):
 		pass	
 
 	@abstractmethod
@@ -94,7 +98,7 @@ class NbodySnapshot(object):
 	def _check_header(self):
 
 		for key in self._header_keys:
-			assert key in self._header.keys(),"Key {0} not loaded in header, please make sure that the getHeader method is configured to do that!".format(key)
+			assert key in self._header,"Key {0} not loaded in header, please make sure that the getHeader method is configured to do that!".format(key)
 
 	####################################################################################################################
 
@@ -104,7 +108,7 @@ class NbodySnapshot(object):
 	def __exit__(self,type,value,tb):
 		self.fp.close()
 
-	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s):
+	def __init__(self,fp=None,pool=None,length_unit=1.0*kpc,mass_unit=1.0e10*Msun,velocity_unit=1.0*km/s,header_kwargs=dict()):
 
 		self.pool = pool
 
@@ -119,7 +123,7 @@ class NbodySnapshot(object):
 			self.fp = fp
 
 			#Load the header
-			self._header = self.getHeader()
+			self._header = self.getHeader(**header_kwargs)
 			
 			#Check that header has been loaded correctly
 			self._check_header()
@@ -162,7 +166,7 @@ class NbodySnapshot(object):
 
 
 	@classmethod
-	def open(cls,filename,pool=None,**kwargs):
+	def open(cls,filename,pool=None,header_kwargs=dict(),**kwargs):
 
 		"""
 		Opens a snapshot at filename
@@ -172,6 +176,9 @@ class NbodySnapshot(object):
 
 		:param pool: use to distribute the calculations on different processors; if not None, each processor takes care of one of the snapshot parts, appending as ".n" to the filename
 		:type pool: MPIWhirlPool instance
+
+		:param header_kwargs: keyword arguments to pass to the getHeader method
+		:type header_kwargs: dict.
 
 		:param kwargs: the keyword arguments are passed to buildFilename
 		:type kwargs: dict.
@@ -191,7 +198,7 @@ class NbodySnapshot(object):
 		else:
 			raise TypeError("filename must be string or file!")
 		
-		return cls(fp,pool)
+		return cls(fp,pool,header_kwargs=header_kwargs)
 
 	@property
 	def header(self):
@@ -538,6 +545,10 @@ class NbodySnapshot(object):
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 
+		#Redshift must be bigger than 0 or we cannot proceed
+		if self.header["redshift"]<=0.0:
+			raise ValueError("The snapshot redshift must be >0 for the lensing density to be defined!")
+
 		#Cosmological normalization factor
 		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
 
@@ -608,7 +619,23 @@ class NbodySnapshot(object):
 		else:
 			rv = None
 
+		#Log
+		if self.pool is not None:
+			logplanes.debug("Task {0} began gridding procedure".format(self.pool.rank))
+		else:
+			logplanes.debug("Began gridding procedure")
+
+		#Gridding
 		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
+
+		#Log
+		if self.pool is not None:
+			logplanes.debug("Task {0} done with gridding procedure".format(self.pool.rank))
+		else:
+			logplanes.debug("Done with gridding procedure")
+
+		if (self.pool is None) or (self.pool.is_master()):
+			logstderr.debug("Done with gridding procedure: peak memory usage {0:.3f} (task)".format(peakMemory()))
 
 		#Accumulate the density from the other processors
 		if "density_placeholder" in kwargs.keys():
@@ -664,6 +691,7 @@ class NbodySnapshot(object):
 		#Log
 		if (self.pool is not None) and self.pool.is_master():
 			logplanes.debug("Received particles from all tasks: collected {0:.3e} particles".format(NumPartTotal))
+			logstderr.debug("Received particles from all tasks: peak memory usage {0:.3f} (task)".format(peakMemory()))
 
 		#If this task is not the master, we can return now
 		if (self.pool is not None) and not(self.pool.is_master()):
@@ -723,6 +751,8 @@ class NbodySnapshot(object):
 
 			if (self.pool is None) or (self.pool.is_master()):
 				logplanes.debug("Done with density FFT operations...")
+				logstderr.debug("Done with density FFT operations: peak memory usage {0:.3f} (task)".format(peakMemory()))
+
 
 		else:
 

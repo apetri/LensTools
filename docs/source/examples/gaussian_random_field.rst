@@ -36,4 +36,4 @@ Generate a realization of a gaussian random field with known power spectrum
 
 This is the result 
 
-.. figure:: ../../../examples/example_map.png
+.. figure:: ../figures/example_map.png

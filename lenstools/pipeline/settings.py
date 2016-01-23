@@ -109,9 +109,12 @@ class PlaneSettings(object):
 		self.override_with_local = True
 
 		self.format = "fits"
+		self.name_format = "snap{0}_{1}Plane{2}_normal{3}.{4}"
+
 		self.plane_resolution = 128
 		self.first_snapshot = 46
 		self.last_snapshot = 58
+		self.snapshots = None
 		self.cut_points = np.array([7.5/0.7]) * u.Mpc
 		self.thickness = (2.5/0.7) * u.Mpc 
 		self.length_unit = u.Mpc
@@ -142,10 +145,32 @@ class PlaneSettings(object):
 		
 		settings.directory_name = options.get(section,"directory_name")
 		settings.override_with_local = options.getboolean(section,"override_with_local")
+		
 		settings.format = options.get(section,"format")
+		try:
+			settings.name_format = options.get(section,"name_format")
+		except NoOptionError:
+			pass
+		
 		settings.plane_resolution = options.getint(section,"plane_resolution")
-		settings.first_snapshot = options.getint(section,"first_snapshot")
-		settings.last_snapshot = options.getint(section,"last_snapshot")
+
+		#Snapshots to process: either bounds (first,last) or snapshot list
+		try:
+			settings.first_snapshot = options.getint(section,"first_snapshot")
+			settings.last_snapshot = options.getint(section,"last_snapshot")
+		except ValueError:
+			settings.first_snapshot = None
+			settings.last_snapshot = None
+
+		try:
+			snapshots = options.get(section,"snapshots") 
+			settings.snapshots = [ int(n) for n in snapshots.split(",") ]
+		except (NoOptionError,ValueError):
+			settings.snapshots = None
+
+		#Check that either a bound specification or a list were provided, not both
+		if not(((settings.first_snapshot is not None) and (settings.last_snapshot is not None))^(settings.snapshots is not None)):
+			raise ValueError("You must specify one, and only one, between (first_snapshot,last_snapshot) or a snapshot list!")
 
 		#Length units
 		settings.length_unit = getattr(u,options.get(section,"length_unit"))
@@ -209,6 +234,9 @@ class MapSettings(object):
 		self.override_with_local = True
 
 		self.format = "fits"
+		self.plane_format = "fits"
+		self.plane_name_format = "snap{0}_potentialPlane{1}_normal{2}.{3}"
+
 		self.map_resolution = 128
 		self.map_angle = 1.6 * u.deg
 		self.angle_unit = u.deg
@@ -264,6 +292,17 @@ class MapSettings(object):
 		self.directory_name = options.get(section,"directory_name")
 		self.override_with_local = options.getboolean(section,"override_with_local")
 		self.format = options.get(section,"format")
+		
+		try:
+			self.plane_format = options.get(section,"plane_format")
+		except NoOptionError:
+			pass
+
+		try:
+			self.plane_name_format = options.get(section,"plane_name_format")
+		except NoOptionError:
+			pass
+		
 		self.map_resolution = options.getint(section,"map_resolution")
 		
 		self.angle_unit = getattr(u,options.get(section,"angle_unit"))
@@ -362,6 +401,8 @@ class CatalogSettings(object):
 
 		#Format of the simulated catalog files
 		self.format = "fits"
+		self.plane_format = "fits"
+		self.plane_name_format = "snap{0}_potentialPlane{1}_normal{2}.{3}"
 
 		#Random seed used to generate multiple catalog realizations
 		self.seed = 0
@@ -405,6 +446,16 @@ class CatalogSettings(object):
 
 		#Format of the simulated catalog files
 		settings.format = options.get(section,"format")
+
+		try:
+			self.plane_format = options.get(section,"plane_format")
+		except NoOptionError:
+			pass
+
+		try:
+			self.plane_name_format = options.get(section,"plane_name_format")
+		except NoOptionError:
+			pass
 
 		#Set of lens planes to be used during ray tracing
 		settings.seed = options.getint(section,"seed")

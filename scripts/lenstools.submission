@@ -9,7 +9,7 @@ import argparse
 sys.modules["mpi4py"] = None
 
 from lenstools import data as lensData
-from lenstools.pipeline import SimulationBatch
+from lenstools import SimulationBatch
 from lenstools.pipeline.settings import *
 from lenstools.pipeline.cluster import *
 
@@ -18,6 +18,7 @@ type2section = {
 "camb" : "CAMB",
 "ngenic" : "NGenIC",
 "gadget2" : "Gadget2",
+"nbody" : "Nbody",
 "planes" : "LensPlanes",
 "raytracing" : "RayTracing"
 }
@@ -27,7 +28,9 @@ system2handler = {
 "Stampede" : StampedeHandler,
 "stampede" : StampedeHandler,
 "Edison" : EdisonHandler,
-"edison" : EdisonHandler
+"edison" : EdisonHandler,
+"Cori" : CoriHandler,
+"cori" : CoriHandler,
 }
 
 #Parse command line options
@@ -112,13 +115,13 @@ elif job_type=="ngenic":
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	batch.writeNGenICSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,one_script=cmd_args.one_script)
 
-elif job_type=="gadget2":
+elif job_type in ["nbody","gadget2"]:
 
 	section = type2section[job_type]
 	print("[+] Generating Gadget2 submission script")
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
-	batch.writeGadget2Submission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,one_script=cmd_args.one_script)
+	batch.writeNbodySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,one_script=cmd_args.one_script)
 
 elif job_type=="planes":
 

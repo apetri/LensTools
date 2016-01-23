@@ -54,7 +54,7 @@ Non linear parameter dependence
 -------------------------------
 
 .. autoclass:: lenstools.statistics.constraints.Emulator
-	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score,approximate_linear
+	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score,sample_posterior,approximate_linear
 
 Posterior samplers
 ------------------
@@ -94,7 +94,7 @@ Simulation design
 =================
 
 .. autoclass:: lenstools.simulations.Design
-	:members: parameters,from_specs,write,visualize,savefig,set_title,diagonalCost,cost,sample
+	:members: parameters,from_specs,write,visualize,savefig,set_title,diagonalCost,cost,sample,sample_ellipse
 
 
 Nicaea bindings
@@ -106,8 +106,8 @@ Nicaea bindings
 .. autoclass:: lenstools.simulations.Nicaea
 	:members: fromCosmology,convergencePowerSpectrum,shearTwoPoint
 
-Gadget2 snapshot handling
-==========================
+N-body simulation snapshot handling
+===================================
 
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
@@ -115,6 +115,9 @@ Gadget2 snapshot handling
 .. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotDE
 
 .. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotPipe
+
+.. autoclass:: lenstools.simulations.amiga.AmigaHalos 
+	
 
 Ray tracing simulations
 =======================
@@ -142,8 +145,8 @@ Weak Lensing Simulation Pipeline
 Directory tree handling
 -----------------------
 
-.. autoclass:: lenstools.pipeline.SimulationBatch
-	:members: current,available,info,newModel,getModel,writeCAMBSubmission,writeNGenICSubmission,writeGadget2Submission,writePlaneSubmission,writeRaySubmission
+.. autoclass:: lenstools.pipeline.simulation.SimulationBatch
+	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationModel
 	:members: path,mkdir,newCollection,getCollection,collections,newTelescopicMapSet,getTelescopicMapSet,telescopicmapsets
@@ -208,15 +211,14 @@ Cluster deployment
 Cluster specific settings
 -------------------------
 
-.. autoclass:: lenstools.pipeline.cluster.StampedeHandler
+.. automodule:: lenstools.pipeline.cluster
+	:inherited-members:
 
-.. autoclass:: lenstools.pipeline.cluster.EdisonHandler
-
-
-Observation sets
-================
+Real observation sets
+=====================
 
 .. automodule:: lenstools.observations
+	:inherited-members:
 
 .. autoclass:: lenstools.observations.CFHTLens
 	:inherited-members:
@@ -232,7 +234,7 @@ Defaults
 ========
 
 .. automodule:: lenstools.utils.defaults
-	:members: load_fits_default_convergence,load_fits_default_shear,default_callback_loader,convergence_measure_all
+	:members: load_fits_default_convergence,load_fits_default_shear,measure_power_spectrum
 
 MPI
 ===

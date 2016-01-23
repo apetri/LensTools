@@ -36,6 +36,12 @@ try:
 except ImportError:
 	pd = None
 
+try:
+	import sqlalchemy
+	sqlalchemy=sqlalchemy
+except ImportError:
+	sqlalchemy=None
+
 
 ##############################################################
 #################Series class#################################
@@ -200,8 +206,10 @@ class Ensemble(pd.DataFrame):
 
 		"""
 
-		if callback_loader is None:
+		if filename.endswith(".pkl"):
 			callback_loader = pd.read_pickle
+		elif filename.endswith(".sqlite"):
+			callback_loader = cls._read_sql
 
 		#Read the Ensemble
 		loaded_ensemble = callback_loader(filename,**kwargs)
@@ -253,6 +261,13 @@ class Ensemble(pd.DataFrame):
 	@classmethod
 	def read_sql_table(cls,table_name,con,**kwargs):
 		return cls(pd.read_sql_table(table_name,con,**kwargs))
+
+	@classmethod
+	def _read_sql(cls,fname,table_name,**kwargs):
+		con = sqlalchemy.create_engine("sqlite:///"+fname)
+		ensemble = cls.read_sql_table(table_name,con,**kwargs)
+		con.dispose()
+		return ensemble 
 
 	@classmethod
 	def compute(cls,file_list,callback_loader=None,pool=None,index=None,assemble=np.array,**kwargs):
@@ -386,6 +401,63 @@ class Ensemble(pd.DataFrame):
 
 		#Construct the meshgrid Ensemble
 		return cls.from_dict(dict((c,columns_grid[n].flatten()) for n,c in enumerate(columns)))[columns]
+
+	#############################################################
+	#############Sample from a multivariate Gaussian#############
+	#############################################################
+
+	@classmethod
+	def sample_gaussian(cls,covariance,realizations,mean=None,seed=None):
+
+		"""
+		Construct an Ensemble samping from a multivariate gaussian distribution with given mean and covariance
+
+		:param covariance: covariance matrix of the distribution to sample from 
+		:type covariance: :py:class:`Ensemble`
+
+		:param mean: mean of the distribution to sample from (if None it is assumed to be 0)
+		:type mean: :py:class:`Series`
+
+		:param realizations: number of independent samples to draw
+		:type realizations: int.
+
+		:param seed: seed for the random generator
+		:type seed: int.
+
+		:returns: sampled Ensemble
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		#Find eigenvalues and eigenvectors of the covariance matrix
+		if isinstance(covariance,pd.DataFrame):
+			w,v = np.linalg.eigh(covariance.values)
+		else:
+			w,v = np.linalg.eigh(covariance)
+
+		#Check that the eigenvalues are all positive
+		assert (w>=0).all(),"The eigenvalues for the covariance should all be positive!"
+
+		#Draw the samples in the diagonal basis
+		if seed is not None:
+			np.random.seed(seed)
+
+		samples = np.random.randn(realizations,len(w))*np.sqrt(w)
+
+		#Revert to the original basis,eventually add the mean
+		samples = samples.dot(v.T)
+		if mean is not None:
+			if isinstance(mean,pd.Series):
+				samples += mean[covariance.columns].values
+			else:
+				samples += mean
+
+		#Return to user
+		if isinstance(covariance,pd.DataFrame):
+			return cls(samples,columns=covariance.columns)
+		else:
+			return cls(samples)
+
 
 	####################################
 	#############Operations#############

@@ -6,12 +6,12 @@ from __future__ import division,with_statement
 import sys,os
 import time
 import cPickle
-import resource
+import gc
 
 from operator import add
 from functools import reduce
 
-from lenstools.simulations.logs import logdriver
+from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemoryAll
 
 from lenstools.utils.mpi import MPIWhirlPool
 
@@ -159,6 +159,7 @@ def singleRedshift(pool,batch,settings,id):
 	if pool is None:
 		first_map_realization = 0
 		last_map_realization = map_realizations
+		realizations_per_task = map_realizations
 		logdriver.debug("Generating lensing map realizations from {0} to {1}".format(first_map_realization+1,last_map_realization))
 	else:
 		assert map_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, map_realizations must be a multiple of the number of MPI tasks!"
@@ -195,12 +196,21 @@ def singleRedshift(pool,batch,settings,id):
 
 	begin = time.time()
 
+	#Log initial memory load
+	peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
+	if (pool is None) or (pool.is_master()):
+		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
+
 	#We need one of these for cycles for each map random realization
-	for r in range(first_map_realization,last_map_realization):
+	for rloc,r in enumerate(range(first_map_realization,last_map_realization)):
 
 		#Instantiate the RayTracer
 		tracer = RayTracer()
 
+		#Force garbage collection
+		gc.collect()
+
+		#Start timestep
 		start = time.time()
 		last_timestamp = start
 
@@ -249,7 +259,7 @@ def singleRedshift(pool,batch,settings,id):
 
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = batch.syshandler.map(os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][nbody],plane_set[c]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[c][cut],normals[c][normal])))
+			plane_name = batch.syshandler.map(os.path.join(plane_path.format(collection[c].storage_subdir,nbody_realizations[c][nbody],plane_set[c]),settings.plane_name_format.format(snapshot_number,cut_points[c][cut],normals[c][normal],settings.plane_format)))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
@@ -285,6 +295,7 @@ def singleRedshift(pool,batch,settings,id):
 			savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 			logdriver.info("Saving convergence map to {0}".format(savename)) 
 			convMap.save(savename)
+			logdriver.debug("Saved convergence map to {0}".format(savename)) 
 
 		##############################################################################################################################
 	
@@ -305,8 +316,15 @@ def singleRedshift(pool,batch,settings,id):
 			omegaMap.save(savename)
 
 		now = time.time()
+		
+		#Log peak memory usage to stdout
+		peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
+		logdriver.info("Peak memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
+
+		#Log progress and peak memory usage to stderr
+		if (pool is None) or (pool.is_master()):
+			logstderr.info("Progress: {0:.2f}%, peak memory usage: {1:.3f} (task), {2[0]:.3f} (all {2[1]} tasks)".format(100*(rloc+1.)/realizations_per_task,peak_memory_task,peak_memory_all))
 	
 	#Safety sync barrier
 	if pool is not None:
@@ -451,6 +469,7 @@ def simulatedCatalog(pool,batch,settings,id):
 	if pool is None:
 		first_realization = 0
 		last_realization = catalog_realizations
+		realizations_per_task = catalog_realizations
 		logdriver.debug("Generating lensing catalog realizations from {0} to {1}".format(first_realization+1,last_realization))
 	else:
 		assert catalog_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, catalog_realizations must be a multiple of the number of MPI tasks!"
@@ -483,12 +502,21 @@ def simulatedCatalog(pool,batch,settings,id):
 
 	begin = time.time()
 
+	#Log initial memory load
+	peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
+	if (pool is None) or (pool.is_master()):
+		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
+
 	#We need one of these for cycles for each map random realization
-	for r in range(first_realization,last_realization):
+	for rloc,r in enumerate(range(first_realization,last_realization)):
 
 		#Instantiate the RayTracer
 		tracer = RayTracer()
 
+		#Force garbage collection
+		gc.collect()
+
+		#Start timestep
 		start = time.time()
 		last_timestamp = start
 
@@ -524,7 +552,7 @@ def simulatedCatalog(pool,batch,settings,id):
 
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),"snap{0}_potentialPlane{1}_normal{2}.fits".format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]])))
+			plane_name = batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),settings.plane_name_format.format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]],settings.plane_format)))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
@@ -568,8 +596,15 @@ def simulatedCatalog(pool,batch,settings,id):
 			shear_catalog[galaxies_before:galaxies_before+galaxies_in_catalog[n]].write(shear_catalog_savename,overwrite=True)
 
 		now = time.time()
+
+		#Log peak memory usage to stdout
+		peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 		logdriver.info("Weak lensing calculations for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		logdriver.info("Memory usage: {0:.3f} GB".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/(1024**3)))
+		logdriver.info("Peak memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
+
+		#Log progress and peak memory usage to stderr
+		if (pool is None) or (pool.is_master()):
+			logstderr.info("Progress: {0:.2f}%, peak memory usage: {1:.3f} (task), {2[0]:.3f} (all {2[1]} tasks)".format(100*(rloc+1.)/realizations_per_task,peak_memory_task,peak_memory_all))
 
 
 	#Safety sync barrier

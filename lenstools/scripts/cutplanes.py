@@ -8,21 +8,19 @@ import sys,os
 import cPickle
 import json
 
-from lenstools.simulations.logs import logdriver
+from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemoryAll
 
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
-import lenstools.pipeline.configuration as configuration
-
 from lenstools.simulations import DensityPlane,PotentialPlane
+
 from lenstools.utils import MPIWhirlPool
+from lenstools import configuration
 
 import numpy as np
 
 #FFT engine
-from ..utils.fft import NUMPYFFTPack
-fftengine = NUMPYFFTPack()
-
+fftengine = configuration.fftengine()
 
 #######################################################
 ################Main execution#########################
@@ -54,10 +52,11 @@ def main(pool,batch,settings,id,override):
 	snapshot_path = realization.snapshot_subdir
 	
 	#Base name of the snapshot files
-	SnapshotFileBase = realization.SnapshotFileBase + "_"
+	SnapshotFileBase = realization.SnapshotFileBase
 
 	#Log to user
 	if (pool is None) or (pool.is_master()):
+		logdriver.info("Fast Fourier Transform operations handler: {0}".format(fftengine.__class__.__name__))
 		logdriver.info("Reading snapshots from {0}".format(os.path.join(snapshot_path,SnapshotFileBase+"*")))
 
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
@@ -100,8 +99,14 @@ def main(pool,batch,settings,id,override):
 
 	#Read from PlaneSettings
 	plane_resolution = settings.plane_resolution
+	
 	first_snapshot = settings.first_snapshot
 	last_snapshot = settings.last_snapshot
+	if first_snapshot is None:
+		snapshots = settings.snapshots
+	else:
+		snapshots = range(first_snapshot,last_snapshot+1)
+	
 	cut_points = settings.cut_points
 	normals = settings.normals
 	thickness = settings.thickness
@@ -138,21 +143,39 @@ def main(pool,batch,settings,id,override):
 
 	}
 
-	for n in range(first_snapshot,last_snapshot+1):
+	#Log the initial memory load
+	peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
+	if (pool is None) or (pool.is_master()):
+		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
+
+
+	num_planes_total = len(snapshots)*len(cut_points)*len(normals)
+	nplane = 1 
+
+	#Cycle over each snapshot
+	for n in snapshots:
 
 		#Log
 		if (pool is None) or (pool.is_master()):
 			logdriver.info("Waiting for input files from snapshot {0}...".format(n))
 		
 		#Open the snapshot
-		snap = configuration.snapshot_handler.open(realization.path(SnapshotFileBase+"{0:03d}".format(n),where="snapshot_subdir"),pool=pool)
+		snapshot_filename = realization.path(configuration.snapshot_handler.int2root(SnapshotFileBase,n),where="snapshot_subdir")
+		if pool is not None:
+			logdriver.info("Task {0} reading nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
+
+		snap = configuration.snapshot_handler.open(snapshot_filename,pool=pool)
 
 		if pool is not None:
-			logdriver.info("Rank {0} reading snapshot from {1}".format(pool.comm.rank,snap.header["files"][0]))
+			logdriver.debug("Task {0} read nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
 
 		#Get the positions of the particles
 		if not hasattr(snap,"positions"):
 			snap.getPositions()
+
+		#Log memory usage
+		if (pool is None) or (pool.is_master()):
+			logstderr.debug("Read particle positions: peak memory usage {0:.3f} (task)".format(peakMemory()))
 
 		#Close the snapshot file
 		snap.fp.close()
@@ -177,9 +200,9 @@ def main(pool,batch,settings,id,override):
 				#######################################################################################################################################
 
 				#Save the plane
-				plane_file = batch.syshandler.map(os.path.join(save_path,"snap{0}_{1}Plane{2}_normal{3}.{4}".format(n,kind,cut,normal,settings.format)))
+				plane_file = batch.syshandler.map(os.path.join(save_path,settings.name_format.format(n,kind,cut,normal,settings.format)))
 
-				if pool is None or pool.is_master():
+				if (pool is None) or (pool.is_master()):
 			
 					#Wrap the plane in a PotentialPlane object
 					if kind=="potential":
@@ -192,6 +215,15 @@ def main(pool,batch,settings,id,override):
 					#Save the result
 					logdriver.info("Saving plane to {0}".format(plane_file))
 					plane_wrap.save(plane_file)
+					logdriver.debug("Saved plane to {0}".format(plane_file))
+
+
+				#Log peak memory usage
+				peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
+				if (pool is None) or (pool.is_master()):
+					logstderr.info("Plane {0} of {1} completed, peak memory usage: {2:.3f} (task), {3[0]:.3f} (all {3[1]} tasks)".format(nplane,num_planes_total,peak_memory_task,peak_memory_all))
+
+				nplane += 1
 			
 				#Safety barrier sync
 				if pool is not None:
