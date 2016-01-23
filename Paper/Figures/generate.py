@@ -8,6 +8,7 @@ sys.modules["mpi4py"] = None
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import astropy.units as u
 
 from matplotlib import rc
 import daft
@@ -15,6 +16,7 @@ import daft
 ###############################################
 
 from lenstools import dataExtern
+from lenstools.image.convergence import ConvergenceMap
 from lenstools.statistics.ensemble import Ensemble
 from lenstools.statistics.constraints import Emulator
 from lenstools.statistics.contours import ContourPlot
@@ -141,6 +143,39 @@ def flow(cmd_args):
 
 ###########################################################################################################################################
 
+def convergence_stats(cmd_args):
+
+	#Plot setup
+	fig,ax = plt.subplots(1,2,figsize=(16,8))
+ 
+	#Load the convergence map and smooth on 1 arcmin
+	conv = ConvergenceMap.load(os.path.join(dataExtern(),"conv1.fit"))
+	conv.smooth(1.0*u.arcmin,kind="gaussianFFT",inplace=True)
+
+	#Find the peak locations and height
+	sigma_peaks = np.linspace(2.,15.,101)
+	height,positions = conv.locatePeaks(sigma_peaks,norm=True)
+
+	#Show the map and the peaks on it (left panel)
+	conv.visualize(fig=fig,ax=ax[0],colorbar=True,cbar_label=r"$\kappa$")
+	ax[0].scatter(*positions.to(u.deg).value.T,color="black",marker="x")
+	ax[0].set_xlim(0,conv.side_angle.to(u.deg).value)
+	ax[0].set_ylim(0,conv.side_angle.to(u.deg).value)
+
+	#Show the peak histogram and the power spectrum on the right
+	conv.peakHistogram(sigma_peaks,norm=True,fig=fig,ax=ax[1])
+	l_edges = np.linspace(500,10000,100)
+	ax1 = ax[1].twiny()
+	conv.plotPowerSpectrum(l_edges,fig=fig,ax=ax1)
+
+	#Save the figure
+	fig.tight_layout()
+	fig.savefig("convergence_stats."+cmd_args.type)
+
+
+
+###########################################################################################################################################
+
 def parameter_sampling(cmd_args,p_value=0.684):
 
 	#Plot setup
@@ -191,7 +226,8 @@ def parameter_sampling(cmd_args,p_value=0.684):
 #Method dictionary
 method = dict()
 method["1"] = flow
-method["2"] = parameter_sampling
+method["2"] = convergence_stats
+method["3"] = parameter_sampling
 
 #Main
 def main():
