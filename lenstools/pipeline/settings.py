@@ -114,6 +114,7 @@ class PlaneSettings(object):
 		self.plane_resolution = 128
 		self.first_snapshot = 46
 		self.last_snapshot = 58
+		self.snapshots = None
 		self.cut_points = np.array([7.5/0.7]) * u.Mpc
 		self.thickness = (2.5/0.7) * u.Mpc 
 		self.length_unit = u.Mpc
@@ -152,8 +153,24 @@ class PlaneSettings(object):
 			pass
 		
 		settings.plane_resolution = options.getint(section,"plane_resolution")
-		settings.first_snapshot = options.getint(section,"first_snapshot")
-		settings.last_snapshot = options.getint(section,"last_snapshot")
+
+		#Snapshots to process: either bounds (first,last) or snapshot list
+		try:
+			settings.first_snapshot = options.getint(section,"first_snapshot")
+			settings.last_snapshot = options.getint(section,"last_snapshot")
+		except ValueError:
+			settings.first_snapshot = None
+			settings.last_snapshot = None
+
+		try:
+			snapshots = options.get(section,"snapshots") 
+			settings.snapshots = [ int(n) for n in snapshots.split(",") ]
+		except (NoOptionError,ValueError):
+			settings.snapshots = None
+
+		#Check that either a bound specification or a list were provided, not both
+		if not(((settings.first_snapshot is not None) and (settings.last_snapshot is not None))^(settings.snapshots is not None)):
+			raise ValueError("You must specify one, and only one, between (first_snapshot,last_snapshot) or a snapshot list!")
 
 		#Length units
 		settings.length_unit = getattr(u,options.get(section,"length_unit"))

@@ -99,8 +99,14 @@ def main(pool,batch,settings,id,override):
 
 	#Read from PlaneSettings
 	plane_resolution = settings.plane_resolution
+	
 	first_snapshot = settings.first_snapshot
 	last_snapshot = settings.last_snapshot
+	if first_snapshot is None:
+		snapshots = settings.snapshots
+	else:
+		snapshots = range(first_snapshot,last_snapshot+1)
+	
 	cut_points = settings.cut_points
 	normals = settings.normals
 	thickness = settings.thickness
@@ -143,11 +149,11 @@ def main(pool,batch,settings,id,override):
 		logstderr.info("Initial memory usage: {0:.3f} (task), {1[0]:.3f} (all {1[1]} tasks)".format(peak_memory_task,peak_memory_all))
 
 
-	num_planes_total = len(range(first_snapshot,last_snapshot+1))*len(cut_points)*len(normals)
+	num_planes_total = len(snapshots)*len(cut_points)*len(normals)
 	nplane = 1 
 
-	#Cycle over each plane
-	for n in range(first_snapshot,last_snapshot+1):
+	#Cycle over each snapshot
+	for n in snapshots:
 
 		#Log
 		if (pool is None) or (pool.is_master()):
