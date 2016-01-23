@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import sys,os,argparse
+import re
+
 sys.modules["mpi4py"] = None
 
 import numpy as np
@@ -21,6 +23,46 @@ from lenstools.statistics.contours import ContourPlot
 parser = argparse.ArgumentParser()
 parser.add_argument("-t","--type",dest="type",default="png",help="format of the figure to save")
 parser.add_argument("fig",nargs="*")
+
+###########################################################################################################################################
+
+#Parse logs into a pandas DataFrame
+def parse_log(fp):
+
+	#Regex to parse lines
+	linefmt = re.compile(r"([0-9\-\:\.\s]+)\:lenstools\.stderr\:(INFO|DEBUG)\:(.+)\:[a-zA-Z\s]*([0-9\.]+) Gbyte \(task\)")
+	
+	#Keep track of this information
+	timestamp = list()
+	log_level = list()
+	step_type = list()
+	peak_memory = list()
+
+	#Cycle through the lines
+	for line in fp.readlines():
+		match = linefmt.search(line)
+		if match:
+			match_results = match.groups()
+			timestamp.append(pd.to_datetime(_fill(match_results[0]),format="%m-%d %H:%M:%S.%f"))
+			log_level.append(match_results[1])
+			step_type.append(match_results[2])
+			peak_memory.append(float(match_results[3]))
+
+	#Construct the DataFrame
+	df = pd.DataFrame.from_dict({"timestamp":timestamp,"level":log_level,"step":step_type,"peak_memory(GB)":peak_memory})
+	df["delta_timestamp"] = df.timestamp.diff()
+
+	#Return to user
+	return df
+
+#Fill milliseconds
+def _fill(s):
+	last = s.split('.')[-1]
+	nzeros = 3-len(last)
+	if nzeros:
+		return s.replace('.'+last,'.'+'0'*nzeros+last)
+	else:
+		return s
 
 ###########################################################################################################################################
 
