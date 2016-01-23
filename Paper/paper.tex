@@ -150,17 +150,17 @@ Table \ref{benchmarktable} shows a summary of the ray--tracing operations perfor
 {Step} &            Complexity &            Test case &           Runtime \\ \hline \hline
 \midrule
 \multicolumn{4}{c}{\textbf{Lens generation}} \\ \hline
-Snapshot input & $O(N_p/N_t)$  & $N_p=512^3$, $N_t=16$  &  \\
-Gridding        & $O(N_p/N_t)$   & $N_p=512^3$, $N_t=16$  &  \\
-MPI Communication  & $O(L_p\log{N_t})$   & $N_t=16$, $L_p=4096^2$  &   \\
-Poisson solver           & $O(L_p\log{L_p})$ & $L_p=4096^2$  &      \\
-Lens output           & $O(L_p)$ & $L_p=4096^2$   &   \\ \hline \hline
+Snapshot input & $O(N_p/N_t)$  & $N_p=512^3$, $N_t=16$  & 2.10\,s  \\
+Gridding        & $O(N_p/N_t)$   & $N_p=512^3$, $N_t=16$  & 0.20\,s \\
+MPI Communication  & $O(L_p\log{N_t})$   & $N_t=16$, $L_p=4096^2$  & 0.76\,s   \\
+Poisson solver (FFT)           & $O(L_p\log{L_p})$ & $L_p=4096^2$  &  2.78\,s    \\
+Lens output           & $O(L_p)$ & $L_p=4096^2$   & 0.04\,s  \\ \hline \hline
 
 \multicolumn{4}{c}{\textbf{Ray tracing}} \\ \hline
-Lens input &  $O(L_p)$ & $L_p=4096^2$ &  \\
-Random lens shift &  $O(L_p)$ & $L_p=4096^2$ &  \\
-Deflection calculation        &  $O(N_r)$ & $N_r=2048^2$   &  \\
-Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &   \\ \hline \hline
+Lens input &  $O(L_p)$ & $L_p=4096^2$ & 0.32\,s \\
+Random lens shift &  $O(L_p)$ & $L_p=4096^2$ & 0.15\,s \\
+Deflection calculation        &  $O(N_r)$ & $N_r=2048^2$   & 1.54\,s  \\
+Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \hline \hline
 
 \bottomrule
 \end{tabular}
@@ -177,6 +177,12 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &   \\ \hline \h
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Image analysis}
+
+\begin{figure*}
+\includegraphics[scale=0.4]{Figures/convergence_stats.eps}
+\caption{Statistics of a convergence map}
+\label{convergencefog}
+\end{figure*}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -205,6 +211,52 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &   \\ \hline \h
 %%%%%%%%%%%%%%%%%%%%%%%%%% APPENDIX: CODE SNIPPETS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section*{Appendix: code snippets}
+
+\begin{widetext}
+\begin{minted}[frame=lines,linenos]{python}
+
+import sys,os,argparse
+import re
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import astropy.units as u
+
+from matplotlib import rc
+import daft
+
+###############################################
+
+from lenstools import dataExtern
+from lenstools.image.convergence import ConvergenceMap
+from lenstools.statistics.ensemble import Ensemble
+from lenstools.statistics.constraints import Emulator
+from lenstools.statistics.contours import ContourPlot
+
+#Plot setup
+fig,ax = plt.subplots()
+ 
+#Load the convergence map and smooth on 1 arcmin
+conv = ConvergenceMap.load(os.path.join(dataExtern(),"conv1.fit"))
+conv.smooth(1.0*u.arcmin,kind="gaussianFFT",inplace=True)
+
+#Find the peak locations and height
+sigma_peaks = np.linspace(-2.,15.,101)
+height,positions = conv.locatePeaks(sigma_peaks,norm=True)
+
+#Show the map and the peaks on it (left panel)
+conv.visualize(fig=fig,ax=ax,colorbar=True,cbar_label=r"$\kappa$")
+ax.scatter(*positions[height>2.].to(u.deg).value.T,color="black",marker="x")
+ax.set_xlim(0,conv.side_angle.to(u.deg).value)
+ax.set_ylim(0,conv.side_angle.to(u.deg).value)
+
+#Save the figure
+fig.tight_layout()
+fig.savefig("convergence_stats.png")
+
+\end{minted}
+\end{widetext}
 
 \bibliography{ref}
 \label{lastpage}
