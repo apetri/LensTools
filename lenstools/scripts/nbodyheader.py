@@ -5,7 +5,7 @@ import argparse
 def main(args=None):
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument("filename",nargs="+",help="path to one or more Gadget2 snapshots to display")
+	parser.add_argument("filename",nargs="+",help="path to one or more N-body simulation snapshots to display")
 
 	args = parser.parse_args(args)
 	
