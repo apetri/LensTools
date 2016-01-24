@@ -53,6 +53,10 @@ def parse_log(fp):
 	#Construct the DataFrame
 	df = pd.DataFrame.from_dict({"timestamp":timestamp,"level":log_level,"step":step_type,"peak_memory(GB)":peak_memory})
 	df["delta_timestamp"] = df.timestamp.diff()
+	dt_s = df.delta_timestamp.values.astype(np.float) / 1.0e9
+	dt_s[0] = 0
+	df["delta_timestamp_s"] = dt_s
+	df["timestamp_s"] = dt_s.cumsum()
 
 	#Return to user
 	return df
@@ -65,6 +69,46 @@ def _fill(s):
 		return s.replace('.'+last,'.'+'0'*nzeros+last)
 	else:
 		return s
+
+#Memory usage figure
+def memory_usage(cmd_args):
+
+	#Setup plot
+	fig,ax = plt.subplots()
+
+	#Plot memory usage for planes operations
+	with open("Logs/planes.err","r") as fp:
+		df_planes = parse_log(fp)
+
+	ax.plot(df_planes["timestamp_s"].values,df_planes["peak_memory(GB)"].values,label="Lens Planes",color="black")
+
+	#Plot memory usage for raytracing operations
+	with open("Logs/ray.err","r") as fp:
+		df_ray = parse_log(fp)
+
+	ax_top = ax.twiny()
+	ax_top.plot(df_ray["timestamp_s"].values,df_ray["peak_memory(GB)"].values,label="Ray--tracing",color="red")
+	ax_top.set_xscale("log")
+	ax_top.spines["top"].set_color("red")
+	ax_top.tick_params(axis="x",colors="red")
+
+	#Labels
+	ax.set_xlabel(r"${\rm Runtime(s)}$",fontsize=22)
+	ax.set_ylabel(r"${\rm Peak\,\, memory(GB)}$",fontsize=22)
+	ax.set_ylim(0,2.)
+
+	_vline(ax,10.,color="black",linestyle="--")
+	_vline(ax_top,100.,color="red",linestyle="--")
+
+	#Save
+	fig.savefig("memory_usage."+cmd_args.type)
+
+#Plot vertical line
+def _vline(ax,x,**kwargs):
+	down,up = ax.get_ylim()
+	xp = np.ones(100)*x
+	yp = np.linspace(down,up,100)
+	ax.plot(xp,yp,**kwargs)
 
 ###########################################################################################################################################
 
@@ -141,9 +185,55 @@ def flow(cmd_args):
 	pgm.render()
 	pgm.figure.savefig("flow."+cmd_args.type)
 
+def inheritance(cmd_args):
+
+	rc("font", family="serif", size=12)
+	rc("text", usetex=False)
+
+	r_color = {"ec" : "red"}
+	g_color = {"ec" : "green"}
+
+	#Instantiate PGM
+	pgm = daft.PGM([17,7],origin=[0,0])
+
+	#Batch
+	pgm.add_node(daft.Node("batch","SimulationBatch",2,2.5,aspect=5.))
+
+	#Model
+	pgm.add_node(daft.Node("model","SimulationModel",5,2.5,aspect=5.,plot_params=r_color))
+
+	#Collection
+	pgm.add_node(daft.Node("collection","SimulationCollection",8,2.5,aspect=5.))
+
+	#IC
+	pgm.add_node(daft.Node("ic","SimulationIC",11,2.5,aspect=5.))
+
+	#Planes
+	pgm.add_node(daft.Node("planes","SimulationPlanes",14,2.5,aspect=5.))
+
+	#Maps and catalogs
+	pgm.add_node(daft.Node("maps","SimulationMaps",11,3.5,aspect=5.,plot_params=g_color))
+	pgm.add_node(daft.Node("catalog","SimulationCatalog",11,1.5,aspect=5.,plot_params=g_color))
+	pgm.add_node(daft.Node("subcatalog","SimulationSubCatalog",14,1.5,aspect=5.,plot_params=g_color))
+
+	#Plate
+	pgm.add_plate(daft.Plate([3.4,1.0,12,3.0]))
+
+	#Edges
+	pgm.add_edge("model","collection")
+	pgm.add_edge("collection","ic")
+	pgm.add_edge("ic","planes")
+	pgm.add_edge("collection","maps")
+	pgm.add_edge("collection","catalog")
+	pgm.add_edge("catalog","subcatalog")
+
+	#Render and save
+	pgm.render()
+	pgm.figure.savefig("inheritance."+cmd_args.type)
+
 ###########################################################################################################################################
 
-def convergence_stats(cmd_args):
+def convergence_visualize(cmd_args):
 
 	#Plot setup
 	fig,ax = plt.subplots()
@@ -153,7 +243,7 @@ def convergence_stats(cmd_args):
 	conv.smooth(1.0*u.arcmin,kind="gaussianFFT",inplace=True)
 
 	#Find the peak locations and height
-	sigma_peaks = np.linspace(-2.,15.,101)
+	sigma_peaks = np.linspace(-2.,10.,101)
 	height,positions = conv.locatePeaks(sigma_peaks,norm=True)
 
 	#Show the map and the peaks on it (left panel)
@@ -164,8 +254,33 @@ def convergence_stats(cmd_args):
 
 	#Save the figure
 	fig.tight_layout()
-	fig.savefig("convergence_stats."+cmd_args.type)
+	fig.savefig("convergence_visualize."+cmd_args.type)
 
+def convergence_stats(cmd_args):
+
+	#Plot setup
+	fig,ax = plt.subplots()
+
+	#Load the convergence map and smooth on 1 arcmin
+	conv = ConvergenceMap.load(os.path.join(dataExtern(),"conv1.fit"))
+	conv.smooth(1.0*u.arcmin,kind="gaussianFFT",inplace=True)
+
+	#Find the peak locations and height
+	sigma = np.linspace(-2.,10.,101)
+
+	#Show the peak histogram and the PDF
+	conv.peakHistogram(sigma,norm=True,fig=fig,ax=ax)
+
+	ax_right = ax.twinx()
+	conv.plotPDF(sigma,norm=True,fig=fig,ax=ax_right,color="red")
+	
+	#All PDF quantities are shown in red
+	ax_right.spines["right"].set_color("red")
+	ax_right.tick_params(axis="y",colors="red")
+	ax_right.yaxis.label.set_color("red")
+
+	#Save
+	fig.savefig("convergence_stats."+cmd_args.type)
 
 
 ###########################################################################################################################################
@@ -220,8 +335,11 @@ def parameter_sampling(cmd_args,p_value=0.684):
 #Method dictionary
 method = dict()
 method["1"] = flow
-method["2"] = convergence_stats
-method["3"] = parameter_sampling
+method["2"] = inheritance
+method["3"] = memory_usage
+method["4"] = convergence_visualize
+method["4b"] = convergence_stats
+method["5"] = parameter_sampling
 
 #Main
 def main():

@@ -135,14 +135,28 @@ where we use the subscript $k$ to indicate the redshift $z_k$ of the $k$--th len
 \bb{U}(\pmb{\theta},z_s) = (1-\kappa(\pmb{\theta}))\mathds{1}_{2\times2} - \gamma^1(\pmb{\theta})\sigma^3 - \gamma^2(\pmb{\theta})\sigma^1
 \end{equation}
 %
-where we indicated $\mathds{1}_{2\times2}$ as the identity matrix and $\sigma^{1,3}$ as the first and third Pauli matrices. The iterative solution of (\ref{geodesic2D}) requires the knowledge of the density fluctuation $\delta(\bb{x},z)$, from which the lens surface density $\sigma$ and gravitational potential $\phi$ can be inferred. $\delta$ can be calculated running $N$--body simulations, in which the matter distribution in the universe is approximated as a set of $N_p$ particles of mass $M_p$, which evolve gravitationally. For this purpose we use the publicly available code \ttt{GADGET2}\citep{Gadget2}, although alternatives can be adopted (see \citep{HACC} for example). Once the $N$--body simulations are ran, \LT provides a \ttt{python} implementation of the multi--lens--plane algorithm \citep{RayTracingHartlap} described above, which takes care of projecting the density fluctuation on two dimensional lenses as in (\ref{surfacedensity}), solving the Poisson equation as in (\ref{poisson}), and computing the light ray deflections as in (\ref{geodesic2D}). 
+where we indicated $\mathds{1}_{2\times2}$ as the identity matrix and $\sigma^{1,3}$ as the first and third Pauli matrices. The iterative solution of (\ref{geodesic2D}) requires the knowledge of the density fluctuation $\delta(\bb{x},z)$, from which the lens surface density $\sigma$ and gravitational potential $\phi$ can be inferred. $\delta$ can be calculated running $N$--body simulations, in which the matter distribution in the universe is approximated as a set of $N_p$ particles of mass $M_p$, which evolve gravitationally. For this purpose we use the publicly available code \ttt{GADGET2}\citep{Gadget2}, although alternatives can be adopted (see \citep{HACC} for example). Once the $N$--body simulations are ran, \LT provides a \ttt{python} implementation of the multi--lens--plane algorithm \citep{RayTracingHartlap} described above, which takes care of projecting the density fluctuation on two dimensional lenses as in (\ref{surfacedensity}), solving the Poisson equation as in (\ref{poisson}), and computing the light ray deflections as in (\ref{geodesic2D}). An overview of the pipeline operations, from the cosmological parameter specifications to the final shear map products, is outlined in Figure \ref{pipescheme}. 
 
-\subsection{Code}
+
+\begin{figure*}
+\includegraphics[scale=0.6]{Figures/flow.eps}
+\caption{Schematic of the \LT WL shear simulation pipeline}
+\label{pipescheme}
+\end{figure*}
+
+\subsection{Pipeline code structure}
 %
+In this paragraph we describe how the \LT pipeline code is organized. The simulation products are placed in a directory tree structure which is optimized for easy resource access. The directory tree is mirrored in two locations, a so called \textit{Home} location, which holds all the book--keeping information such as configuration files and a \textit{Storage} location which holds the simulation products (\ttt{GADGET2} snapshots, lens planes and finished shear maps). The reason for this is that while the \textit{Home} location does not require much disk space, the \textit{Storage} location can reach disk sizes of several Terabytes. We found convenient to keep the two locations separated to ensure product management, sharing and portability between different computer clusters. The directory tree is organized as in Figure \ref{inheritance}. A batch of simulations is handled by a single instance of a \ttt{SimulationBatch} object (which holds both the \textit{Home} and \textit{Storage} parts). The first level in the tree corresponds to a specifications of cosmological parameters $\bb{p}$: each node on this level is an instance of the \ttt{SimulationModel} class. The second level in the tree specifies the size and resolution of the $N$--body box, namely the box size $L_b$ and the number of particles $N_p$: each node on the second level is an instance of the \ttt{SimulationCollection} class. Inside a simulation collection, we are free to choose different random realizations of the initial conditions, which will then be evolved in time by the $N$--body code. Each such realization lives on a node which is one level deeper in the tree, and is encoded in a \ttt{SimulationIC} object. The deepest level in the tree contains the two dimensional slices of the $N$--body simulation boxes. Each node on this level is an instance of the \ttt{SimulationPlanes} class. Once the lens planes are generated, the ray--tracing operations can be performed. In principle we can use lens planes that live under the same \ttt{SimulationCollection}, but belong to different \ttt{SimulationIC} nodes, to produce either single redshift shear images (each ensemble of images lives in a \ttt{SimulationMaps} object) or shear calalogs of $N_g$ sources, in the form of a table in which each of the $N_g$ rows is a tuple $(x_g,y_g,z_g,\gamma_{1,g},\gamma_{2,g})$. Each ensemble of catalogs corresponds to an instance of the \ttt{SimulationCatalog} class. Note that, because they combine different initial conditions, both \ttt{SimulationMaps} and \ttt{SimulationCatalog} nodes live on the same level of the directory tree, one level below \ttt{SimulationCollection}. An example on how to create a \ttt{python} script to lay down such a directory tree is shown in the Appendix A.     
+
+\begin{figure*}
+\includegraphics[scale=0.6]{Figures/inheritance.eps}
+\caption{Structure of the directory tree and class inheritance in the \LT ray--tracing operations}
+\label{inheritance}
+\end{figure*}
 
 \subsection{Performance}
 %
-Table \ref{benchmarktable} shows a summary of the ray--tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case.  
+Table \ref{benchmarktable} shows a summary of the ray--tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case. Figure \ref{memoryfig} shows the peak memory usage.   
 
 \begin{table*}
 \begin{tabular}{l|c|c|c}
@@ -168,20 +182,21 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 \label{benchmarktable}
 \end{table*}
 
-\begin{figure*}
-\includegraphics[scale=0.6]{Figures/flow.eps}
-\caption{Schematic of the \LT WL shear simulation pipeline}
-\label{pipescheme}
-\end{figure*}
+\begin{figure}
+\includegraphics[scale=0.3]{Figures/memory_usage.eps}
+\caption{Memory peak usage}
+\label{memoryfig}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Image analysis}
 
 \begin{figure*}
-\includegraphics[scale=0.4]{Figures/convergence_stats.eps}
+\includegraphics[scale=0.3]{Figures/convergence_visualize.eps}
+\includegraphics[scale=0.3]{Figures/convergence_stats.eps}
 \caption{Statistics of a convergence map}
-\label{convergencefog}
+\label{convergencefig}
 \end{figure*}
 
 
@@ -212,48 +227,12 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 
 \section*{Appendix: code snippets}
 
+\subsection{Pipeline directory tree}
+
 \begin{widetext}
 \begin{minted}[frame=lines,linenos]{python}
 
-import sys,os,argparse
-import re
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import astropy.units as u
-
-from matplotlib import rc
-import daft
-
-###############################################
-
-from lenstools import dataExtern
-from lenstools.image.convergence import ConvergenceMap
-from lenstools.statistics.ensemble import Ensemble
-from lenstools.statistics.constraints import Emulator
-from lenstools.statistics.contours import ContourPlot
-
-#Plot setup
-fig,ax = plt.subplots()
- 
-#Load the convergence map and smooth on 1 arcmin
-conv = ConvergenceMap.load(os.path.join(dataExtern(),"conv1.fit"))
-conv.smooth(1.0*u.arcmin,kind="gaussianFFT",inplace=True)
-
-#Find the peak locations and height
-sigma_peaks = np.linspace(-2.,15.,101)
-height,positions = conv.locatePeaks(sigma_peaks,norm=True)
-
-#Show the map and the peaks on it (left panel)
-conv.visualize(fig=fig,ax=ax,colorbar=True,cbar_label=r"$\kappa$")
-ax.scatter(*positions[height>2.].to(u.deg).value.T,color="black",marker="x")
-ax.set_xlim(0,conv.side_angle.to(u.deg).value)
-ax.set_ylim(0,conv.side_angle.to(u.deg).value)
-
-#Save the figure
-fig.tight_layout()
-fig.savefig("convergence_stats.png")
+#!/usr/bin/env python
 
 \end{minted}
 \end{widetext}
