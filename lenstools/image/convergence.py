@@ -1016,7 +1016,7 @@ class Spin0(object):
 		return l,power_spectrum
 
 
-	def plotPowerSpectrum(self,l_edges,angle_unit=u.arcmin,fig=None,ax=None,**kwargs):
+	def plotPowerSpectrum(self,l_edges,show_angle=True,angle_unit=u.arcmin,fig=None,ax=None,**kwargs):
 
 		"""
 		Plot the power spectrum of the map
@@ -1045,14 +1045,15 @@ class Spin0(object):
 		self.ax.set_yscale("log")
 
 		#Upper scale shows the angle
-		ax_top = self.ax.twiny()
-		ax_top.set_xticks(self.ax.get_xticks())
-		ax_top.set_xlim(self.ax.get_xlim())
-		ax_top.set_xticklabels(["{0:.2f}".format(((2*np.pi/ell)*u.rad).to(angle_unit).value) for ell in self.ax.get_xticks()])
+		if show_angle:
+			ax_top = self.ax.twiny()
+			ax_top.set_xticks(self.ax.get_xticks())
+			ax_top.set_xlim(self.ax.get_xlim())
+			ax_top.set_xticklabels(["{0:.2f}".format(((2*np.pi/ell)*u.rad).to(angle_unit).value) for ell in self.ax.get_xticks()])
+			ax_top.set_xlabel(r"$\theta$({0})".format(angle_unit.to_string()),fontsize=22)
 
 		#Labels
 		self.ax.set_xlabel(r"$\ell$",fontsize=22)
-		ax_top.set_xlabel(r"$\theta$({0})".format(angle_unit.to_string()),fontsize=22)
 		self.ax.set_ylabel(r"$\ell(\ell+1)P_\ell^{\kappa\kappa}/2\pi$",fontsize=22)
 
 
