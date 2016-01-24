@@ -88,7 +88,16 @@ Where $\chi$ is the lens comoving distance and $a=(1/1+z)$ the scale factor. A l
 \end{matrix}
 \end{equation}
 %
-where we indicated $\bb{T}$ as the gradient of the deflection, which will be called \textit{shear tensor} throughout the rest of the paper. The trajectory of a light ray $\bb{x}(z)$ follows the geodesic equation
+where we indicated $\bb{T}$ as the gradient of the deflection, which will be called \textit{shear tensor} throughout the rest of the paper. An example of a lens plane computed with the \LT pipeline according to equations (\ref{surfacedensity}),(\ref{poisson}) is shown in Figure \ref{lensplanefig}. 
+
+\begin{figure*}
+\includegraphics[scale=0.3]{Figures/lens_plane_density.eps}
+\includegraphics[scale=0.3]{Figures/lens_plane_potential.eps}
+\caption{Lens plane, both the surface density $\sigma$ (left) and the lensing potential $\phi$ (right) are shown.}
+\label{lensplanefig}
+\end{figure*}
+%
+The trajectory of a light ray $\bb{x}(z)$ follows the geodesic equation
 
 \begin{equation}
 \label{geodesic3D}
@@ -121,14 +130,11 @@ which can be translated into a second order differential equation for the light 
 %
 where $\bb{U}$ is the jacobian matrix of the trajectory $\pmb{\beta}$ with respect to the initial light ray position $\pmb{\theta}$, $\bb{U}_k=\nabla_{\pmb{\theta}}\pmb{\beta}_k(\pmb{\theta})$. The factors $A_k,C_k$ depend on the geometry of the lens system
 
-\begin{widetext}
+
 
 \begin{equation}
 A_k = \frac{\chi_{k+1}}{\chi_{k+2}}\left(1 + \frac{\chi_{k+2}-\chi_{k+1}}{\chi_{k+1}-\chi_k}\right) \,\,\,\, ; \,\,\,\, C_k = \frac{\chi_{k+1}}{\chi_{k+2}} - 1 \\ \\
 \end{equation} 
-
-\end{widetext}
-
 %
 where we use the subscript $k$ to indicate the redshift $z_k$ of the $k$--th lens for notational simplicity. After tracing the evolution of $\bb{U}$ from the observer to the source at $z_s$, we are able to evaluate the cosmic shear $\pmb{\gamma}$ and convergence $\kappa$ at $z_s$ looking at the components of $\bb{U}$
 \begin{equation}
@@ -150,13 +156,21 @@ In this paragraph we describe how the \LT pipeline code is organized. The simula
 
 \begin{figure*}
 \includegraphics[scale=0.6]{Figures/inheritance.eps}
-\caption{Structure of the directory tree and class inheritance in the \LT ray--tracing operations}
+\caption{Directory tree structure and corresponding class inheritance in the \LT ray--tracing operations}
 \label{inheritance}
 \end{figure*}
 
 \subsection{Performance}
 %
-Table \ref{benchmarktable} shows a summary of the ray--tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case. Figure \ref{memoryfig} shows the peak memory usage.   
+We summarize the runtime and memory usage benchmarks of the \LT shear simulation pipeline. The tests were run on the TACC Stampede computer cluster\footnote{\url{https://portal.xsede.org/tacc-stampede}}. Table \ref{benchmarktable} shows a summary of the ray--tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case. At the lens plane generation stage we can clearly see that the two bottlenecks in the flow are the $N$--body snapshot read operations and the Poisson equation solving via FFT. We can optimize the number of tasks $N_t$ used to read in a single snapshot because, in the limit of perfect parallel input performance, there is an optimal value of $N_t(N_p,L_p)$ that minimizes the combined input, gridding and MPI communication operations, which have a combined complexity
+
+\begin{equation}
+t_{\rm in+grid+MPI} = A_1\frac{N_p}{N_t} + A_2L_p\log{N_t}
+\end{equation} 
+%
+The optimal $N_t$ depends on the number of particles $N_p$ and the lens plane resolution (in pixels) $L_p$. The Poisson solving operations have a complexity of $O(L_p\log{L_p})$ which is dominated by the FFT performance. Although we make use of the \ttt{numpy} FFT pack \citep{scipy} to perform such operations, other alternatives are also possible (such as FFTW \citep{FFTW05}). The \LT code modularity makes it very easy to switch between different implementations of the FFT algorithm.  
+
+We also tracked the memory usage of the lens plane and ray--tracing operations. This is an important step, since \ttt{python} has some subtleties when dealing with large memory applications. The total memory allocated by a \ttt{python} process never decreases, even if the resources are released (of course the freed memory can be re--used by newly allocated resources without increasing the peak memory of the \ttt{python} process). Figure \ref{memoryfig} shows the peak memory usage during the lens plane generation and ray--tracing operations. We can see that, for the test case outlined in Table \ref{benchmarktable}, memory consumption stabilizes around 1.3\,GB per task for the lens planes and 1.8\,GB per task during the ray--tracing. These considerations make the \LT pipeline suitable for deployment on computer clusters with $\gtrsim$2\,GB memory per core, such as the one we used.    
 
 \begin{table*}
 \begin{tabular}{l|c|c|c}
@@ -184,7 +198,7 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 
 \begin{figure}
 \includegraphics[scale=0.3]{Figures/memory_usage.eps}
-\caption{Memory peak usage}
+\caption{Peak memory usage for the lens plane generation (black) and ray--tracing (red) for the test case indicated in Table \ref{benchmarktable}}
 \label{memoryfig}
 \end{figure}
 
@@ -192,12 +206,29 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 
 \section{Image analysis}
 
+\begin{equation}
+\langle\tilde{\kappa}(\pmb{\ell})\tilde{\kappa}(\pmb{\ell}^\prime)\rangle = (2\pi)^2\delta_D(\pmb{\ell}+\pmb{\ell}^\prime)P^{\kappa\kappa}(\ell)
+\end{equation}
+
+\begin{equation}
+\begin{matrix}
+E(\pmb{\ell}) = \frac{(\ell_x^2-\ell_y^2)\tilde{\gamma}^1(\pmb{\ell})+2\ell_x\ell_y\tilde{\gamma}^2(\pmb{\ell})}{\ell_x^2+\ell_y^2}  \\ \\
+B(\pmb{\ell}) = \frac{-2\ell_x\ell_y\tilde{\gamma}^1(\pmb{\ell})+(\ell_x^2-\ell_y^2)\tilde{\gamma}^2(\pmb{\ell})}{\ell_x^2+\ell_y^2}
+\end{matrix}
+\end{equation}
+
 \begin{figure*}
 \includegraphics[scale=0.3]{Figures/convergence_visualize.eps}
 \includegraphics[scale=0.3]{Figures/convergence_stats.eps}
 \caption{Statistics of a convergence map}
 \label{convergencefig}
 \end{figure*}
+
+\begin{figure}
+\includegraphics[scale=0.3]{Figures/eb_modes.eps}
+\caption{$E$ and $B$ modes}
+\label{ebmodefig}
+\end{figure}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

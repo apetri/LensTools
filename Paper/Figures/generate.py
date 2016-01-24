@@ -16,7 +16,12 @@ import daft
 ###############################################
 
 from lenstools import dataExtern
-from lenstools.image.convergence import ConvergenceMap
+
+from lenstools.simulations import PotentialPlane
+from lenstools.simulations.nicaea import Nicaea
+
+from lenstools import ConvergenceMap,ShearMap
+
 from lenstools.statistics.ensemble import Ensemble
 from lenstools.statistics.constraints import Emulator
 from lenstools.statistics.contours import ContourPlot
@@ -25,6 +30,40 @@ from lenstools.statistics.contours import ContourPlot
 parser = argparse.ArgumentParser()
 parser.add_argument("-t","--type",dest="type",default="png",help="format of the figure to save")
 parser.add_argument("fig",nargs="*")
+
+###########################################################################################################################################
+
+#Show a lens plane
+def density_plane(cmd_args):
+
+	#Set up plot
+	fig,ax = plt.subplots()
+
+	#Load the plane and compute the density
+	potential = PotentialPlane.load(os.path.join(dataExtern(),"plane.fits"))
+	density = potential.density()
+
+	#Show the result
+	density.visualize(colorbar=True,cbar_label=r"$\sigma$",fig=fig,ax=ax)
+
+	#Save
+	fig.tight_layout()
+	fig.savefig("lens_plane_density."+cmd_args.type)
+
+def potential_plane(cmd_args):
+
+	#Set up plot
+	fig,ax = plt.subplots()
+
+	#Load the plane and compute the density
+	potential = PotentialPlane.load(os.path.join(dataExtern(),"plane.fits"))
+
+	#Show the result
+	potential.visualize(colorbar=True,cbar_label=r"$\phi$",fig=fig,ax=ax)
+
+	#Save
+	fig.tight_layout()
+	fig.savefig("lens_plane_potential."+cmd_args.type)
 
 ###########################################################################################################################################
 
@@ -81,6 +120,13 @@ def memory_usage(cmd_args):
 		df_planes = parse_log(fp)
 
 	ax.plot(df_planes["timestamp_s"].values,df_planes["peak_memory(GB)"].values,label="Lens Planes",color="black")
+	ax.set_ylim(0,2.)
+
+	#Plot a black line after each plane is completed
+	planes_completed = df_planes.timestamp_s[df_planes.step.str.contains("Plane")].values
+	planes_completed_memory = df_planes["peak_memory(GB)"][df_planes.step.str.contains("Plane")].values
+	for n,t in enumerate(planes_completed):
+		_bline(ax,t,planes_completed_memory[n],color="black",linestyle="--")
 
 	#Plot memory usage for raytracing operations
 	with open("Logs/ray.err","r") as fp:
@@ -92,22 +138,30 @@ def memory_usage(cmd_args):
 	ax_top.spines["top"].set_color("red")
 	ax_top.tick_params(axis="x",colors="red")
 
+	#Plot a red line after each lens crossing
+	lens_crossed = df_ray.timestamp_s[df_ray.step.str.contains("Lens")].values
+	lens_crossed_memory = df_ray["peak_memory(GB)"][df_ray.step.str.contains("Lens")].values
+	for n,t in enumerate(lens_crossed):
+		_tline(ax_top,t,lens_crossed_memory[n],color="red",linestyle="--")
+
 	#Labels
 	ax.set_xlabel(r"${\rm Runtime(s)}$",fontsize=22)
 	ax.set_ylabel(r"${\rm Peak\,\, memory(GB)}$",fontsize=22)
-	ax.set_ylim(0,2.)
-
-	_vline(ax,10.,color="black",linestyle="--")
-	_vline(ax_top,100.,color="red",linestyle="--")
 
 	#Save
 	fig.savefig("memory_usage."+cmd_args.type)
 
 #Plot vertical line
-def _vline(ax,x,**kwargs):
+def _bline(ax,x,top,**kwargs):
 	down,up = ax.get_ylim()
 	xp = np.ones(100)*x
-	yp = np.linspace(down,up,100)
+	yp = np.linspace(down,top,100)
+	ax.plot(xp,yp,**kwargs)
+
+def _tline(ax,x,bottom,**kwargs):
+	down,up = ax.get_ylim()
+	xp = np.ones(100)*x
+	yp = np.linspace(bottom,up,100)
 	ax.plot(xp,yp,**kwargs)
 
 ###########################################################################################################################################
@@ -243,7 +297,7 @@ def convergence_visualize(cmd_args):
 	conv.smooth(1.0*u.arcmin,kind="gaussianFFT",inplace=True)
 
 	#Find the peak locations and height
-	sigma_peaks = np.linspace(-2.,10.,101)
+	sigma_peaks = np.linspace(-2.,11.,101)
 	height,positions = conv.locatePeaks(sigma_peaks,norm=True)
 
 	#Show the map and the peaks on it (left panel)
@@ -266,7 +320,7 @@ def convergence_stats(cmd_args):
 	conv.smooth(1.0*u.arcmin,kind="gaussianFFT",inplace=True)
 
 	#Find the peak locations and height
-	sigma = np.linspace(-2.,10.,101)
+	sigma = np.linspace(-2.,11.,101)
 
 	#Show the peak histogram and the PDF
 	conv.peakHistogram(sigma,norm=True,fig=fig,ax=ax)
@@ -281,6 +335,35 @@ def convergence_stats(cmd_args):
 
 	#Save
 	fig.savefig("convergence_stats."+cmd_args.type)
+
+
+def eb_modes(cmd_args):
+
+	#Plot setup
+	fig,ax = plt.subplots()
+
+	#Load in the shear map, compute E and B modes power spectrum
+	shear = ShearMap.load(os.path.join(dataExtern(),"WLshear_z2.00_0001r.fits"))
+	l_edges = np.linspace(200.,50000.,50)
+	l,ee,bb,eb = shear.decompose(l_edges)
+
+	#Plot the power spectra
+	ax.plot(l,l*(l+1)*ee/(2.*np.pi),label=r"$P^{EE}$",color="red")
+	ax.plot(l,l*(l+1)*bb/(2.*np.pi),label=r"$P^{BB}$",color="blue")
+
+	#Plot the prediction by NICAEA
+	cosmo = Nicaea(Om0=0.26,Ode0=0.74,w0=-1,sigma8=0.8)
+	ax.plot(l,l*(l+1)*cosmo.convergencePowerSpectrum(l,z=2.0)/(2.*np.pi),label=r"$P^{\kappa\kappa}{\rm (NICAEA)}$",linestyle="--",color="red")
+
+	#Labels
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$\ell$",fontsize=22)
+	ax.set_ylabel(r"$\ell(\ell+1)P_\ell/2\pi$",fontsize=22)
+	ax.legend(loc="upper left")
+
+	#Save
+	fig.savefig("eb_modes."+cmd_args.type)
 
 
 ###########################################################################################################################################
@@ -334,12 +417,15 @@ def parameter_sampling(cmd_args,p_value=0.684):
 
 #Method dictionary
 method = dict()
-method["1"] = flow
-method["2"] = inheritance
-method["3"] = memory_usage
-method["4"] = convergence_visualize
-method["4b"] = convergence_stats
-method["5"] = parameter_sampling
+method["1"] = density_plane
+method["1b"] = potential_plane
+method["2"] = flow
+method["3"] = inheritance
+method["4"] = memory_usage
+method["5"] = convergence_visualize
+method["5b"] = convergence_stats
+method["6"] = eb_modes
+method["7"] = parameter_sampling
 
 #Main
 def main():
