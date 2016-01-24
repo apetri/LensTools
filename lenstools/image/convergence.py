@@ -661,7 +661,7 @@ class Spin0(object):
 		#Adjust the labels
 		if norm:
 			self.ax.set_xlabel(r"$\sigma_{\kappa}$",fontsize=22)
-			self.ax.set_ylabel(r"$N_{\rm pk}(\sigma_\kappa)$",fontsize=22)
+			self.ax.set_ylabel(r"$PDF(\sigma_\kappa)$",fontsize=22)
 		else:
 			s = self.data.std()
 			ax_top = self.ax.twiny()
