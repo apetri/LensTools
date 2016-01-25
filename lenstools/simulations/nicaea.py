@@ -157,7 +157,7 @@ class NicaeaSettings(dict):
 		super(NicaeaSettings,self).__init__()
 		
 		#Default settings
-		self["snonlinear"]="smith03"
+		self["snonlinear"]="smith03_revised"
 		self["stransfer"]="eisenhu"
 		self["sgrowth"]="growth_de"
 		self["sde_param"]="linder"
