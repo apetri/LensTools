@@ -347,13 +347,11 @@ def eb_modes(cmd_args):
 	l_edges = np.linspace(200.,50000.,50)
 	l,ee,bb,eb = shear.decompose(l_edges)
 
-	#Plot the power spectra
+	#Plot the power spectra and prediction from NICAEA
 	ax.plot(l,l*(l+1)*ee/(2.*np.pi),label=r"$P^{EE}$",color="red")
-	ax.plot(l,l*(l+1)*bb/(2.*np.pi),label=r"$P^{BB}$",color="blue")
-
-	#Plot the prediction by NICAEA
 	cosmo = Nicaea(Om0=0.26,Ode0=0.74,w0=-1,sigma8=0.8)
 	ax.plot(l,l*(l+1)*cosmo.convergencePowerSpectrum(l,z=2.0)/(2.*np.pi),label=r"$P^{\kappa\kappa}{\rm (NICAEA)}$",linestyle="--",color="red")
+	ax.plot(l,l*(l+1)*bb/(2.*np.pi),label=r"$P^{BB}$",color="blue")
 
 	#Labels
 	ax.set_xscale("log")
