@@ -206,12 +206,20 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 
 \section{Image analysis}
 %
-
+In this section we describe some useful routines that \LT provides for analyzing simulated convergence and shear fields. The \ttt{ConvergenceMap} and \ttt{ShearMap} classes implement a comprehensive amount of frequently operations that can be performed on two dimensional $\kappa,\pmb{\gamma}$ images. Both classes allow flexible input/output formats from files (the FITS format \citep{cfitsio} is a popular choice, but not the only one available; user custom format can be easily dealt with in \LT). Efficient routines are available for smoothing the maps with Gaussian kernels (optimal smoothing complexity--wise can be performed via FFT), measuring the pixel PDF, counting the local maxima and measure their position and measuring topological descriptors such as Minkowski Functionals \citep{MatsubaraMink}. An example of such operations is shown in Figure \ref{convergencefig}.   
+\begin{figure*}
+\includegraphics[scale=0.3]{Figures/convergence_visualize.eps}
+\includegraphics[scale=0.3]{Figures/convergence_stats.eps}
+\caption{One of the convergence maps produced with the \LT shear simulation pipeline. The map has been generated assuming a uniform background source distribution at $z_s=2$ and has an angular size of $3.5^\circ$ and a resolution of 2048 pixels per side, which correspond to a pixel resolution of $0.1^\prime$. The black crosses in the left panel identify local maxima (\textit{peaks}) in the $\kappa$ field with a significance of at least 2$\sigma$. The right panel shows the PDF of the $\kappa$ field (red) and its peak histogram (black).}
+\label{convergencefig}
+\end{figure*}
+%
+In addition to real space statistics, such as the ones outlined before, \LT provides access to quadratic Fourier statistics such as power spectra. The convergence power spectrum $P^{\kappa\kappa}(\ell)$ is defined as  
 \begin{equation}
 \langle\tilde{\kappa}(\pmb{\ell})\tilde{\kappa}(\pmb{\ell}^\prime)\rangle = (2\pi)^2\delta_D(\pmb{\ell}+\pmb{\ell}^\prime)P^{\kappa\kappa}(\ell)
 \end{equation}
 %
-In term of the $E$ and $B$ modes defined as
+The shear field can be decomposed into its $E$ and $B$ components according to 
 
 \begin{equation}
 \label{ebmodeeqs}
@@ -221,14 +229,7 @@ B(\pmb{\ell}) = \frac{-2\ell_x\ell_y\tilde{\gamma}^1(\pmb{\ell})+(\ell_x^2-\ell_
 \end{matrix}
 \end{equation}
 %
-we have $E=O(\phi)$ and $B=O(\phi^2)$. The $E$--mode is the convergence $\kappa$, hence $P^{EE}=P^{\kappa\kappa}$.  
-
-\begin{figure*}
-\includegraphics[scale=0.3]{Figures/convergence_visualize.eps}
-\includegraphics[scale=0.3]{Figures/convergence_stats.eps}
-\caption{One of the convergence maps produced with the \LT shear simulation pipeline. The map has been generated assuming a uniform background source distribution at $z_s=2$ and has an angular size of $3.5^\circ$ and a resolution of 2048 pixels per side, which correspond to a pixel resolution of $0.1^\prime$. The black crosses in the left panel identify local maxima (\textit{peaks}) in the $\kappa$ field with a significance of at least 2$\sigma$. The right panel shows the PDF of the $\kappa$ field (red) and its peak histogram (black).}
-\label{convergencefig}
-\end{figure*}
+Because of the nature of the density perturbations that cause background source lensing, the $E$ component dominates, because $E=O(\phi)$ and $B=O(\phi^2)$. The shear $E$--mode is the convergence $\kappa$, hence $P^{EE}=P^{\kappa\kappa}$. Figure \ref{ebmodefig} shows the shear $E$ and $B$ modes power spectra measured from one realization of the shear field.   
 
 \begin{figure}
 \includegraphics[scale=0.3]{Figures/eb_modes.eps}
@@ -260,13 +261,19 @@ we have $E=O(\phi)$ and $B=O(\phi^2)$. The $E$--mode is the convergence $\kappa$
 
 \section*{Acknowledgements}
 
+\bibliography{ref}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%% APPENDIX: CODE SNIPPETS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section*{Appendix: code snippets}
 
 \subsection{Pipeline directory tree}
 
+\subsection{Parameter sampling}
 
-\bibliography{ref}
+\begin{widetext}
+\inputminted[linenos]{python}{Snippets/sampling.py}
+\end{widetext}
+
 \label{lastpage}
 \end{document}
