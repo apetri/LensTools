@@ -328,6 +328,39 @@ class ShearCatalog(Catalog):
 
 	########################################################################################
 
+	@classmethod
+	def readall(cls,shear_files,position_files,**kwargs):
+
+		"""
+		Read in a sequence of files and merge them in a complete shear catalog
+
+		:param shear_files: list of files with the shear information
+		:type shear_files: list.
+
+		:param position_files: list of files with the position and redshift information (one for each of the shear files)
+		:type position_files: list.
+
+		:param kwargs: keyword arguments are passed to ShearCatalog.read
+		:type kwargs: dict.
+
+		:rtype: :py:class:`ShearCatalog`
+
+		"""
+
+		#Safety check
+		if not (len(shear_files)==len(position_files)):
+			raise ValueError("There must be a position file for each shear file and vice-versa!")
+
+		#Cycle over each position file and hstack them with the shear files
+		full_catalog = list()
+		for n,pfile in enumerate(position_files):
+			full_catalog.append(tbl.hstack((cls.read(pfile,**kwargs),cls.read(shear_files[n],**kwargs))))
+
+		#Return the full catalog
+		return tbl.vstack(full_catalog)
+
+	########################################################################################
+
 	def write(self,filename,**kwargs):
 
 		self.meta["NGAL"] = len(self)
