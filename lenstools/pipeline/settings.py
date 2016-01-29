@@ -263,6 +263,7 @@ class MapSettings(object):
 		self.mix_cut_points = [0]
 		self.mix_normals = [0]
 		self.lens_map_realizations = 4
+		self.first_realization = 1
 
 	###############################################################################################################################################
 
@@ -331,6 +332,11 @@ class MapSettings(object):
 		self.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
 		self.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ] 
 
+		try:
+			self.first_realization = options.getint(section,"first_realization")
+		except NoOptionError:
+			self.first_realization = 1
+
 
 
 ###########################################################
@@ -375,6 +381,11 @@ class TelescopicMapSettings(MapSettings):
 		self.mix_cut_points = ast.literal_eval(options.get(section,"mix_cut_points"))
 		self.mix_normals = ast.literal_eval(options.get(section,"mix_normals"))
 
+		try:
+			self.first_realization = options.getint(section,"first_realization")
+		except NoOptionError:
+			self.first_realization = 1
+
 
 
 #####################################################
@@ -415,6 +426,7 @@ class CatalogSettings(object):
 		self.mix_cut_points = [0]
 		self.mix_normals = [0]
 		self.lens_catalog_realizations = 1
+		self.first_realization = 1
 
 		#Allow for kwargs override
 		for key in kwargs.keys():
@@ -474,6 +486,11 @@ class CatalogSettings(object):
 		
 		settings.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
 		settings.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ]
+
+		try:
+			settings.first_realization = options.getint(section,"first_realization")
+		except NoOptionError:
+			settings.first_realization = 1
 
 		#Return to user
 		return settings

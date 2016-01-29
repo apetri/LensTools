@@ -156,16 +156,21 @@ def singleRedshift(pool,batch,settings,id):
 
 
 	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
+	try:
+		realization_offset = settings.first_realization - 1
+	except AttributeError:
+		realization_offset = 0
+
 	if pool is None:
-		first_map_realization = 0
-		last_map_realization = map_realizations
+		first_map_realization = 0 + realization_offset
+		last_map_realization = map_realizations + realization_offset
 		realizations_per_task = map_realizations
 		logdriver.debug("Generating lensing map realizations from {0} to {1}".format(first_map_realization+1,last_map_realization))
 	else:
 		assert map_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, map_realizations must be a multiple of the number of MPI tasks!"
 		realizations_per_task = map_realizations//(pool.size+1)
-		first_map_realization = realizations_per_task*pool.rank
-		last_map_realization = realizations_per_task*(pool.rank+1)
+		first_map_realization = realizations_per_task*pool.rank + realization_offset
+		last_map_realization = realizations_per_task*(pool.rank+1) + realization_offset
 		logdriver.debug("Task {0} will generate lensing map realizations from {1} to {2}".format(pool.rank,first_map_realization+1,last_map_realization))
 
 	#Planes will be read from this path
@@ -466,16 +471,21 @@ def simulatedCatalog(pool,batch,settings,id):
 		pool.comm.Barrier() 
 
 	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
+	try:
+		realization_offset = settings.first_realization - 1
+	except AttributeError:
+		realization_offset = 0
+
 	if pool is None:
-		first_realization = 0
-		last_realization = catalog_realizations
+		first_realization = 0 + realization_offset
+		last_realization = catalog_realizations + realization_offset
 		realizations_per_task = catalog_realizations
 		logdriver.debug("Generating lensing catalog realizations from {0} to {1}".format(first_realization+1,last_realization))
 	else:
 		assert catalog_realizations%(pool.size+1)==0,"Perfect load-balancing enforced, catalog_realizations must be a multiple of the number of MPI tasks!"
 		realizations_per_task = catalog_realizations//(pool.size+1)
-		first_realization = realizations_per_task*pool.rank
-		last_realization = realizations_per_task*(pool.rank+1)
+		first_realization = realizations_per_task*pool.rank + realization_offset
+		last_realization = realizations_per_task*(pool.rank+1) + realization_offset
 		logdriver.debug("Task {0} will generate lensing catalog realizations from {1} to {2}".format(pool.rank,first_realization+1,last_realization))
 
 
