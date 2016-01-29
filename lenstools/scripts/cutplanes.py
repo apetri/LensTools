@@ -5,7 +5,6 @@
 from __future__ import division
 
 import sys,os
-import cPickle
 import json
 
 from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemoryAll
@@ -82,10 +81,8 @@ def main(pool,batch,settings,id,override):
 	if settings.override_with_local:
 		
 		local_settings_file = os.path.join(plane_batch.home,"settings.p")
-		
-		with open(local_settings_file,"r") as settingsfile:
-			settings = cPickle.load(settingsfile)
-			assert isinstance(settings,PlaneSettings)
+		settings = PlaneSettings.read(local_settings_file)
+		assert isinstance(settings,PlaneSettings)
 
 		if (pool is None) or (pool.is_master()):
 			logdriver.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))

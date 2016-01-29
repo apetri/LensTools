@@ -5,7 +5,6 @@ from __future__ import division,with_statement
 
 import sys,os
 import time
-import cPickle
 import gc
 
 from operator import add
@@ -93,10 +92,8 @@ def singleRedshift(pool,batch,settings,id):
 	if settings.override_with_local:
 
 		local_settings_file = os.path.join(map_batch.home_subdir,"settings.p")
-
-		with open(local_settings_file,"r") as settingsfile:
-			settings = cPickle.load(settingsfile)
-			assert isinstance(settings,MapSettings)
+		settings = MapSettings.read(local_settings_file)
+		assert isinstance(settings,MapSettings)
 
 		if (pool is None) or (pool.is_master()):
 			logdriver.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
@@ -372,10 +369,8 @@ def simulatedCatalog(pool,batch,settings,id):
 	if settings.override_with_local:
 
 		local_settings_file = os.path.join(catalog.home_subdir,"settings.p")
-
-		with open(local_settings_file,"r") as settingsfile:
-			settings = cPickle.load(settingsfile)
-			assert isinstance(settings,CatalogSettings)
+		settings = CatalogSettings.read(local_settings_file)
+		assert isinstance(settings,CatalogSettings)
 
 		if (pool is None) or (pool.is_master()):
 			logdriver.warning("Overriding settings with the previously pickled ones at {0}".format(local_settings_file))
