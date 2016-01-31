@@ -27,7 +27,7 @@ from ..simulations.camb import CAMBSettings
 ############Parse cosmology from string##############
 #####################################################
 
-def string2cosmo(s):
+def string2cosmo(s,name2attr):
 
 	parmatch = re.compile(r"([a-zA-Z]+)([0-9.-]+)")
 
@@ -50,7 +50,7 @@ def string2cosmo(s):
 			if par=="h":
 				parameters_dict["H0"] = 100.0*float(val)
 			else: 
-				parameters_dict[configuration.name2attr[par]] = float(val)
+				parameters_dict[name2attr[par]] = float(val)
 		
 		except (ValueError,KeyError):
 			return None
@@ -98,7 +98,7 @@ class InfoDict(object):
 		pass
 
 	def update(self):
-		dictionary_file = os.path.join(self.batch.home_subdir,configuration.json_tree_file)
+		dictionary_file = os.path.join(self.batch.home_subdir,self.batch.environment.json_tree_file)
 		with self.batch.syshandler.open(dictionary_file,"w") as fp:
 			fp.write(json.dumps(self.dictionary))
 
@@ -330,7 +330,7 @@ class SimulationBatch(object):
 	##############################################################################################################################
 	@property
 	def infofile(self):
-		return os.path.join(self.home_subdir,configuration.json_tree_file)
+		return os.path.join(self.home_subdir,self.environment.json_tree_file)
 
 	@property
 	def info(self):
@@ -347,7 +347,7 @@ class SimulationBatch(object):
 			return self._info
 
 		#Load info from tree file if available
-		tree_file_path = os.path.join(self.home_subdir,configuration.json_tree_file)
+		tree_file_path = os.path.join(self.home_subdir,self.environment.json_tree_file)
 		if self.syshandler.exists(tree_file_path):
 			with self.syshandler.open(tree_file_path,"r") as fp:
 				self._info = json.loads(fp.read())
@@ -738,7 +738,7 @@ class SimulationBatch(object):
 			return None
 
 		#Parse the cosmological model from the directory name
-		cosmo_parsed = string2cosmo(cosmo_id)
+		cosmo_parsed = string2cosmo(cosmo_id,self.environment.name2attr)
 
 		#Return the SimulationModel instance
 		if cosmo_parsed is not None:
@@ -1465,7 +1465,7 @@ class SimulationModel(object):
 
 	@property
 	def infofile(self):
-		return os.path.join(self.environment.home,configuration.json_tree_file)
+		return os.path.join(self.environment.home,self.environment.json_tree_file)
 
 	def path(self,filename,where="storage_subdir"):
 
@@ -1508,8 +1508,8 @@ class SimulationModel(object):
 
 	@property
 	def cosmo_id(self):
-		base = "{0}{1:."+str(configuration.cosmo_id_digits)+"f}"
-		return "_".join([ base.format(p,getattr(self.cosmology,configuration.name2attr[p])) for p in self.parameters if (hasattr(self.cosmology,configuration.name2attr[p]) and getattr(self.cosmology,configuration.name2attr[p]) is not None)])
+		base = "{0}{1:."+str(self.environment.cosmo_id_digits)+"f}"
+		return "_".join([ base.format(p,getattr(self.cosmology,self.environment.name2attr[p])) for p in self.parameters if (hasattr(self.cosmology,self.environment.name2attr[p]) and getattr(self.cosmology,self.environment.name2attr[p]) is not None)])
 
 	@property
 	def info(self):
@@ -1560,7 +1560,7 @@ class SimulationModel(object):
 
 		representation_parameters = []
 		for p in self.parameters:
-			representation_parameters.append(("{0}={1:."+str(configuration.cosmo_id_digits)+"f}").format(p,getattr(self.cosmology,configuration.name2attr[p])))
+			representation_parameters.append(("{0}={1:."+str(self.environment.cosmo_id_digits)+"f}").format(p,getattr(self.cosmology,self.environment.name2attr[p])))
 
 		return "<"+ " , ".join(representation_parameters) + ">"
 

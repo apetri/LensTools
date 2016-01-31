@@ -2,6 +2,7 @@ import os
 import ast
 
 from ConfigParser import NoOptionError
+import json
 
 import numpy as np
 import astropy.units as u
@@ -48,7 +49,29 @@ class EnvironmentSettings(object):
 		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
 
 		#Fill in the appropriate fields and return to user
-		return cls(home=options.get(section,"home"),storage=options.get(section,"storage"))
+		settings = cls(home=options.get(section,"home"),storage=options.get(section,"storage"))
+		
+		try:
+			name2attr = options.get(section,"name2attr")
+			if type(name2attr)==dict:
+				settings.name2attr = name2attr
+			else:
+				settings.name2attr = json.loads(name2attr)
+		except NoOptionError:
+			settings.name2attr = {"Om":"Om0","Ol":"Ode0","w":"w0","wa":"wa","h":"h","Ob":"Ob0","si":"sigma8","ns":"ns"}
+
+		try:
+			settings.cosmo_id_digits = options.getint(section,"cosmo_id_digits")
+		except NoOptionError:
+			settings.cosmo_id_digits = 3
+
+		try:
+			settings.json_tree_file = options.get(section,"json_tree_file")
+		except NoOptionError:
+			settings.json_tree_file = ".tree.json"
+
+		#Return
+		return settings
 
 #################################################
 ###########NGenICSettings class##################

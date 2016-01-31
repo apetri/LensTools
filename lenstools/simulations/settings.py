@@ -114,7 +114,11 @@ class JSONParser(GenericParser):
 
 	def get(self,section,option):
 		if option in self._buffer[section]:
-			return str(self._buffer[section][option])
+			parsed = self._buffer[section][option]
+			if isinstance(parsed,dict):
+				return parsed
+			else:
+				return str(parsed)
 		else:
 			raise NoOptionError(section,option)
 
