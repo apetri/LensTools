@@ -23,6 +23,7 @@ def select_parser(filename,read=True):
 		options = config.ConfigParser()
 		if read:
 			options.read([filename])
+			options.filename = filename
 		
 		return options
 	
@@ -32,6 +33,7 @@ def select_parser(filename,read=True):
 		if read:
 			with open(filename,"r") as fp:
 				options._buffer = options.load(fp)
+				options.filename = filename
 		
 		return options
 
@@ -41,6 +43,7 @@ def select_parser(filename,read=True):
 		if read:
 			with open(filename,"r") as fp:
 				options._buffer = options.load(fp)
+				options.filename = filename
 		
 		return options
 
@@ -58,6 +61,20 @@ class LTSettings(object):
 	@abstractmethod
 	def __init__(self,*args,**kwargs):
 		pass
+
+	#Read
+	@classmethod
+	def read(cls,config_file,*args):
+		options = select_parser(config_file)
+		return cls.get(options,*args)
+
+	#Read from dictionary
+	@classmethod
+	def from_dict(cls,d):
+		options = DictParser()
+		options._buffer = d
+		options.filename = "buffer"
+		return cls.get(options)
 
 	#Convert into dictionary
 	def to_dict(self):
@@ -205,10 +222,13 @@ class JSONParser(GenericParser):
 		return float(self.get(section,option))
 
 	def getboolean(self,section,option):
-		parsed = self.get(section,option).lower()
-		if parsed=="true":
+		parsed = self.get(section,option)
+		
+		if type(parsed)==bool:
+			return parsed	
+		if parsed=="True":
 			return True
-		if parsed=="false":
+		if parsed=="False":
 			return False
 
 		raise ValueError("Cannot cast option {0} to boolean!".format(option))
@@ -220,5 +240,25 @@ class JSONParser(GenericParser):
 	@staticmethod
 	def loads(s):
 		return json.loads(s)
+
+
+#Parser from dictionary
+class DictParser(JSONParser):
+
+	def has_section(self,section):
+		return True
+
+	def get(self,section,option):
+		if option in self._buffer:
+			parsed = self._buffer[option]
+			if isinstance(parsed,dict):
+				return parsed
+			elif isinstance(parsed,list):
+				return ",".join([str(p) for p in parsed])
+			else:
+				return str(parsed)
+		else:
+			raise NoOptionError(section,option)
+
 
 ###############################################################################################################################################

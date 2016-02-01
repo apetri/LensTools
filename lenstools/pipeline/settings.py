@@ -39,14 +39,11 @@ class EnvironmentSettings(LTSettings):
 
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = select_parser(config_file)
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = "EnvironmentSettings"
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields and return to user
 		settings = cls(home=options.get(section,"home"),storage=options.get(section,"storage"))
@@ -153,14 +150,11 @@ class PlaneSettings(LTSettings):
 			setattr(self,key,kwargs[key])
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = select_parser(config_file)
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = "PlaneSettings"
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
@@ -290,14 +284,11 @@ class MapSettings(LTSettings):
 	###############################################################################################################################################
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = select_parser(config_file)
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = cls._section
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
@@ -455,14 +446,11 @@ class CatalogSettings(LTSettings):
 
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = select_parser(config_file)
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = "CatalogSettings"
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
@@ -555,13 +543,10 @@ class JobSettings(LTSettings):
 
 
 	@classmethod
-	def read(cls,config_file,section):
-
-		#Read the options from the ini file
-		options = select_parser(config_file)
+	def get(cls,options,section):
 
 		#Check that the config file has the appropriate section
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
