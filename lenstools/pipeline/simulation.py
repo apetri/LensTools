@@ -378,6 +378,7 @@ class SimulationBatch(object):
 								continue
 							map_set = collection.getMapSet(line.strip("\n"))
 							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name] = dict()
+							info_dict[model.cosmo_id][collection.geometry_id]["map_sets"][map_set.settings.directory_name]["settings"] = map_set.settings.to_dict()
 
 				except IOError:
 					pass
@@ -393,6 +394,7 @@ class SimulationBatch(object):
 							
 							catalog = collection.getCatalog(line.strip("\n"))
 							info_dict[model.cosmo_id][collection.geometry_id]["catalogs"][catalog.settings.directory_name] = dict() 
+							info_dict[model.cosmo_id][collection.geometry_id]["catalogs"][catalog.settings.directory_name]["settings"] = catalog.settings.to_dict()
 
 				except IOError:
 					pass
@@ -401,6 +403,13 @@ class SimulationBatch(object):
 				for r in collection.realizations:
 					
 					info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index] = dict()
+
+					try:
+						info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index]["ngenic_settings"] = r.ngenic_settings.to_dict()
+						info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index]["gadget_settings"] = r.gadget_settings.to_dict()
+					except AttributeError:
+						pass
+					
 					info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index]["plane_sets"] = dict()
 
 					#Check if there are any plane sets present
@@ -414,6 +423,7 @@ class SimulationBatch(object):
 								
 								plane_set = r.getPlaneSet(line.strip("\n"))
 								info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index]["plane_sets"][plane_set.settings.directory_name] = dict()
+								info_dict[model.cosmo_id][collection.geometry_id]["nbody"][r.ic_index]["plane_sets"][plane_set.settings.directory_name]["settings"] = plane_set.settings.to_dict()
 
 					except IOError:
 						pass

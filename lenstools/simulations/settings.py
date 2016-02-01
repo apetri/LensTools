@@ -53,6 +53,8 @@ def select_parser(filename,read=True):
 
 class LTSettings(object):
 
+	__metaclass__ = ABCMeta
+
 	@abstractmethod
 	def __init__(self,*args,**kwargs):
 		pass
