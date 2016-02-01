@@ -6,10 +6,10 @@ import astropy.units as u
 from astropy.cosmology import FLRW
 
 #Option parsing method
-from .settings import select_parser
+from .settings import select_parser,LTSettings
 
 
-class CAMBSettings(object):
+class CAMBSettings(LTSettings):
 
 	def __init__(self,**kwargs):
 

@@ -14,14 +14,14 @@ from astropy.units import Mbyte,kpc,Mpc,Msun,cm,km,g,s,hour,day,quantity,def_uni
 from astropy.cosmology import w0waCDM,LambdaCDM
 
 #Option parsing method
-from .settings import select_parser
+from .settings import select_parser,LTSettings
 
 
 ############################################################
 ################Gadget2Settings class#######################
 ############################################################
 
-class Gadget2Settings(object):
+class Gadget2Settings(LTSettings):
 
 	"""
 	Class handler of the tunable settings in a Gadget2 run

@@ -16,30 +16,77 @@ import astropy.units as u
 #Select parser from file extension#
 ###################################
 
-def select_parser(filename):
+def select_parser(filename,read=True):
 
 	if filename.endswith(".ini"):
 
 		options = config.ConfigParser()
-		options.read([filename])
+		if read:
+			options.read([filename])
+		
 		return options
 	
 	elif filename.endswith(".pkl") or filename.endswith(".p"):
 		
 		options = PickleParser()
-		with open(filename,"r") as fp:
-			options._buffer = pkl.loads(fp.read())
+		if read:
+			with open(filename,"r") as fp:
+				options._buffer = options.load(fp)
+		
 		return options
 
 	elif filename.endswith(".json"):
 
 		options = JSONParser()
-		with open(filename,"r") as fp:
-			options._buffer = json.loads(fp.read())
+		if read:
+			with open(filename,"r") as fp:
+				options._buffer = options.load(fp)
+		
 		return options
 
 	else:
 		raise NotImplementedError("Config file type not supported!")
+
+############################
+#Generic LensTools settings#
+############################
+
+class LTSettings(object):
+
+	@abstractmethod
+	def __init__(self,*args,**kwargs):
+		pass
+
+	#Convert into dictionary
+	def to_dict(self):
+
+		#Create object dictionary
+		obj_dict = dict()
+
+		#Fill in the values and make JSON serialization possible
+		self_dict = self.__dict__
+		for key in self_dict:
+
+			if isinstance(self_dict[key],u.core.UnitBase):
+				obj_dict[key] = self_dict[key].to_string()
+			
+			elif type(self_dict[key])==u.quantity.Quantity:
+				
+				numeric_value = self_dict[key].value
+				if isinstance(numeric_value,np.ndarray):
+					obj_dict[key] = list(numeric_value)
+				else:
+					obj_dict[key] = numeric_value
+			
+			elif type(self_dict[key])==np.ndarray:
+				obj_dict[key] = list(self_dict[key])
+			
+			else:
+				obj_dict[key] = self_dict[key]
+
+		#Return
+		return obj_dict
+
 
 #########################
 #Types of option parsers#
@@ -69,6 +116,25 @@ class GenericParser(object):
 	@abstractmethod
 	def getboolean(self,section,option):
 		pass
+
+	@abstractmethod
+	def dumps(obj):
+		pass
+
+	@abstractmethod
+	def loads(s):
+		pass
+
+	################################################
+
+	@classmethod
+	def dump(obj,fp):
+		fp.write(cls.dumps(obj))
+
+	@classmethod
+	def load(cls,fp):
+		return cls.loads(fp.read())
+
 
 #Pickle parser
 class PickleParser(GenericParser):
@@ -105,6 +171,14 @@ class PickleParser(GenericParser):
 	def getboolean(self,section,option):
 		return self.get(section,option)
 
+	@staticmethod
+	def dumps(obj):
+		return pkl.dumps(obj)
+
+	@staticmethod
+	def loads(s):
+		return pkl.loads(s)
+
 
 #JSON parser
 class JSONParser(GenericParser):
@@ -137,5 +211,12 @@ class JSONParser(GenericParser):
 
 		raise ValueError("Cannot cast option {0} to boolean!".format(option))
 
+	@staticmethod
+	def dumps(obj):
+		return json.dumps(obj.to_dict())
+
+	@staticmethod
+	def loads(s):
+		return json.loads(s)
 
 ###############################################################################################################################################

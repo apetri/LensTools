@@ -7,14 +7,14 @@ import json
 import numpy as np
 import astropy.units as u
 
-from ..simulations.settings import select_parser
+from ..simulations.settings import select_parser,LTSettings
 
 
 ############################################################
 #############EnvironmentSettings class######################
 ############################################################
 
-class EnvironmentSettings(object):
+class EnvironmentSettings(LTSettings):
 
 	"""
 	This class handles the system specific environment settings, such as directory paths, modules, etc...
@@ -77,7 +77,7 @@ class EnvironmentSettings(object):
 ###########NGenICSettings class##################
 #################################################
 
-class NGenICSettings(object):
+class NGenICSettings(LTSettings):
 
 	"""
 	Class handler of NGenIC settings
@@ -116,7 +116,7 @@ class NGenICSettings(object):
 ###########PlaneSettings class###################
 #################################################
 
-class PlaneSettings(object):
+class PlaneSettings(LTSettings):
 
 	"""
 	Class handler of plane generation settings
@@ -228,7 +228,7 @@ class PlaneSettings(object):
 ###########MapSettings class#####################
 #################################################
 
-class MapSettings(object):
+class MapSettings(LTSettings):
 
 	"""
 	Class handler of map generation settings
@@ -413,7 +413,7 @@ class TelescopicMapSettings(MapSettings):
 ###########CatalogSettings class#####################
 #####################################################
 
-class CatalogSettings(object):
+class CatalogSettings(LTSettings):
 
 	"""
 	Class handler of simulated catalog generation settings
@@ -520,7 +520,7 @@ class CatalogSettings(object):
 ###############JobSettings class##################
 ##################################################
 
-class JobSettings(object):
+class JobSettings(LTSettings):
 
 	"""
 	Class handler of batch job submission settings
