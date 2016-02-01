@@ -13,6 +13,9 @@ import numpy as np
 from astropy.units import Mbyte,kpc,Mpc,Msun,cm,km,g,s,hour,day,quantity,def_unit
 from astropy.cosmology import w0waCDM,LambdaCDM
 
+#Option parsing method
+from .settings import select_parser
+
 
 ############################################################
 ################Gadget2Settings class#######################

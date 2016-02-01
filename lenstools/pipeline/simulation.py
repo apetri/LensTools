@@ -259,7 +259,7 @@ class SimulationBatch(object):
 
 	def __new__(cls,environment,*args,**kwargs):
 
-		if environment.home in cls._in_memory.keys():
+		if environment.home in cls._in_memory:
 			return cls._in_memory[environment.home]
 		else:
 			return object.__new__(cls)

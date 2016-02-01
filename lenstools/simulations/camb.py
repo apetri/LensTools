@@ -5,6 +5,10 @@ import numpy as np
 import astropy.units as u
 from astropy.cosmology import FLRW
 
+#Option parsing method
+from .settings import select_parser
+
+
 class CAMBSettings(object):
 
 	def __init__(self,**kwargs):
