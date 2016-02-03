@@ -28,40 +28,18 @@ class LensToolsCosmology(Nicaea):
 class Configuration(object):
 
 	def __init__(self):
+
+		###################
+		#Default cosmology#
+		###################
 		
 		self.CosmoDefault = LensToolsCosmology() 
-
-		##############################################
-		#Parametere name to attribute name dictionary#
-		##############################################
-
-		self.name2attr = dict()
-		self.name2attr["Om"] = "Om0"
-		self.name2attr["Ol"] = "Ode0"
-		self.name2attr["w"] = "w0"
-		self.name2attr["wa"] = "wa"
-		self.name2attr["h"] = "h"
-		self.name2attr["Ob"] = "Ob0"
-		self.name2attr["si"] = "sigma8"
-		self.name2attr["ns"] = "ns"
-
-		############################################
-		#Number of digits of precision for cosmo_id#
-		############################################
-
-		self.cosmo_id_digits = 3
 
 		########################
 		#Default system handler#
 		########################
 
 		self.syshandler = LocalSystem()
-
-		###################################
-		#Default simulation tree json file#
-		###################################
-
-		self.json_tree_file = ".tree.json"
 
 		##########################
 		#Default snapshot handler#

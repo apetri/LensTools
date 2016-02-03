@@ -48,6 +48,7 @@ class Catalog(tbl.Table):
 
 		#Set spatial information
 		self.setSpatialInfo()
+		self.setRedshiftInfo()
 
 	########################################################################################
 
@@ -85,6 +86,8 @@ class Catalog(tbl.Table):
 		self._field_y = field_y
 		self._position_unit = unit
 
+	def setRedshiftInfo(self,field_z="z"):
+		pass
 
 	########################################################################################
 
@@ -295,6 +298,39 @@ class ShearCatalog(Catalog):
 
 	"""
 
+	def setRedshiftInfo(self,field_z="z"):
+		self._field_z = field_z
+
+	########################################################################################
+
+	#Shape noise generation
+	def shapeNoise(self,seed=None):
+
+		"""
+		Generate a catalog with randomly drawn shape noise for each galaxy
+
+		:param seed: random seed for noise generation
+		:type seed: int.
+
+		:returns: shape noise catalog
+		:rtype: :py:class:`ShearCatalog` 
+
+		"""
+
+		#Check that redshift is available
+		if self._field_z not in self.columns:
+			raise AttributeError("No redshift field '{0}' present in catalog!".format(self._field_z))
+
+		#Generate noise
+		if seed is not None:
+			np.random.seed(seed)
+
+		g1 = np.random.normal(size=len(self))*(0.15 + 0.035*self.columns[self._field_z])
+		g2 = np.random.normal(size=len(self))*(0.15 + 0.035*self.columns[self._field_z])
+
+		#Return to user
+		return self.__class__((g1,g2),names=["shear1","shear2"])
+
 	########################################################################################
 
 	def toMap(self,map_size,npixel,smooth,**kwargs):
@@ -325,6 +361,39 @@ class ShearCatalog(Catalog):
 
 		#Convert into map
 		return ShearMap(np.array([s1,s2]),map_size)
+
+	########################################################################################
+
+	@classmethod
+	def readall(cls,shear_files,position_files,**kwargs):
+
+		"""
+		Read in a sequence of files and merge them in a complete shear catalog
+
+		:param shear_files: list of files with the shear information
+		:type shear_files: list.
+
+		:param position_files: list of files with the position and redshift information (one for each of the shear files)
+		:type position_files: list.
+
+		:param kwargs: keyword arguments are passed to ShearCatalog.read
+		:type kwargs: dict.
+
+		:rtype: :py:class:`ShearCatalog`
+
+		"""
+
+		#Safety check
+		if not (len(shear_files)==len(position_files)):
+			raise ValueError("There must be a position file for each shear file and vice-versa!")
+
+		#Cycle over each position file and hstack them with the shear files
+		full_catalog = list()
+		for n,pfile in enumerate(position_files):
+			full_catalog.append(tbl.hstack((cls.read(pfile,**kwargs),cls.read(shear_files[n],**kwargs))))
+
+		#Return the full catalog
+		return tbl.vstack(full_catalog)
 
 	########################################################################################
 

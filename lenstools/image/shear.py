@@ -444,22 +444,13 @@ class Spin2(Spin1):
 
 
 
-	def decompose(self,l_edges,keep_fourier=False):
+	def fourierEB(self):
 
 		"""
-		Decomposes the shear map into its E and B modes components and returns the respective power spectral densities at the specified multipole moments
+		Computes E and B modes of the shear map in Fourier space
 
-		:param l_edges: Multipole bin edges
-		:type l_edges: array
-
-		:param keep_fourier: If set to True, holds the Fourier transforms of the E and B mode maps into the E and B attributes of the ShearMap instance
-		:type keep_fourier: bool. 
-
-		:returns: :returns: tuple -- (l -- array,P_EE,P_BB,P_EB -- arrays) = (multipole moments, EE,BB power spectra and EB cross power)
-
-		>>> test_map = ShearMap.load("shear.fit",format=load_fits_default_shear)
-		>>> l_edges = np.arange(300.0,5000.0,200.0)
-		>>> l,EE,BB,EB = test_map.decompose(l_edges)
+		:returns: (E,B) map
+		:rtype: tuple.
 
 		"""
 
@@ -492,18 +483,41 @@ class Spin2(Spin1):
 		assert ft_E.shape == ft_B.shape
 		assert ft_E.shape == ft_data1.shape
 
+		#Return 
+		return ft_E,ft_B
+
+
+	def eb_power_spectrum(self,l_edges):
+
+		"""
+		Decomposes the shear map into its E and B modes components and returns the respective power spectral densities at the specified multipole moments
+
+		:param l_edges: Multipole bin edges
+		:type l_edges: array
+
+		:returns: (l -- array,P_EE,P_BB,P_EB -- arrays) = (multipole moments, EE,BB power spectra and EB cross power)
+		:rtype: tuple.
+
+		>>> test_map = ShearMap.load("shear.fit",format=load_fits_default_shear)
+		>>> l_edges = np.arange(300.0,5000.0,200.0)
+		>>> l,EE,BB,EB = test_map.eb_power_spectrum(l_edges)
+
+		"""
+
+		#Compute the E,B modes in Fourier space
+		ft_E,ft_B = self.fourierEB()
+
 		#Compute and return power spectra
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
-		P_EE = _topology.rfft2_azimuthal(ft_E,ft_E,self.side_angle.to(deg).value,l_edges)
-		P_BB = _topology.rfft2_azimuthal(ft_B,ft_B,self.side_angle.to(deg).value,l_edges)
-		P_EB = _topology.rfft2_azimuthal(ft_E,ft_B,self.side_angle.to(deg).value,l_edges)
+		P_ee = _topology.rfft2_azimuthal(ft_E,ft_E,self.side_angle.to(deg).value,l_edges)
+		P_bb = _topology.rfft2_azimuthal(ft_B,ft_B,self.side_angle.to(deg).value,l_edges)
+		P_eb = _topology.rfft2_azimuthal(ft_E,ft_B,self.side_angle.to(deg).value,l_edges)
 
-		if keep_fourier:
-			self.fourier_E = ft_E
-			self.fourier_B = ft_B
+		#Return to user
+		return l,P_ee,P_bb,P_eb
 
-		return l,P_EE,P_BB,P_EB
-
+	def decompose(self,l_edges):
+		return eb_power_spectrum(self,l_edges)
 
 	def visualizeComponents(self,fig,ax,components="EE,BB,EB",region=(200,9000,-9000,9000)):
 
@@ -538,10 +552,8 @@ class Spin2(Spin1):
 		for component in component_list:
 			assert component=="EE" or component=="BB" or component=="EB", "Each of the components should be one of {EE,BB,EB}"
 
-		#Check if the Fourier transforms are computed, if not compute them
-		if not hasattr(self,"fourier_E"):
-			l_edges = np.array([200.0,400.0])
-			self.decompose(l_edges,keep_fourier=True)
+		#Compute EB modes in Fourier space
+		ft_E,ft_B = self.fourierEB()
 
 		#Instantiate figure
 		if (fig is None) or (ax is None):
@@ -565,14 +577,14 @@ class Spin2(Spin1):
 
 			#Select the numpy array of the appropriate component
 			if component=="EE":
-				mode = np.abs(self.fourier_E)**2 
+				mode = np.abs(ft_E)**2 
 			elif component=="BB":
-				mode = np.abs(self.fourier_B)**2
+				mode = np.abs(ft_B)**2
 			elif component=="EB":
-				mode = np.abs((self.fourier_E * self.fourier_B.conjugate()).real)
+				mode = np.abs((ft_E * ft_B.conjugate()).real)
 
 			#Roll it to get the frequencies in the right order
-			mode = np.roll(mode,mode.shape[0]//2,axis=0)  * (self.side_angle.to(rad).value)**2/(self.fourier_E.shape[0]**4)
+			mode = np.roll(mode,mode.shape[0]//2,axis=0)  * (self.side_angle.to(rad).value)**2/(ft_E.shape[0]**4)
 
 			#Plot the components with the right frequencies on the axes
 			plot_cbar = plot_ax.imshow(mode,origin="lower",interpolation="nearest",norm=LogNorm(),extent=[0,lpix*mode.shape[1],-lpix*mode.shape[0]/2,lpix*mode.shape[0]/2])
@@ -622,13 +634,11 @@ class ShearMap(Spin2):
 
 		"""
 
-		#Compute Fourier transforms if it wasn't done before
-		if not hasattr(self,"fourier_E"):
-			l_edges = np.array([200.0,400.0])
-			l,EE,BB,EB = self.decompose(l_edges,keep_fourier=True)
+		#Compute EB modes in fourier space
+		ft_E,ft_B = self.fourierEB()
 
 		#Invert the Fourier transform to go back to real space
-		conv = fftengine.irfft2(self.fourier_E)
+		conv = fftengine.irfft2(ft_E)
 
 		#Return the ConvergenceMap instance
 		return ConvergenceMap(conv,self.side_angle)

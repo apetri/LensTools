@@ -1,18 +1,20 @@
 import os
 import ast
 
-from distutils import config
 from ConfigParser import NoOptionError
+import json
 
 import numpy as np
 import astropy.units as u
+
+from ..simulations.settings import select_parser,LTSettings
 
 
 ############################################################
 #############EnvironmentSettings class######################
 ############################################################
 
-class EnvironmentSettings(object):
+class EnvironmentSettings(LTSettings):
 
 	"""
 	This class handles the system specific environment settings, such as directory paths, modules, etc...
@@ -37,24 +39,42 @@ class EnvironmentSettings(object):
 
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = config.ConfigParser()
-		options.read([config_file])
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = "EnvironmentSettings"
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields and return to user
-		return cls(home=options.get(section,"home"),storage=options.get(section,"storage"))
+		settings = cls(home=options.get(section,"home"),storage=options.get(section,"storage"))
+		
+		try:
+			name2attr = options.get(section,"name2attr")
+			if type(name2attr)==dict:
+				settings.name2attr = name2attr
+			else:
+				settings.name2attr = json.loads(name2attr)
+		except NoOptionError:
+			settings.name2attr = {"Om":"Om0","Ol":"Ode0","w":"w0","wa":"wa","h":"h","Ob":"Ob0","si":"sigma8","ns":"ns"}
+
+		try:
+			settings.cosmo_id_digits = options.getint(section,"cosmo_id_digits")
+		except NoOptionError:
+			settings.cosmo_id_digits = 3
+
+		try:
+			settings.json_tree_file = options.get(section,"json_tree_file")
+		except NoOptionError:
+			settings.json_tree_file = ".tree.json"
+
+		#Return
+		return settings
 
 #################################################
 ###########NGenICSettings class##################
 #################################################
 
-class NGenICSettings(object):
+class NGenICSettings(LTSettings):
 
 	"""
 	Class handler of NGenIC settings
@@ -93,7 +113,7 @@ class NGenICSettings(object):
 ###########PlaneSettings class###################
 #################################################
 
-class PlaneSettings(object):
+class PlaneSettings(LTSettings):
 
 	"""
 	Class handler of plane generation settings
@@ -130,15 +150,11 @@ class PlaneSettings(object):
 			setattr(self,key,kwargs[key])
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = config.ConfigParser()
-		options.read([config_file])
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = "PlaneSettings"
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
@@ -206,7 +222,7 @@ class PlaneSettings(object):
 ###########MapSettings class#####################
 #################################################
 
-class MapSettings(object):
+class MapSettings(LTSettings):
 
 	"""
 	Class handler of map generation settings
@@ -263,19 +279,16 @@ class MapSettings(object):
 		self.mix_cut_points = [0]
 		self.mix_normals = [0]
 		self.lens_map_realizations = 4
+		self.first_realization = 1
 
 	###############################################################################################################################################
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = config.ConfigParser()
-		options.read([config_file])
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = cls._section
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
@@ -331,6 +344,11 @@ class MapSettings(object):
 		self.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
 		self.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ] 
 
+		try:
+			self.first_realization = options.getint(section,"first_realization")
+		except NoOptionError:
+			self.first_realization = 1
+
 
 
 ###########################################################
@@ -375,13 +393,18 @@ class TelescopicMapSettings(MapSettings):
 		self.mix_cut_points = ast.literal_eval(options.get(section,"mix_cut_points"))
 		self.mix_normals = ast.literal_eval(options.get(section,"mix_normals"))
 
+		try:
+			self.first_realization = options.getint(section,"first_realization")
+		except NoOptionError:
+			self.first_realization = 1
+
 
 
 #####################################################
 ###########CatalogSettings class#####################
 #####################################################
 
-class CatalogSettings(object):
+class CatalogSettings(LTSettings):
 
 	"""
 	Class handler of simulated catalog generation settings
@@ -415,6 +438,7 @@ class CatalogSettings(object):
 		self.mix_cut_points = [0]
 		self.mix_normals = [0]
 		self.lens_catalog_realizations = 1
+		self.first_realization = 1
 
 		#Allow for kwargs override
 		for key in kwargs.keys():
@@ -422,15 +446,11 @@ class CatalogSettings(object):
 
 
 	@classmethod
-	def read(cls,config_file):
-
-		#Read the options from the ini file
-		options = config.ConfigParser()
-		options.read([config_file])
+	def get(cls,options):
 
 		#Check that the config file has the appropriate section
 		section = "CatalogSettings"
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
@@ -475,6 +495,11 @@ class CatalogSettings(object):
 		settings.mix_cut_points = [ int(n) for n in options.get(section,"mix_cut_points").split(",") ]
 		settings.mix_normals = [ int(n) for n in options.get(section,"mix_normals").split(",") ]
 
+		try:
+			settings.first_realization = options.getint(section,"first_realization")
+		except NoOptionError:
+			settings.first_realization = 1
+
 		#Return to user
 		return settings
 
@@ -483,7 +508,7 @@ class CatalogSettings(object):
 ###############JobSettings class##################
 ##################################################
 
-class JobSettings(object):
+class JobSettings(LTSettings):
 
 	"""
 	Class handler of batch job submission settings
@@ -518,14 +543,10 @@ class JobSettings(object):
 
 
 	@classmethod
-	def read(cls,config_file,section):
-
-		#Read the options from the ini file
-		options = config.ConfigParser()
-		options.read([config_file])
+	def get(cls,options,section):
 
 		#Check that the config file has the appropriate section
-		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,config_file)
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
