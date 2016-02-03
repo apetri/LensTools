@@ -62,7 +62,7 @@ def test_gradient():
 
 def test_EB_decompose():
 
-	l,EE,BB,EB = test_map.decompose(l_edges,keep_fourier=True)
+	l,EE,BB,EB = test_map.eb_power_spectrum(l_edges)
 
 	assert l.shape == EE.shape == BB.shape == EB.shape
 
