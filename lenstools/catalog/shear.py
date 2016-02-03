@@ -48,6 +48,7 @@ class Catalog(tbl.Table):
 
 		#Set spatial information
 		self.setSpatialInfo()
+		self.setRedshiftInfo()
 
 	########################################################################################
 
@@ -85,6 +86,8 @@ class Catalog(tbl.Table):
 		self._field_y = field_y
 		self._position_unit = unit
 
+	def setRedshiftInfo(self,field_z="z"):
+		pass
 
 	########################################################################################
 
@@ -294,6 +297,39 @@ class ShearCatalog(Catalog):
 	Class handler of a galaxy shear catalog, inherits all the functionality from the Catalog class
 
 	"""
+
+	def setRedshiftInfo(self,field_z="z"):
+		self._field_z = field_z
+
+	########################################################################################
+
+	#Shape noise generation
+	def shapeNoise(self,seed=None):
+
+		"""
+		Generate a catalog with randomly drawn shape noise for each galaxy
+
+		:param seed: random seed for noise generation
+		:type seed: int.
+
+		:returns: shape noise catalog
+		:rtype: :py:class:`ShearCatalog` 
+
+		"""
+
+		#Check that redshift is available
+		if self._field_z not in self.columns:
+			raise AttributeError("No redshift field '{0}' present in catalog!".format(self._field_z))
+
+		#Generate noise
+		if seed is not None:
+			np.random.seed(seed)
+
+		g1 = np.random.normal(size=len(self))*(0.15 + 0.035*self.columns[self._field_z])
+		g2 = np.random.normal(size=len(self))*(0.15 + 0.035*self.columns[self._field_z])
+
+		#Return to user
+		return self.__class__((g1,g2),names=["shear1","shear2"])
 
 	########################################################################################
 
