@@ -250,7 +250,7 @@ In this section we outline the basic routines that \LT provides for constraining
 \mathcal{L}(\bb{p}\vert\bbh{d}) = \mathcal{N}_\mathcal{L}\mathcal{L}(\bbh{d}\vert\bb{p})\Pi(\bb{p})
 \end{equation} 
 %
-where $\Pi{\bb{p}}$ is the prior on the parameters, $\mathcal{N}_\mathcal{L}$ is a $\bb{p}$--independent normalization constant and $\mathcal{L}(\bbh{d}\vert\bb{p})$ is the feature likelihood. A popular choice for the feature likelihood is a normal distribution with mean $\bb{d}(\bb{p})$ and covariance $\bb{C}$, $\mathcal{L}(\bbh{d}\vert\bb{p}) = \exp{\left[-\chi^2\left(\bbh{d}\vert\bb{d}(\bb{p}),\bb{C}\right)/2\right]}$ with
+where $\Pi(\bb{p})$ is the prior on the parameters, $\mathcal{N}_\mathcal{L}$ is a $\bb{p}$--independent normalization constant and $\mathcal{L}(\bbh{d}\vert\bb{p})$ is the feature likelihood. A popular choice for the feature likelihood is a normal distribution with mean $\bb{d}(\bb{p})$ and covariance $\bb{C}$, $\mathcal{L}(\bbh{d}\vert\bb{p}) = \exp{\left[-\chi^2\left(\bbh{d}\vert\bb{d}(\bb{p}),\bb{C}\right)/2\right]}$ with
 
 \begin{equation}
 \label{chi2definition}
@@ -288,7 +288,7 @@ The partial derivatives of the likelihood with respect to the parameters are eas
 
 \begin{figure}
 \includegraphics[scale=0.4]{Figures/parameter_sampling.eps}
-\caption{Cosmological constraints based on the sampling of the parameter space $(\Omega_m,\sigma_8)$ with three different techniques. We use a Likelihood Grid Evaluation of parameter likelihood (red), a Fisher matrix approximation (blue) and a MCMC sampling using the \ttt{emcee} package (black dots). The parameter space considered is the doublet $(\Omega_m,\sigma_8)$, and the feature used is the $\kappa$ power spectrum $P^{\kappa\kappa}(\ell)$. The RBF interpolation is based on $N_M=100$ simulated models and the feature covariance matrix $\bb{C}$ has been estimated from 1024 random realizations of the feature vector in a fiducial model with $(\Omega_m,\sigma_8)=(0.26,0.8)$.}
+\caption{Cosmological constraints based on the sampling of the parameter space $(\Omega_m,\sigma_8)$ with three different techniques, assuming a flat parameter prior $\Pi(\bb{p})$. We use a Likelihood Grid Evaluation of parameter likelihood (red), a Fisher matrix approximation (blue) and a MCMC sampling using the \ttt{emcee} package (black dots). The parameter space considered is the doublet $(\Omega_m,\sigma_8)$, and the feature used is the $\kappa$ power spectrum $P^{\kappa\kappa}(\ell)$. The RBF interpolation is based on $N_M=100$ simulated models and the feature covariance matrix $\bb{C}$ has been estimated from 1024 random realizations of the feature vector in a fiducial model with $(\Omega_m,\sigma_8)=(0.26,0.8)$.}
 \label{samplingfig}
 \end{figure}
 
