@@ -67,6 +67,7 @@ Cosmology is entering a new, data driven era. After the Cosmic Microwave Backgro
 %%%%%%%%%%%%%%%%%%% Shear simulations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Shear simulations} 
+\label{shearsim}
 
 \subsection{Formalism}
 %
@@ -93,7 +94,7 @@ where we indicated $\bb{T}$ as the gradient of the deflection, which will be cal
 \begin{figure*}
 \includegraphics[scale=0.3]{Figures/lens_plane_density.eps}
 \includegraphics[scale=0.3]{Figures/lens_plane_potential.eps}
-\caption{This figure shows a lens plane, computed with a gridding procedure based on equations (\ref{surfacedensity}),(\ref{poisson}). This lens plane has been generated from a $N$--body simulation of size $L_b=240\,{\rm Mpc}/h$ with $N_p=512^3$ particles at $z_s=2$. The plane resolution is $512\,$pixels per side. We show both the surface density $\sigma$ (left) and the lensing potential $\phi$ (right).}
+\caption{This figure shows a lens plane, computed with a gridding procedure based on equations (\ref{surfacedensity}),(\ref{poisson}). This lens plane has been generated from a $N$--body simulation of size $L_b=480\,{\rm Mpc}/h$ with $N_p=1024^3$ particles at $z_s=2$. The plane resolution is $512\,\,$pixels per side. We show both the surface density $\sigma$ (left) and the lensing potential $\phi$ (right).}
 \label{lensplanefig}
 \end{figure*}
 %
@@ -178,7 +179,7 @@ We also tracked the memory usage of the lens plane and ray--tracing operations. 
 {Step} &            Complexity &            Test case &           Runtime \\ \hline \hline
 \midrule
 \multicolumn{4}{c}{\textbf{Lens generation}} \\ \hline
-Snapshot input & $O(N_p/N_t)$  & $N_p=512^3$, $N_t=16$  & 2.10\,s  \\
+Snapshot input & $O(N_p/N_t)\footnote{Assuming perfect input performance}$  & $N_p=512^3$, $N_t=16$  & 2.10\,s  \\
 Gridding        & $O(N_p/N_t)$   & $N_p=512^3$, $N_t=16$  & 0.20\,s \\
 MPI Communication  & $O(L_p\log{N_t})$   & $N_t=16$, $L_p=4096^2$  & 0.76\,s   \\
 Poisson solver (FFT)           & $O(L_p\log{L_p})$ & $L_p=4096^2$  &  2.78\,s    \\
@@ -206,7 +207,7 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 
 \section{Image analysis}
 %
-In this section we describe some useful routines that \LT provides for analyzing simulated convergence and shear fields. The \ttt{ConvergenceMap} and \ttt{ShearMap} classes implement a comprehensive amount of frequently operations that can be performed on two dimensional $\kappa,\pmb{\gamma}$ images. Both classes allow flexible input/output formats from files (the FITS format \citep{cfitsio} is a popular choice, but not the only one available; user custom format can be easily dealt with in \LT). Efficient routines are available for smoothing the maps with Gaussian kernels (optimal smoothing complexity--wise can be performed via FFT), measuring the pixel PDF, counting the local maxima and measure their position and measuring topological descriptors such as Minkowski Functionals \citep{MatsubaraMink}. An example of such operations is shown in Figure \ref{convergencefig}.   
+In this section we describe some useful routines that \LT provides for analyzing simulated convergence and shear fields. The \ttt{ConvergenceMap} and \ttt{ShearMap} classes implement a comprehensive amount of frequently operations that can be performed on two dimensional $\kappa,\pmb{\gamma}$ images. Both classes allow flexible input/output formats from files (the FITS format \citep{cfitsio} is a popular choice, but not the only one available; user custom format can be easily dealt within \LT). Efficient routines are available for smoothing the maps with Gaussian kernels (optimal smoothing complexity--wise can be performed via FFT), measuring the pixel PDF, counting the local maxima and measure their position, measuring topological descriptors such as Minkowski Functionals \citep{MatsubaraMink}. An example of such operations is shown in Figure \ref{convergencefig}.   
 \begin{figure*}
 \includegraphics[scale=0.3]{Figures/convergence_visualize.eps}
 \includegraphics[scale=0.3]{Figures/convergence_stats.eps}
@@ -214,8 +215,9 @@ In this section we describe some useful routines that \LT provides for analyzing
 \label{convergencefig}
 \end{figure*}
 %
-In addition to real space statistics, such as the ones outlined before, \LT provides access to quadratic Fourier statistics such as power spectra. The convergence power spectrum $P^{\kappa\kappa}(\ell)$ is defined as  
+In addition to real space statistics such as the ones outlined before, \LT provides access to quadratic Fourier statistics such as power spectra. The convergence power spectrum $P^{\kappa\kappa}(\ell)$ is defined as  
 \begin{equation}
+\label{kappapsdefinition}
 \langle\tilde{\kappa}(\pmb{\ell})\tilde{\kappa}(\pmb{\ell}^\prime)\rangle = (2\pi)^2\delta_D(\pmb{\ell}+\pmb{\ell}^\prime)P^{\kappa\kappa}(\ell)
 \end{equation}
 %
@@ -229,7 +231,7 @@ B(\pmb{\ell}) = \frac{-2\ell_x\ell_y\tilde{\gamma}^1(\pmb{\ell})+(\ell_x^2-\ell_
 \end{matrix}
 \end{equation}
 %
-Because of the nature of the density perturbations that cause background source lensing, the $E$ component dominates, because $E=O(\phi)$ and $B=O(\phi^2)$. The shear $E$--mode is the convergence $\kappa$, hence $P^{EE}=P^{\kappa\kappa}$. Figure \ref{ebmodefig} shows the shear $E$ and $B$ modes power spectra measured from one realization of the shear field.   
+Because of the nature of the density perturbations that cause background source lensing, the $E$ component dominates, because $E=O(\phi)$ and $B=O(\phi^2)$. The shear $E$--mode is the convergence $\kappa$, hence $P^{EE}(\ell)=P^{\kappa\kappa}(\ell)$. Figure \ref{ebmodefig} shows the shear $E$ and $B$ modes power spectra measured from one realization of the shear field.   
 
 \begin{figure}
 \includegraphics[scale=0.3]{Figures/eb_modes.eps}
@@ -242,21 +244,60 @@ Because of the nature of the density perturbations that cause background source 
 
 \section{Cosmology constraints}
 %
-In this section we outline the basic \LT for constraining cosmological parameter spaces.  
+In this section we outline the basic routines that \LT provides for constraining cosmological parameter spaces. Let $\bb{p}$ be the parameters to constrain (for example $\bb{p}=(\Omega_m,w,\sigma_8)$) and let be $\bb{d}$ a WL feature that contains information on $\bb{p}$. An example of $\bb{d}$ can be the $\kappa$ power spectrum $P^{\kappa\kappa}(\ell)$ defined in (\ref{kappapsdefinition}). Given a feature measurement $\bbh{d}$, we are interested in calculating the likelihood $\mathcal{L}(\bb{p}\vert\bbh{d})$ of the parameters, given the measurement. Using the Bayes theorem we can express the parameter likelihood as 
+\begin{equation}
+\label{parameterlikelihood}
+\mathcal{L}(\bb{p}\vert\bbh{d}) = \mathcal{N}_\mathcal{L}\mathcal{L}(\bbh{d}\vert\bb{p})\Pi(\bb{p})
+\end{equation} 
+%
+where $\Pi{\bb{p}}$ is the prior on the parameters, $\mathcal{N}_\mathcal{L}$ is a $\bb{p}$--independent normalization constant and $\mathcal{L}(\bbh{d}\vert\bb{p})$ is the feature likelihood. A popular choice for the feature likelihood is a normal distribution with mean $\bb{d}(\bb{p})$ and covariance $\bb{C}$, $\mathcal{L}(\bbh{d}\vert\bb{p}) = \exp{\left[-\chi^2\left(\bbh{d}\vert\bb{d}(\bb{p}),\bb{C}\right)/2\right]}$ with
+
+\begin{equation}
+\label{chi2definition}
+\chi^2\left(\bbh{d}\vert\bb{d}(\bb{p}),\bb{C}\right) = (\bbh{d}-\bb{d}(\bb{p}))^T\bb{C}^{-1}(\bbh{d}-\bb{d}(\bb{p}))
+\end{equation}
+%
+\LT provides efficient routines for computing (\ref{chi2definition}) at arbitrary points $\bb{p}$ in parameter space. Running the simulation pipeline described in \S~\ref{shearsim} for a variety of models $\{\bb{p}_i\}$, $i=1...N_M$, we are able to evaluate equation (\ref{chi2definition}) at an arbitrary point $\bb{p}$ in parameter space using a Radial Basis Function (RBF) interpolation scheme 
+\begin{equation}
+\label{rbf}
+d^{RBF}_i(\bb{p}) = \sum_{j=1}^{N_M}\lambda_{ij} f\left(\left\vert\bb{p}-\bb{p}_j\right\vert;R\right)
+\end{equation} 
+%
+where $f$ is an isotropic smoothing kernel of scale $R$ \footnote{For the examples shown in this work we chose a multiquadric kernel $f(x;R)=\sqrt{1+\frac{x^2}{R^2}}$ with $R$ chosen as the mean distance between the simulated points $\bb{p}_k$} and the weights $\lambda_{ij}$ can be determined from the known simulated features $\bb{d}(\bb{p}_j)$ with a matrix inversion
+\begin{equation}
+\lambda_{ij} = \sum_{k=1}^{N_M}d_i(\bb{p}_k)\left[f\left(\left\vert\bb{p}_k-\bb{p}_j\right\vert;R\right)\right]^{-1}
+\end{equation}
+%
+Once the weights are determined from the simulated features, equation (\ref{rbf}) allows for a fast vectorized evaluation of the parameter likelihood from equations (\ref{parameterlikelihood}),(\ref{chi2definition}) once an assumption for the ($\bb{p}$--independent) covariance matrix $\bb{C}$ is made. A possible choice is estimating the covariance $\bb{C}$ from the shear simulations themselves. Having access to an efficient routine for computing the parameter likelihood $\mathcal{L}(\bb{p}\vert\bbh{d})$ allow access to a variety of parameter sampling techniques. In this section we give examples of three different parameter sampling techniques supported in \LT:
+\begin{enumerate}
+
+\item Likelihood Grid Evaluation: if the dimensionality of the parameter space is not too big, the parameter likelihood in equation (\ref{parameterlikelihood}) can be evaluated on a regularly spaced grid of points. Since each point can be treated independently, this procedure is easily parallelizable. \LT provides a parallel implementation of the likelihood grid evaluation based on the MPI protocol \citep{MPI}. Access to the values of the likelihood on a regularly spaced grid makes the determination of confidence intervals straightforward. Such an approach has been used before in the literature \citep{cfhtpeaks,cfhtmink}.    
+
+\item MCMC sampling of the parameter space: the efficient \LT likelihood evaluation routines are specifically designed to be compatible with widely used \ttt{python} packages such as \ttt{emcee} \citep{emcee} and \ttt{pymc} \citep{pymc} that specialize in generating parameter samples with the Markov Chain Monte Carlo (MCMC) technique \citep{mcmc}.   
+
+\item Fisher Matrix approximation: for the sake of simplicity, sometimes it is convenient to approximate the parameter likelihood as a Gaussian centered around its maximum. If we have a reasonable guess for the likelihood peak location $\bb{p}_0$ (in the case where the likelihood is single--modal), the parameter covariance matrix can be approximated as 
+\begin{equation}
+{\rm Cov}(p_\alpha,p_\beta) = -\left(\left.\frac{\partial\ln\mathcal{L}(\bb{p}\vert\bbh{d})}{\partial p_\alpha\partial p_\beta}\right\vert_{\bb{p}_0}\right)^{-1}
+\end{equation}
+%
+The partial derivatives of the likelihood with respect to the parameters are easy to evaluate with finite differences. 
+\end{enumerate}
+
+
+\LT implements data operations via the \ttt{Ensemble} class, which is a subclass of the \ttt{pandas.DataFrame} class: as such, \ttt{Ensemble} supports fast data queries, I/O from SQL databases, database operations such as merges, and statistical operations such as means, medians, covariance and correlation coefficient calculations. The \ttt{Emulator} class, which inherits from \ttt{Ensemble}, provides convenient access to efficient routines for RBF interpolation of the features (which can be used to build emulators), $\chi^2$ evaluation, and the parameter sampling techniques outlined above. An example of the use of the \ttt{Emulator} functionality for parameter sampling is shown in Figure \ref{samplingfig}.   
 
 \begin{figure}
 \includegraphics[scale=0.4]{Figures/parameter_sampling.eps}
-\caption{Cosmological constraints based on the sampling of the parameter space $(\Omega_m,\sigma_8)$ with three different techniques. We use a grid evaluation of the likelihood function based on a Radial Basis Function emulator (red), a Fisher matrix calculation (blue) and a MCMC sampling using the \ttt{emcee} package (black dots). The covariance matrix $\bb{C}$ has been estimated from 1024 random realizations of the feature vector, produced with the \LT shear simulation pipeline.}
+\caption{Cosmological constraints based on the sampling of the parameter space $(\Omega_m,\sigma_8)$ with three different techniques. We use a Likelihood Grid Evaluation of parameter likelihood (red), a Fisher matrix approximation (blue) and a MCMC sampling using the \ttt{emcee} package (black dots). The parameter space considered is the doublet $(\Omega_m,\sigma_8)$, and the feature used is the $\kappa$ power spectrum $P^{\kappa\kappa}(\ell)$. The RBF interpolation is based on $N_M=100$ simulated models and the feature covariance matrix $\bb{C}$ has been estimated from 1024 random realizations of the feature vector in a fiducial model with $(\Omega_m,\sigma_8)=(0.26,0.8)$.}
 \label{samplingfig}
 \end{figure}
-
-%%%%%%%%%%%%%%%%%% FUTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Future developments}
 
 %%%%%%%%%%%%%%%%%% CONCLUSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Conclusion}
+%
+In this work we presented the \LT computing package, which is a collection of tools targeted to theoretical studies of WL. The package includes a WL shear simulation pipeline and is complemented with a variety of image analysis tools and parameter sampling routines. The simulation pipeline combines different existing codes to simulate cosmological volumes (\ttt{CAMB},\ttt{Gadget2}) and provides a \ttt{python} multi--lens--plane algorithm. \LT is flexible in terms of snapshot file formats, making the use of different $N$--body simulation codes (see \citep{HACC} for example) possible with minimal coding efforts. This makes \LT portable between different research groups in the WL community. \LT makes use of the \ttt{numpy} array as its primary data structure, making it very easy to combine with popular algorithmic packages such as \ttt{scikit-learn} \citep{scikit-learn}.   
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% ACKNOWLEDGMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
@@ -271,8 +312,11 @@ In this section we outline the basic \LT for constraining cosmological parameter
 
 \subsection{Pipeline directory tree}
 
+\subsection{Image analysis}
+
 \subsection{Parameter sampling}
 
+The \ttt{lt\_sample} method described below can be used to produce Figure \ref{samplingfig}. 
 \begin{widetext}
 \inputminted[linenos]{python}{Snippets/sampling.py}
 \end{widetext}
