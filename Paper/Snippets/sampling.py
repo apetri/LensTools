@@ -49,7 +49,8 @@ def lt_sample(emulator,test_data,covariance):
 		correct=1000,
 		observed_feature=test_data,
 		parameters=["Om","sigma8"],
-		p_value=p_value,fill=False,
+		p_value=p_value,
+		fill=False,
 		edgecolor="blue")
 
 	ax.add_artist(ellipse)
