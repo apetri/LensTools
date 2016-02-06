@@ -164,7 +164,7 @@ else:
 	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
 	job_settings = JobSettings.read(cmd_args.job_options_file,section)
 	print("[*] Using specifications for {0} found in {1}".format(job_type,cmd_args.exec_options))
-	batch.writeSubmission(realizations,job_settings,job_handler,job_executable=job_type,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script,extra_args=cmd_args.extra_args)
+	batch.writeSubmission(realizations,job_settings,job_handler,job_executable=job_type,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script,extra_args=cmd_args.extra_args.replace("//",""))
 
 
 
