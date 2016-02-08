@@ -21,7 +21,7 @@ Shear maps and catalogs
 	:members: setSpatialInfo,pixelize,visualize
 
 .. autoclass:: lenstools.catalog.shear.ShearCatalog
-	:members: toMap
+	:members: toMap,shapeNoise
 
 Statistics
 ==========
@@ -236,14 +236,29 @@ Defaults
 .. automodule:: lenstools.utils.defaults
 	:members: load_fits_default_convergence,load_fits_default_shear,measure_power_spectrum
 
+Miscellaneous utilities
+=======================
+
 MPI
-===
+---
 
 .. autoclass:: lenstools.utils.mpi.MPIWhirlPool
 	:inherited-members:
 
 Fast Fourier Transforms
-=======================
+-----------------------
 
 .. autoclass:: lenstools.utils.fft.NUMPYFFTPack
+	:inherited-members:
+
+Algorithms
+----------
+
+.. automodule:: lenstools.utils.algorithms
+	:inherited-members:
+
+Decorators
+----------
+
+.. automodule:: lenstools.utils.decorators
 	:inherited-members:
