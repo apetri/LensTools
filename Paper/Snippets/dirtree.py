@@ -30,13 +30,13 @@ def init_batch(home,storage,models):
 
 	#Safety check
 	assert isinstance(models,np.ndarray)
-	assert models.shape[1]==3
+	assert models.shape[1]==2
 
 	#Get SimulationBatch handle
 	batch = SimulationBatch(home=home,storage=storage)
 
 	#Cycle over parameters and create one model per parameter
-	for Om,si8 in p:
+	for Om,si8 in models:
 	
 		#Lay down directory tree
 		cosmo = LensToolsCosmology(Om0=Om,Ode0=1-Om,sigma8=si8)

@@ -31,6 +31,8 @@
 \newcommand{\ttt}[1]{\texttt{#1}}
 \newcommand{\LT}{\texttt{LensTools} }
 
+\newcommand{\specialcell}[2][c]{\begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -47,7 +49,7 @@
 \label{firstpage}
 
 \begin{abstract}
-We present a newly developed software package which implements a wide range of routines frequently used in Weak Gravitational Lensing (WL). With the continuously increasing size of the WL scientific community we feel that easy to use APIs for common calculations are a necessity to ensure efficiency and coordination across different working groups. Coupled with existing open source codes, such as \ttt{CAMB}\citep{CAMB} and \ttt{Gadget2}\citep{Gadget2}, \LT brings together a cosmic shear simulation pipeline which, complemented with a variety of WL feature measurement tools and parameter sampling routines, provides easy access to the numerics for theoretical studies of WL as well as for experiment forecasts. Being implemented in \ttt{python}\citep{python}, \LT takes full advantage of a range of state--of--the art techniques developed by the large and growing open--source software community \citep{scipy,pandas,astropy,scikit-learn,emcee}.    
+We present a newly developed software package which implements a wide range of routines frequently used in Weak Gravitational Lensing (WL). With the continuously increasing size of the WL scientific community we feel that easy to use Application Program Interfaces (APIs) for common calculations are a necessity to ensure efficiency and coordination across different working groups. Coupled with existing open source codes, such as \ttt{CAMB}\citep{CAMB} and \ttt{Gadget2}\citep{Gadget2}, \LT brings together a cosmic shear simulation pipeline which, complemented with a variety of WL feature measurement tools and parameter sampling routines, provides easy access to the numerics for theoretical studies of WL as well as for experiment forecasts. Being implemented in \ttt{python}\citep{python}, \LT takes full advantage of a range of state--of--the art techniques developed by the large and growing open--source software community \citep{scipy,pandas,astropy,scikit-learn,emcee}. We made the \LT code available on the Python Package Index and published the documentation on \url{http://lenstools.readthedocs.org}      
     
 \end{abstract}
 
@@ -62,7 +64,7 @@ We present a newly developed software package which implements a wide range of r
 
 \section{Introduction}
 %
-Cosmology is entering a data driven era. After the Cosmic Microwave Background (CMB) \citep{WMAP,PlanckXVI2013} provided strong experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameter values \citep{WLprimer}. Because WL probes are sensitive to late universe physics, where the density fluctuations are in the non--linear regime, quadratic features such as two--point correlation functions might miss some of the cosmological information. In the theoretical study of more complicated WL features (see for example \citep{3pcf1,bispectrum1,moments1,peaks1} for a non comprehensive list) simulation pipelines play a vital role, as in general these features cannot be predicted analytically from cosmological parameters. In this work we present a flexible, customizable and easy to deploy WL simulation pipeline that bridges the gap between simulations of shear fields, feature measurement from simulated images and cosmological parameter estimation. The paper is organized as follows: first we give an overview of the shear field simulation routines and present their runtime and memory usage benchmarks. We then outline the \LT image analysis capabilities as well as the parameter estimation routines. We finally present a summary of our work and outline our conclusions. We complement our work with some illustrative coding examples that show how to operationally use use \LT for some of the former tasks.
+Cosmology is entering a data driven era. After the Cosmic Microwave Background (CMB) \citep{WMAP,PlanckXVI2013} provided strong experimental evidences of cosmological theories, a variety of different probes have been proposed to unveil the secret of the cosmos. Weak Gravitational Lensing uses the correlation between image distortions of background sources by Large Scale Structure (LSS) to infer cosmological parameter values \citep{WLprimer}. Because WL probes are sensitive to late universe physics, where the density fluctuations are in the non--linear regime, quadratic features such as two--point correlation functions might miss some of the cosmological information. In the theoretical study of more complicated WL features (see for example \citep{3pcf1,bispectrum1,moments1,peaks1} for a non comprehensive list) simulation pipelines play a vital role, as in general these features cannot be predicted analytically from cosmological parameters. In this work we present a flexible, customizable and easy to deploy WL simulation pipeline that bridges the gap between simulations of shear fields, feature measurement from simulated images and cosmological parameter estimation. The paper is organized as follows: first we give an overview of the shear field simulation routines and present their runtime and memory usage benchmarks. We then outline the \LT image analysis capabilities as well as the parameter estimation routines. We finally present a summary of our work and outline our conclusions. We complement our work with some illustrative coding examples that show how to operationally use \LT for some of the former tasks.
 
 %%%%%%%%%%%%%%%%%%% Shear simulations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -121,6 +123,7 @@ which can be translated into a second order differential equation for the light 
 \end{equation}
 
 \begin{equation}
+\label{jacobian}
 \bb{U}_{k} = \mathds{1}_{2\times2} + \sum_{i=1}^k\delta\bb{U}_i 
 \end{equation}
 
@@ -131,7 +134,7 @@ which can be translated into a second order differential equation for the light 
 
 \end{widetext}
 %
-where $\bb{U}$ is the jacobian matrix of the trajectory $\pmb{\beta}$ with respect to the initial light ray position $\pmb{\theta}$, $\bb{U}_k=\nabla_{\pmb{\theta}}\pmb{\beta}_k(\pmb{\theta})$. The factors $A_k,C_k$ depend on the geometry of the lens system
+where $\bb{U}$ is the Jacobian matrix of the trajectory $\pmb{\beta}$ with respect to the initial light ray position $\pmb{\theta}$, $\bb{U}_k=\nabla_{\pmb{\theta}}\pmb{\beta}_k(\pmb{\theta})$. The factors $A_k,C_k$ depend on the geometry of the lens system
 
 \begin{equation}
 A_k = \frac{\chi_{k+1}}{\chi_{k+2}}\left(1 + \frac{\chi_{k+2}-\chi_{k+1}}{\chi_{k+1}-\chi_k}\right) \,\,\,\, ; \,\,\,\, C_k = \frac{\chi_{k+1}}{\chi_{k+2}} - 1 \\ \\
@@ -144,7 +147,7 @@ where we use the subscript $k$ to indicate the redshift $z_k$ of the $k$--th len
 %
 where we indicated $\mathds{1}_{2\times2}$ as the identity matrix and $\sigma^{1,3}$ as the first and third Pauli matrices. Multiple random realizations of the WL fields $(\kappa,\pmb{\gamma})$ can be obtained using the randomization technique described in \citep{Petri16}.
 
-The iterative solution of (\ref{geodesic2D}) requires knowledge of the density fluctuation $\delta(\bb{x},z)$, from which the lens surface density $\sigma$ and gravitational potential $\phi$ can be inferred through equations (\ref{surfacedensity}),(\ref{poisson}). $\delta$ can be calculated running $N$--body simulations, in which the matter distribution in the universe is approximated as a set of $N_p$ particles of mass $M_p$, which move in their self--generated gravitational field. For this purpose we use the publicly available code \ttt{Gadget2}\citep{Gadget2}, although alternatives can be adopted (see \citep{HACC} for example). Once the $N$--body simulations are ran, \LT provides a \ttt{python} implementation of the multi--lens--plane algorithm \citep{RayTracingHartlap} described above, which takes care of projecting the density fluctuation on two dimensional lenses as in (\ref{surfacedensity}), solving the Poisson equation as in (\ref{poisson}), and computing the light ray deflections as in (\ref{geodesic2D}). An overview of the pipeline operations, from the cosmological parameter specifications to the final shear map products, is outlined in Figure \ref{pipescheme}. We make the claim that the way the \LT code is organized makes it portable between different research groups that rely on different choices, rather than \ttt{Gadget2}, for running $N$--body simulations. The transition between snapshots and lens planes is handled by instances of the \ttt{NbodySnapshot} class, which implements the algorithms based on equations (\ref{poisson}). \ttt{NbodySnapshot} can be sub--classed to implement the necessary input routines from the $N$--body snapshots. \LT comes with one of such possibilities, the \ttt{Gadget2Snapshot} class, that handles input from snapshots in the \ttt{Gadget2} binary format. Other subclass types that allow input from other formats can be coded by the user with minimal effort.  
+The iterative solution of equations (\ref{geodesic2D})-(\ref{sheartensorproduct}) requires knowledge of the density fluctuation $\delta(\bb{x},z)$, from which the lens surface density $\sigma$ and gravitational potential $\phi$ can be inferred through equations (\ref{surfacedensity}),(\ref{poisson}). $\delta$ can be calculated running numerical simulations, such as $N$--body simulations \citep{Gadget2,HACC} or hydrodynamical simulations \citep{Flash}. In this paragraph we focus mainly on $N$--body simulations, in which the matter distribution in the universe is approximated as a set of $N_p$ particles of mass $M_p$, which move in their self--generated gravitational field. For this purpose we use the publicly available code \ttt{Gadget2}\citep{Gadget2}, although alternatives can be adopted (see \citep{HACC} for example). Once the $N$--body simulations are ran, \LT provides a \ttt{python} implementation of the multi--lens--plane algorithm \citep{RayTracingHartlap} described above, which takes care of projecting the density fluctuation on two dimensional lenses as in (\ref{surfacedensity}), solving the Poisson equation as in (\ref{poisson}), and computing the light ray deflections as in (\ref{geodesic2D}). An overview of the pipeline operations, from the cosmological parameter specifications to the final shear map products, is outlined in Figure \ref{pipescheme}. We make the claim that the way the \LT code is organized makes it portable between different research groups that rely on different choices, rather than \ttt{Gadget2}, for running $N$--body simulations. The transition between snapshots and lens planes is handled by instances of the \ttt{NbodySnapshot} class, which implements the algorithms based on equations (\ref{poisson}). \ttt{NbodySnapshot} can be sub--classed to implement the necessary input routines from the $N$--body snapshots. \LT comes with one of such possibilities, the \ttt{Gadget2Snapshot} class, that handles input from snapshots in the \ttt{Gadget2} binary format. Other subclass types that allow input from other formats can be coded by the user with minimal effort.  
 
 
 \begin{figure*}
@@ -166,17 +169,18 @@ A batch of simulations is handled by a single instance of a \ttt{SimulationBatch
 
 \subsection{Performance}
 %
-We summarize the runtime and memory usage benchmarks of the \LT shear simulation pipeline. The tests were run on the TACC Stampede computer cluster\footnote{\url{https://portal.xsede.org/tacc-stampede}}. Table \ref{benchmarktable} shows a summary of the ray--tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case. At the lens plane generation stage we can clearly see that the two bottlenecks in the flow are the read operations from $N$--body snapshot files and the Poisson equation solving via FFT. The number of tasks $N_t$ used to read in a single snapshot can be optimized if the parallel input performance is ideal (i.e independent on $N_t$), as is an optimal value of $N_t(N_p,L_p)$ that minimizes the combined input, gridding and \ttt{MPI} communication operations, which have a combined complexity
+We summarize the runtime and memory usage benchmarks of the \LT shear simulation pipeline. The tests were run on the XSEDE Stampede computer cluster\footnote{\url{https://portal.xsede.org/tacc-stampede}}. Table \ref{benchmarktable} shows a summary of the ray--tracing operations performed by \LT, indicating the complexity and runtime of each operation for a selected test case. At the lens plane generation stage we can clearly see that the two bottlenecks in the flow are the read operations from $N$--body snapshot files and the Poisson equation solving via FFT. The number of tasks $N_t$ used to read in a single snapshot can be optimized if the parallel input performance is ideal (i.e independent on $N_t$), as is an optimal value of $N_t(N_p,L_p)$ that minimizes the combined input, gridding and \ttt{MPI} communication operations, which have a combined complexity
 
 \begin{equation}
 t_{\rm in+grid+MPI} = A_1\frac{N_p}{N_t} + A_2L_p\log{N_t}
 \end{equation} 
 %
-The optimal $N_t$ depends on the number of particles $N_p$ and the lens plane resolution (in pixels) $L_p$. 
-The Poisson solver has a complexity of $O(L_p\log{L_p})$ which is dominated by the FFT performance. Although we make use of the \ttt{numpy} FFT pack \citep{scipy} to perform such operations, other alternatives are also possible (such as FFTW \citep{FFTW05}). The \LT code modularity makes it very easy to switch between different implementations of the FFT algorithm, both coming from external libraries or coded up by the user. 
+The optimal $N_t$ depends on the number of particles $N_p$ and the lens plane resolution (in pixels) $L_p$. In principle this bottleneck can be removed if the capability of generating lens planes is embedded into the $N$--body code, which could avoid saving the intermediate 3D snapshots to disk. \LT allows such a possibility by creating a channel of communication between \ttt{Gadget2} and the plane application using named pipes, although for this option to be viable \ttt{Gadget2} and the plane computation have to run on the same node. 
+
+The Poisson solver has a complexity of $O(L_p\log{L_p})$ which is dominated by FFT performance. Although we make use of the \ttt{numpy} FFT pack \citep{scipy} to perform such operations, other alternatives are also possible (such as FFTW \citep{FFTW05}). The \LT code modularity makes it very easy to switch between different implementations of the FFT algorithm, both coming from external libraries or coded up by the user. 
 The bottleneck of the ray--tracing operations consists in the calculations of the ray deflections in equation (\ref{deflections}) and the shear tensor products (\ref{sheartensorproduct}). Although the complexity of these operations is already optimal, improvements on the runtime can be made by using specialized libraries to handle matrix products. \ttt{numpy} can link to the most up--to--date version of specialized libraries such as \ttt{LAPACK} \citep{lapack} and \ttt{Intel MKL} \citep{intel-mkl}. Some versions of \ttt{numpy} even support automatic offload of linear algebra operations to \ttt{Intel XEON Phi} co--processors \citep{xeonphi}.     
 
-We tracked the memory usage of the lens plane and ray--tracing operations. This is an important step, since \ttt{python} has some subtleties when dealing with large memory applications. The total memory allocated by a \ttt{python} process never decreases \citep{python}, even if the resources are released (of course the freed memory can be re--used by newly allocated resources without increasing the peak memory of the \ttt{python} process). Figure \ref{memoryfig} shows the peak memory usage during the lens plane generation and ray--tracing operations. We can see that, for the test case outlined in Table \ref{benchmarktable}, memory consumption stabilizes around 1.3\,GB per task for the lens planes and 1.8\,GB per task during the ray--tracing. These considerations make the \LT pipeline suitable for deployment on computer clusters with $\gtrsim$2\,GB memory per core, such as the one we used.    
+We tracked the memory usage of the lens plane and ray--tracing operations. This is an important step, since \ttt{python} has some subtleties when dealing with large memory applications. The total memory allocated by a \ttt{python} process never decreases \citep{python}, even if the resources are released (of course the freed memory can be re--used by newly allocated resources without increasing the peak memory of the \ttt{python} process). Figure \ref{memoryfig} shows the peak memory usage during the lens plane generation and ray--tracing operations. We can see that, for the test case outlined in Table \ref{benchmarktable}, memory consumption stabilizes around 1.3\,GB per task for the lens planes and 1.8\,GB per task during the ray--tracing. These considerations make the \LT pipeline suitable for deployment on computer clusters with $\gtrsim$2\,GB memory per core, such as the one we used. These numbers refer to the test case described in Table \ref{benchmarktable}, but a rough estimate for the more general case can be made noting that the dominant contribution to the memory usage for the lens planes comes from the input from the $N$--body simulations and should hence scale with the number of particles $N_p$. For the ray--tracing, on the other hand, the dominant contribution to the memory usage comes from the lenses and should hence scale as the lens pixel resolution $L_p$.      
 
 \begin{table*}
 \begin{tabular}{l|c|c|c}
@@ -198,7 +202,7 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 
 \bottomrule
 \end{tabular}
-\caption{Summary of the ray--tracing benchmarks: each $N$--body snapshot is divided in $N_t$ files, which are read in parallel and contain a total of $N_p$ particles. After the gridding procedure (\ref{surfacedensity}) is performed by each task, the total sufrace density (computed for a plane of $L_p$ pixels) is collected by the master task, which then proceeds in solving the Poission equation (\ref{poisson}) via Fast Fourier Transforms and saves the output to disk. In a subsequent step, the lens potential files are read from disk, and the geodesic equations (\ref{geodesic2D}) are solved for $N_r$ different starting positions $\pmb{\theta}$ that allow to reconstruct the shear and convergence fields $\pmb{\gamma},\kappa$. The numbers refer to tests conducted on the Stampede TACC cluster. Parallel operations are implemented with \ttt{mpi4py} \citep{mpi4py}, a \ttt{python} wrapper of the \ttt{MPI} library \citep{MPI}.}
+\caption{Summary of the ray--tracing benchmarks: each $N$--body snapshot is divided in $N_t$ files, which are read in parallel and contain a total of $N_p$ particles. After the gridding procedure (\ref{surfacedensity}) is performed by each task, the total sufrace density (computed for a plane of $L_p$ pixels) is collected by the master task, which then proceeds in solving the Poission equation (\ref{poisson}) via Fast Fourier Transforms and saves the output to disk. In a subsequent step, the lens potential files are read from disk, and the geodesic equations (\ref{geodesic2D}) are solved for $N_r$ different starting positions $\pmb{\theta}$ that allow to reconstruct the shear and convergence fields $\pmb{\gamma},\kappa$. The numbers refer to tests conducted on the XSEDE Stampede cluster. Parallel operations are implemented with \ttt{mpi4py} \citep{mpi4py}, a \ttt{python} wrapper of the \ttt{MPI} library \citep{MPI}.}
 \label{benchmarktable}
 \end{table*}
 
@@ -212,7 +216,7 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 
 \section{Image analysis}
 %
-In this section we describe some useful routines that \LT provides for analyzing simulated convergence and shear fields. The \ttt{ConvergenceMap} and \ttt{ShearMap} classes implement a comprehensive amount of frequently operations that can be performed on two dimensional $\kappa,\pmb{\gamma}$ images (for a complete list look into the \LT documentation \citep{lenstoolsdocs}). Both classes allow flexible I/O formats from files through the \ttt{load} method (the FITS format \citep{cfitsio} is a popular choice, but not the only one possible; user custom format can be easily dealt within \LT). Efficient routines are available for smoothing the maps with Gaussian kernels (optimal smoothing complexity--wise can be performed via FFT), measuring the pixel PDF, counting the local maxima and measure their position, measuring topological descriptors such as Minkowski Functionals \citep{MatsubaraMink}. An example of such operations is shown in Figure \ref{convergencefig}.   
+In this section we describe some useful routines that \LT provides for analyzing simulated convergence and shear fields. The \ttt{ConvergenceMap} and \ttt{ShearMap} classes implement a comprehensive amount of operations that can be performed on two dimensional $\kappa,\pmb{\gamma}$ images (for a complete list look at Table \ref{routinetable} and into the \LT documentation \citep{lenstoolsdocs}). Both classes allow flexible I/O formats from files through the \ttt{load} method (the FITS format \citep{cfitsio} is a popular choice, but not the only one possible; user custom format can be easily dealt within \LT). Efficient routines are available for smoothing the maps with Gaussian kernels (optimal smoothing complexity--wise can be performed via FFT), measuring the pixel PDF, counting the local maxima and measure their position, measuring topological descriptors such as Minkowski Functionals \citep{MatsubaraMink}. An example of such operations is shown in Figure \ref{convergencefig}.   
 \begin{figure*}
 \includegraphics[scale=0.3]{Figures/convergence_visualize.eps}
 \includegraphics[scale=0.3]{Figures/convergence_stats.eps}
@@ -303,16 +307,49 @@ We give a brief overview of the \LT object types that handle parameter constrain
 
 %%%%%%%%%%%%%%%%%% CONCLUSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{table*}
+\begin{tabular}{l|c|c|c}
+\toprule
+{Operation} &            Class names & Methods &     Module name \\ \hline \hline
+\midrule
+
+\multicolumn{4}{c}{\textbf{Shear simulations}} \\ \hline
+Batch initialization & \ttt{SimulationBatch} & \specialcell{\ttt{newModel} \\ } & \ttt{lenstools.pipeline.simulation}    \\ \hline 
+Tree directory & \specialcell{\ttt{SimulationModel}, \\ \ttt{SimulationCollection}, \\ \ttt{SimulationIC}, \\ \ttt{SimulationPlanes}, \\ \ttt{SimulationMaps}, \\ \ttt{SimulationCatalog}} & %
+ \specialcell{\ttt{newCollection}, \\ \ttt{newRealization}, \\ \ttt{newPlaneSet}, \\ \ttt{newMapSet}, \ttt{newCatalog}} & \ttt{lenstools.pipeline.simulation}    \\ \hline 
+$N$--body snapshots & \specialcell{\ttt{NbodySnapshot}, \ttt{Gadget2Snapshot} } & \specialcell{\ttt{open}, \ttt{getPositions} \\ \ttt{cutPlaneGaussianGrid}} & \specialcell{\ttt{lenstools.simulations.nbody} \\ \ttt{lenstools.simulations.gadget2}}\\ \hline
+Ray tracing operations & \ttt{RayTracer} & \ttt{addLens}, \ttt{shoot} & \ttt{lenstools.simulations.raytracing} \\ \hline \hline
+
+\multicolumn{4}{c}{\textbf{Image analysis}} \\ \hline
+Convergence Maps & \ttt{ConvergenceMap} & \specialcell{\ttt{load, smooth} \\ \ttt{powerSpectrum, peakCounts}, \\ \ttt{PDF}} & \ttt{lenstools.image.convergence}   \\ \hline 
+Shear Maps & \ttt{ShearMap} & \specialcell{\ttt{load}, \ttt{fourierEB}, \\ \ttt{eb\_power\_spectrum}} & \ttt{lenstools.image.shear}   \\ \hline \hline
+
+\multicolumn{4}{c}{\textbf{Parameter constraints}} \\ \hline
+Row oriented data & \ttt{Ensemble} & \ttt{read, compute} & \ttt{lenstools.statistics.ensemble}  \\ \hline
+\specialcell{Interpolator, \\ $\chi^2$ evaluation} & \ttt{Emulator} & \specialcell{\ttt{predict, score}, \\ \ttt{sample\_posterior}} & \ttt{lenstools.statistics.constraints}  \\ \hline
+Fisher Matrix & \ttt{FisherAnalysis} & \specialcell{\ttt{parameter\_covariance}, \\ \ttt{fisher\_matrix}} & \ttt{lenstools.statistics.constraints}  \\ \hline
+Confidence contours & \ttt{ContourPlot} & \specialcell{\ttt{from\_scores}, \\ \ttt{plotContours}} & \ttt{lenstools.statistics.contours}  \\ \hline \hline
+
+\multicolumn{4}{c}{\textbf{Miscellaneous}} \\ \hline
+FFTs & \specialcell{\ttt{FFTEngine,} \\ \ttt{NUMPYFFTHandler} } & \ttt{rfft2, irfft2} & \ttt{lenstools.utils.fft}  \\ \hline
+MPI & \ttt{MPIWhirlPool} & \ttt{map, accumulate} & \ttt{lenstools.utils.mpi}  \\ \hline
+
+\bottomrule
+\end{tabular}
+\caption{Summary of the core \LT classes and methods used in this work. For a complete documentation of method signatures and the full API, we direct the reader to the documentation \citep{lenstoolsdocs}}
+\label{routinetable}
+\end{table*}
+
 \section{Conclusion}
 %
-In this work we presented the \LT computing package, which is a collection of tools targeted to theoretical studies of WL. The package includes a WL shear simulation pipeline and is complemented with a variety of image analysis tools and parameter sampling routines. The simulation pipeline combines different existing codes to simulate cosmological volumes (\ttt{CAMB},\ttt{Gadget2}) and provides a \ttt{python} implementation of the multi--lens--plane algorithm. \LT is flexible in terms of snapshot file formats, making the use of different $N$--body simulation codes (see \citep{HACC} for example) possible with minimal additional efforts. This makes \LT portable between different research groups in the WL community. \LT makes use of the \ttt{numpy} array as its primary data structure for numerical calculations, making it very convenient to combine with popular algorithmic packages for data selection (\ttt{pandas} \citep{pandas}), astronomical tools (\ttt{astropy} \citep{astropy}), MCMC sampling (\ttt{pymc} \citep{pymc}, \ttt{emcee} \citep{emcee}), advanced statistical analysis and machine learning (\ttt{scikit-learn} \citep{scikit-learn}). Because of these reasons, we believe that \LT will become a valuable asset to the WL community.    
+In this work we presented the \LT computing package, which is a collection of tools targeted to theoretical studies of WL. The package includes a WL shear simulation pipeline and is complemented with a variety of image analysis tools and parameter sampling routines. The simulation pipeline combines different existing codes to simulate cosmological volumes (\ttt{CAMB},\ttt{Gadget2}) and provides a \ttt{python} implementation of the multi--lens--plane algorithm. \LT is flexible in terms of snapshot file formats, making the use of different $N$--body simulation codes (see \citep{HACC} for example) possible with minimal additional efforts. This makes \LT portable between different research groups in the WL community. \LT makes use of the \ttt{numpy} array as its primary data structure for numerical calculations, making it very convenient to combine with popular algorithmic packages for data selection (\ttt{pandas} \citep{pandas}), astronomical tools (\ttt{astropy} \citep{astropy}), MCMC sampling (\ttt{pymc} \citep{pymc}, \ttt{emcee} \citep{emcee}), advanced statistical analysis and machine learning (\ttt{scikit-learn} \citep{scikit-learn}). Because of these reasons, we believe that \LT will become a valuable asset to the WL community, in particular to groups that have already experience with $N$--body simulations and want to study Weak Lensing. We summarize the \LT core routines in Table \ref{routinetable} and direct the reader to the project official documentation at \url{http://lenstools.readthedocs.org}    
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% ACKNOWLEDGMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
 
 \section*{Acknowledgements}
-We thank Zolt\`an Haiman and Jia Liu for invaluable support and useful discussions. 
+We thank Zolt\`an Haiman, Jia Liu, Jose M. Zorrilla and Morgan May for invaluable support and useful discussions. The simulations in this work were performed at the NSF Extreme Science and Engineering Discovery Environment (XSEDE), supported by grant number ACI-1053575, at the Yeti computing cluster at Columbia University, and at the New York Center for Computational Sciences, a cooperative effort between Brookhaven National Laboratory and Stony Brook University, supported in part by the State of New York. This work was supported in part by the U.S. Department of Energy under Contract Nos. DE-AC02-98CH10886 and DESC0012704, and by the NSF Grant No. AST-1210877 (to Z.H.) and by the Research Opportunities and Approaches to Data Science (ROADS) program at the Institute for Data Sciences and Engineering at Columbia University. 
 
 \bibliography{ref}
 
