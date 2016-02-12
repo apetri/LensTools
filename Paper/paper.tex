@@ -145,7 +145,7 @@ where we use the subscript $k$ to indicate the redshift $z_k$ of the $k$--th len
 \bb{U}(\pmb{\theta},z_s) = (1-\kappa(\pmb{\theta}))\mathds{1}_{2\times2} - \gamma^1(\pmb{\theta})\sigma^3 - \gamma^2(\pmb{\theta})\sigma^1
 \end{equation}
 %
-where we indicated $\mathds{1}_{2\times2}$ as the identity matrix and $\sigma^{1,3}$ as the first and third Pauli matrices. Multiple random realizations of the WL fields $(\kappa,\pmb{\gamma})$ can be obtained using the randomization technique described in \citep{Petri16}.
+where we indicated $\mathds{1}_{2\times2}$ as the identity matrix and $\sigma^{1,3}$ as the first and third Pauli matrices. Multiple random realizations of the WL fields $(\kappa,\pmb{\gamma})$ can be obtained mixing together lenses coming from different initial conditions, using the randomization technique described in \citep{Petri16}.
 
 The iterative solution of equations (\ref{geodesic2D})-(\ref{sheartensorproduct}) requires knowledge of the density fluctuation $\delta(\bb{x},z)$, from which the lens surface density $\sigma$ and gravitational potential $\phi$ can be inferred through equations (\ref{surfacedensity}),(\ref{poisson}). $\delta$ can be calculated running numerical simulations, such as $N$--body simulations \citep{Gadget2,HACC} or hydrodynamical simulations \citep{Flash}. In this paragraph we focus mainly on $N$--body simulations, in which the matter distribution in the universe is approximated as a set of $N_p$ particles of mass $M_p$, which move in their self--generated gravitational field. For this purpose we use the publicly available code \ttt{Gadget2}\citep{Gadget2}, although alternatives can be adopted (see \citep{HACC} for example). Once the $N$--body simulations are ran, \LT provides a \ttt{python} implementation of the multi--lens--plane algorithm \citep{RayTracingHartlap} described above, which takes care of projecting the density fluctuation on two dimensional lenses as in (\ref{surfacedensity}), solving the Poisson equation as in (\ref{poisson}), and computing the light ray deflections as in (\ref{geodesic2D}). An overview of the pipeline operations, from the cosmological parameter specifications to the final shear map products, is outlined in Figure \ref{pipescheme}. We make the claim that the way the \LT code is organized makes it portable between different research groups that rely on different choices, rather than \ttt{Gadget2}, for running $N$--body simulations. The transition between snapshots and lens planes is handled by instances of the \ttt{NbodySnapshot} class, which implements the algorithms based on equations (\ref{poisson}). \ttt{NbodySnapshot} can be sub--classed to implement the necessary input routines from the $N$--body snapshots. \LT comes with one of such possibilities, the \ttt{Gadget2Snapshot} class, that handles input from snapshots in the \ttt{Gadget2} binary format. Other subclass types that allow input from other formats can be coded by the user with minimal effort.  
 
@@ -230,7 +230,7 @@ In addition to real space statistics such as the ones outlined before, \LT provi
 \langle\tilde{\kappa}(\pmb{\ell})\tilde{\kappa}(\pmb{\ell}^\prime)\rangle = (2\pi)^2\delta_D(\pmb{\ell}+\pmb{\ell}^\prime)P^{\kappa\kappa}(\ell)
 \end{equation}
 %
-The shear field can be decomposed into its $E$ and $B$ components according to 
+where we indicate the Fourier transform of $\kappa(\pmb{\theta})$ as $\tilde{\kappa}(\pmb{\ell})$. The shear field can be decomposed into its $E$ and $B$ components according to 
 
 \begin{equation}
 \label{ebmodeeqs}
@@ -325,7 +325,7 @@ Convergence Maps & \ttt{ConvergenceMap} & \specialcell{\ttt{load, smooth} \\ \tt
 Shear Maps & \ttt{ShearMap} & \specialcell{\ttt{load}, \ttt{fourierEB}, \\ \ttt{eb\_power\_spectrum}} & \ttt{lenstools.image.shear}   \\ \hline \hline
 
 \multicolumn{4}{c}{\textbf{Parameter constraints}} \\ \hline
-Row oriented data & \ttt{Ensemble} & \ttt{read, compute} & \ttt{lenstools.statistics.ensemble}  \\ \hline
+Row oriented data & \ttt{Ensemble(pandas.DataFrame)} & \ttt{read, compute} & \ttt{lenstools.statistics.ensemble}  \\ \hline
 \specialcell{Interpolator, \\ $\chi^2$ evaluation} & \ttt{Emulator} & \specialcell{\ttt{predict, score}, \\ \ttt{sample\_posterior}} & \ttt{lenstools.statistics.constraints}  \\ \hline
 Fisher Matrix & \ttt{FisherAnalysis} & \specialcell{\ttt{parameter\_covariance}, \\ \ttt{fisher\_matrix}} & \ttt{lenstools.statistics.constraints}  \\ \hline
 Confidence contours & \ttt{ContourPlot} & \specialcell{\ttt{from\_scores}, \\ \ttt{plotContours}} & \ttt{lenstools.statistics.contours}  \\ \hline \hline

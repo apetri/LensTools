@@ -202,7 +202,7 @@ def flow(cmd_args):
 	pgm.add_node(daft.Node("pN","Lens Planes N",10.5,1.75,aspect=3.5))
 
 	#Mix planes
-	pgm.add_plate(daft.Plate([9.4,1.0,2.1,3.0],label="Mix realizations"))
+	pgm.add_plate(daft.Plate([9.4,1.0,2.1,3.0],label="Mix ICs"))
 
 	#Lensing maps
 	pgm.add_node(daft.Node("lens","Lensing maps " + r"$(\kappa,\gamma)$",13.0,2.5,aspect=4.5,plot_params=g_color))
