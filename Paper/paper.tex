@@ -1,9 +1,9 @@
 %\documentclass[useAMS, usenatbib,usegraphicx,letter]{mn2e}
 %\documentclass[11pt]{article}
-\documentclass[reprint,aps,prd,superscriptaddress,showkeys,showpacs]{revtex4-1}
-\usepackage{epsfig,amsmath,natbib}
+\documentclass[5p]{elsarticle}
 
 \usepackage{aas_macros}
+\usepackage{epsfig,amsmath,natbib}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{dsfont}
@@ -12,6 +12,8 @@
 \usepackage{pbox}
 \usepackage{booktabs}
 \usepackage{minted}
+
+\bibliographystyle{elsarticle-num}
 
 \hypersetup{
 	colorlinks=false,
@@ -39,10 +41,11 @@
 
 \title{Mocking the Weak Lensing universe: the LensTools python computing package}
 
-\author{Andrea Petri}
-\email{apetri@phys.columbia.edu}
-\affiliation{Department of Physics, Columbia University, New York, NY 10027, USA}
-\affiliation{Physics Department, Brookhaven National Laboratory, Upton, NY 11973, USA}
+\author[cu,bnl]{Andrea Petri}
+\ead{apetri@phys.columbia.edu}
+
+\address[cu]{Department of Physics, Columbia University, New York, NY 10027, USA}
+\address[bnl]{Physics Department, Brookhaven National Laboratory, Upton, NY 11973, USA}
 
 \date{\today}
 
@@ -53,9 +56,10 @@ We present a newly developed software package which implements a wide range of r
     
 \end{abstract}
 
-
-\keywords{Weak Gravitational Lensing --- Simulations}
-\pacs{98.80.-k, 95.36.+x, 95.30.Sf, 98.62.Sb}
+\begin{keyword}
+Weak Gravitational Lensing \sep Simulations
+\PACS 98.80.-k \sep 95.36.+x \sep 95.30.Sf \sep 98.62.Sb
+\end{keyword}
 
 \maketitle
 
@@ -73,7 +77,12 @@ Cosmology is entering a data driven era. After the Cosmic Microwave Background (
 
 \subsection{Formalism}
 %
-In this paragraph we give an overview of the \LT shear field simulation pipeline. This consists in a series of routines that, starting from a $\Lambda$CDM cosmological model specified by the cosmological parameters $\bb{p}=(h,\Omega_m,\Omega_\Lambda,\Omega_b,w_0,w_a,n_s,\sigma_8)$, produces random realizations of shear fields $\pmb{\gamma}(\pmb{\theta})$ in cosmology $\bb{p}$. Here $\pmb{\theta}=(\theta_x,\theta_y)$ is the angle on sky as seen from the observer. Given a background source at redshift $z_s$, the matter density fluctuations $\delta(\bb{x},z)$ in between the observer and the source will cause its apparent shape to be distorted. Cosmic shear $\pmb{\gamma}$ is a measurement of the apparent source ellipticity, assuming the unperturbed shape is a circle. The multi--lens--plane algorithm \citep{RayTracingHartlap,Ray1,Ray2,Ray3} is a popular technique to compute light ray deflections across the path $z\in[z_s,0]$ and hence to compute the apparent source shape distortion. The mass distribution between the source and the observer is approximated as a sequence of two dimensional lenses perpendicular to the line of sight, of thickness $\Delta$ and a surface density $\sigma$ given by 
+In this paragraph we give an overview of the \LT shear field simulation pipeline. This consists in a series of routines that, starting from a $\Lambda$CDM cosmological model specified by the cosmological parameters 
+\begin{equation}
+\bb{p}=(h,\Omega_m,\Omega_\Lambda,\Omega_b,w_0,w_a,n_s,\sigma_8)
+\end{equation} 
+%
+produces random realizations of shear fields $\pmb{\gamma}(\pmb{\theta})$ in cosmology $\bb{p}$. Here $\pmb{\theta}=(\theta_x,\theta_y)$ is the angle on sky as seen from the observer. Given a background source at redshift $z_s$, the matter density fluctuations $\delta(\bb{x},z)$ in between the observer and the source will cause its apparent shape to be distorted due to the gravitational lensing effect predicted by general relativity \citep{wlreview}. Cosmic shear $\pmb{\gamma}$ is a measurement of the apparent source ellipticity, assuming the unperturbed shape is a circle. The multi--lens--plane algorithm \citep{RayTracingHartlap,Ray1,Ray2,Ray3} is a popular technique to compute light ray deflections across the path $z\in[z_s,0]$ and hence to compute the apparent source shape distortion. The mass distribution between the source and the observer is approximated as a sequence of two dimensional lenses perpendicular to the line of sight, of thickness $\Delta$ and a surface density $\sigma$ given by 
 
 \begin{equation}
 \label{surfacedensity}
@@ -94,10 +103,12 @@ where $\chi$ is the lens comoving distance and $a=1/(1+z)$ the scale factor. A l
 where we indicated $\bb{T}$ as the gradient of the deflection, which will be called \textit{shear tensor} throughout the rest of the paper. An example of a lens plane computed with the \LT pipeline according to equations (\ref{surfacedensity}),(\ref{poisson}) is shown in Figure \ref{lensplanefig}. 
 
 \begin{figure*}
-\includegraphics[scale=0.3]{Figures/lens_plane_density.eps}
-\includegraphics[scale=0.3]{Figures/lens_plane_potential.eps}
+\begin{center}
+\includegraphics[scale=0.35]{Figures/lens_plane_density.eps}
+\includegraphics[scale=0.35]{Figures/lens_plane_potential.eps}
 \caption{This figure shows a lens plane, computed with a gridding procedure based on equations (\ref{surfacedensity}),(\ref{poisson}). This lens plane has been generated from a $N$--body simulation of size $L_b=480\,{\rm Mpc}/h$ with $N_p=1024^3$ particles at $z_s=2$. The plane resolution is $512\,\,$pixels per side. We show both the surface density $\sigma$ (left) and the lensing potential $\phi$ (right).}
 \label{lensplanefig}
+\end{center}
 \end{figure*}
 %
 The trajectory of a light ray $\bb{x}(z)$ follows the geodesic equation
@@ -109,8 +120,6 @@ The trajectory of a light ray $\bb{x}(z)$ follows the geodesic equation
 %
 which can be translated into a second order differential equation for the light ray angular position $\pmb{\beta}(z)=\bb{x}_\perp(z)/\chi(z)$ as seen from the observer. Following \citep{RayTracingHartlap}, the trajectory of each light ray originating at $\pmb{\beta}(0)=\pmb{\theta}$ can be calculated solving numerically a discretized version of (\ref{geodesic3D}), assuming a finite number of lenses placed at a finite number of redshifts $\{z_k\}$:
 %
-
-\begin{widetext}
 
 \begin{equation}
 \label{geodesic2D}
@@ -132,7 +141,6 @@ which can be translated into a second order differential equation for the light 
 \delta\bb{U}_k = (A_k-1)\delta\bb{U}_{k-1} + C_k\bb{T}_k\bb{U}_k \,\, ; \,\, \delta\bb{U}_0=0
 \end{equation}
 
-\end{widetext}
 %
 where $\bb{U}$ is the Jacobian matrix of the trajectory $\pmb{\beta}$ with respect to the initial light ray position $\pmb{\theta}$, $\bb{U}_k=\nabla_{\pmb{\theta}}\pmb{\beta}_k(\pmb{\theta})$. The factors $A_k,C_k$ depend on the geometry of the lens system
 
@@ -151,7 +159,7 @@ The iterative solution of equations (\ref{geodesic2D})-(\ref{sheartensorproduct}
 
 
 \begin{figure*}
-\includegraphics[scale=0.6]{Figures/flow.eps}
+\includegraphics[scale=0.65]{Figures/flow.eps}
 \caption{Workflow of the \LT WL shear simulation operations, from the specifications of the cosmological parameters $\bb{p}$ to the finished image products. Matter power spectra at high redshift are computed with \ttt{CAMB} and are used to generate the initial conditions for the $N$--body simulations. These initial conditions are then evolved in time with \ttt{Gadget2}. After the snapshots are written to disk, \LT slices them into two dimensional lens planes and computes the light ray deflections at each crossing. From the final positions of the light rays the convergence $\kappa$ and the cosmic shear $\pmb{\gamma}$ can be inferred.}
 \label{pipescheme}
 \end{figure*}
@@ -159,7 +167,7 @@ The iterative solution of equations (\ref{geodesic2D})-(\ref{sheartensorproduct}
 \subsection{Pipeline code structure}
 %
 In this paragraph we describe how the \LT pipeline code is organized. The simulation products are placed in a directory tree structure designed for easy resource access. The directory tree is mirrored in two locations, a so called \textit{Home} location, which holds all the book--keeping information such as small data files (such as \ttt{CAMB} matter power spectra) and configuration files, and a \textit{Storage} location which holds the simulation products (\ttt{Gadget2} snapshots, lens planes and finished shear maps). The reason for this is that while the \textit{Home} location does not require much disk space, the \textit{Storage} location can reach disk sizes of several Terabytes. We found convenient to keep the two locations separated to ensure product management, sharing and portability between different computer clusters. The directory tree is organized as in Figure \ref{inheritance}. 
-A batch of simulations is handled by a single instance of a \ttt{SimulationBatch} object (which holds both the \textit{Home} and \textit{Storage} parts). The first level in the tree corresponds to a choice of values for cosmological parameters $\bb{p}$: each node on this level of the tree is an instance of the \ttt{SimulationModel} class. The second level in the tree specifies the size and resolution of the $N$--body box, namely the box size $L_b$ and the number of particles $N_p$: each node on the second level corresponds to a \ttt{SimulationCollection} object. Inside a simulation collection, we are free to choose different random realizations of the initial conditions, which will then be evolved in time by the $N$--body code. Each such realization lives on a node which is one level deeper in the tree, and is encoded in a \ttt{SimulationIC} object. The deepest level in the tree contains the two dimensional slices of the $N$--body simulation boxes. Each node on this level is an instance of the \ttt{SimulationPlanes} class. Once the lens planes are generated, the ray--tracing operations can be performed. In principle we can use lens planes that live under the same \ttt{SimulationCollection}, but belong to different \ttt{SimulationIC} nodes, to produce either single redshift shear images (each ensemble of images lives in a \ttt{SimulationMaps} object) or shear catalogs of $N_g$ sources, in the form of a table in which each of the $N_g$ rows is a tuple $(x_g,y_g,z_g,\gamma_{1,g},\gamma_{2,g})$. Each ensemble of catalogs corresponds to an instance of the \ttt{SimulationCatalog} class. Note that, because they combine lens planes with different initial random seed (see \citep{Petri16}), both \ttt{SimulationMaps} and \ttt{SimulationCatalog} nodes live on the same level of the directory tree, one level below \ttt{SimulationCollection}. An example on how to create a \ttt{python} script to lay down such a directory tree is shown in the Appendix A. A comprehensive guide on how to deploy the \LT simulation pipeline on a computer cluster can be found in \citep{lenstoolsdocs}.      
+A batch of simulations is handled by a single instance of a \ttt{SimulationBatch} object (which holds both the \textit{Home} and \textit{Storage} parts). The first level in the tree corresponds to a choice of values for cosmological parameters $\bb{p}$: each node on this level of the tree is an instance of the \ttt{SimulationModel} class. The second level in the tree specifies the size and resolution of the $N$--body box, namely the box size $L_b$ and the number of particles $N_p$: each node on the second level corresponds to a \ttt{SimulationCollection} object. Inside a simulation collection, we are free to choose different random realizations of the initial conditions, which will then be evolved in time by the $N$--body code. Each such realization lives on a node which is one level deeper in the tree, and is encoded in a \ttt{SimulationIC} object. The deepest level in the tree contains the two dimensional slices of the $N$--body simulation boxes. Each node on this level is an instance of the \ttt{SimulationPlanes} class. Once the lens planes are generated, the ray--tracing operations can be performed. In principle we can use lens planes that live under the same \ttt{SimulationCollection}, but belong to different \ttt{SimulationIC} nodes, to produce either single redshift shear images (each ensemble of images lives in a \ttt{SimulationMaps} object) or shear catalogs of $N_g$ sources, in the form of a table in which each of the $N_g$ rows is a tuple $(x_g,y_g,z_g,\gamma_{1,g},\gamma_{2,g})$. Each ensemble of catalogs corresponds to an instance of the \ttt{SimulationCatalog} class. Note that, because they combine lens planes with different initial random seed (see \citep{Petri16}), both \ttt{SimulationMaps} and \ttt{SimulationCatalog} nodes live on the same level of the directory tree, one level below \ttt{SimulationCollection}. An example on how to create a \ttt{python} script to lay down such a directory tree is shown in \ref{code:dirtree}. A comprehensive guide on how to deploy the \LT simulation pipeline on a computer cluster can be found in \citep{lenstoolsdocs}.      
 
 \begin{figure*}
 \includegraphics[scale=0.6]{Figures/inheritance.eps}
@@ -183,6 +191,7 @@ The bottleneck of the ray--tracing operations consists in the calculations of th
 We tracked the memory usage of the lens plane and ray--tracing operations. This is an important step, since \ttt{python} has some subtleties when dealing with large memory applications. The total memory allocated by a \ttt{python} process never decreases \citep{python}, even if the resources are released (of course the freed memory can be re--used by newly allocated resources without increasing the peak memory of the \ttt{python} process). Figure \ref{memoryfig} shows the peak memory usage during the lens plane generation and ray--tracing operations. We can see that, for the test case outlined in Table \ref{benchmarktable}, memory consumption stabilizes around 1.3\,GB per task for the lens planes and 1.8\,GB per task during the ray--tracing. These considerations make the \LT pipeline suitable for deployment on computer clusters with $\gtrsim$2\,GB memory per core, such as the one we used. These numbers refer to the test case described in Table \ref{benchmarktable}, but a rough estimate for the more general case can be made noting that the dominant contribution to the memory usage for the lens planes comes from the input from the $N$--body simulations and should hence scale with the number of particles $N_p$. For the ray--tracing, on the other hand, the dominant contribution to the memory usage comes from the lenses and should hence scale as the lens pixel resolution $L_p$.      
 
 \begin{table*}
+\begin{center}
 \begin{tabular}{l|c|c|c}
 \toprule
 {Step} &            Complexity &            Test case &           Runtime \\ \hline \hline
@@ -204,24 +213,30 @@ Shear tensor product               &  $O(N_r)$ & $N_r=2048^2$   &  1.29\,s \\ \h
 \end{tabular}
 \caption{Summary of the ray--tracing benchmarks: each $N$--body snapshot is divided in $N_t$ files, which are read in parallel and contain a total of $N_p$ particles. After the gridding procedure (\ref{surfacedensity}) is performed by each task, the total sufrace density (computed for a plane of $L_p$ pixels) is collected by the master task, which then proceeds in solving the Poission equation (\ref{poisson}) via Fast Fourier Transforms and saves the output to disk. In a subsequent step, the lens potential files are read from disk, and the geodesic equations (\ref{geodesic2D}) are solved for $N_r$ different starting positions $\pmb{\theta}$ that allow to reconstruct the shear and convergence fields $\pmb{\gamma},\kappa$. The numbers refer to tests conducted on the XSEDE Stampede cluster. Parallel operations are implemented with \ttt{mpi4py} \citep{mpi4py}, a \ttt{python} wrapper of the \ttt{MPI} library \citep{MPI}.}
 \label{benchmarktable}
+\end{center}
 \end{table*}
 
 \begin{figure}
+\begin{center}
 \includegraphics[scale=0.3]{Figures/memory_usage.eps}
 \caption{Peak memory usage for the lens plane generation (black) and ray--tracing (red) as a function of runtime $t$ for the test case indicated in Table \ref{benchmarktable}. The vertical lines are drawn in correspondence of the completion of a lens plane calculation (black) and a lens crossing (red).}
 \label{memoryfig}
+\end{center}
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Image analysis}
 %
-In this section we describe some useful routines that \LT provides for analyzing simulated convergence and shear fields. The \ttt{ConvergenceMap} and \ttt{ShearMap} classes implement a comprehensive amount of operations that can be performed on two dimensional $\kappa,\pmb{\gamma}$ images (for a complete list look at Table \ref{routinetable} and into the \LT documentation \citep{lenstoolsdocs}). Both classes allow flexible I/O formats from files through the \ttt{load} method (the FITS format \citep{cfitsio} is a popular choice, but not the only one possible; user custom format can be easily dealt within \LT). Efficient routines are available for smoothing the maps with Gaussian kernels (optimal smoothing complexity--wise can be performed via FFT), measuring the pixel PDF, counting the local maxima and measure their position, measuring topological descriptors such as Minkowski Functionals \citep{MatsubaraMink}. An example of such operations is shown in Figure \ref{convergencefig}.   
+In this section we describe some useful routines that \LT provides for analyzing simulated convergence and shear fields. The \ttt{ConvergenceMap} and \ttt{ShearMap} classes implement a comprehensive amount of operations that can be performed on two dimensional $\kappa,\pmb{\gamma}$ images (for a complete list look at Table \ref{routinetable} and into the \LT documentation \citep{lenstoolsdocs}). Both classes allow flexible I/O formats from files through the \ttt{load} method (the FITS format \citep{cfitsio} is a popular choice, but not the only one possible; user custom format can be easily dealt within \LT). Efficient routines are available for smoothing the maps with Gaussian kernels (optimal smoothing complexity--wise can be performed via FFT), measuring the pixel PDF, counting the local maxima and measure their position, measuring topological descriptors such as Minkowski Functionals \citep{MatsubaraMink}. An example of such operations is shown in Figure \ref{convergencefig}.  
+
 \begin{figure*}
-\includegraphics[scale=0.3]{Figures/convergence_visualize.eps}
+\begin{center}
+\includegraphics[scale=0.35]{Figures/convergence_visualize.eps}
 \includegraphics[scale=0.3]{Figures/convergence_stats.eps}
 \caption{One of the convergence maps produced with the \LT shear simulation pipeline. The map has been generated assuming a uniform background source distribution at $z_s=2$ and has an angular size of $3.5^\circ$ and a resolution of 2048 pixels per side, which correspond to a pixel resolution of $0.1^\prime$. The black crosses in the left panel identify local maxima (\textit{peaks}) in the $\kappa$ field with a significance of at least 2$\sigma$. The right panel shows the PDF of the $\kappa$ field (red) and its peak histogram (black).}
 \label{convergencefig}
+\end{center}
 \end{figure*}
 %
 In addition to real space statistics such as the ones outlined before, \LT provides access to quadratic Fourier statistics such as power spectra. The convergence angular power spectrum $P^{\kappa\kappa}(\ell)$ is defined as  
@@ -240,7 +255,7 @@ B(\pmb{\ell}) = \frac{-2\ell_x\ell_y\tilde{\gamma}^1(\pmb{\ell})+(\ell_x^2-\ell_
 \end{matrix}
 \end{equation}
 %
-Because of the nature of the density perturbations that cause background source lensing, the $E$ component dominates, because $E=O(\phi)$ and $B=O(\phi^2)$. The shear $E$--mode is the convergence $\kappa$, hence $P^{EE}(\ell)=P^{\kappa\kappa}(\ell)$. Figure \ref{ebmodefig} shows the shear $E$ and $B$ modes power spectra measured from one realization of the shear field. Examples on how to use the \LT image analysis routines is shown in Appendix B.   
+Because of the nature of the density perturbations that cause background source lensing, the $E$ component dominates, because $E=O(\phi)$ and $B=O(\phi^2)$. The shear $E$--mode is the convergence $\kappa$, hence $P^{EE}(\ell)=P^{\kappa\kappa}(\ell)$. Figure \ref{ebmodefig} shows the shear $E$ and $B$ modes power spectra measured from one realization of the shear field. Examples on how to use the \LT image analysis routines is shown in \ref{code:image}.   
 
 \begin{figure}
 \includegraphics[scale=0.3]{Figures/eb_modes.eps}
@@ -297,13 +312,15 @@ The partial derivatives of the likelihood with respect to the parameters are eas
 
 \subsection{Code structure}
 
-We give a brief overview of the \LT object types that handle parameter constraints operations. Feature emulators in \LT are row--oriented data structures, in which each of the $N_M$ rows contains a tuple of cosmological (and/or nuisance) parameters $\bb{p}_i$ and the simulated feature at $\bb{p}_i$. The base class that handles row--oriented data in \LT is the \ttt{Ensemble} class. \ttt{Ensemble} inherits from \ttt{pandas.DataFrame} \citep{pandas} and provides additional routines for feature measurement from simulations (both serial and parallel in the number of $\kappa$ maps with \ttt{mpi4py} \citep{mpi4py}), Principal Component Analysis, statistics bootstrapping. As a sub--class of \ttt{pandas.DataFrame}, \ttt{Ensemble} supports I/O and queries from local and remote SQL databases. Parameter space sampling operations in \LT are handled by instances of the \ttt{Emulator} class, which inherits from \ttt{Ensemble} and provides access to vectorized RBF feature interpolation between parameters (which can be used to build emulators), $\chi^2$ evaluation, and the parameter sampling techniques outlined above. Examples of parameter sampling routines are shown in Figure \ref{samplingfig} and Appendix C.          
+We give a brief overview of the \LT object types that handle parameter constraints operations. Feature emulators in \LT are row--oriented data structures, in which each of the $N_M$ rows contains a tuple of cosmological (and/or nuisance) parameters $\bb{p}_i$ and the simulated feature at $\bb{p}_i$. The base class that handles row--oriented data in \LT is the \ttt{Ensemble} class. \ttt{Ensemble} inherits from \ttt{pandas.DataFrame} \citep{pandas} and provides additional routines for feature measurement from simulations (both serial and parallel in the number of $\kappa$ maps with \ttt{mpi4py} \citep{mpi4py}), Principal Component Analysis, statistics bootstrapping. As a sub--class of \ttt{pandas.DataFrame}, \ttt{Ensemble} supports I/O and queries from local and remote SQL databases. Parameter space sampling operations in \LT are handled by instances of the \ttt{Emulator} class, which inherits from \ttt{Ensemble} and provides access to vectorized RBF feature interpolation between parameters (which can be used to build emulators), $\chi^2$ evaluation, and the parameter sampling techniques outlined above. Examples of parameter sampling routines are shown in Figure \ref{samplingfig} and \ref{code:sampling}.          
 
-\begin{figure*}
+\begin{figure}
+\begin{center}
 \includegraphics[scale=0.4]{Figures/parameter_sampling.eps}
 \caption{Cosmological constraints based on the sampling of the parameter space $(\Omega_m,\sigma_8)$ with three different techniques, assuming a flat parameter prior $\Pi(\bb{p})$. We use a Likelihood Grid Evaluation of parameter likelihood (red), a Fisher matrix approximation (blue) and a MCMC sampling using the \ttt{emcee} package (black dots). The parameter space considered is the doublet $(\Omega_m,\sigma_8)$, and the feature used is the $\kappa$ power spectrum $P^{\kappa\kappa}(\ell)$. The $1\sigma$ confidence level contours are shown. The RBF interpolation is based on $N_M=100$ simulated models and the feature covariance matrix $\bb{C}$ has been estimated from $N_r=1024$ random realizations of the feature vector in a fiducial model with $(\Omega_m,\sigma_8)=(0.26,0.8)$.}
 \label{samplingfig}
-\end{figure*}
+\end{center}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%% CONCLUSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -317,15 +334,15 @@ We give a brief overview of the \LT object types that handle parameter constrain
 Batch initialization & \ttt{SimulationBatch} & \specialcell{\ttt{newModel} \\ } & \ttt{lenstools.pipeline.simulation}    \\ \hline 
 Tree directory & \specialcell{\ttt{SimulationModel}, \\ \ttt{SimulationCollection}, \\ \ttt{SimulationIC}, \\ \ttt{SimulationPlanes}, \\ \ttt{SimulationMaps}, \\ \ttt{SimulationCatalog}} & %
  \specialcell{\ttt{newCollection}, \\ \ttt{newRealization}, \\ \ttt{newPlaneSet}, \\ \ttt{newMapSet}, \ttt{newCatalog}} & \ttt{lenstools.pipeline.simulation}    \\ \hline 
-$N$--body snapshots & \specialcell{\ttt{NbodySnapshot}, \ttt{Gadget2Snapshot} } & \specialcell{\ttt{open}, \ttt{getPositions} \\ \ttt{cutPlaneGaussianGrid}} & \specialcell{\ttt{lenstools.simulations.nbody} \\ \ttt{lenstools.simulations.gadget2}}\\ \hline
+$N$--body snapshots & \specialcell{\ttt{NbodySnapshot}, \\ \ttt{Gadget2Snapshot} } & \specialcell{\ttt{open}, \ttt{getPositions} \\ \ttt{cutPlaneGaussianGrid}} & \specialcell{\ttt{lenstools.simulations.nbody} \\ \ttt{lenstools.simulations.gadget2}}\\ \hline
 Ray tracing operations & \ttt{RayTracer} & \ttt{addLens}, \ttt{shoot} & \ttt{lenstools.simulations.raytracing} \\ \hline \hline
 
 \multicolumn{4}{c}{\textbf{Image analysis}} \\ \hline
-Convergence Maps & \ttt{ConvergenceMap} & \specialcell{\ttt{load, smooth} \\ \ttt{powerSpectrum, peakCounts}, \\ \ttt{PDF}} & \ttt{lenstools.image.convergence}   \\ \hline 
+Convergence Maps & \ttt{ConvergenceMap} & \specialcell{\ttt{load, smooth} \\ \ttt{powerSpectrum}, \\ \ttt{peakCounts, PDF}} & \ttt{lenstools.image.convergence}   \\ \hline 
 Shear Maps & \ttt{ShearMap} & \specialcell{\ttt{load}, \ttt{fourierEB}, \\ \ttt{eb\_power\_spectrum}} & \ttt{lenstools.image.shear}   \\ \hline \hline
 
 \multicolumn{4}{c}{\textbf{Parameter constraints}} \\ \hline
-Row oriented data & \ttt{Ensemble(pandas.DataFrame)} & \ttt{read, compute} & \ttt{lenstools.statistics.ensemble}  \\ \hline
+Row oriented data & \specialcell{\ttt{Ensemble} \\ \ttt{(pandas.DataFrame)}} & \ttt{read, compute} & \ttt{lenstools.statistics.ensemble}  \\ \hline
 \specialcell{Interpolator, \\ $\chi^2$ evaluation} & \ttt{Emulator} & \specialcell{\ttt{predict, score}, \\ \ttt{sample\_posterior}} & \ttt{lenstools.statistics.constraints}  \\ \hline
 Fisher Matrix & \ttt{FisherAnalysis} & \specialcell{\ttt{parameter\_covariance}, \\ \ttt{fisher\_matrix}} & \ttt{lenstools.statistics.constraints}  \\ \hline
 Confidence contours & \ttt{ContourPlot} & \specialcell{\ttt{from\_scores}, \\ \ttt{plotContours}} & \ttt{lenstools.statistics.contours}  \\ \hline \hline
@@ -355,27 +372,33 @@ We thank Zolt\`an Haiman, Jia Liu, Jose M. Zorrilla and Morgan May for invaluabl
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% APPENDIX: CODE SNIPPETS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Appendix: code snippets}
+\onecolumn{
+
+\appendix
+\section{Code snippets}
 
 \subsection{Pipeline directory tree}
+\label{code:dirtree}
 
 The \ttt{init\_batch} method will initialize the simulation batch directory tree as described in \S~\ref{shearsim}. This implementation assumes that the matter power spectra for the $N$--body initial conditions are generated with \ttt{CAMB} and the $N$--body simulation outputs are \ttt{Gadget2} binary files.  
-\begin{widetext}
 \inputminted[linenos]{python}{Snippets/dirtree.py}
-\end{widetext}
+
+
 
 \subsection{Image analysis}
+\label{code:image}
 The \ttt{convergence\_visualize, convergence\_stats, eb\_modes} methods can be used to reproduce Figures \ref{convergencefig}, \ref{ebmodefig}
-\begin{widetext}
 \inputminted[linenos]{python}{Snippets/image.py}
-\end{widetext}
+
 
 \subsection{Parameter sampling}
+\label{code:sampling}
 
 The \ttt{lt\_sample} method described below can be used to produce Figure \ref{samplingfig}. 
-\begin{widetext}
 \inputminted[linenos]{python}{Snippets/sampling.py}
-\end{widetext}
+
+
+}
 
 \label{lastpage}
 \end{document}
