@@ -76,8 +76,8 @@ class LimberIntegrator(object):
 		assert hasattr(self,"kappa")
 		assert hasattr(self,"power")
 
-		self.kappa *= kappa_units
-		self.power *= power_units
+		self.kappa = self.kappa * kappa_units
+		self.power = self.power * power_units
 
 	def convergencePowerSpectrum(self,l):
 		"""

@@ -517,7 +517,7 @@ class Spin2(Spin1):
 		return l,P_ee,P_bb,P_eb
 
 	def decompose(self,l_edges):
-		return eb_power_spectrum(self,l_edges)
+		return self.eb_power_spectrum(l_edges)
 
 	def visualizeComponents(self,fig,ax,components="EE,BB,EB",region=(200,9000,-9000,9000)):
 

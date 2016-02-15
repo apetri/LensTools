@@ -36,6 +36,9 @@ class EnvironmentSettings(LTSettings):
 
 		self.home = home
 		self.storage = storage
+		self.cosmo_id_digits = 3
+		self.name2attr = {"Om":"Om0","Ol":"Ode0","w":"w0","wa":"wa","h":"h","Ob":"Ob0","si":"sigma8","ns":"ns"}
+		self.json_tree_file = ".tree.json"
 
 
 	@classmethod
@@ -55,17 +58,17 @@ class EnvironmentSettings(LTSettings):
 			else:
 				settings.name2attr = json.loads(name2attr)
 		except NoOptionError:
-			settings.name2attr = {"Om":"Om0","Ol":"Ode0","w":"w0","wa":"wa","h":"h","Ob":"Ob0","si":"sigma8","ns":"ns"}
+			pass
 
 		try:
 			settings.cosmo_id_digits = options.getint(section,"cosmo_id_digits")
 		except NoOptionError:
-			settings.cosmo_id_digits = 3
+			pass
 
 		try:
 			settings.json_tree_file = options.get(section,"json_tree_file")
 		except NoOptionError:
-			settings.json_tree_file = ".tree.json"
+			pass
 
 		#Return
 		return settings
