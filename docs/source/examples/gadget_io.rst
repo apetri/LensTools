@@ -5,7 +5,7 @@ LensTools provides an easy to use API to interact with the Gadget2 binary format
 
 ::
 	
-	>>> from lenstools.simulations import Gadget2Snapshot
+	>>> from lenstools.simulations import Gadget2SnapshotDE
 
 	>>> import numpy as np
 	>>> from astropy.units import Mpc,m,s
@@ -24,7 +24,7 @@ Then we write them to a snapshot
 
 	#Create an empty gadget snapshot
 
-	>>> snap = Gadget2Snapshot()
+	>>> snap = Gadget2SnapshotDE()
 
 	#Put the particles in the snapshot
 	>>> snap.setPositions(x)
@@ -44,7 +44,7 @@ Now check that we did everything correctly, visualizing the snapshot
 	######################Read and visualize#########################
 
 	#Open the snapshot
-	>>> snap = Gadget2Snapshot.open("gadget_ic")
+	>>> snap = Gadget2SnapshotDE.open("gadget_ic")
 
 	#Visualize the header
 	>>> print(snap.header)
@@ -60,7 +60,7 @@ Now check that we did everything correctly, visualizing the snapshot
 
 This is the result 
 
-.. figure:: ../../../examples/snapshot.png
+.. figure:: ../figures/snapshot.png
 
 If you don't believe that this works, here it is what happens with an actual snapshot produced by a run of Gadget2
 
@@ -69,7 +69,7 @@ If you don't believe that this works, here it is what happens with an actual sna
 	######################Read and visualize#########################
 
 	#Open the snapshot
-	>>> snap = Gadget2Snapshot.open("../Test/Data/gadget/snapshot_001")
+	>>> snap = Gadget2SnapshotDE.open("../Test/Data/gadget/snapshot_001")
 
 	#Visualize the header
 	>>> print(snap.header)
@@ -108,7 +108,7 @@ If you don't believe that this works, here it is what happens with an actual sna
 	snap.visualize(s=1)
 	snap.savefig("snapshot_gadget.png")
 
-.. figure:: ../../../examples/snapshot_gadget.png
+.. figure:: ../figures/snapshot_gadget.png
 
 If you wish, you can export the snapshot positions in R format so that you can take full advantage of the RGL graphics library to visualize your snapshot (works a lot better than matplotlib for three dimensional plots):
 
@@ -129,7 +129,7 @@ If you wish, you can export the snapshot positions in R format so that you can t
 
 which looks something like this 
 
-.. figure:: ../../../examples/snapshot_R.png
+.. figure:: ../figures/snapshot_R.png
 
 We can also measure the density fluctuations power spectrum :math:`P_k`, defined as :math:`\langle \delta n_k \delta n_{k'} \rangle = \delta_D(k+k')P_k`
 
@@ -152,4 +152,4 @@ We can also measure the density fluctuations power spectrum :math:`P_k`, defined
 
 Which looks like this 
 
-.. figure:: ../../../examples/snapshot_power_spectrum.png
+.. figure:: ../figures/snapshot_power_spectrum.png

@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+from importlib import import_module
+
+import os
+import sys
+import argparse
+
+#Don't need MPI here
+sys.modules["mpi4py"] = None
+
+from lenstools import data as lensData
+from lenstools import SimulationBatch
+from lenstools.pipeline.settings import *
+from lenstools.pipeline.cluster import *
+
+#Dictionary that converts command line argument into the section name in the job specification file
+type2section = {
+"camb" : "CAMB",
+"ngenic" : "NGenIC",
+"gadget2" : "Gadget2",
+"nbody" : "Nbody",
+"planes" : "LensPlanes",
+"raytracing" : "RayTracing"
+}
+
+#Dictionary that converts command line argument into the appropriate job handler
+system2handler = {
+"Stampede" : StampedeHandler,
+"stampede" : StampedeHandler,
+"Edison" : EdisonHandler,
+"edison" : EdisonHandler,
+"Cori" : CoriHandler,
+"cori" : CoriHandler,
+}
+
+#Parse command line options
+parser = argparse.ArgumentParser()
+parser.add_argument("-e","--environment",dest="env_file",action="store",type=str,default=lensData("environment_default.ini"),help="environment option file")
+parser.add_argument("-o","--options",dest="exec_options",action="store",type=str,default=lensData("lens_default.ini"),help="configuration file to pass to the executable (planes or raytracing)")
+parser.add_argument("-O","--one",dest="one_script",action="store_true",default=False,help="Use to collapse all the lens planes and raytracing executables in a single job script")
+parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str,default=lensData("job_default.ini"),help="job specifications file")
+parser.add_argument("-t","--type",dest="job_type",action="store",type=str,default=None,help="type of job submission (Gadget,NGenIC,etc...)")
+parser.add_argument("-c","--chunks",dest="chunks",action="store",type=int,default=1,help="number of independent job submissions in which to split the workload")
+parser.add_argument("-s","--system",dest="system",action="store",type=str,default=None,help="name of the system on which we are running on")
+parser.add_argument("-E","--extra_args",dest="extra_args",action="store",type=str,default=None,help="extra arguments to pass to the executable")
+parser.add_argument("model_file",nargs="?",default=None,help="text file that contains all the IDs of the models to include in the job submission")
+
+#Parse command arguments and check that all provided options are available
+cmd_args = parser.parse_args()
+
+#Check that all the required command line arguments are provided
+if (cmd_args.job_type is None):
+	parser.print_help()
+	sys.exit(0)
+
+#Log to user
+print("[*] Environment settings for current batch read from {0}".format(cmd_args.env_file))
+environment = EnvironmentSettings.read(cmd_args.env_file)
+
+#Instantiate handler
+if cmd_args.system is not None:
+	system = cmd_args.system
+else:
+	print("[*] No system option provided, reading system type from $THIS environment variable")
+	system = os.getenv("THIS")
+	if system=="":
+		print("[-] $THIS environment variable is not set, cannot continue")
+		sys.exit(1)
+
+if system in system2handler.keys():
+	print("[+] Using job handler for system {0}".format(system))
+	job_handler = system2handler[system]()
+else:
+	parts = system.split(".")
+	module = ".".join(parts[:-1])
+	handler = parts[-1]
+	print("[+] Using job handler {0} from {1}".format(handler,module))
+	job_handler = getattr(import_module(module),handler)()
+
+
+print("[*] Current batch home directory: {0}".format(environment.home))
+print("[*] Current batch mass storage: {0}".format(environment.storage))
+
+#Instantiate the simulation batch
+batch = SimulationBatch(environment)
+
+#Read the realizations to include in the job submission (if no file is provided read from stdin)
+if cmd_args.model_file is not None:
+	print("[*] Realizations to include in this submission will be read from {0}".format(cmd_args.model_file))
+	with open(cmd_args.model_file,"r") as modelfile:
+		realizations = [ l.strip("\n") for l in modelfile.readlines() if l!="" ]
+else:
+	print("[*] Realizations to include in this submission will be read from stdin")
+	realizations = [ l.strip("\n") for l in sys.stdin.readlines() if l!="" ]
+
+#Log to user
+print("[+] Found {0} realizations to include in job submission, to be split in {1} chunks".format(len(realizations),cmd_args.chunks))
+
+#Now decide which type of submission are we generating, and generate the script
+job_type = cmd_args.job_type
+
+if job_type=="camb":
+
+	section = type2section[job_type]
+	print("[+] Generating CAMB submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	batch.writeCAMBSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,one_script=cmd_args.one_script)
+
+elif job_type=="ngenic":
+
+	section = type2section[job_type]
+	print("[+] Generating N-GenIC submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	batch.writeNGenICSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,one_script=cmd_args.one_script)
+
+elif job_type in ["nbody","gadget2"]:
+
+	section = type2section[job_type]
+	print("[+] Generating Gadget2 submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	batch.writeNbodySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,one_script=cmd_args.one_script)
+
+elif job_type=="planes":
+
+	#Assert the fact that the lens option file is present
+	if not(os.path.exists(cmd_args.exec_options)):
+		print("[-] Lens option file {0} does not exist!".format(cmd_args.exec_options))
+		sys.exit(1)
+
+	section = type2section[job_type]
+	print("[+] Generating lensing planes submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	print("[*] Using plane specifications found in {0}".format(cmd_args.exec_options))
+	batch.writePlaneSubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),plane_config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script)
+
+elif job_type=="raytracing":
+
+	#Assert the fact that the lens option file is present
+	if not(os.path.exists(cmd_args.exec_options)):
+		print("[-] Lens option file {0} does not exist!".format(cmd_args.exec_options))
+		sys.exit(1)
+
+
+	section = type2section[job_type]
+	print("[+] Generating ray tracing submission script")
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	print("[*] Using ray tracing specifications found in {0}".format(cmd_args.exec_options))
+	batch.writeRaySubmission(realizations,job_settings,job_handler,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),raytracing_config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script)
+
+else:
+
+	#Assert the fact that the job config file is present
+	if not(os.path.exists(cmd_args.exec_options)):
+		print("[-] Option file {0} required by {1} does not exist!".format(cmd_args.exec_options,job_type))
+		sys.exit(1)
+
+	section = job_type
+	print("[+] Generating submission script for {0}".format(job_type))
+	print("[*] Reading job specifications from {0} section {1}".format(cmd_args.job_options_file,section))
+	job_settings = JobSettings.read(cmd_args.job_options_file,section)
+	print("[*] Using specifications for {0} found in {1}".format(job_type,cmd_args.exec_options))
+
+	#Escape extra arguments
+	if cmd_args.extra_args is not None:
+		extra_args = cmd_args.extra_args.replace("\\","")
+	else:
+		extra_args = cmd_args.extra_args
+
+	batch.writeSubmission(realizations,job_settings,job_handler,job_executable=job_type,chunks=cmd_args.chunks,environment_file=os.path.abspath(cmd_args.env_file),config_file=os.path.abspath(cmd_args.exec_options),one_script=cmd_args.one_script,extra_args=extra_args)
+
+
+
+
+
+
+
+
+

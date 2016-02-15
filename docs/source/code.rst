@@ -1,78 +1,83 @@
 API
 ***
 
-.. warning::
-
-	This is still in pre-alpha stage, not tested yet on full scale! Use at your own risk!
-
 .. automodule:: lenstools
 
 Convergence maps
 ================
 
-.. autoclass:: lenstools.ConvergenceMap
+.. autoclass:: lenstools.image.convergence.ConvergenceMap
 	:inherited-members:
 
-.. autoclass:: lenstools.Mask
+.. autoclass:: lenstools.image.convergence.Mask
 
-Shear maps
-==========
+Shear maps and catalogs
+=======================
 
-.. autoclass:: lenstools.ShearMap
+.. autoclass:: lenstools.image.shear.ShearMap
 	:inherited-members:
+
+.. autoclass:: lenstools.catalog.shear.Catalog
+	:members: setSpatialInfo,pixelize,visualize
+
+.. autoclass:: lenstools.catalog.shear.ShearCatalog
+	:members: toMap,shapeNoise
 
 Statistics
 ==========
 
-.. autoclass:: lenstools.Ensemble
-	:inherited-members: 
+.. autoclass:: lenstools.statistics.ensemble.Ensemble
+	:members: nobs,read,readall,read_sql_table,read_sql_query,compute,save,concat,meshgrid,combine_from_dict,combine_columns,suppress_indices,group,covariance,bootstrap,principalComponents,project,compare,selfChi2,shuffle,imshow 
 
-Constraining cosmology
-======================
-
-.. autoclass:: lenstools.constraints.Analysis
+.. autoclass:: lenstools.statistics.database.Database
 	:inherited-members:
 
-.. autoclass:: lenstools.constraints.FisherAnalysis
+.. autoclass:: lenstools.statistics.database.ScoreDatabase
 	:inherited-members:
 
-.. autoclass:: lenstools.constraints.LikelihoodAnalysis
-	:inherited-members:
+.. automodule:: lenstools.statistics.database
+	:members: chi2database
+
+Cosmological parameter estimation
+=================================
+
+.. autoclass:: lenstools.statistics.constraints.Analysis
+	:members: from_features,feature_names,parameter_names,parameter_set,feature_set,parameters,features,add_models,reparametrize,refeaturize,combine_features,find
+
+Fisher matrix calculations
+--------------------------
+
+.. autoclass:: lenstools.statistics.constraints.FisherAnalysis
+	:members: set_fiducial,fiducial,variations,check,where,varied,compute_derivatives,derivatives,chi2,fit,classify,parameter_covariance,fisher_matrix,ellipse,confidence_ellipse
+
+Non linear parameter dependence
+-------------------------------
+
+.. autoclass:: lenstools.statistics.constraints.Emulator
+	:members: set_likelihood,train,predict,chi2,chi2Contributions,likelihood,score,sample_posterior,approximate_linear
+
+Posterior samplers
+------------------
+
+.. automodule:: lenstools.statistics.samplers
+	:members: emcee_sampler
 
 
 Confidence contour plotting
-===========================
+---------------------------
 
-.. autoclass:: lenstools.contours.ContourPlot
+.. autoclass:: lenstools.statistics.contours.ContourPlot
 	:inherited-members:
+
 
 Noise
 =====
 
-.. autoclass:: lenstools.GaussianNoiseGenerator
+.. autoclass:: lenstools.image.noise.GaussianNoiseGenerator
 	:inherited-members:
 
-Indexing
-========
-
-.. automodule:: lenstools.index
-
-.. autoclass:: lenstools.index.Indexer
-
-.. autoclass:: lenstools.index.PowerSpectrum
-
-.. autoclass:: lenstools.index.Moments
-
-.. autoclass:: lenstools.index.Peaks
-
-.. autoclass:: lenstools.index.PDF
-
-.. autoclass:: lenstools.index.MinkowskiAll
-
-.. autoclass:: lenstools.index.MinkowskiSingle
-
-Simulation suites
-=================
+Existing Simulation suites
+==========================
 
 .. automodule:: lenstools.simulations
 
@@ -89,7 +94,7 @@ Simulation design
 =================
 
 .. autoclass:: lenstools.simulations.Design
-	:inherited-members:
+	:members: parameters,from_specs,write,visualize,savefig,set_title,diagonalCost,cost,sample,sample_ellipse
 
 
 Nicaea bindings
@@ -101,14 +106,18 @@ Nicaea bindings
 .. autoclass:: lenstools.simulations.Nicaea
 	:members: fromCosmology,convergencePowerSpectrum,shearTwoPoint
 
-Gadget2 snapshot handling
-==========================
+N-body simulation snapshot handling
+===================================
 
 .. autoclass:: lenstools.simulations.Gadget2Snapshot
 	:inherited-members:
 
-.. autoclass:: lenstools.simulations.Gadget2Settings
-	:inherited-members:
+.. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotDE
+
+.. autoclass:: lenstools.simulations.gadget2.Gadget2SnapshotPipe
+
+.. autoclass:: lenstools.simulations.amiga.AmigaHalos 
+	
 
 Ray tracing simulations
 =======================
@@ -130,23 +139,126 @@ Ray tracing simulations
 .. autoclass:: lenstools.simulations.RayTracer
 	:inherited-members:
 
+Weak Lensing Simulation Pipeline
+================================
 
-Observation sets
-================
+Directory tree handling
+-----------------------
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationBatch
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationModel
+	:members: path,mkdir,newCollection,getCollection,collections,newTelescopicMapSet,getTelescopicMapSet,telescopicmapsets
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationCollection
+	:members: newRealization,getRealization,realizations,newMapSet,getMapSet,writeCAMB,camb2ngenic
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationIC
+	:members: newPlaneSet,getPlaneSet,writeNGenIC,writeGadget2
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationPlanes
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationMaps
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationTelescopicMaps
+
+.. autoclass:: lenstools.pipeline.simulation.SimulationCatalog
+
+
+Tunable settings
+----------------
+
+.. autoclass:: lenstools.pipeline.settings.EnvironmentSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.simulations.camb.CAMBSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.NGenICSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.simulations.Gadget2Settings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.PlaneSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.MapSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.TelescopicMapSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.CatalogSettings
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.settings.JobSettings
+	:inherited-members:
+
+Cluster deployment
+------------------
+
+.. autoclass:: lenstools.pipeline.deploy.JobHandler
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.deploy.Directives
+	:inherited-members:
+
+.. autoclass:: lenstools.pipeline.deploy.ClusterSpecs
+	:inherited-members:
+
+Cluster specific settings
+-------------------------
+
+.. automodule:: lenstools.pipeline.cluster
+	:inherited-members:
+
+Real observation sets
+=====================
 
 .. automodule:: lenstools.observations
+	:inherited-members:
 
 .. autoclass:: lenstools.observations.CFHTLens
+	:inherited-members:
+
+
+Limber integration
+==================
+
+.. autoclass:: lenstools.simulations.limber.LimberIntegrator
 	:inherited-members:
 
 Defaults
 ========
 
-.. automodule:: lenstools.defaults
-	:members: load_fits_default_convergence,load_fits_default_shear,default_callback_loader,convergence_measure_all
+.. automodule:: lenstools.utils.defaults
+	:members: load_fits_default_convergence,load_fits_default_shear,measure_power_spectrum
 
-Limber integration
-==================
+Miscellaneous utilities
+=======================
 
-.. autoclass:: lenstools.LimberIntegrator
+MPI
+---
+
+.. autoclass:: lenstools.utils.mpi.MPIWhirlPool
+	:inherited-members:
+
+Fast Fourier Transforms
+-----------------------
+
+.. autoclass:: lenstools.utils.fft.NUMPYFFTPack
+	:inherited-members:
+
+Algorithms
+----------
+
+.. automodule:: lenstools.utils.algorithms
+	:inherited-members:
+
+Decorators
+----------
+
+.. automodule:: lenstools.utils.decorators
 	:inherited-members:

@@ -1,9 +1,11 @@
-from ..convergence import Spin0,ConvergenceMap
-from ..shear import Spin1,Spin2,ShearMap
+from ..image.convergence import Spin0,ConvergenceMap
+from ..image.shear import Spin1,Spin2,ShearMap
 
+import sys
 import time
-import logging
-import re
+import gc
+
+from .logs import logplanes,logray,logstderr,peakMemory
 
 from operator import mul
 from functools import reduce
@@ -17,27 +19,17 @@ try:
 except ImportError:
 	matplotlib = None
 
-#FFT engines
-from numpy.fft import fftfreq,rfft2,irfft2
+#FFT engine
+from ..utils.fft import NUMPYFFTPack
+fftengine = NUMPYFFTPack()
 
-try:
-	from numpy.fft import rfftfreq
-except ImportError:
-	from ..utils import rfftfreq
-
-from astropy.cosmology import w0waCDM
-import astropy.units 
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
-#Try to import the FITSIO library for optimal FITS images reading
-try:
-	from fitsio import FITS as fitsio
-	fitsio = fitsio
-	from astropy.io import fits
+from .io import readFITSHeader,readFITS,saveFITS
 
-except ImportError:
-	from astropy.io import fits
-	fitsio = None
+#Enable garbage collection if not active already
+if not gc.isenabled():
+	gc.enable()
 
 
 ###########################################################
@@ -47,15 +39,16 @@ except ImportError:
 class Plane(Spin0):
 
 
-	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False):
+	def __init__(self,data,angle,redshift=2.0,cosmology=None,comoving_distance=None,unit=rad**2,num_particles=None,masked=False,filename=None):
 
 		#Sanity check
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
-		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles)
+		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles,filename=filename)
 		self.redshift = redshift
 		self.cosmology = cosmology
 		self.unit = unit
+		self.filename = filename
 
 		if num_particles is not None:
 			self.num_particles = num_particles
@@ -78,6 +71,39 @@ class Plane(Spin0):
 		else:
 			raise TypeError("data type not supported!")
 
+	@staticmethod
+	def readHeader(filename,format=None):
+
+		"""
+		Read the header of the file on which the plane is contained
+
+		:param filename: name of the file
+		:type filename: str.
+
+		:param format: format of the file, only FITS implemented so far; if None, it's detected automatically from the filename
+		:type format: str.
+
+		:returns: header object
+
+		"""
+
+		if format is None:
+			
+			extension = filename.split(".")[-1]
+			if extension in ["fit","fits"]:
+				format="fits"
+			else:
+				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
+
+
+		if format=="fits":
+			return readFITSHeader(filename)
+		else:
+			raise ValueError("Format {0} not implemented yet!!".format(format))
+
+
+	##########################################################################################################################################################
+	
 
 	def angular(self,length_scale):
 
@@ -126,56 +152,8 @@ class Plane(Spin0):
 			else:
 				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
-
 		if format=="fits":
-
-			#A cosmology instance should be available in order to save in FITS format
-			assert self.cosmology is not None
-		
-			#Create the hdu
-			if self.space=="real":
-				
-				if double_precision:
-					hdu = fits.PrimaryHDU(self.data)
-				else:
-					hdu = fits.PrimaryHDU(self.data.astype(np.float32))
-			
-			elif self.space=="fourier":
-				
-				hdu = fits.PrimaryHDU(self.data.real)
-				hdu1 = fits.ImageHDU(self.data.imag)
-			
-			else:
-				raise TypeError("data type not supported!")
-
-
-			#Generate a header
-			hdu.header["H0"] = (self.cosmology.H0.to(km/(s*Mpc)).value,"Hubble constant in km/s*Mpc")
-			hdu.header["h"] = (self.cosmology.h,"Dimensionless Hubble constant")
-			hdu.header["OMEGA_M"] = (self.cosmology.Om0,"Dark Matter density")
-			hdu.header["OMEGA_L"] = (self.cosmology.Ode0,"Dark Energy density")
-			hdu.header["W0"] = (self.cosmology.w0,"Dark Energy equation of state")
-			hdu.header["WA"] = (self.cosmology.wa,"Dark Energy running equation of state")
-
-			hdu.header["Z"] = (self.redshift,"Redshift of the lens plane")
-			hdu.header["CHI"] = (hdu.header["h"] * self.comoving_distance.to(Mpc).value,"Comoving distance in Mpc/h")
-
-			if self.side_angle.unit.physical_type=="angle":
-				hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"Side angle in degrees")
-			elif self.side_angle.unit.physical_type=="length":
-				hdu.header["SIDE"] = (self.side_angle.to(Mpc).value*self.cosmology.h,"Side length in Mpc/h")
-
-			hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane")
-			hdu.header["UNIT"] = (self.unit.to_string(),"Measure units of the pixel values") 
-
-			#Save the plane
-			if self.space=="real":
-				hdulist = fits.HDUList([hdu])
-			else:
-				hdulist = fits.HDUList([hdu,hdu1])
-
-			hdulist.writeto(filename,clobber=True)
-
+			saveFITS(self,filename=filename,double_precision=double_precision)
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
 
@@ -209,92 +187,7 @@ class Plane(Spin0):
 
 
 		if format=="fits":
-
-			#Read the FITS file with the plane information (if there are two HDU's the second one is the imaginary part)
-			if fitsio is not None:
-				hdu = fitsio(filename)
-			else:
-				hdu = fits.open(filename)
-			
-			if len(hdu)>2:
-				raise ValueError("There are more than 2 HDUs, file format unknown")
-
-			if fitsio is not None:
-				header = hdu[0].read_header()
-			else:
-				header = hdu[0].header
-
-			#Retrieve the info from the header (handle old FITS header format too)
-			try:
-				hubble = header["H0"] * (km/(s*Mpc))
-				h = header["h"]
-			except:
-				hubble = header["H_0"] * (km/(s*Mpc))
-				h = hubble.value / 100
-
-			Om0 = header["OMEGA_M"]
-			Ode0 = header["OMEGA_L"]
-
-			try:
-				w0 = header["W0"]
-				wa = header["WA"]
-			except:
-				w0 = header["W_0"]
-				wa = header["W_A"]
-			
-			redshift = header["Z"]
-			comoving_distance = (header["CHI"] / h) * Mpc
-
-			if "SIDE" in header.keys():
-				angle = header["SIDE"] * Mpc / h
-			elif "ANGLE" in header.keys():
-				angle = header["ANGLE"] * deg
-			else:
-				angle = ((header["RES_X"] * header["NAXIS1"] / header["CHI"]) * rad).to(deg)
-
-			#Build the cosmology object if options directs
-			if init_cosmology:
-				cosmology = w0waCDM(H0=hubble,Om0=Om0,Ode0=Ode0,w0=w0,wa=wa)
-			else:
-				cosmology = None
-
-			#Read the number of particles, if present
-			try:
-				num_particles = header["NPART"]
-			except:
-				num_particles = None
-
-			#Read the units if present
-			try:
-				unit_string = header["UNIT"]
-				name,exponent = re.match(r"([a-zA-Z]+)([0-9])?",unit_string).groups()
-				unit = getattr(astropy.units,name)
-				if exponent is not None:
-					unit **= exponent
-			except AttributeError:
-				unit = dimensionless_unscaled
-			except (ValueError,KeyError):
-				unit = rad**2
-
-			#Instantiate the new PotentialPlane instance
-			if fitsio is not None:
-
-				if len(hdu)==1:
-					new_plane = cls(hdu[0].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-				else:
-					new_plane = cls(hdu[1].read() + 1.0j*hdu[1].read(),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-
-			else:
-			
-				if len(hdu)==1:
-					new_plane = cls(hdu[0].data.astype(np.float64),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-				else:
-					new_plane = cls((hdu[0].data + 1.0j*hdu[1].data).astype(np.complex128),angle=angle,redshift=redshift,comoving_distance=comoving_distance,cosmology=cosmology,unit=unit,num_particles=num_particles)
-
-			#Close the FITS file and return
-			hdu.close()
-			return new_plane
-
+			return readFITS(cls,filename=filename,init_cosmology=init_cosmology)
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
 
@@ -327,13 +220,13 @@ class Plane(Spin0):
 
 			#Rolling in Fourier space is just multiplying by phases
 			if lmesh is None:
-				l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+				l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 			else:
 				l = lmesh
 
 			#Timestamp
 			now = time.time()
-			logging.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 			random_shift = np.random.randint(0,self.data.shape[0],size=2)
@@ -341,7 +234,7 @@ class Plane(Spin0):
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Phase multiplication completed in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("Phase multiplication completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 
@@ -357,7 +250,7 @@ class Plane(Spin0):
 		"""
 
 		assert self.space=="fourier","We are already in real space!!"
-		self.data = irfft2(self.data)
+		self.data = fftengine.irfft2(self.data)
 		self.space = "real"
 
 	
@@ -369,7 +262,7 @@ class Plane(Spin0):
 		"""
 
 		assert self.space=="real","We are already in fourier space!!"
-		self.data = rfft2(self.data)
+		self.data = fftengine.rfft2(self.data)
 		self.space="fourier"
 
 
@@ -454,7 +347,7 @@ class DensityPlane(Plane):
 
 		#Initialize l meshgrid
 		if lmesh is None:
-			l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+			l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 		else:
 			l = lmesh
 
@@ -464,7 +357,7 @@ class DensityPlane(Plane):
 
 		#Go with the FFTs
 		if self.space=="real":
-			density_ft = rfft2(self.data)
+			density_ft = fftengine.rfft2(self.data)
 		elif self.space=="fourier":
 			density_ft = self.data.copy()
 		else:
@@ -476,7 +369,7 @@ class DensityPlane(Plane):
 		density_ft[0,0] = 0.0
 
 		#Instantiate the new PotentialPlane
-		return PotentialPlane(data=irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
+		return PotentialPlane(data=fftengine.irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
 
 
 ###########################################################
@@ -530,35 +423,35 @@ class PotentialPlane(Plane):
 
 			#Compute deflections in fourier space
 			if lmesh is None:
-				l = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+				l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 			else:
 				l = lmesh
 
 			#Timestamp
 			now = time.time()
-			logging.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 			ft_deflection = 2.0*np.pi*1.0j * l * self.data
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Phase multiplications completed in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("Phase multiplications completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 			#Go back in real space
-			deflection = irfft2(ft_deflection)
+			deflection = fftengine.irfft2(ft_deflection)
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Inverse FFTs completed in {0:.3f}s".format(now-last_timestamp))
+			logplanes.debug("Inverse FFTs completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now 
 
 		else:
 			raise ValueError("space must be either real or fourier!")
 
 		#Scale to units
-		deflection *= self.unit
+		deflection = deflection * self.unit
 		deflection /= self.resolution
 		
 		if self.side_angle.unit.physical_type=="length":
@@ -617,7 +510,7 @@ class PotentialPlane(Plane):
 
 			#Compute deflections in fourier space
 			if lmesh is None:
-				lx,ly = np.array(np.meshgrid(rfftfreq(self.data.shape[0]),fftfreq(self.data.shape[0])))
+				lx,ly = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
 			else:
 				lx,ly = lmesh
 
@@ -627,9 +520,9 @@ class PotentialPlane(Plane):
 			ft_tensor_yy = -(2.0*np.pi)**2 * self.data * (ly**2)
 
 			#Go back in real space
-			tensor_xx = irfft2(ft_tensor_xx)
-			tensor_xy = irfft2(ft_tensor_xy)
-			tensor_yy = irfft2(ft_tensor_yy)
+			tensor_xx = fftengine.irfft2(ft_tensor_xx)
+			tensor_xy = fftengine.irfft2(ft_tensor_xy)
+			tensor_yy = fftengine.irfft2(ft_tensor_yy)
 
 			tensor = np.array([tensor_xx,tensor_yy,tensor_xy])
 
@@ -638,7 +531,7 @@ class PotentialPlane(Plane):
 
 
 		#Scale units
-		tensor *= self.unit
+		tensor = tensor * self.unit
 		tensor /= self.resolution**2
 
 		if self.side_angle.unit.physical_type=="length":
@@ -680,25 +573,25 @@ class PotentialPlane(Plane):
 				x = x.to(rad).value * self.comoving_distance
 				y = y.to(rad).value * self.comoving_distance			
 			
-			logging.debug("Computing hessian...")
+			logplanes.debug("Computing hessian...")
 			hessian_xx,hessian_yy,hessian_xy = self.hessian(x,y)
 			
-			logging.debug("Computing laplacian...")
+			logplanes.debug("Computing laplacian...")
 			laplacian = hessian_xx + hessian_yy
 			
-			logging.debug("Laplacian calculation completed")
+			logplanes.debug("Laplacian calculation completed")
 
 		elif self.space=="fourier":
 
-			ly,lx = np.meshgrid(fftfreq(self.data.shape[0]),rfftfreq(self.data.shape[0]),indexing="ij")
+			ly,lx = np.meshgrid(fftengine.fftfreq(self.data.shape[0]),fftengine.rfftfreq(self.data.shape[0]),indexing="ij")
 			ft_laplacian = -1.0 * (2.0*np.pi)**2 * (lx**2 + ly**2) * self.data
-			laplacian = irfft2(ft_laplacian) 			
+			laplacian = fftengine.irfft2(ft_laplacian) 			
 
 		else:
 			raise ValueError("space must be either real or fourier!")
 
 		#Scale the units
-		laplacian *= self.unit
+		laplacian = laplacian * self.unit
 		laplacian /= self.resolution**2
 
 		if self.side_angle.unit.physical_type=="length":
@@ -875,7 +768,7 @@ class RayTracer(object):
 
 		#If we know the size of the lens planes already we can compute, once and for all, the FFT meshgrid
 		if lens_mesh_size is not None:
-			self.lmesh = np.array(np.meshgrid(rfftfreq(lens_mesh_size),fftfreq(lens_mesh_size)))
+			self.lmesh = np.array(np.meshgrid(fftengine.rfftfreq(lens_mesh_size),fftengine.fftfreq(lens_mesh_size)))
 		else:
 			self.lmesh = None
 
@@ -897,6 +790,10 @@ class RayTracer(object):
 		if type(lens_specification)==tuple:
 
 			filename,distance,redshift = lens_specification
+
+			assert type(filename)==str
+			assert distance.unit.physical_type=="length"
+			assert type(redshift)==float
 			
 			self.lens.append(filename)
 			self.distance.append(distance)
@@ -912,7 +809,7 @@ class RayTracer(object):
 			self.Nlenses += 1
 
 		#If completed correctly, log info to the user
-		logging.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
+		logray.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
 
 	def randomRoll(self,seed=None):
 
@@ -1048,12 +945,24 @@ class RayTracer(object):
 			if type(lens[k])==PotentialPlane:
 				current_lens = lens[k]
 			elif type(lens[k])==str:
+				
+				logray.info("Reading plane from {0}...".format(lens[k]))
 				current_lens = PotentialPlane.load(lens[k])
+				logray.info("Read plane from {0}...".format(lens[k]))
+				logstderr.debug("Read plane: peak memory usage {0:.3f} (task)".format(peakMemory()))
+				
+				np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens {0} redshift does not match info file specifications!".format(lens[k]))
+				
+				logray.info("Randomly rolling lens {0} along its axes...".format(k))
+				current_lens.randomRoll()
+				logray.info("Rolled lens {0} along its axes...".format(k))
+				logstderr.debug("Rolled lens: peak memory usage {0:.3f} (task)".format(peakMemory()))
+
 			else:
 				raise TypeError("Lens format not recognized!")
 
 			#Log
-			logging.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
+			logray.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
 			start = time.time()
 			last_timestamp = start
 
@@ -1064,7 +973,8 @@ class RayTracer(object):
 				deflections = current_lens.deflectionAngles(current_positions[0],current_positions[1])
 
 			now = time.time()
-			logging.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Retrieval of deflection angles from potential planes completed in {0:.3f}s".format(now-last_timestamp))
+			logstderr.debug("Retrieval of deflection angles: peak memory usage {0:.3f} (task)".format(peakMemory()))
 			last_timestamp = now
 
 			#If we are tracing jacobians we need to retrieve the shear matrices too
@@ -1076,7 +986,8 @@ class RayTracer(object):
 					shear_tensors = current_lens.shearMatrix(current_positions[0],current_positions[1])
 
 				now = time.time()
-				logging.debug("Shear matrices retrieved in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("Shear matrices retrieved in {0:.3f}s".format(now-last_timestamp))
+				logstderr.debug("Shear matrices retrieved: peak memory usage {0:.3f} (task)".format(peakMemory()))
 				last_timestamp = now
 			
 			#####################################################################################
@@ -1088,13 +999,13 @@ class RayTracer(object):
 			#Compute the position on the next lens and log timestamp
 			current_deflection *= (Ak-1) 
 			now = time.time()
-			logging.debug("Geometrical weight factors calculations and deflection scaling completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Geometrical weight factors calculations and deflection scaling completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Add deflections and log timestamp
 			current_deflection += Ck * deflections 
 			now = time.time()
-			logging.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#If we are tracing jacobians we need to compute the matrix product with the shear matrix
@@ -1106,7 +1017,8 @@ class RayTracer(object):
 				current_jacobian_deflection += Ck * (np.tensordot(dotter,current_jacobian,axes=([2],[0])) * shear_tensors).sum(1)
 				
 				now = time.time()
-				logging.debug("Shear matrix products computed in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("Shear matrix products computed in {0:.3f}s".format(now-last_timestamp))
+				logstderr.debug("Shear matrix products completed: peak memory usage {0:.3f} (task)".format(peakMemory()))
 				last_timestamp = now
 
 			###########################################################################################
@@ -1137,7 +1049,8 @@ class RayTracer(object):
 						current_jacobian += current_jacobian_deflection * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 			now = time.time()
-			logging.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Addition of deflections completed in {0:.3f}s".format(now-last_timestamp))
+			logstderr.debug("Addition of deflections completed: peak memory usage {0:.3f} (task)".format(peakMemory()))
 			last_timestamp = now
 
 			#Save the intermediate positions if option was specified
@@ -1150,7 +1063,9 @@ class RayTracer(object):
 
 			#Log timestamp to cross lens
 			now = time.time()
-			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logstderr.debug("Lens {0} crossed: peak memory usage {1:.3f} (task)".format(k,peakMemory()))
+
 
 		#Return the final positions of the light rays (or jacobians)
 		if kind=="positions":
@@ -1232,7 +1147,7 @@ class RayTracer(object):
 
 			#Extract the density at the ray positions
 			now = time.time()
-			logging.debug("Extracting density values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
+			logray.debug("Extracting density values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
 			last_timestamp = now
 
 			#Compute full density plane
@@ -1240,7 +1155,7 @@ class RayTracer(object):
 
 			#Timestamp
 			now = time.time()
-			logging.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Cumulate on the convergence
@@ -1250,7 +1165,7 @@ class RayTracer(object):
 				current_convergence += 0.5 * density * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 			now = time.time()
-			logging.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
 			last_timestamp = now
 
 			#Save the intermediate convergence values if option is enabled
@@ -1305,7 +1220,7 @@ class RayTracer(object):
 		final_grid = self.shoot(initial_grid,z=z,save_intermediate=save_intermediate)
 
 		now = time.time()
-		logging.debug("Ray tracing in {0:.3f}s".format(now-last_timestamp))
+		logray.debug("Ray tracing in {0:.3f}s".format(now-last_timestamp))
 		last_timestamp = now
 
 		if save_intermediate:
@@ -1321,14 +1236,14 @@ class RayTracer(object):
 				tree = KDTree(final_grid[n].transpose())
 
 				now = time.time()
-				logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
 				last_timestamp = now
 
 				#Query the tree and retrieve the apparent positions
 				distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
 
 				now = time.time()
-				logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
+				logray.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
 				last_timestamp = now
 
 				apparent_positions[n] = initial_grid[:,apparent_position_index].reshape(source_positions.shape).copy()
@@ -1340,14 +1255,14 @@ class RayTracer(object):
 			tree = KDTree(final_grid.transpose())
 
 			now = time.time()
-			logging.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("KDTree built in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			#Query the tree and retrieve the apparent positions
 			distances,apparent_position_index = tree.query(source_positions.reshape((2,)+(reduce(mul,source_positions.shape[1:]),)).transpose())
 
 			now = time.time()
-			logging.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Tree query completed in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			apparent_positions = initial_grid[:,apparent_position_index].reshape(source_positions.shape)

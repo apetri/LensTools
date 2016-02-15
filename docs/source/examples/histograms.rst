@@ -12,8 +12,8 @@ Histograms of convergence maps
 	####################################################
 	
 	from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
-	from lenstools.index import PDF,Indexer
-	from lenstools.defaults import load_fits_default_convergence
+	from lenstools.statistics.index import PDF,Indexer
+	from lenstools.utils.defaults import load_fits_default_convergence
 	from lenstools.simulations import IGS1
 	
 	#####################################################
@@ -155,7 +155,7 @@ Or, if you have a MPI installation and want to run on multiple processors::
 
 This is how the result looks like 
 
-.. figure:: ../../../examples/histograms.png
+.. figure:: ../figures/histograms.png
 
 
 

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rm -rf *.png *.p *.txt *.mat *.fit *.fits *.npy
+rm -rf gadget* 
+rm -rf snapshots SimTest

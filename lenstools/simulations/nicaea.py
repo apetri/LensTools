@@ -1,5 +1,9 @@
+from __future__ import division
+
 import types
+
 import numpy as np
+from scipy.integrate import odeint
 from astropy.cosmology import w0waCDM
 from astropy.units import rad
 
@@ -106,6 +110,36 @@ def _check_redshift(z,distribution,distribution_parameters,**kwargs):
 	return nzbins,nofz,Nnz,par_nz
 
 
+##################################################################
+######Useful for integrating the linear growth factor ODE#########
+##################################################################
+
+def _delta_dot(delta,z,cosmology):
+
+	#Densities
+	Ode = cosmology.Ode(z)
+	w = cosmology.w(z)
+
+	#Inhomogeneous term in the ODE
+	inhomogeneous = np.array([0.0,-1.5 * Ode * (1+3*w) / (1+z)**2])
+
+	#Return
+	return _jacobian_delta_dot(delta,z,cosmology).dot(delta) + inhomogeneous
+
+
+def _jacobian_delta_dot(delta,z,cosmology):
+
+	#Densities
+	Om = cosmology.Om(z)
+	Ode = cosmology.Ode(z)
+	w = cosmology.w(z)
+	
+	#Linear term in the ODE
+	linear21 = 1.5*Om / (1+z)**2
+	linear22 = -0.5 * (Om+Ode*(1+3*w)) / (1+z)
+
+	#Return the jacobian
+	return np.array([[0.0,1.0],[linear21,linear22]])
 
 
 ##########################################
@@ -123,7 +157,7 @@ class NicaeaSettings(dict):
 		super(NicaeaSettings,self).__init__()
 		
 		#Default settings
-		self["snonlinear"]="smith03"
+		self["snonlinear"]="smith03_revised"
 		self["stransfer"]="eisenhu"
 		self["sgrowth"]="growth_de"
 		self["sde_param"]="linder"
@@ -196,10 +230,7 @@ class Nicaea(w0waCDM):
 
 	"""
 
-	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.798,ns=0.960,name=None):
-
-		if _nicaea is None:
-			raise ImportError("The Nicaea bindings were not installed, check your GSL/FFTW3 installations!")
+	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.800,ns=0.960,name=None):
 
 		super(Nicaea,self).__init__(H0,Om0,Ode0,w0=w0,wa=wa,Ob0=Ob0,name=name)
 		self.sigma8=sigma8
@@ -211,9 +242,8 @@ class Nicaea(w0waCDM):
 		pieces = astropy_string.split(",")
 		si8_piece = u" sigma8={0}".format(self.sigma8)
 		ns_piece = u" ns={0}".format(self.ns)
-		Ob0_piece = u" Ob0={0}".format(self.Ob0)
 
-		return ",".join(pieces[:3] + [si8_piece,ns_piece,Ob0_piece] + pieces[3:])
+		return ",".join(pieces[:3] + [si8_piece,ns_piece] + pieces[3:])
 
 	@classmethod
 	def fromCosmology(cls,cosmo):
@@ -256,6 +286,35 @@ class Nicaea(w0waCDM):
 		#Instantiate
 		return cls(H0=H0,Om0=Om0,Ode0=Ode0,Ob0=Ob0,w0=w0,wa=wa,sigma8=sigma8,ns=ns)
 
+	################################################################################################################
+
+	##################################################################
+	###########Growth factor and its derivative#######################
+	##################################################################
+
+	def growth_factor(self,z,delta0=np.array([1.0,0.0]),**kwargs):
+
+		"""
+		Computes the linear growth factor at redshift z, given initial conditions on the density contrast
+
+		:param z: array of redshifts on which to compute the growth factor
+		:type z: array. 
+
+		:param delta0: initial condition (delta0,Ddelta0/dz) for the ODE
+		:type delta0: array.
+
+		:param kwargs: the keyword arguments are passed to odeint
+		:type kwargs: dict.
+
+		:returns: growth factor and its redshift derivative
+		:rtype: array
+
+		"""
+
+		return odeint(_delta_dot,y0=delta0,t=z,Dfun=_jacobian_delta_dot,args=(self,),**kwargs) / delta0[0]
+
+	################################################################################################################
+
 
 	def convergencePowerSpectrum(self,ell,z=2.0,distribution=None,distribution_parameters=None,settings=None,**kwargs):
 
@@ -283,6 +342,9 @@ class Nicaea(w0waCDM):
 		:returns: ( NlxNz array ) computed power spectrum at the selected multipoles (when computing the cross components these are returned in row major C ordering)
 
 		"""
+
+		if _nicaea is None:
+			raise ImportError("You need to install the Nicaea bindings to use this routine! Check your GSL/FFTW3 installations!")
 
 		assert isinstance(ell,np.ndarray)
 
@@ -332,6 +394,9 @@ class Nicaea(w0waCDM):
 		:returns: ( NtxNz array ) computed two point function at the selected angles (when computing the cross components these are returned in row major C ordering)
 
 		"""
+
+		if _nicaea is None:
+			raise ImportError("You need to install the Nicaea bindings to use this routine! Check your GSL/FFTW3 installations!")
 
 		assert isinstance(theta,np.ndarray)
 

@@ -1,8 +1,11 @@
 LensTools command line scripts
 ******************************
 
+General purpose scripts
+=======================
+
 gadgetheader
-============
+------------
 
 Displays the header information of a Gadget2 snapshot. Usage:
 
@@ -13,7 +16,7 @@ Displays the header information of a Gadget2 snapshot. Usage:
 
 
 gadgetstrip
-===========
+-----------
 
 Strips the sometimes unnecessary velocity information from a Gadget2 snapshot, roughly reducing its disk usage by a factor of 2. Usage:
 
@@ -26,3 +29,35 @@ The script can also read from standard input: to strip all the files in a direct
 ::
 	
 	ls | gadgetstrip
+
+
+npyinfo
+-------
+
+lenstools.confidencecontour
+---------------------------
+
+lenstools.view
+--------------
+
+
+LensTools pipeline scripts
+==========================
+
+lenstools.submission
+--------------------
+
+lenstools.cutplanes
+-------------------
+
+lenstools.cutplanes-mpi
+-----------------------
+
+lenstools.raytracing
+--------------------
+
+lenstools.raytracing-mpi
+------------------------
+
+lenstools.execute-mpi
+---------------------

@@ -34,4 +34,4 @@ The code you have to run to measure the power spectrum of a convergence map look
 
 And this is the result 
 
-.. figure:: ../../../examples/power_spectrum_one_map.png
+.. figure:: ../figures/power_spectrum_one_map.png

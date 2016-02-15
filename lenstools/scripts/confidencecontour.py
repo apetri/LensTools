@@ -1,5 +1,5 @@
 import ast
-from ..contours import ContourPlot
+from ..statistics.contours import ContourPlot
 
 default_colors = ["#fff7ec","#fee8c8","#fdd49e","#fdbb84","#fc8d59","#ef6548","#d7301f","#b30000","#7f0000"]
 

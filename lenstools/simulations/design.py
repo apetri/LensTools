@@ -6,8 +6,11 @@ try:
 except AttributeError:
 	_design = None
 
+from ..statistics.ensemble import Ensemble,Series
+
 import numpy as np
 from astropy.table import Table,Column,hstack
+import astropy.units as u
 
 try:
 	import matplotlib.pyplot as plt
@@ -20,7 +23,7 @@ except ImportError:
 #########Design class#################
 ######################################
 
-class Design(object):
+class Design(Ensemble):
 
 	"""
 	
@@ -28,73 +31,54 @@ class Design(object):
 
 	"""
 
-	def __init__(self):
+	##############
+	##Properties##
+	##############
 
-		#Check for GSL installation problems
-		if _design is None:
-			raise ImportError("couldn't import the _design library, probably GSL is not installed!")
+	@property
+	def parameters(self):
+		return list(self.columns)
 
-		#Initialize with 0 points in 0 dimensions
-		self.ndim = 0
-		self.npoints = 0
-
-		#Useful dictionary containers
-		self.parameters = list()
-		self.min = dict()
-		self.max = dict()
-		self.label = dict()
-		self.axis = dict()
-
-	def __repr__(self):
-		
-		if not self.ndim:
-			return "This is an empty design!"
-		else:
-			return "This design has {0} points distributed in a {1}-dimensional parameter space".format(self.npoints,self.ndim)
-
+	#########
+	###I/O###
+	#########
 
 	@classmethod
-	def load(cls,filename,labels):
+	def from_specs(cls,npoints,parameters):
 
 		"""
-		Load a pre-computed design from a file, only numpy format supported so far
+		:param npoints: number of points in the design
+		:type npoints: int.
 
-		:param filename: name of the file from which to load the design, or numpy array with the points
-		:type filename: str. or array
-
-		:param labels: labels of the cosmological parameters included in the design
-		:type labels: list.
-
-		:returns: new Design instance
+		:param parameters: list of tuples (name,label,min,max)
+		:type parameters: list.
 
 		"""
 
-		#Load the parameters from the file
-		if type(filename)==str:
-			points = np.load(filename)
-		else:
-			assert type(filename)==np.ndarray,"If not a string, the first argument must be a numpy array!!"
-			points = filename.copy()
+		assert npoints>2
 
-		#Make sure there are enough labels 
-		assert len(labels)==points.shape[1],"There must be exactly one label per parameter!"
+		#Unzip the parameter specs
+		par,labels,pmin,pmax = zip(*parameters)
+		ndim = len(par)
 
-		#Build the Design instance
-		design = cls()
-		design.npoints,design.ndim = points.shape
-		design.parameters = labels
+		#Create the trivial design
+		points_raw = np.outer(np.arange(npoints),np.ones(ndim)) / (npoints - 1)
+		points = np.zeros_like(points_raw)
+		for n,p in enumerate(par):
+			points[:,n] = pmin[n] + points_raw[:,n]*(pmax[n] - pmin[n])
 
-		for n,label in enumerate(labels):
-			
-			design.min[label] = points[:,n].min()
-			design.max[label] = points[:,n].max()
-			design.label[label] = label
-			design.axis[label] = n
+		#Instantiate the Design object in the trivial configuration
+		trivial_design = cls(points,columns=par)
+		
+		#Update metadata
+		trivial_design._labels = labels
+		trivial_design._pmin = pmin
+		trivial_design._pmax = pmax
+		trivial_design._raw = points_raw
+		trivial_design._metadata.extend(["_labels","_pmin","_pmax","_raw"])
 
-		design.points = points
-
-		#Return the newly created instance
-		return design
+		#Return
+		return trivial_design
 
 
 	def write(self,filename=None,max_rows=None,format="ascii.latex",column_format="{0:.3f}",**kwargs):
@@ -125,22 +109,19 @@ class Design(object):
 		assert hasattr(self,"points"),"There are no points in your design yet!"
 		names = [ self.label[p] for p in self.parameters ]
 		
-		if (max_rows is None) or (max_rows>=self.npoints):
-			
-			#Construct the columns
-			columns = self.points
+		if (max_rows is None) or (max_rows>=len(self)):
 
 			#Build the table
-			design_table = Table(columns,names=names)
+			design_table = Table(self.values,names=names)
 
 			#Add the number column to the left
-			design_table.add_column(Column(data=range(1,self.npoints+1),name=r"$N$"),index=0)
+			design_table.add_column(Column(data=range(1,len(self)+1),name=r"$N$"),index=0)
 
 		else:
 
 			#Figure out the splitting
-			num_chunks = self.npoints // max_rows
-			if self.npoints%max_rows!=0:
+			num_chunks = len(self) // max_rows
+			if len(self)%max_rows!=0:
 				num_chunks+=1
 
 			#Construct the list of tables to hstack
@@ -149,7 +130,7 @@ class Design(object):
 			#Cycle through the chunks and create the sub-tables
 			for n in range(num_chunks-1):
 
-				columns = self.points[n*max_rows:(n+1)*max_rows]
+				columns = self.values[n*max_rows:(n+1)*max_rows]
 
 				#Build the sub-table
 				design_table.append(Table(columns,names=names))
@@ -158,9 +139,9 @@ class Design(object):
 				design_table[-1].add_column(Column(data=range(n*max_rows+1,(n+1)*max_rows+1),name=r"$N$"),index=0)
 
 			#Create the last sub-table
-			columns = self.points[(num_chunks-1)*max_rows:]
+			columns = self.values[(num_chunks-1)*max_rows:]
 			design_table.append(Table(columns,names=names))
-			design_table[-1].add_column(Column(data=range((num_chunks-1)*max_rows+1,self.npoints+1),name=r"$N$"),index=0)
+			design_table[-1].add_column(Column(data=range((num_chunks-1)*max_rows+1,len(self)+1),name=r"$N$"),index=0)
 
 			#hstack in a single table
 			design_table = hstack(design_table)
@@ -177,78 +158,6 @@ class Design(object):
 			return None
 		else:
 			return design_table
-		
-
-
-	def add_parameter(self,parameter_name,min,max,label):
-
-		"""
-		Add a dimension to the design by specifying a parameter name, a range and a parameter label (can be in tex format)
-
-		:param parameter_name: the name of the parameter
-		:type parameter_name: str.
-
-		:param min: the lower range of the sample interval
-		:type min: float.
-
-		:param max: the higher range of the sample interval
-		:type max: float.
-
-		:param label: the parameter label you want displayed on a plot, can be in tex format
-		:type label: str.
-
-		"""
-
-		assert min<max
-		assert parameter_name not in self.parameters,"The parameter is already present!"
-
-		#Fill in containers with the new information
-		self.parameters.append(parameter_name)
-		self.min[parameter_name] = min
-		self.max[parameter_name] = max
-		self.label[parameter_name] = label
-
-		#Increase parameter count
-		self.axis[parameter_name] = self.ndim
-		self.ndim += 1
-
-		#Log the operation
-		print("Added a parameter: {0} -> min={1} max={2}".format(parameter_name,min,max))
-
-	def scale(self):
-		
-		"""
-		Scales the points in the design to their respective parameter ranges
-
-		"""
-
-		assert hasattr(self,"points_raw")
-		if not hasattr(self,"points"):
-			self.points = np.zeros((self.npoints,self.ndim))
-
-		for parameter in self.parameters:
-			self.points[:,self.axis[parameter]] = self.min[parameter] + self.points_raw[:,self.axis[parameter]]*(self.max[parameter] - self.min[parameter])
-
-
-	def put_points(self,npoints):
-
-		"""
-		Lay down a number of points on the empty Design: the points are initially layed down on the diagonal of the hypercube
-
-		:param npoints: the number of points to lay down
-		:type npoints: int.
-
-		"""
-		assert self.ndim>1,"The design must have at least 2 dimensions before laying down points!"
-		assert npoints>2, "You must lay down at least 3 points!"
-
-		self.npoints = npoints
-
-		#Lay down points along the diagonal
-		self.points_raw = np.outer(np.arange(self.npoints),np.ones(self.ndim)) / (self.npoints - 1)
-		
-		#Scale to parameter ranges
-		self.scale()
 
 
 	def visualize(self,fig=None,ax=None,parameters=None,**kwargs):
@@ -266,9 +175,6 @@ class Design(object):
 
 		if parameters is None:
 			parameters = self.parameters
-
-		#Check that there are points to plot
-		assert hasattr(self,"points"),"There are no points to plot!!"
 
 		#Check that the parameters exist
 		for p in parameters:
@@ -291,18 +197,23 @@ class Design(object):
 			self.fig,self.ax = fig,ax
 
 		#Lay down the points on the figure
-		points = tuple([ self.points[:,self.axis[p]] for p in parameters ])
+		points = tuple([ self.values[:,self.parameters.index(p)] for p in parameters ])
 		self.ax.scatter(*points,**kwargs)
 
 		#Set the labels on the axes
-		self.ax.set_xlabel(self.label[parameters[0]])
-		self.ax.set_ylabel(self.label[parameters[1]])
-		self.ax.set_xlim(self.min[parameters[0]],self.max[parameters[0]])
-		self.ax.set_ylim(self.min[parameters[1]],self.max[parameters[1]])
+		px,py = self.parameters.index(parameters[0]),self.parameters.index(parameters[1])
+		self.ax.set_xlabel(self._labels[px])
+		self.ax.set_ylabel(self._labels[py])
+		self.ax.set_xlim(self._pmin[px],self._pmax[px])
+		self.ax.set_ylim(self._pmin[py],self._pmax[py])
 
 		if len(parameters)==3:
-			self.ax.set_zlabel(self.label[parameters[2]])
-			self.ax.set_zlim(self.min[parameters[2]],self.max[parameters[2]])
+			pz = self.parameters.index(parameters[2])
+			self.ax.set_zlabel(self._labels[pz])
+			self.ax.set_zlim(self._pmin[pz],self._pmax[pz])
+
+		#Return
+		return self.ax
 
 	def savefig(self,filename):
 
@@ -344,8 +255,11 @@ class Design(object):
 
 		"""
 
-		assert self.npoints>2,"You must lay down at least 3 points!"
-		return _design.diagonalCost(self.npoints,Lambda)
+		if _design is None:
+			raise ImportError("This method requires a working GSL installation!")
+
+		assert len(self)>2,"You must lay down at least 3 points!"
+		return _design.diagonalCost(len(self),Lambda)
 
 	def cost(self,p,Lambda):
 
@@ -362,15 +276,18 @@ class Design(object):
 
 		"""
 
-		assert self.ndim>1,"The design must have at least 2 dimensions before laying down points!"
-		assert self.npoints>2,"You must lay down at least 3 points!"
+		if _design is None:
+			raise ImportError("This method requires a working GSL installation!")
 
-		return _design.cost(self.points_raw,p,Lambda)**(1.0/Lambda)
+		assert self.shape[1]>1,"The design must have at least 2 dimensions to lay down points!"
+		assert len(self)>2,"You must lay down at least 3 points!"
 
-	def sample(self,p,Lambda,seed=0,maxIterations=10000):
+		return _design.cost(self._raw,p,Lambda)**(1.0/Lambda)
+
+	def sample(self,p=2.0,Lambda=1.0,seed=0,maxIterations=10000):
 
 		"""
-		Evenly samples the parameter space by minimizing the cost function computed with the metric parameters (p,Lambda)
+		Evenly samples the parameter space by minimizing the cost function computed with the metric parameters (p,Lambda); this operation works inplace
 
 		:param Lambda: metric parameter of the cost function; if set to 1.0 the cost function corresponds is the Coulomb potential energy
 		:type Lambda: float.
@@ -388,14 +305,23 @@ class Design(object):
 
 		"""
 
-		assert self.ndim>1,"The design must have at least 2 dimensions before laying down points!"
-		assert self.npoints>2,"You must lay down at least 3 points!"
+		if _design is None:
+			raise ImportError("This method requires a working GSL installation!")
+
+		assert self.shape[1]>1,"The design must have at least 2 dimensions to lay down points!"
+		assert len(self)>2,"You must lay down at least 3 points!"
 
 		#Create array that holds the values of the cost function
 		self.cost_values = np.ones(maxIterations) * -1.0
 
-		deltaPerc = _design.sample(self.points_raw,p,Lambda,maxIterations,seed,self.cost_values)
-		self.scale()
+		deltaPerc = _design.sample(self._raw,p,Lambda,maxIterations,seed,self.cost_values)
+		
+		#Scale points to correct units
+		points = np.zeros_like(self._raw)
+		for n,p in enumerate(self.parameters):
+			points[:,n] = self._pmin[n] + self._raw[:,n]*(self._pmax[n] - self._pmin[n])
+
+		self[:] = points
 
 		#Cut the cost_values if we stopped before the maxIterations limit
 		cut = (self.cost_values==-1).argmin()
@@ -403,3 +329,64 @@ class Design(object):
 			self.cost_values = self.cost_values[:cut]
 
 		return deltaPerc
+
+
+	#Sample points in an elliptical parameter space
+	@classmethod
+	def sample_ellipse(cls,npoints,parameters,center,minor,major,angle,radial_power=0.5,**kwargs):
+
+		"""
+		Sample points in a two dimensional parameter space whose boundary has the shape of an ellipse
+
+		:param npoints: number of points in the design
+		:type npoints: int.
+
+		:param parameters: name of the parameters, the list must have 2 elements
+		:type parameters: list.
+
+		:param center: center of the ellipse
+		:type center: tuple.
+
+		:param minor: length of the semi-minor axis
+		:type minor: float.
+
+		:param major: length of the semi-major axis
+		:type major: float.
+
+		:param angle: rotation angle of the major axis with respect to the horizontal (degrees counterclockwise)
+		:type angle: float.
+
+		:param radial_power: this parameter controls the density of points around the center (higher for higher density); 0.5 corresponds to uniform sampling
+		:type radial_power: float.
+
+		:param kwargs: the keyword arguments are passed to the sample() method
+		:type kwarges: dict.
+
+		:returns:
+		:rtype: :py:class:`Design`
+
+		"""
+
+		#Two dimensional rotation matrix
+		if hasattr(angle,"unit"):
+			angle_rad = angle.to(u.rad)
+		else:
+			angle_rad = angle*np.pi/180.
+
+		rotator = np.array([[np.cos(angle_rad),np.sin(angle_rad)],[-np.sin(angle_rad),np.cos(angle_rad)]])
+
+		#First sample the parameter space in (r,phi) coordinates
+		polar_design = cls.from_specs(npoints,[("r","r",0.,1.),("phi","phi",0.,2*np.pi)])
+		polar_design.sample(**kwargs) 
+
+		#Transform into (x,y) coordinates by performing a rotation
+		cartesian_design = polar_design.apply(lambda r:Series([major*(r["r"]**radial_power)*np.cos(r["phi"]),minor*(r["r"]**radial_power)*np.sin(r["phi"])],index=parameters),axis=1).dot(Ensemble(rotator,index=parameters,columns=parameters))
+
+		#Shift to the provided center
+		for c in range(2):
+			cartesian_design[cartesian_design.columns[c]] += center[c]
+
+		#Return to user
+		return cartesian_design
+
+

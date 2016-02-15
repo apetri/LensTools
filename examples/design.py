@@ -9,17 +9,10 @@ import matplotlib.pyplot as plt
 
 #This fails if GSL is not installed
 try:
-	design = Design()
+	design = Design.from_specs(npoints=50,parameters=[("Om",r"$\Omega_m$",0.1,0.9),("w",r"$w$",-2.0,-1.0),("si8",r"$\sigma_8$",0.01,1.6)])
 except ImportError:
 	sys.exit(1)
 
-#Add the dimensions
-design.add_parameter("Omega_m",min=0.1,max=0.9,label=r"$\Omega_m$")
-design.add_parameter("w",min=-2.0,max=-0.1,label=r"$w$")
-design.add_parameter("sigma8",min=0.01,max=1.6,label=r"$\sigma_8$")
-
-#Lay down 50 points
-design.put_points(50)
 print(design)
 
 #The cost function should be the diagonal one
@@ -32,7 +25,7 @@ design.savefig("design_diagonal_3d.png")
 
 #Visualize the 2d (Om,si8) projection
 fig,ax = plt.subplots()
-design.visualize(fig=fig,ax=ax,parameters=["Omega_m","sigma8"],color="red",marker=".")
+design.visualize(fig=fig,ax=ax,parameters=["Om","si8"],color="red",marker=".")
 design.savefig("design_diagonal_2d.png")
 
 #Now perform the sampling of the parameter space
@@ -45,7 +38,7 @@ design.savefig("design_3d.png")
 
 #Visualize the 2d (Om,si8) projection
 fig,ax = plt.subplots()
-design.visualize(fig=fig,ax=ax,parameters=["Omega_m","sigma8"],color="red",marker=".")
+design.visualize(fig=fig,ax=ax,parameters=["Om","si8"],color="red",marker=".")
 design.savefig("design_2d.png")
 
 #Visualize the changes in the cost function

@@ -9,10 +9,16 @@ me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
 url = "http://www.columbia.edu/~ap3020/LensTools/html"
 default_cfg = "setup.cfg"
+
+#Sub-packages
+sub_package_names = ["image","catalog","statistics","utils","simulations","observations","pipeline","legacy","scripts","extern","tests"]
+packages = [ name ]
+for sub_name in sub_package_names:
+	packages.append("{0}.{1}".format(name,sub_name))
+
+#External sub-packages
 external_dir = "extern"
 external_support_dir = "cextern"
-simulations_dir = "simulations"
-observations_dir = "observations"
 
 try:
 	import numpy.distutils.misc_util 
@@ -20,12 +26,23 @@ except ImportError:
 	print("Please install numpy!")
 	sys.exit(1)
 
-
 try:
 	from setuptools import setup,Extension
 except ImportError:
 	from distutils.core import setup,Extension
 
+#Print in color
+def red(s):
+	return '\033[31m' + s + '\033[39m'
+
+def green(s):
+	return '\033[32m' + s + '\033[39m'
+
+def yellow(s):
+	return '\033[33m' + s + '\033[39m'
+
+
+#Shortcut for reading file
 def rd(filename):
 	
 	f = file(filename,"r")
@@ -49,9 +66,9 @@ def check_gsl(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(include_filename))
 
 		if os.path.isfile(include_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	for lib in gsl_required_links:
@@ -60,9 +77,9 @@ def check_gsl(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
 
 		if os.path.isfile(lib_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	return gsl_location
@@ -82,9 +99,9 @@ def check_fftw3(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(include_filename))
 
 		if os.path.isfile(include_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	for lib in fftw3_required_links:
@@ -93,9 +110,9 @@ def check_fftw3(conf):
 		sys.stderr.write("Checking if {0} exists... ".format(lib_filename))
 
 		if os.path.isfile(lib_filename):
-			sys.stderr.write("[OK]\n")
+			sys.stderr.write(green("[OK]\n"))
 		else:
-			sys.stderr.write("[FAIL]\n")
+			sys.stderr.write(red("[FAIL]\n"))
 			return None
 
 	return fftw3_location
@@ -113,16 +130,16 @@ def check_nicaea(conf):
 	#Check for their existence
 	sys.stderr.write("Checking for {0}...".format(nicaea_include))
 	if os.path.isdir(nicaea_include):
-		sys.stderr.write("[OK]\n")
+		sys.stderr.write(green("[OK]\n"))
 	else:
-		sys.stderr.write("[FAIL]\n")
+		sys.stderr.write(red("[FAIL]\n"))
 		return None
 
 	sys.stderr.write("Checking for {0}...".format(os.path.join(nicaea_lib,"libnicaea.a")))
 	if os.path.isfile(os.path.join(nicaea_lib,"libnicaea.a")):
-		sys.stderr.write("[OK]\n")
+		sys.stderr.write(green("[OK]\n"))
 	else:
-		sys.stderr.write("[FAIL]\n")
+		sys.stderr.write(red("[FAIL]\n"))
 		return None
 	
 	return nicaea_include,nicaea_lib
@@ -144,6 +161,24 @@ else:
 print("Reading system dependent configuration from {0}".format(cfg_file))
 conf.read([cfg_file])
 
+#Override library locations with the ones provided from the command line
+for l in ["fftw3","gsl","nicaea"]:
+	for arg in sys.argv:
+		
+		if "--{0}".format(l) in arg:
+			
+			loc = arg.split("=")[-1]
+			print(yellow("Command line override: looking for {0} in {1}".format(l,loc)))
+			conf.set(l,"installation_path",loc)
+
+			if l=="nicaea":
+				conf.set(l,"install_python_bindings","True")
+
+			#Purge from command line arguments
+			sys.argv.remove(arg)
+
+#########################################################################################
+
 vre = re.compile("__version__ = \"(.*?)\"")
 m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     "lenstools", "__init__.py"))
@@ -162,9 +197,14 @@ classifiers = [
 external_sources = dict()
 external_support = dict()
 
+#Includes
+lenstools_includes = list()
+
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
-external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c","grid.c","coordinates.c"]
+external_sources["_gadget2"] = ["_gadget2.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c"]
+external_sources["_nbody"] = ["_nbody.c","grid.c","coordinates.c"]
+external_sources["_pixelize"] = ["_pixelize.c","grid.c","coordinates.c"]
 
 ######################################################################################################################################
 
@@ -172,13 +212,12 @@ external_sources["_gadget"] = ["_gadget.c","read_gadget_header.c","read_gadget_p
 gsl_location = check_gsl(conf)
 
 if gsl_location is not None:
-	print("[OK] Checked GSL installation, the Design feature will be installed")
-	lenstools_includes = [ os.path.join(gsl_location,"include") ]
+	print(green("[OK] Checked GSL installation, the Design feature will be installed"))
+	lenstools_includes.append(os.path.join(gsl_location,"include")) 
 	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
-	print("[FAIL] GSL installation not found, the Design feature will not be installed")
-	lenstools_includes = list()
+	print(red("[FAIL] GSL installation not found, the Design feature will not be installed"))
 	lenstools_link = ["-lm"]
 
 
@@ -192,7 +231,7 @@ if conf.getboolean("nicaea","install_python_bindings"):
 	
 	if (gsl_location is not None) and (fftw3_location is not None) and (nicaea_location is not None):
 	
-		print("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed")
+		print(green("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed"))
 		
 		#Add necessary includes and links
 		lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
@@ -202,7 +241,7 @@ if conf.getboolean("nicaea","install_python_bindings"):
 		external_sources["_nicaea"] = ["_nicaea.c"]
 
 	else:
-		print("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations)")
+		print(red("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations)"))
 
 
 #################################################################################################
@@ -231,7 +270,6 @@ if platform.system() in ["Darwin","darwin"]:
 
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
-scripts_dir = "scripts"
 
 #################################################################################################
 #############################Extensions##########################################################
@@ -264,8 +302,9 @@ setup(
 	version=version,
 	author=me,
 	author_email=email,
-	packages=[name,"{0}.{1}".format(name,external_dir),"{0}.{1}".format(name,simulations_dir),"{0}.{1}".format(name,observations_dir),"{0}.{1}".format(name,scripts_dir)],
+	packages=packages,
 	package_data=package_data,
+	install_requires=["numpy","scipy","pandas","matplotlib","astropy","emcee"],
 	url=url,
 	download_url=download_url,
 	license="MIT",

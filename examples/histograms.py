@@ -5,7 +5,7 @@ import sys
 ####################################################
 
 from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
-from lenstools.index import PDF,Indexer
+from lenstools.statistics.index import PDF,Indexer
 from lenstools.simulations import IGS1
 
 #####################################################

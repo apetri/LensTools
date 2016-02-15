@@ -12,8 +12,8 @@ double mink_1_integrand(double gx,double gy){
 double mink_2_integrand(double gx,double gy,double hxx,double hyy,double hxy){
 	
 	if(pow(gx,2)+pow(gy,2)==0.0){
-		printf("WARNING: DIVIDE by 0: taking limit\n");
-		printf("hxx=%e hyy=%e hxy=%e\n",hxx,hyy,hxy);
+		fprintf(stderr,"WARNING: DIVIDE by 0: taking limit\n");
+		fprintf(stderr,"hxx=%e hyy=%e hxy=%e\n",hxx,hyy,hxy);
 		return (2*hxy - hxx - hyy)/(4.0*M_PI);
 	}
 	else{

@@ -1,14 +1,6 @@
-from lenstools import Ensemble
-from lenstools.defaults import default_callback_loader,peaks_loader
-
-try:
-
-	from emcee.utils import MPIPool
-	MPIPool = MPIPool
-
-except ImportError:
-
-	MPIPool = None
+from lenstools import ConvergenceMap
+from lenstools.statistics.ensemble import Ensemble
+from lenstools.utils.decorators import Parallelize
 
 import logging
 
@@ -17,50 +9,36 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.DEBUG)
 
-if MPIPool is None:
-	logging.warning("You need to install emcee in order to test the parallel statistics features!!")
+def measure_power_spectrum(filename,l_edges):
 
-try:
-	logging.debug("Attempting to create MPIPool")
-	pool = MPIPool()
-	logging.debug("Succesfully created MPIPool!")
-except ValueError:
-	logging.debug("No reason to create one, one process only!!")
-	pool = None
-except TypeError:
-	pool = None
+	conv_map = ConvergenceMap.load(filename)
+	l,Pl = conv_map.powerSpectrum(l_edges)
+	return Pl
 
-#The only parallelized part is the loading of the ensemble (that's the computationally expensive part)
+@Parallelize.masterworker
+def main(pool): 
 
-if (pool is not None) and not(pool.is_master()):
+	l_edges = np.arange(200.0,50000.0,200.0)
+	l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-	pool.wait()
-	sys.exit(0)
+	conv_ensemble = Ensemble.compute(["Data/conv1.fit","Data/conv2.fit","Data/conv3.fit","Data/conv4.fit"],callback_loader=measure_power_spectrum,pool=pool,l_edges=l_edges)
 
-map_list = ["Data/conv1.fit","Data/conv2.fit","Data/conv3.fit","Data/conv4.fit"]
+	fig,ax = plt.subplots()
+	for n in range(len(conv_ensemble)):
+		ax.plot(l,l*(l+1)*conv_ensemble.iloc[n]/(2.0*np.pi),label="Map {0}".format(n+1),linestyle="--")
 
-l_edges = np.arange(200.0,50000.0,200.0)
-l = 0.5*(l_edges[:-1] + l_edges[1:])
+	mean = conv_ensemble.mean(0)
+	errors = np.sqrt(conv_ensemble.covariance().values.diagonal())
 
-conv_ensemble = Ensemble.fromfilelist(map_list)
-conv_ensemble.load(callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	ax.errorbar(l,l*(l+1)*mean/(2.0*np.pi),yerr=l*(l+1)*errors/(2.0*np.pi),label="Mean")
 
-if pool is not None:
-	pool.close()
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$l$")
+	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
+	ax.legend(loc="upper left")
 
-fig,ax = plt.subplots()
-for n in range(conv_ensemble.num_realizations):
-	ax.plot(l,l*(l+1)*conv_ensemble.data[n]/(2.0*np.pi),label="Map {0}".format(n+1),linestyle="--")
+	plt.savefig("power_ensemble.png")
 
-mean = conv_ensemble.mean()
-errors = np.sqrt(conv_ensemble.covariance().diagonal())
-
-ax.errorbar(l,l*(l+1)*mean/(2.0*np.pi),yerr=l*(l+1)*errors/(2.0*np.pi),label="Mean")
-
-ax.set_xscale("log")
-ax.set_yscale("log")
-ax.set_xlabel(r"$l$")
-ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
-ax.legend(loc="upper left")
-
-plt.savefig("power_ensemble.png")
+if __name__=="__main__":
+	main(None)

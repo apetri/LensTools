@@ -1,4 +1,4 @@
-from lenstools.simulations import Gadget2Snapshot
+from lenstools.simulations import Gadget2SnapshotDE
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ from astropy.units import Mpc,m,s
 ########################Write#################################
 
 #Create an empty gadget snapshot
-snap = Gadget2Snapshot()
+snap = Gadget2SnapshotDE()
 
 #Generate random positions and velocities
 NumPart = 32**3
@@ -28,7 +28,7 @@ snap.write("gadget_ic")
 ######################Read and visualize#########################
 
 #Open the snapshot
-snap = Gadget2Snapshot.open("gadget_ic")
+snap = Gadget2SnapshotDE.open("gadget_ic")
 
 #Visualize the header
 print(snap.header)
@@ -42,7 +42,7 @@ snap.close()
 ###################Read and visualize############################
 
 #Open the snapshot
-snap = Gadget2Snapshot.open("../Test/Data/gadget/snapshot_001")
+snap = Gadget2SnapshotDE.open("../Test/Data/gadget/snapshot_001")
 
 #Visualize the header
 print(snap.header)
