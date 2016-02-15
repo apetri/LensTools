@@ -5,7 +5,9 @@ python:
 script: pwd
 
 install:
- - pip install -i https://testpypi.python.org/pypi lenstools
+ - git clone https://github.com/apetri/LensTools
+ - cd LensTools
+ - python setup.py install
 
 virtualenv:
  system_site_packages: true
