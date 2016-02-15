@@ -7,7 +7,7 @@ from distutils import config
 name = "lenstools"
 me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
-url = "http://www.columbia.edu/~ap3020/LensTools/html"
+url = "http://lenstools.readthedocs.org"
 default_cfg = "setup.cfg"
 
 #Sub-packages

@@ -1,5 +1,12 @@
 .. :changelog:
 
+0.6
++++
+
+- Database class for local/remote SQL databases
+- Gadget2SnapshotPipe class allows to combine Gadget2 and lenstools.planes via named pipes
+- Improvements in pipeline deployment 
+
 0.5
 +++
 
