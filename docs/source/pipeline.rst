@@ -1,8 +1,6 @@
 The LensTools Weak Lensing Simulation pipeline
 **********************************************
 
-.. warning:: The lenstools pipeline functionality is not part of the 0.4.8 release that you install through pip. To use the lenstools pipeline you need to get a copy of the bleeding--edge lenstools github repository, and follow the subsequent steps. 1. git clone https://github.com/apetri/LensTools ; 2. git branch pipeline origin/pipeline ; 3. git checkout pipeline ; 4. Edit setup.cfg to enable the installation of the pipeline bindings ; 5. python setup.py install
-
 This document is a hands--on tutorial on how to deploy the lenstools weak lensing simulation pipeline on a computer cluster. This will enable you to run your own weak lensing simulations and produce simulated weak lensing fields (shear and convergence) starting from a set of cosmological parameters. 
 
 Pipeline workflow
@@ -31,9 +29,24 @@ lenstools provides a set of routines for managing the simulations directory tree
 You will need to choose where you want to store your files: in each simulation batch there are two distinct locations files will be saved in. The "home" location is reserved for small files such as code parameter files, tabulated power spectra and other book--keeping necessary files. The "storage" location is used to store large production files, such as :math:`N`--body simulation boxes, lensing planes and weak lensing maps. These locations need to be specified upon the batch creation
 
 ::
-
+	
 	>>> environment = EnvironmentSettings(home="SimTest/Home",storage="SimTest/Storage")
 	>>> batch = SimulationBatch(environment)
+
+or, if your settings are contained in a file called *environment.ini*, you can run the following
+
+::
+	
+	>>> batch = SimulationBatch.current("environment.ini")
+
+The contents of *environment.ini* should look something like
+
+::
+
+	[EnvironmentSettings]
+
+	home = SimTest/Home
+	storage = SimTest/Storage
 
 You will need to specify the home and storage paths only once throughout the execution of the pipeline, lenstools will do the rest! If you want to build a git repository on top of your simulation batch, you will have to install `GitPython <https://gitpython.readthedocs.org>`_ and initiate the simulation batch as follows
 
@@ -68,12 +81,11 @@ Now we create a new simulation model that corresponds to the "cosmology" just sp
 	[+] SimTest/Home/Om0.300_Ol0.700 created on localhost
 	[+] SimTest/Storage/Om0.300_Ol0.700 created on localhost
 
-The argument "parameters" specifies which cosmological parameters you want to keep track of in your model; this is useful, for example, when you want to simulate different combinations of these parameters while keeping the other fixed to their default values. The values that are specified in the "parameters" list are translated into the names of the attributes of the :py:class:`~lenstools.pipeline.simulation.LensToolsCosmology` instance according to the following dictionary
+The argument "parameters" specifies which cosmological parameters you want to keep track of in your model; this is useful, for example, when you want to simulate different combinations of these parameters while keeping the other fixed to their default values. The values that are specified in the "parameters" list are translated into the names of the attributes of the :py:class:`~lenstools.pipeline.simulation.LensToolsCosmology` instance according to the following (customizable) dictionary
 
 ::
 	
-	>>> from lenstools.pipeline.configuration import name2attr
-	>>> name2attr
+	>>> batch.environment.name2attr
 
 	{'Ob': 'Ob0',
  	'Ol': 'Ode0',
@@ -165,6 +177,12 @@ For each of the realizations in the collection, we have to create a set of lens 
 	length_unit = Mpc
 	normals = 0,1,2
 
+	#Customizable, but optional
+	name_format = snap{0}_{1}Plane{2}_normal{3}.{4}
+	snapshots = None
+	kind = potential 
+	smooth = 1
+
 Once you specified the plane configuration file, you can go ahead and create a lens plane set for each of the :math:`N`--body realizations you created at the previous step
 
 ::
@@ -228,6 +246,11 @@ The last step in the pipeline is to run the multi--lens--plane algorithm through
 	convergence = True
 	shear = True
 	omega = True
+
+	#Customizable, but optional
+	plane_format = fits
+	plane_name_format = snap{0}_potentialPlane{1}_normal{2}.{3}
+	first_realization = 1
 
 Different random realizations of the same weak lensing field can be obtained drawing different combinations of the lens planes from different :math:`N`--body realizations (*mix_nbody_realizations*), different regions of the :math:`N`--body boxes (*mix_cut_points*) and different rotation of the boxes (*mix_normals*). We create the directories for the weak lensing map set as usual
 

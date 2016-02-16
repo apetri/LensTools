@@ -210,6 +210,8 @@ class Ensemble(pd.DataFrame):
 			callback_loader = pd.read_pickle
 		elif filename.endswith(".sqlite"):
 			callback_loader = cls._read_sql
+		elif filename.endswith(".npy"):
+			callback_loader = lambda f:np.load(f)
 
 		#Read the Ensemble
 		loaded_ensemble = callback_loader(filename,**kwargs)
@@ -607,7 +609,7 @@ class Ensemble(pd.DataFrame):
 		if kind=="sparse":
 			return self.groupby(lambda i:i%group_size)
 		elif kind=="contiguous":
-			return self.groupby(lambda i:i/group_size)
+			return self.groupby(lambda i:i//group_size)
 		else:
 			raise NotImplementedError("Grouping scheme '{0}' not implemented".format(kind))
 

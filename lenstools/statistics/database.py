@@ -33,12 +33,12 @@ class Database(object):
 	_constructor_ensemble = Ensemble
 
 	#Create a connection to a database
-	def __init__(self,name):
+	def __init__(self,name,connection_string="sqlite:///{0}"):
 
 		if sqlalchemy is None:
 			raise ImportError("sqlalchemy is not installed!!")
 
-		self.connection = sqlalchemy.create_engine("sqlite:///"+name)
+		self.connection = sqlalchemy.create_engine(connection_string.format(name))
 
 
 	#Set constructor for the query results

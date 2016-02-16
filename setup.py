@@ -7,7 +7,7 @@ from distutils import config
 name = "lenstools"
 me = "Andrea Petri"
 email = "apetri@phys.columbia.edu"
-url = "http://www.columbia.edu/~ap3020/LensTools/html"
+url = "http://lenstools.readthedocs.org"
 default_cfg = "setup.cfg"
 
 #Sub-packages
@@ -245,25 +245,6 @@ if conf.getboolean("nicaea","install_python_bindings"):
 
 
 #################################################################################################
-#############################Extensions##########################################################
-#################################################################################################
-
-#Extension objects
-ext = list()
-
-for ext_module in external_sources.keys():
-
-	sources = list()
-	for source in external_sources[ext_module]:
-		sources.append(os.path.join(name,external_dir,source))
-
-	#Append external support sources too
-	if ext_module in external_support.keys():
-		sources += external_support[ext_module]
-
-	ext.append(Extension(ext_module,sources,extra_link_args=lenstools_link))
-
-#################################################################################################
 #############################Package data########################################################
 #################################################################################################
 
@@ -289,6 +270,28 @@ if platform.system() in ["Darwin","darwin"]:
 
 #package scripts
 scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path.basename(fname)!="README.rst" ]
+
+#################################################################################################
+#############################Extensions##########################################################
+#################################################################################################
+
+#Extension objects
+ext = list()
+
+for ext_module in external_sources.keys():
+
+	sources = list()
+	for source in external_sources[ext_module]:
+		sources.append(os.path.join(name,external_dir,source))
+
+	#Append external support sources too
+	if ext_module in external_support.keys():
+		sources += external_support[ext_module]
+
+	ext.append(Extension(ext_module,
+                             sources,
+                             extra_link_args=lenstools_link,
+                             include_dirs=lenstools_includes))
 
 #################################################################################################
 #############################Setup###############################################################

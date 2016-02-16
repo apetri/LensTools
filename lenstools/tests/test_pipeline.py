@@ -1,5 +1,5 @@
 import os
-from ..pipeline import SimulationBatch
+from ..pipeline.simulation import SimulationBatch
 
 from ..pipeline.settings import *
 from ..pipeline.remote import LocalGit

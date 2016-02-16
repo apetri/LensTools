@@ -1,7 +1,7 @@
 import sys,os
 	
 from .. import Ensemble
-from ..utils.defaults import default_callback_loader,peaks_loader
+from ..utils.defaults import measure_power_spectrum,peaks_loader
 
 try:
 
@@ -49,7 +49,7 @@ thresholds_pk = np.arange(-1.0,5.0,0.2)
 
 l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-conv_ensemble = Ensemble.compute(file_list=map_list,callback_loader=default_callback_loader,pool=pool,l_edges=l_edges,columns=pd.Index(l,name="ell"))
+conv_ensemble = Ensemble.compute(file_list=map_list,callback_loader=measure_power_spectrum,pool=pool,l_edges=l_edges,columns=pd.Index(l,name="ell"))
 
 if pool is not None:
 	pool.close()
@@ -80,7 +80,7 @@ def test_power_plot():
 	plt.clf()
 
 def test_chi2():
-	conv_ensemble1 = Ensemble.compute(file_list=map_list[0:2],callback_loader=default_callback_loader,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
+	conv_ensemble1 = Ensemble.compute(file_list=map_list[0:2],callback_loader=measure_power_spectrum,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
 	print("chi2 difference = {0}".format(conv_ensemble.compare(conv_ensemble1)))
 
 def test_pca():
@@ -101,8 +101,8 @@ def test_pca():
 
 def test_add():
 
-	conv_ensemble1 = Ensemble.compute(file_list=map_list[0:2],callback_loader=default_callback_loader,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
-	conv_ensemble2 = Ensemble.compute(file_list=map_list[2:],callback_loader=default_callback_loader,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
+	conv_ensemble1 = Ensemble.compute(file_list=map_list[0:2],callback_loader=measure_power_spectrum,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
+	conv_ensemble2 = Ensemble.compute(file_list=map_list[2:],callback_loader=measure_power_spectrum,pool=None,l_edges=l_edges,columns=pd.Index(l,name="ell"))
 	conv_ensemble_union = Ensemble.concat([conv_ensemble1,conv_ensemble2],axis=0,ignore_index=True)
 
 	assert conv_ensemble_union.nobs == 4
@@ -129,12 +129,12 @@ def test_save_and_load():
 
 def test_group():
 
-	conv_ensemble_sparse = Ensemble.compute(file_list=map_list,callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	conv_ensemble_sparse = Ensemble.compute(file_list=map_list,callback_loader=measure_power_spectrum,pool=pool,l_edges=l_edges)
 	conv_ensemble_sparse = conv_ensemble_sparse.group(group_size=2,kind="sparse").mean()
 	
 	assert conv_ensemble_sparse.nobs==2
 
-	conv_ensemble_contiguous = Ensemble.compute(file_list=map_list,callback_loader=default_callback_loader,pool=pool,l_edges=l_edges)
+	conv_ensemble_contiguous = Ensemble.compute(file_list=map_list,callback_loader=measure_power_spectrum,pool=pool,l_edges=l_edges)
 	conv_ensemble_contiguous = conv_ensemble_contiguous.group(group_size=2,kind="contiguous").mean()
 	
 	assert conv_ensemble_contiguous.nobs==2

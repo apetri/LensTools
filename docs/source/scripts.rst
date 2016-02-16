@@ -4,14 +4,14 @@ LensTools command line scripts
 General purpose scripts
 =======================
 
-gadgetheader
-------------
+nbodyheader
+-----------
 
-Displays the header information of a Gadget2 snapshot. Usage:
+Displays the header information of a Nbody simulation snapshot. Usage:
 
 ::
 	
-	gadgetheader <file_1> <file_2> ...
+	nbodyheader <file_1> <file_2> ...
 
 
 

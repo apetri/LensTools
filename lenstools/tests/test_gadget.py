@@ -1,6 +1,6 @@
 import os
 
-from ..simulations import Gadget2Snapshot
+from ..simulations import Gadget2SnapshotDE
 
 from .. import dataExtern
 
@@ -10,7 +10,7 @@ from astropy.units import Mpc,m,s
 def test_read():
 
 	#Open the gadget snapshot
-	snapshot = Gadget2Snapshot.open(os.path.join(dataExtern(),"gadget/snapshot_001"))
+	snapshot = Gadget2SnapshotDE.open(os.path.join(dataExtern(),"gadget/snapshot_001"))
 
 	#Get the particles positions and play with the indices
 	pospart = snapshot.getPositions(first=500,last=1000)
@@ -30,7 +30,7 @@ def test_read():
 def test_write():
 
 	#Create an empty gadget snapshot
-	snap = Gadget2Snapshot()
+	snap = Gadget2SnapshotDE()
 
 	#Generate random positions and velocities
 	NumPart = 32**3
@@ -55,7 +55,7 @@ def test_write():
 def test_paramfile():
 
 	#Create an empty gadget snapshot
-	snap = Gadget2Snapshot()
+	snap = Gadget2SnapshotDE()
 
 	#Generate random positions and velocities
 	NumPart = 32**3
