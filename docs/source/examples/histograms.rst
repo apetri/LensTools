@@ -12,17 +12,16 @@ Histograms of convergence maps
 	####################################################
 	
 	from lenstools import ConvergenceMap,Ensemble,GaussianNoiseGenerator
-	from lenstools.statistics.index import PDF,Indexer
-	from lenstools.utils.defaults import load_fits_default_convergence
-	from lenstools.simulations import IGS1
+	from lenstools.legacy.index import PDF,Indexer
+	from lenstools.simulations.igs1 import IGS1
 	
 	#####################################################
 	
 	import numpy as np
-	from astropy.units import deg,arcmin
+	import astropy.units as u
 	import matplotlib.pyplot as plt
 	
-	from emcee.utils import MPIPool
+	from lenstools.utils.mpi import MPIWhirlPool
 	
 	import logging
 	import argparse
@@ -44,7 +43,7 @@ Histograms of convergence maps
 		convergence_map = ConvergenceMap.load(map_name)
 	
 		#Generate the shape noise map
-		noise_map = generator.getShapeNoise(z=z,ngal=15.0*arcmin**-2,seed=map_id)
+		noise_map = generator.getShapeNoise(z=z,ngal=15.0*u.arcmin**-2,seed=map_id)
 	
 		#Add the noise
 		convergence_map += noise_map
@@ -69,13 +68,13 @@ Histograms of convergence maps
 		
 		#Initialize MPI pool
 		try: 
-			pool = MPIPool()
+			pool = MPIWhirlPool()
 		except ValueError:
 			pool = None
 	
 		#Parse command line arguments
 		parser = argparse.ArgumentParser()
-		parser.add_argument("-v","--verbose",action="store_true",default=False,dest="verbose",help="Display degug info")
+		parser.add_argument("-v","--verbose",action="store_true",default=False,dest="verbose",help="Display debug info")
 		parser.add_argument("-p","--path",action="store",dest="path",default="/Users/andreapetri/Documents/Columbia/spurious_shear/convergence_maps",help="Root path of IGS1 simulations")
 		parser.add_argument("-n","--num_realizations",dest="num_realizations",action="store",type=int,default=3,help="How many realizations to process")
 	
@@ -97,7 +96,7 @@ Histograms of convergence maps
 		num_realizations = cmd_args.num_realizations
 		
 		#Smoothing scales in arcmin
-		smoothing_scales = [ theta*arcmin for theta in [0.1,0.5,1.0,2.0] ]
+		smoothing_scales = [ theta*u.arcmin for theta in [0.1,0.5,1.0,2.0] ]
 		bin_edges = np.ogrid[-0.15:0.15:128j]
 		bin_midpoints = 0.5*(bin_edges[1:] + bin_edges[:-1])
 		
@@ -113,11 +112,8 @@ Histograms of convergence maps
 		#Initialize Gaussian shape noise generator
 		generator = GaussianNoiseGenerator.forMap(sample_map)
 		
-		#Build Ensemble instance with the maps to analyze
-		map_ensemble = Ensemble.fromfilelist(range(1,num_realizations+1))
-		
 		#Measure the histograms and load the data in the ensemble
-		map_ensemble.load(callback_loader=compute_histograms,pool=pool,simulation_set=simulation_set,smoothing_scales=smoothing_scales,index=idx,generator=generator,bin_edges=bin_edges)
+		map_ensemble = Ensemble.compute(range(1,num_realizations+1),callback_loader=compute_histograms,pool=pool,simulation_set=simulation_set,smoothing_scales=smoothing_scales,index=idx,generator=generator,bin_edges=bin_edges)
 		
 		if pool is not None:
 			pool.close()
@@ -130,8 +126,8 @@ Histograms of convergence maps
 		fig,ax = plt.subplots(len(smoothing_scales),1)
 		for i in range(len(smoothing_scales)):
 			
-			mean = map_ensemble.mean()[idx[i].first:idx[i].last]
-			error = np.sqrt(map_ensemble.covariance().diagonal()[idx[i].first:idx[i].last])
+			mean = map_ensemble.mean(0).values[idx[i].first:idx[i].last]
+			error = np.sqrt(map_ensemble.cov().values.diagonal()[idx[i].first:idx[i].last])
 			
 			ax[i].errorbar(bin_midpoints,mean,yerr=error)
 		
