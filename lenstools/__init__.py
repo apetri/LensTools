@@ -28,7 +28,7 @@ import tarfile
 #External data needed by tests, may be downloaded
 data_directory = os.getenv("LENSTOOLS_DATA")
 if data_directory is None:
-	data_directory = "Data"
+	data_directory = "LT_Data"
 
 #Path to the data folder
 def data(name=None):
@@ -76,6 +76,7 @@ def getTestData(path="."):
 		datafile.write(response.read())
 
 	#Unpack the archive
+	print("[+] Unpacking data archive {0}".format(data_filename))
 	with tarfile.open(data_filename,"r:gz") as tar:
 		tar.extractall(path)
 
@@ -84,6 +85,8 @@ def getTestData(path="."):
 
 	#Make the necessary rename
 	os.rename(os.path.join(path,"Data"),os.path.join(path,os.path.basename(data_directory)))
+	print("[*] Data directory is available at {0}".format(dataExtern()))
+
 
 
 
