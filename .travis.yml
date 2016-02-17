@@ -30,4 +30,4 @@ install:
 - python setup.py install
 
 #Run test
-script: pwd
+script: nosetests

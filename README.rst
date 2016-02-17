@@ -1,7 +1,7 @@
 Welcome to LensTools!
 +++++++++++++++++++++
 
-.. image:: https://travis-ci.org/apetri/LensTools.svg?branch=master
+.. image:: https://travis-ci.org/apetri/LensTools.svg?branch=0.7-dev
     	:target: https://travis-ci.org/apetri/LensTools
 .. image:: http://img.shields.io/pypi/dm/lenstools.svg?style=flat
         :target: https://pypi.python.org/pypi/lenstools/
