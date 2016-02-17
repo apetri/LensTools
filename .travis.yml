@@ -27,6 +27,7 @@ install:
 
 #Coverage packages are on Dan Blanchard binstar channel
 - conda install --yes -c dan_blanchard python-coveralls nose-cov
+- python setup.py build
 - python setup.py install
 
 #Run test
