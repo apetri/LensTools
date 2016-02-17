@@ -130,16 +130,18 @@ def load_power_default(path,root_name="fiducial_matterpower_"):
 	This is the default matter power spectrum loader: it loads matter power spectra generated with CAMB
 
 	"""
+	zregex = re.compile(r"\_([0-9]+)\.dat")
+	zfind = lambda f:int(zregex.search(f).groups()[0])
 
 	#Find the number of power spectrum frames (one for each z)
-	power_spectrum_files = glob.glob(os.path.join(path,root_name) + "*.dat")[1:]
+	power_spectrum_files = filter(lambda f:zfind(f)>0,glob.glob(os.path.join(path,root_name) + "*.dat"))
 
 	#Redshift array
 	z_label = np.zeros(len(power_spectrum_files),dtype=np.int)
 
 	#Check the first file
 	k_try,P = np.loadtxt(power_spectrum_files[0],unpack=True)
-	z_label[0] = int(re.match(os.path.join(path,root_name)+r"([0-9]+).dat",power_spectrum_files[0]).group(1))
+	z_label[0] = zfind(power_spectrum_files[0])
 
 	#Power spectrum array P(k,z)
 	power = np.zeros((len(k_try),len(z_label)))
@@ -150,7 +152,7 @@ def load_power_default(path,root_name="fiducial_matterpower_"):
 		k,P = np.loadtxt(power_file,unpack=True)
 		assert all(k==k_try)
 		power[:,n+1] = P
-		z_label[n+1] = int(re.match(os.path.join(path,root_name)+r"([0-9]+).dat",power_file).group(1))
+		z_label[n+1] = zfind(power_file)
 
 	#Compute the redshifts
 	z = np.array([ label/100.0 for label in z_label ])

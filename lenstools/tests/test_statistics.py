@@ -33,7 +33,7 @@ try:
 except ValueError:
 	logging.debug("No reason to create one, one process only!!")
 	pool = None
-except TypeError:
+except (TypeError,ImportError):
 	pool = None
 
 #The only parallelized part is the loading of the ensemble (that's the computationally expensive part)

@@ -30,5 +30,11 @@ install:
 - python setup.py build_ext -i
 - python setup.py install
 
+#Set up display
+before_script: 
+- "export DISPLAY=:.99.0"
+- "sh -e /etc/init.d/xvfb start"
+- sleep 3
+
 #Run test
 script: nosetests
