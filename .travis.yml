@@ -18,10 +18,11 @@ before_install:
 - conda update --yes conda
 
 #GSL
+- mkdir cextern
 - wget http://ftpmirror.gnu.org/gsl/gsl-1.16.tar.gz
 - tar -xvf gsl-1.16.tar.gz
 - cd gsl-1.16
-- ./configure --prefix=/usr/local
+- ./configure --prefix=/home/travis/build/apetri/LensTools/cextern
 - make
 - make install
 - cd ..
@@ -37,7 +38,7 @@ install:
 #Coverage packages are on Dan Blanchard binstar channel
 - conda install --yes -c dan_blanchard python-coveralls nose-cov
 - python setup.py build_ext -i
-- python setup.py install --gsl=/usr/local
+- python setup.py install --gsl=/home/travis/build/apetri/LensTools/cextern
 
 #Set up display
 before_script: 
