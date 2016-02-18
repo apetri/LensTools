@@ -48,4 +48,9 @@ before_script:
 - sleep 3
 
 #Run test
-script: nosetests
+script:
+- nosetests --with-cov --cov lenstools --cov-config .coveragerc --logging-level=INFO
+
+# Calculate coverage
+after_success:
+- coveralls --config_file .coveragerc
