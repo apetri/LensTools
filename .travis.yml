@@ -37,7 +37,7 @@ install:
 
 #Coverage packages are on Dan Blanchard binstar channel
 - conda install --yes -c dan_blanchard python-coveralls nose-cov
-- python setup.py build_ext -i
+- python setup.py build_ext -i --gsl=/home/travis/build/apetri/LensTools/cextern
 - python setup.py install --gsl=/home/travis/build/apetri/LensTools/cextern
 
 #Set up display
