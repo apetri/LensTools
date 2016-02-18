@@ -19,6 +19,7 @@ before_install:
 
 #GSL
 - mkdir cextern
+- "export LD_LIBRARY_PATH=/home/travis/build/apetri/LensTools/cextern/lib:$LD_LIBRARY_PATH" 
 - wget http://ftpmirror.gnu.org/gsl/gsl-1.16.tar.gz
 - tar -xvf gsl-1.16.tar.gz
 - cd gsl-1.16
