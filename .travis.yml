@@ -49,7 +49,7 @@ before_script:
 
 #Run test
 script:
-- nosetests --with-cov --cov lenstools --cov-config .coveragerc --logging-level=INFO
+- nosetests --with-coverage --cover-package=lenstools --cov-config .coveragerc --logging-level=INFO
 
 # Calculate coverage
 after_success:
