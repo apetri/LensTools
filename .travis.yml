@@ -17,6 +17,14 @@ before_install:
 - export PATH=/home/travis/miniconda2/bin:$PATH
 - conda update --yes conda
 
+#GSL
+- wget http://ftpmirror.gnu.org/gsl/gsl-1.16.tar.gz
+- tar -xvf gsl-1.16.tar.gz
+- cd gsl-1.16
+- ./configure --prefix=/usr/local
+- make install
+- cd ..
+
 #The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
 - sudo rm -rf /dev/shm
 - sudo ln -s /run/shm /dev/shm
@@ -28,7 +36,7 @@ install:
 #Coverage packages are on Dan Blanchard binstar channel
 - conda install --yes -c dan_blanchard python-coveralls nose-cov
 - python setup.py build_ext -i
-- python setup.py install
+- python setup.py install --gsl=/usr/local
 
 #Set up display
 before_script: 
