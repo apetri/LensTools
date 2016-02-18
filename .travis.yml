@@ -22,6 +22,7 @@ before_install:
 - tar -xvf gsl-1.16.tar.gz
 - cd gsl-1.16
 - ./configure --prefix=/usr/local
+- make
 - make install
 - cd ..
 
