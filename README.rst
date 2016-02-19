@@ -3,6 +3,8 @@ Welcome to LensTools!
 
 .. image:: https://travis-ci.org/apetri/LensTools.svg?branch=0.7-dev
     	:target: https://travis-ci.org/apetri/LensTools
+.. image:: https://coveralls.io/repos/github/apetri/LensTools/badge.svg?branch=0.7-dev 
+	:target: https://coveralls.io/github/apetri/LensTools?branch=0.7-dev
 .. image:: http://img.shields.io/pypi/dm/lenstools.svg?style=flat
         :target: https://pypi.python.org/pypi/lenstools/
 .. image:: http://img.shields.io/pypi/v/lenstools.svg?style=flat
