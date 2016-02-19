@@ -34,10 +34,11 @@ before_install:
 
 #Install packages
 install:
-- conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose dateutil pandas statsmodels astropy coverage=3.7.1
+- conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose dateutil pandas statsmodels astropy
 
 #Coverage packages are on Dan Blanchard binstar channel
 - conda install --yes -c dan_blanchard python-coveralls nose-cov
+- pip install coveralls
 - python setup.py build_ext -i --gsl=/home/travis/build/apetri/LensTools/cextern
 - python setup.py install --gsl=/home/travis/build/apetri/LensTools/cextern
 
