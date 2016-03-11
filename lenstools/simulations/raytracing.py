@@ -671,7 +671,7 @@ class DeflectionPlane(Spin1):
 
 		#Compute the jacobian and the convergence by tracing it
 		jacobian = self.jacobian()
-		convergence = -0.5*(jacobian[0]+jacobian[3])
+		convergence = 0.5*(jacobian[0]+jacobian[3])
 
 		#Instantiate the convergence map
 		return ConvergenceMap(convergence,angle=self.side_angle)
