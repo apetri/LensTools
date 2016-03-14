@@ -1,4 +1,6 @@
 from __future__ import division
+from operator import add
+from functools import reduce
 
 import numpy as np
 import pandas as pd
@@ -8,6 +10,16 @@ import pandas as pd
 #######################################################################################################################
 
 precision_bias_correction = lambda nr,nb: (nr-nb-2)/(nr-1) 
+
+#################################################################################################
+##################Convenient definition of step function (fast implementation)###################
+#################################################################################################
+
+def step(x,intervals,vals):
+	if vals.dtype==np.int:
+		return reduce(add,[vals[n]*(np.sign(x-i[0])+np.sign(i[1]-x)).astype(np.int)//2 for n,i in enumerate(intervals)])
+	else:
+		return reduce(add,[0.5*vals[n]*(np.sign(x-i[0])+np.sign(i[1]-x)) for n,i in enumerate(intervals)])
 
 #################################################################################################
 #############################Principal Component Analysis handler################################
