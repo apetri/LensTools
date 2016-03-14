@@ -1059,7 +1059,10 @@ class RayTracer(object):
 
 			#Optionally, call the callback function on the current positions
 			if callback is not None:
-				callback(current_positions,self,k,**kwargs)
+				if kind=="positions":
+					callback(current_positions,self,k,**kwargs)
+				elif kind=="jacobians":
+					callback(current_jacobian,self,k,**kwargs)
 
 			#Log timestamp to cross lens
 			now = time.time()
