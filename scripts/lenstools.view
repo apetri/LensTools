@@ -13,43 +13,47 @@ import matplotlib.pyplot as plt
 
 #Read command line options
 parser = argparse.ArgumentParser(prog=os.path.split(sys.argv[0])[-1])
-parser.add_argument("filename",nargs="+")
+parser.add_argument("filename",nargs="*")
 parser.add_argument("-s","--spin",dest="spin",type=int,default=0,help="Spin of the lensing field to visualize, must be 0 (scalar) or 1 (vector/tensor)")
 parser.add_argument("-p","--plane",dest="plane",action="store_true",default=False,help="Enable if the image you are loading is a lensing plane (these have extra info in the header)")
 parser.add_argument("-pd","--planedensity",dest="planedensity",action="store_true",default=False,help="Enable if the image you are loading is a lensing potential plane, of which you wish to compute the density")
 parser.add_argument("-f","--format",dest="img_format",type=str,default=None,help="Format of the image to save on disk; if None, no image is saved")
-parser.add_argument("-i","--interactive",dest="interactive",action="store_true",default=True,help="Switch to interactive mode after plotting")
+parser.add_argument("-i","--interactive",dest="interactive",action="store_true",default=False,help="Switch to interactive mode after plotting")
 parser.add_argument("-cm","--colormap",dest="colormap",action="store",type=str,default="jet",help="matplotlib color map name")
 parser.add_argument("-l","--label",dest="label",action="store",type=str,default=None,help="optional label to give to the image colorbar")
 
 cmd_args = parser.parse_args()
 
 #Check that we have at least one image to display
-if cmd_args.filename is None:
-	parser.print_help()
-	sys.exit(0)
+if not(len(cmd_args.filename)):
+	cmd_args.filename = sys.stdin.read().split("\n")
 
 #Cycle over filenames
 for filename in cmd_args.filename:
 
 	if cmd_args.img_format is not None:
-		savename = os.path.split(filename)[-1].split(".")[0]
+		savename = ".".join([ p for p in os.path.split(filename)[-1].split(".")[:-1]])
 		savename += ".{0}".format(cmd_args.img_format)
 	else:
 		savename = None 
 
-	if cmd_args.plane:
-		img = Plane.load(filename)
+	try:
 	
-	elif cmd_args.planedensity:
-		img  = PotentialPlane.load(filename)
-		img = img.density()
+		if cmd_args.plane:
+			img = Plane.load(filename)
 	
-	elif cmd_args.spin==0:
-		img = Spin0.load(filename)
+		elif cmd_args.planedensity:
+			img  = PotentialPlane.load(filename)
+			img = img.density()
 	
-	else:
-		img = Spin1.load(filename)
+		elif cmd_args.spin==0:
+			img = Spin0.load(filename)
+	
+		else:
+			img = Spin1.load(filename)
+
+	except IOError:
+		continue
 	
 	img.visualize(colorbar=True,cmap=cmd_args.colormap,cbar_label=cmd_args.label)
 
