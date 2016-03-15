@@ -222,7 +222,7 @@ class Catalog(tbl.Table):
 		catalog_columns = self.colnames 
 
 		#Group by column interval
-		self["group"] = step(self[field],intervals,range(1,len(intervals)+1))
+		self["group"] = step(self[field],intervals,np.array(range(1,len(intervals)+1)))
 		catalog_rebinned = list()
 		for n,i in enumerate(intervals):
 			catalog_rebinned.append(self[self["group"]==n+1][catalog_columns])
