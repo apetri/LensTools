@@ -265,6 +265,7 @@ class MapSettings(LTSettings):
 		self.seed = 0
 
 		#Which lensing quantities do we need?
+		self.tomographic_convergence = False
 		self.convergence = True
 		self.shear = False
 		self.omega = False
@@ -327,6 +328,11 @@ class MapSettings(LTSettings):
 		self.source_redshift = options.getfloat(section,"source_redshift")
 
 		self.seed = options.getint(section,"seed")
+
+		try:
+			self.tomographic_convergence = options.getboolean(section,"tomographic_convergence")
+		except NoOptionError:
+			pass
 
 		self.convergence = options.getboolean(section,"convergence")
 		self.shear = options.getboolean(section,"shear")

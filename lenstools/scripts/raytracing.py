@@ -42,6 +42,16 @@ def _subdirectories(num_realizations,realizations_in_subdir):
 
 	return s
 
+#####################################################################################
+#######Callback to call during raytracing to save the convergence at every step######
+#####################################################################################
+
+def convergence_callback(jacobian,tracer,k,realization,angle,map_batch,settings):
+	convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=angle)
+	savename = os.path.join(map_batch.storage_subdir,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(tracer.redshift[k],realization+1,settings.format))
+	logdriver.debug("Saving convergence map to {0}".format(savename)) 
+	convMap.save(savename)
+
 ################################################
 #######Single redshift ray tracing##############
 ################################################
@@ -283,39 +293,46 @@ def singleRedshift(pool,batch,settings,id):
 		xx,yy = np.meshgrid(b,b)
 		pos = np.array([xx,yy]) * map_angle.unit
 
-		#Trace the ray deflections
-		jacobian = tracer.shoot(pos,z=source_redshift,kind="jacobians")
+		if settings.tomographic_convergence:
 
-		now = time.time()
-		logdriver.info("Jacobian ray tracing for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-		last_timestamp = now
+			#Trace the ray deflections and save the convergence at every step
+			tracer.shoot(pos,z=source_redshift,kind="jacobians",callback=convergence_callback,realization=r,angle=map_angle,map_batch=map_batch,settings=settings)
 
-		#Compute shear,convergence and omega from the jacobians
-		if settings.convergence:
+		else:
+
+			#Trace the ray deflections
+			jacobian = tracer.shoot(pos,z=source_redshift,kind="jacobians")
+
+			now = time.time()
+			logdriver.info("Jacobian ray tracing for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+			last_timestamp = now
+
+			#Compute shear,convergence and omega from the jacobians
+			if settings.convergence:
 		
-			convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
-			savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
-			logdriver.info("Saving convergence map to {0}".format(savename)) 
-			convMap.save(savename)
-			logdriver.debug("Saved convergence map to {0}".format(savename)) 
+				convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
+				savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+				logdriver.info("Saving convergence map to {0}".format(savename)) 
+				convMap.save(savename)
+				logdriver.debug("Saved convergence map to {0}".format(savename)) 
 
-		##############################################################################################################################
+			##############################################################################################################################
 	
-		if settings.shear:
+			if settings.shear:
 		
-			shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
-			savename = batch.syshandler.map(os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
-			logdriver.info("Saving shear map to {0}".format(savename))
-			shearMap.save(savename) 
+				shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
+				savename = batch.syshandler.map(os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+				logdriver.info("Saving shear map to {0}".format(savename))
+				shearMap.save(savename) 
 
-		##############################################################################################################################
+			##############################################################################################################################
 	
-		if settings.omega:
+			if settings.omega:
 		
-			omegaMap = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
-			savename = batch.syshandler.map(os.path.join(save_path,"WLomega_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
-			logdriver.info("Saving omega map to {0}".format(savename))
-			omegaMap.save(savename)
+				omegaMap = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
+				savename = batch.syshandler.map(os.path.join(save_path,"WLomega_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+				logdriver.info("Saving omega map to {0}".format(savename))
+				omegaMap.save(savename)
 
 		now = time.time()
 		
