@@ -59,7 +59,7 @@ _EdisonClusterSpecs = {
 "cores_per_node" : 24,
 "memory_per_node" : 64.0*u.Gbyte,
 "cores_at_execution_switch" : "-n ",
-"offset_switch" : "-N",
+"offset_switch" : "-N ",
 "wait_switch" : "wait",
 "multiple_executables_on_node" : False	
 } 
@@ -72,7 +72,7 @@ _CoriClusterSpecs = {
 "cores_per_node" : 32,
 "memory_per_node" : 128.0*u.Gbyte,
 "cores_at_execution_switch" : "-n ",
-"offset_switch" : "-N",
+"offset_switch" : "-N ",
 "wait_switch" : "wait",
 "multiple_executables_on_node" : False	
 } 
