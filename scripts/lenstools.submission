@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from importlib import import_module
 
 import os
 import sys
@@ -12,6 +11,7 @@ from lenstools import data as lensData
 from lenstools import SimulationBatch
 from lenstools.pipeline.settings import *
 from lenstools.pipeline.cluster import *
+from lenstools.pipeline.deploy import ParsedHandler
 
 #Dictionary that converts command line argument into the section name in the job specification file
 type2section = {
@@ -41,7 +41,7 @@ parser.add_argument("-O","--one",dest="one_script",action="store_true",default=F
 parser.add_argument("-j","--job",dest="job_options_file",action="store",type=str,default=lensData("job_default.ini"),help="job specifications file")
 parser.add_argument("-t","--type",dest="job_type",action="store",type=str,default=None,help="type of job submission (Gadget,NGenIC,etc...)")
 parser.add_argument("-c","--chunks",dest="chunks",action="store",type=int,default=1,help="number of independent job submissions in which to split the workload")
-parser.add_argument("-s","--system",dest="system",action="store",type=str,default=None,help="name of the system on which we are running on")
+parser.add_argument("-s","--system",dest="system",action="store",type=str,default=None,help="configuration file that contains the cluster specifications")
 parser.add_argument("-E","--extra_args",dest="extra_args",action="store",type=str,default=None,help="extra arguments to pass to the executable")
 parser.add_argument("model_file",nargs="?",default=None,help="text file that contains all the IDs of the models to include in the job submission")
 
@@ -67,15 +67,12 @@ else:
 		print("[-] $THIS environment variable is not set, cannot continue")
 		sys.exit(1)
 
-if system in system2handler.keys():
+if system in system2handler:
 	print("[+] Using job handler for system {0}".format(system))
 	job_handler = system2handler[system]()
 else:
-	parts = system.split(".")
-	module = ".".join(parts[:-1])
-	handler = parts[-1]
-	print("[+] Using job handler {0} from {1}".format(handler,module))
-	job_handler = getattr(import_module(module),handler)()
+	print("[+] Using job handler parsed from {0}".format(system))
+	job_handler = ParsedHandler.read(system)
 
 
 print("[*] Current batch home directory: {0}".format(environment.home))

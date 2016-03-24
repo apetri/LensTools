@@ -671,56 +671,39 @@ to generate the submission script.
 Job handlers for different clusters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each computer cluster comes with its own job sheduler and job submission directives. lenstools facilitates the transition between clusters by translating the platform--independent options contained in "job.ini" into cluster specific directives through the :py:class:`~lenstools.pipeline.deploy.JobHandler` objects. Currently the "-s" switch that you can pass to lenstools.submission accepts the values "Stampede" (that will select the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` handler) and "edison" (that will select :py:class:`~lenstools.pipeline.cluster.EdisonHandler`). Should you want to use a different computer cluster, this is what you have to do. Create a file called mycluster.py, and implement a class MyCluster as follows (this is just an example)
+Each computer cluster comes with its own job sheduler and job submission directives. lenstools facilitates the transition between clusters by translating the platform--independent options contained in "job.ini" into cluster specific directives through the :py:class:`~lenstools.pipeline.deploy.JobHandler` objects. Currently the "-s" switch that you can pass to lenstools.submission accepts the values "Stampede" (that will select the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` handler) and "edison" (that will select :py:class:`~lenstools.pipeline.cluster.EdisonHandler`). Should you want to use a different computer cluster, this is what you have to do. Create a file called mycluster.ini, and fill it according to this template (changing the values of the options to adapt to your own cluster)
 
 ::
 
-	#mycluster.py
+	[Directives]
 
-	from lenstools.pipeline.deploy import JobHandler,Directives,ClusterSpecs
-	import astropy.units as u 
+	directive_prefix = #SBATCH 
+	job_name_switch = -J  
+	stdout_switch = -o  
+	stderr_switch = -e  
+	num_cores_switch = -n  
+	num_nodes_switch = -N  
+	tasks_per_node_switch = None
+	queue_type_switch = -p  
+	wallclock_time_switch = -t  
+	user_email_switch = --mail-user=
+	user_email_type = --mail-type=all
 
-	_SLURMspecs = {
-	"directive_prefix" : "#SBATCH",
-	"charge_account_switch" : "-A ",
-	"job_name_switch" : "-J ",
-	"stdout_switch" : "-o ",
-	"stderr_switch" : "-e ",
-	"num_cores_switch" : "-n ",
-	"num_nodes_switch" : "-N ",
-	"tasks_per_node_switch" : None,
-	"queue_type_switch" : "-p ",
-	"wallclock_time_switch" : "-t ",
-	"user_email_switch" : "--mail-user=",
-	"user_email_type" : "--mail-type=all",
-	}
+	[ClusterSpecs]
 
-	_MyClusterSpecs = {
-	"shell_prefix" : "#!/bin/bash",
-	"execution_preamble" : None,
-	"job_starter" : "ibrun",
-	"cores_per_node" : 16,
-	"memory_per_node" : 32.0*u.Gbyte,
-	"cores_at_execution_switch" : "-n ",
-	"offset_switch" : "-o ",
-	"wait_switch" : "wait",
-	"multiple_executables_on_node" : True
-	}
+	shell_prefix = #!/bin/bash
+	execution_preamble = None
+	charge_account_switch = -A  
+	job_starter = ibrun 
+	cores_per_node = 16 
+	memory_per_node = 32 
+	memory_unit = Gbyte 
+	cores_at_execution_switch = -n  
+	offset_switch = -o  
+	wait_switch = wait 
+	multiple_executables_on_node = True 
 
-	class MyCluster(JobHandler):
-
-		"""
-		Job handler for my cluster 
-
-		"""
-
-		def setDirectives(self):
-			self._directives = Directives(**_SLURMspecs)
-
-		def setClusterSpecs(self):
-			self._cluster_specs = ClusterSpecs(**_MyClusterSpecs) 
-
-After doing this, you just need to pass the string "mycluster.MyCluster" to the "-s" switch when you run lenstools.submission and you are all set!
+After doing this, you just need to pass the cluster configuration file name "mycluster.ini" to the "-s" switch when you run lenstools.submission and you are all set!
 
 
 Post processing
