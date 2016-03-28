@@ -61,7 +61,21 @@ class Catalog(tbl.Table):
 			
 			if fitsio is not None:
 				with fitsio.FITS(filename,"r") as hdulist:
-					return cls(hdulist[1].read())
+					
+					data = cls(hdulist[1].read())
+					header = hdulist[1].read_header()
+					
+					try:
+						data.meta["NGAL"] = header["NGAL"]
+					except ValueError:
+						pass
+
+					try:
+						data.meta["AUNIT"] = header["AUNIT"].replace(" ","")
+					except ValueError:
+						pass
+
+					return data
 		
 		return super(Catalog,cls).read(filename,*args,**kwargs)
 
