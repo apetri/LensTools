@@ -370,6 +370,28 @@ class Ensemble(pd.DataFrame):
 		else:
 			format(self,filename,**kwargs)
 
+	#############################################################
+	######Construct a random ensemble for testing purposes#######
+	#############################################################
+
+	@classmethod
+	def random(cls,nobs=10,columns=list("abc")):
+
+		"""
+		Construct a random ensemble for testing purposes, sampling from a univariate normal distribution in each column
+
+		:param nobs: number of observations (rows)
+		:type nobs: int.
+
+		:param columns: columns of the ensemble
+		:type columns: list.
+
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		return cls(np.random.randn(nobs,len(columns)),columns=columns)
+
 
 	#################################################
 	#############Construct from meshgrid#############
@@ -826,6 +848,20 @@ class Ensemble(pd.DataFrame):
 
 
 	#####################################################################################################################
+
+	def invert(self):
+
+		"""
+		If the Ensemble is a square matrix, compute its inverse
+
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		if self.shape[0]!=self.shape[1]:
+			raise ValueError("This is not a square matrix!")
+
+		return self.__class__(np.linalg.inv(self.values),index=self.index,columns=self.columns)
 
 	####################################
 	#############Visualization##########
