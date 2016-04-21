@@ -913,7 +913,10 @@ class SquareMatrix(Ensemble):
 			raise ValueError("This is not a square matrix!")
 
 	def __getitem__(self,item):
-		return SquareMatrix(Ensemble(self)[item].loc[item])
+		if isinstance(item,list):
+			return SquareMatrix(Ensemble(self)[item].loc[item])
+		else:
+			return Ensemble(self)[item][item]
 
 	def invert(self):
 
