@@ -1,4 +1,5 @@
 from __future__ import division
+import sys,warnings
 
 try:
 	
@@ -10,7 +11,8 @@ except ImportError:
 	
 	MPI=None
 	default_op=None
-	print("WARNING: could not import mpi4py! (if you set sys.modules['mpi4py']=None please disregard this message)")
+	wmsg = "Could not import mpi4py! (if you set sys.modules['mpi4py']=None please disregard this message)"
+	warnings.warn(wmsg)
 
 from emcee.utils import MPIPool
 import numpy as np
