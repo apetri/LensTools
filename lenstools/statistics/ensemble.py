@@ -912,6 +912,9 @@ class SquareMatrix(Ensemble):
 		if self.shape[0]!=self.shape[1]:
 			raise ValueError("This is not a square matrix!")
 
+	def __getitem__(self,item):
+		return SquareMatrix(Ensemble(self)[item].loc[item])
+
 	def invert(self):
 
 		"""
