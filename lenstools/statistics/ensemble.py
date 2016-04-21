@@ -637,6 +637,9 @@ class Ensemble(pd.DataFrame):
 
 	##########################################################################################################################################################################
 
+	def cov(self,*args,**kwargs):
+		return SquareMatrix(super(Ensemble,self).cov(*args,**kwargs))
+
 	def covariance(self,bootstrap=False,bootstrap_size=10,resample=10,seed=None,pool=None):
 
 		"""
@@ -657,7 +660,8 @@ class Ensemble(pd.DataFrame):
 		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
 		:type pool: MPI pool object
 
-		:returns: ndarray with the covariance matrix, has shape (self.data[1],self.data[1]) 
+		:returns: Covariance matrix, has shape (self.data[1],self.data[1]) 
+		:rtype: :py:class:`SquareMatrix`
 
 		""" 
 
@@ -847,22 +851,6 @@ class Ensemble(pd.DataFrame):
 		return self.reindex(self.index[np.random.permutation(np.arange(len(self)))])
 
 
-	#####################################################################################################################
-
-	def invert(self):
-
-		"""
-		If the Ensemble is a square matrix, compute its inverse
-
-		:rtype: :py:class:`Ensemble`
-
-		"""
-
-		if self.shape[0]!=self.shape[1]:
-			raise ValueError("This is not a square matrix!")
-
-		return self.__class__(np.linalg.inv(self.values),index=self.index,columns=self.columns)
-
 	####################################
 	#############Visualization##########
 	####################################
@@ -913,6 +901,32 @@ class Ensemble(pd.DataFrame):
 		#Return the handle
 		return self.ax
 
+##############################################
+########SquareMatrix class####################
+##############################################
+
+class SquareMatrix(Ensemble):
+
+	def __init__(self,*args,**kwargs):
+		super(SquareMatrix,self).__init__(*args,**kwargs)
+		if self.shape[0]!=self.shape[1]:
+			raise ValueError("This is not a square matrix!")
+
+	def invert(self):
+
+		"""
+		Compute the inverse
+
+		:rtype: :py:class:`SquareMatrix`
+
+		"""
+		return self.__class__(np.linalg.inv(self.values),index=self.index,columns=self.columns)
+
+	def cov(self,*args,**kwargs):
+		raise NotImplementedError("This method is not implemented for SquareMatrix!")
+
+	def covariance(self,*args,**kwargs):
+		raise NotImplementedError("This method is not implemented for SquareMatrix!")
 
 #######################################
 ########Panel class####################
