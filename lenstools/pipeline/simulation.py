@@ -1973,8 +1973,28 @@ class SimulationCollection(SimulationModel):
 		return super(SimulationCollection,self).__repr__() + " | box={0},nside={1}".format(self.box_size,self.nside)
 
 
+	################################################################################################################################
+
+	#Can't call these methods anymore
 	def newCollection(self):
-		raise TypeError("This method should be called on SimulationModel instances!")
+		raise NotImplementedError
+
+	def getCollection(self):
+		raise NotImplementedError
+
+	@property
+	def collections(self):
+		raise NotImplementedError
+
+	def newTelescopicMapSet(self):
+		raise NotImplementedError
+
+	def getTelescopicMapSet(self):
+		raise NotImplementedError
+
+	@property
+	def telescopicmapsets(self):
+		raise NotImplementedError		
 
 	################################################################################################################################
 
@@ -2411,8 +2431,42 @@ class SimulationIC(SimulationCollection):
 
 	###########################################################################
 
+	#Can't call these methods anymore
 	def newRealization(self,seed):
-		raise TypeError("This method should be called on SimulationCollection instances!")
+		raise NotImplementedError
+
+	@property
+	def realizations(self):
+		raise NotImplementedError
+
+	def getRealization(self,ic):
+		raise NotImplementedError
+
+	def newMapSet(self,mp):
+		raise NotImplementedError
+
+	@property
+	def mapsets(self):
+		raise NotImplementedError
+
+	def getMapSet(self,mp):
+		raise NotImplementedError
+
+	def newCatalog(self,ct):
+		raise NotImplementedError
+
+	@property
+	def catalogs(self):
+		raise NotImplementedError
+
+	def getCatalog(self,ct):
+		raise NotImplementedError
+
+	def camb2ngenic(self,*args):
+		raise NotImplementedError
+
+	def writeCAMB(self,*args):
+		raise NotImplementedError	
 
 	####################################################################################################################################
 
@@ -2842,6 +2896,31 @@ class SimulationPlanes(SimulationIC):
 
 		return s.read()
 
+	###########################################################################
+
+	#Can't call these methods anymore
+	def newPlaneSet(self,*args):
+		raise NotImplementedError
+
+	@property
+	def planesets(self):
+		raise NotImplementedError
+
+	def getPlaneSet(self,*args):
+		raise NotImplementedError
+
+	def writeGadget2(self,*args):
+		raise NotImplementedError
+
+	def writeNGenIC(self,*args):
+		raise NotImplementedError
+
+	def pipe_snapshots(self,*args):
+		raise NotImplementedError
+	
+	def snapshotPath(self,*args):
+		raise NotImplementedError
+
 
 ##############################################################
 ##############SimulationMaps class############################
@@ -2876,8 +2955,44 @@ class SimulationMaps(SimulationCollection):
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
 
-	
+	###########################################################################
 
+	#Can't call these methods anymore
+	def newRealization(self,seed):
+		raise NotImplementedError
+
+	@property
+	def realizations(self):
+		raise NotImplementedError
+
+	def getRealization(self,ic):
+		raise NotImplementedError
+
+	def newMapSet(self,mp):
+		raise NotImplementedError
+
+	@property
+	def mapsets(self):
+		raise NotImplementedError
+
+	def getMapSet(self,mp):
+		raise NotImplementedError
+
+	def newCatalog(self,ct):
+		raise NotImplementedError
+
+	@property
+	def catalogs(self):
+		raise NotImplementedError
+
+	def getCatalog(self,ct):
+		raise NotImplementedError
+
+	def camb2ngenic(self,*args):
+		raise NotImplementedError
+
+	def writeCAMB(self,*args):
+		raise NotImplementedError
 
 ########################################################################
 ##############SimulationTelescopicMaps class############################
@@ -2915,6 +3030,28 @@ class SimulationTelescopicMaps(SimulationModel):
 		#Build the new representation string
 		return super(SimulationTelescopicMaps,self).__repr__() + " | " + "-".join([c.geometry_id for c in self.mapcollections]) + " | " + "-".join([ "{0:.3f}".format(z) for z in self.redshifts ]) +" | Map files on disk: {0}".format(len(maps_on_disk))
 
+	################################################################################################################################
+
+	#Can't call these methods anymore
+	def newCollection(self):
+		raise NotImplementedError
+
+	def getCollection(self):
+		raise NotImplementedError
+
+	@property
+	def collections(self):
+		raise NotImplementedError
+
+	def newTelescopicMapSet(self):
+		raise NotImplementedError
+
+	def getTelescopicMapSet(self):
+		raise NotImplementedError
+
+	@property
+	def telescopicmapsets(self):
+		raise NotImplementedError		
 
 
 #################################################################
@@ -2986,6 +3123,48 @@ class SimulationCatalog(SimulationCollection):
 		sub_catalogs.sort(key=lambda c:c.first_realization)
 		return sub_catalogs
 
+	###########################################################################
+
+	#Can't call these methods anymore
+	def newRealization(self,seed):
+		raise NotImplementedError
+
+	@property
+	def realizations(self):
+		raise NotImplementedError
+
+	def getRealization(self,ic):
+		raise NotImplementedError
+
+	def newMapSet(self,mp):
+		raise NotImplementedError
+
+	@property
+	def mapsets(self):
+		raise NotImplementedError
+
+	def getMapSet(self,mp):
+		raise NotImplementedError
+
+	def newCatalog(self,ct):
+		raise NotImplementedError
+
+	@property
+	def catalogs(self):
+		raise NotImplementedError
+
+	def getCatalog(self,ct):
+		raise NotImplementedError
+
+	def camb2ngenic(self,*args):
+		raise NotImplementedError
+
+	def writeCAMB(self,*args):
+		raise NotImplementedError	
+
+
+####################################################################################################################################
+
 
 class SimulationSubCatalog(SimulationCatalog):
 
@@ -3010,6 +3189,10 @@ class SimulationSubCatalog(SimulationCatalog):
 	@property
 	def last_realization(self):
 		return self._last_realization
+
+	@property
+	def subcatalogs(self):
+		raise NotImplementedError
 
 
 
