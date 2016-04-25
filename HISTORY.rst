@@ -1,5 +1,12 @@
 .. :changelog:
 
+0.7-dev
++++++++
+
+- ShearCatalog allows to re-bin galaxies according to redshift
+- Introduced a SquareMaxtrix class (inherits from Ensemble) for square matrix operations, with column name support
+- Protect nodes in a SimulationBatch to call forbidden methods
+
 0.6
 +++
 
