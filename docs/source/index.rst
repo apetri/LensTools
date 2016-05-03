@@ -28,6 +28,29 @@ This python add-on will handle basically every operation you will need to perfor
 - Easy multiprocessing and cluster deployment via the mpi4py_ module
 - *Future prospect*: taking advantage of numpy offload capabilities to Intel Xeon Phi coprocessors to boost performance (planned) 
 
+Acknowledgement
+---------------
+
+LensTools is open source and released under the MIT license. If you make use of LensTools in your work, please cite the corresponding entry in the Astrophysics Source Code Library (ASCL)
+
+::
+   
+   @MISC{LensTools-ASCL,
+   
+      author = {{Petri}, A.},
+      title = "{LensTools: Weak Lensing computing tools}",
+      howpublished = {Astrophysics Source Code Library},
+      year = 2016,
+      month = feb,
+      archivePrefix = "ascl",
+      eprint = {1602.009},
+      adsurl = {http://adsabs.harvard.edu/abs/2016ascl.soft02009P},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+
+   }
+
+A regular code paper has been submitted for peer review and an electronic reference will be available soon. 
+
 Installation
 ------------
 
