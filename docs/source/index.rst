@@ -78,6 +78,7 @@ Dependencies
 
 .. _numpy: http://www.numpy.org
 .. _scipy: http://www.scipy.org
+.. _sqlalchemy: http://www.sqlalchemy.org 
 .. _astropy: http://www.astropy.org
 .. _pandas: http://pandas.pydata.org
 .. _emcee: http://dan.iel.fm/emcee/current/
@@ -90,12 +91,12 @@ Dependencies
 .. _NICAEA: http://www.cosmostat.org/software/nicaea/
 .. _fftw3: http://www.fftw.org
 
-The core features require the standard numpy_, scipy_ , and additionally  astropy_ (mainly for the cosmology and measure units support) and emcee_ (from which LensTools borrows the MPI Pool utility), and the Test suite requires additionally the matplotlib_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to run the calculations in parallel on a computer cluster you will need to install mpi4py_ (a python wrapper for the MPI library). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway). One of the lenstools features, namely the :py:class:`~lenstools.simulations.Design` class, requires that you have a working version of GSL_ to link to; if you don't have one, just hit *enter* during the installation process and the package will work correctly without this additional feature. The installation if the NICAEA_ bindings additionally requires a working installation of the fftw3_ library. 
+The core features require the standard numpy_, scipy_ , and additionally  astropy_ (mainly for the cosmology and measure units support) and emcee_ (from which LensTools borrows the MPI Pool utility), and the Test suite requires additionally the matplotlib_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to use the SQL database querying shortcuts embedded in LensTools, you will need the sqlalchemy_ package too. If you want to run the calculations in parallel on a computer cluster you will need to install mpi4py_ (a python wrapper for the MPI library). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway). One of the lenstools features, namely the :py:class:`~lenstools.simulations.Design` class, requires that you have a working version of GSL_ to link to; if you don't have one, just hit *enter* during the installation process and the package will work correctly without this additional feature. The installation if the NICAEA_ bindings additionally requires a working installation of the fftw3_ library. 
 
 Test
 ----
 
-To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install pytest_, then you need to download some data files (mainly FITS images) that the test suite depends on. You need to set the environment variable LENSTOOLS_DATA to the path where you want your data to be downloaded (for a manual download the data file can be found here_, it is almost 250MB). After that, in a python shell, type
+To check that everything works before installing you can run the pre implemented test suite that comes with the source code. First you will need to install pytest_, then you need to download some data files (mainly FITS images) that the test suite depends on. You need to set the environment variable LENSTOOLS_DATA to the path where you want your data to be downloaded (for a manual download the data file can be found here_, it is roughly 300MB). After that, in a python shell, type
 
 ::
 
