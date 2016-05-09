@@ -169,11 +169,19 @@ class CAMBSettings(LTSettings):
 		#Hubble constant
 		s.write("hubble = {0:.6f}\n".format(cosmology.h * 100))
 
+		#Dark energy parameters
 		if hasattr(cosmology,"w0"):
 			w0 = cosmology.w0
 		else:
-			w0 = -1.0
+			w0 = -1.
+
+		if hasattr(cosmology,"wa"):
+			wa = cosmology.wa
+		else:
+			wa = 0.
+
 		s.write("w = {0:.6f}\n".format(w0))
+		s.write("wa = {0:.6f}\n".format(wa))
 
 		s.write("\n\n#####################################\n\n")
 
