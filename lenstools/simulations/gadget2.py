@@ -284,7 +284,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 		header["w0"] = -1.0
 		header["wa"] = 0.0
-		header["comoving_distance"] = LambdaCDM(H0=self._header["h"]*100,Om0=self._header["Om0"],Ode0=self._header["Ode0"]).comoving_distance(self._header["redshift"]).to(kpc).value * self._header["h"]
+		header["comoving_distance"] = LambdaCDM(H0=header["h"]*100,Om0=header["Om0"],Ode0=header["Ode0"]).comoving_distance(header["redshift"]).to(kpc).value * header["h"]
 
 		return header 
 

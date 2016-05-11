@@ -11,7 +11,7 @@ from ConfigParser import NoOptionError
 from lenstools.utils import MPIWhirlPool
 
 from lenstools.simulations.nbody import NbodySnapshot
-from lenstools.simulations.gadget2 import Gadget2Snapshot
+from lenstools.simulations.gadget2 import Gadget2SnapshotDE
 
 from lenstools.pipeline.simulation import SimulationBatch
 
@@ -35,7 +35,7 @@ def powerSpectrumExecution():
 
 	script_to_execute = matterPowerSpectrum
 	settings_handler = PowerSpectrumSettings
-	kwargs = {"fmt":Gadget2Snapshot}
+	kwargs = {"fmt":Gadget2SnapshotDE}
 
 	return script_to_execute,settings_handler,kwargs
 
