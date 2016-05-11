@@ -396,7 +396,7 @@ class NbodySnapshot(object):
 		self.velocities = velocities
 
 
-	def massDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False):
+	def massDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False,density_placeholder=None):
 
 		"""
 		Uses a C backend gridding function to compute the matter mass density fluctutation for the current snapshot: the density is evaluated using a nearest neighbor search
@@ -412,6 +412,9 @@ class NbodySnapshot(object):
 
 		:param save: if True saves the density histogram and resolution as instance attributes
 		:type save: bool.
+
+		:param density placeholder: if not None, it is used as a fixed memory chunk for MPI communications of the density
+		:type density_placeholder: array
 
 		:returns: tuple(numpy 3D array with the (unsmoothed) matter density fluctuation on a grid,bin resolution along the axes)  
 
@@ -473,10 +476,18 @@ class NbodySnapshot(object):
 
 		#Accumulate from the other processors
 		if self.pool is not None:
+
+			if density_placeholder is not None:
+
+				density_placeholder[:] = density
+				self.pool.comm.Barrier()
+				self.pool.accumulate()
+
+			else:
 			
-			self.pool.openWindow(density)
-			self.pool.accumulate()
-			self.pool.closeWindow()
+				self.pool.openWindow(density)
+				self.pool.accumulate()
+				self.pool.closeWindow()
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = ((xi[1:]-xi[:-1]).mean() * positions.unit,(yi[1:]-yi[:-1]).mean() * positions.unit,(zi[1:]-zi[:-1]).mean() * positions.unit)
@@ -1234,7 +1245,7 @@ class NbodySnapshot(object):
 	#############################################################################################################################################
 
 
-	def powerSpectrum(self,k_edges,resolution=None,return_num_modes=False):
+	def powerSpectrum(self,k_edges,resolution=None,return_num_modes=False,density_placeholder=None):
 
 		"""
 		Computes the power spectrum of the relative density fluctuations in the snapshot at the wavenumbers specified by k_edges; a discrete particle number density is computed before hand to prepare the FFT grid
@@ -1247,6 +1258,9 @@ class NbodySnapshot(object):
 
 		:param return_num_modes: if True returns the mode counting for each k bin as the last element in the return tuple
 		:type return_num_modes: bool.
+
+		:param density placeholder: if not None, it is used as a fixed memory chunk for MPI communications in the density calculations
+		:type density_placeholder: array
 
 		:returns: tuple(k_values(bin centers),power spectrum at the specified k_values)
 
@@ -1264,7 +1278,7 @@ class NbodySnapshot(object):
 
 		#Compute the gridded number density
 		if not hasattr(self,"density"):
-			density,bin_resolution = self.massDensity(resolution=resolution) 
+			density,bin_resolution = self.massDensity(resolution=resolution,density_placeholder=density_placeholder) 
 		else:
 			assert resolution is None,"The spatial resolution is already specified in the attributes of this instance! Call massDensity() to modify!"
 			density,bin_resolution = self.density,self.resolution
@@ -1280,7 +1294,7 @@ class NbodySnapshot(object):
 
 		#Sanity check on maximum k: maximum is limited by the grid resolution
 		if k_edges.max() > k_max:
-			print("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}, distortions might start to appear already at {2}): results might be inaccurate".format(k_edges.max(),k_max,k_max_recommended))
+			logstderr.warning("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}, distortions might start to appear already at {2}): results might be inaccurate".format(k_edges.max(),k_max,k_max_recommended))
 
 		#Perform the FFT
 		density_ft = fftengine.rfftn(density)
