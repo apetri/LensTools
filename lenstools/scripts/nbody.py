@@ -12,23 +12,12 @@ from lenstools.utils import MPIWhirlPool
 
 from lenstools.simulations.nbody import NbodySnapshot
 from lenstools.simulations.gadget2 import Gadget2SnapshotDE
+from lenstools.simulation.logs import logdriver
 
 from lenstools.pipeline.simulation import SimulationBatch
 
 import numpy as np
 import astropy.units as u
-
-################################################
-###########Loggers##############################
-################################################
-
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logdriver = logging.getLogger("lenstools.driver")
-logdriver.addHandler(console)
-logdriver.propagate = False
 
 #Orchestra director of the execution
 def powerSpectrumExecution():
@@ -104,7 +93,7 @@ def matterPowerSpectrum(pool,batch,settings,node_id,**kwargs):
 
 		#Log to user
 		if (pool is None) or (pool.is_master()):
-			logdriver.info("Processing snapshot {0} of model {1}".format(n,id))
+			logdriver.info("Processing snapshot {0} of model {1}".format(n,node_id))
 			logdriver.info("Allocated memory for power spectrum Ensemble {0}".format(power_ensemble.shape))
 
 		for r,ic in enumerate(settings.nbody_realizations):
