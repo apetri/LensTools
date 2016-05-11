@@ -175,13 +175,13 @@ Tunable settings
 .. autoclass:: lenstools.pipeline.settings.EnvironmentSettings
 	:inherited-members:
 
-.. autoclass:: lenstools.simulations.camb.CAMBSettings
+.. autoclass:: lenstools.pipeline.settings.CAMBSettings
 	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.settings.NGenICSettings
 	:inherited-members:
 
-.. autoclass:: lenstools.simulations.Gadget2Settings
+.. autoclass:: lenstools.pipeline.settings.Gadget2Settings
 	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.settings.PlaneSettings

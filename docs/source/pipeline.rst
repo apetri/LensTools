@@ -285,12 +285,12 @@ After the creation of the directory tree that will host the simulation products 
 Matter power spectra (CAMB)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Einstein-Boltzmann code CAMB_ is used at the first step of the pipeline to compute the matter power spectra that are necessary to produce the initial conditions for the :math:`N`--body runs. CAMB needs its own parameter file to run, but in order to make things simpler, lenstools provides the :py:class:`~lenstools.simulations.camb.CAMBSettings` class. Typing 
+The Einstein-Boltzmann code CAMB_ is used at the first step of the pipeline to compute the matter power spectra that are necessary to produce the initial conditions for the :math:`N`--body runs. CAMB needs its own parameter file to run, but in order to make things simpler, lenstools provides the :py:class:`~lenstools.pipeline.settings.CAMBSettings` class. Typing 
 
 ::
 
 	>>> import lenstools
-	>>> from lenstools.simulations.camb import CAMBSettings
+	>>> from lenstools.pipeline.settings import CAMBSettings
 	>>> camb_settings = CAMBSettings()
 
 You will have access to the default settings of the CAMB code; you can edit these settings to fit your needs, and then generate the INI parameter file that CAMB will need to run 
@@ -361,11 +361,11 @@ Note that the IC file count increased from 0 to 256, but the snapshot count is s
 Gravitational evolution (Gadget2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The next step in the pipeline is to run Gadget2_ to evolve the initial conditions in time. Again, the Gadget2 tunable settings are handled by lenstools via the :py:class:`~lenstools.simulations.gadget2.Gadget2Settings`:
+The next step in the pipeline is to run Gadget2_ to evolve the initial conditions in time. Again, the Gadget2 tunable settings are handled by lenstools via the :py:class:`~lenstools.pipeline.settings.Gadget2Settings`:
 
 ::
 	
-	>>> from lenstools.simulations.gadget2 import Gadget2Settings
+	>>> from lenstools.pipeline.settings import Gadget2Settings
 	>>> gadget_settings = Gadget2Settings()
 
 In the gadget_settings instance, you may want to be especially careful in selecting the appropriate values for the OutputScaleFactor and NumFilesPerSnapshot attributes, which will direct which snapshots will be written to disk and in how many files each snapshot will be split. You can generate the Gadget2 parameter file just typing

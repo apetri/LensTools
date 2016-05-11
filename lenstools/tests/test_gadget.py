@@ -1,6 +1,7 @@
 import os
 
 from ..simulations import Gadget2SnapshotDE
+from ..pipeline.settings import Gadget2Settings
 
 from .. import dataExtern
 
@@ -73,7 +74,8 @@ def test_paramfile():
 	snap.write("gadget_sphere",files=2)
 
 	#Generate the parameter file that will determine the evolution
-	snap.writeParameterFile("gadget_sphere.param")
+	settings = Gadget2Settings.default()
+	snap.writeParameterFile("gadget_sphere.param",settings)
 
 	#Generate a file with the scale factor of the output snapshots
 	z = np.arange(90.0,0.0,-10.0)

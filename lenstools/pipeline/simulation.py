@@ -18,10 +18,8 @@ from .remote import SystemHandler,LocalGit
 from .settings import *
 
 from .deploy import JobHandler
-from ..simulations import Gadget2Settings,Gadget2SnapshotDE
+from ..simulations import Gadget2SnapshotDE
 from ..simulations.raytracing import PotentialPlane
-
-from ..simulations.camb import CAMBSettings
 
 #####################################################
 ############Parse cosmology from string##############
