@@ -12,7 +12,7 @@ from lenstools.utils import MPIWhirlPool
 
 from lenstools.simulations.nbody import NbodySnapshot
 from lenstools.simulations.gadget2 import Gadget2SnapshotDE
-from lenstools.simulation.logs import logdriver
+from lenstools.simulations.logs import logdriver
 
 from lenstools.pipeline.simulation import SimulationBatch
 
