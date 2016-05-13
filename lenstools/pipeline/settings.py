@@ -8,6 +8,8 @@ import json
 import numpy as np
 import astropy.units as u
 
+from .. import data
+
 from ..simulations.settings import select_parser,LTSettings
 from ..simulations.camb import CAMBSettings
 from ..simulations.gadget2 import Gadget2Settings
@@ -89,7 +91,7 @@ class NGenICSettings(LTSettings):
 
 	def __init__(self,**kwargs):
 
-		self.GlassFile = "dummy_glass_little_endian.dat"
+		self.GlassFile = data("dummy_glass_little_endian.dat")
 		self.Redshift = 100.0
 
 		self.SphereMode = 1 
