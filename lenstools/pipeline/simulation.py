@@ -2340,17 +2340,20 @@ class SimulationCollection(SimulationModel):
 		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
-	def loadTransferFunction(self):
+	def loadTransferFunction(self,name_root="camb_transferfunc"):
 
 		"""
 		Loads in the CDM transfer function calculated with CAMB (k,delta(k)/k^2) for a unit super-horizon perturbation
+
+		:param name_root: root of the file names that contain the transfer function
+		:type name_root: str.
 
 		:rtype: :py:class:`~lenstools.simulations.camb.CAMBTransferFunction`
 
 		"""
 
 		#Look in the home subdirectory for files camb_transferfunc_zxxxxxxxx.dat
-		tfr_files = self.ls("camb_transferfunc_z*.dat","home")
+		tfr_files = self.ls(name_root+"_z*.dat","home")
 		if not len(tfr_files):
 			raise ValueError("Transfer functions have not been computed yet!")
 
@@ -2608,6 +2611,34 @@ class SimulationIC(SimulationCollection):
 
 		#Instantiate the SimulationPlanes object
 		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
+
+	####################################################################################################################################
+
+	def linkPlaneSet(self,plane,linkname):
+
+		"""
+		Link an existing plane set to the current SimulationIC 
+
+		:param plane: existing plane set to link
+		:type plane: :py:class:`SimulationPlanes`
+
+		:param linkname: name to give the symlinked plane set
+		:type linkname: str.
+
+		"""
+
+		#Type check
+		assert isinstance(plane,SimulationPlanes)
+
+		#Create new plane in the directory tree
+		old_plane_name = plane.settings.directory_name
+		plane.settings.directory_name = linkname
+		new_plane = self.newPlaneSet(plane.settings)
+
+		#Perform the symbolic linking operation
+		os.rmdir(new_plane.storage)
+		os.symlink(plane.storage,new_plane.storage)
+		print("[+] Linked plane set {0} to {1}".format(plane.storage,new_plane.storage))
 
 	####################################################################################################################################
 
