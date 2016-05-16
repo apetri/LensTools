@@ -2,6 +2,7 @@ import os
 import StringIO
 
 import numpy as np
+from scipy import interpolate
 import astropy.units as u
 from astropy.cosmology import FLRW
 
@@ -315,3 +316,66 @@ class CAMBSettings(LTSettings):
 		s.seek(0)
 		return s.read()
 
+#########################################################################################################################################
+
+#CAMB transfer function
+class CAMBTransferFunction(object):
+
+	def __init__(self,k):
+
+		"""
+		:param k: wavenumbers at which the transfer function is computed at
+		:type k: quantity
+
+		"""
+
+		assert k.unit.physical_type=="wavenumber"
+		self._k = k.to((u.Mpc)**-1)
+		self._transfer = dict()
+		self._interpolated = dict()
+
+	def add(self,z,T):
+
+		"""
+		Add transfer function information at redshift z
+
+		:param z: redshift
+		:type z: float.
+
+		:param T: CDM transfer function from CAMB output
+		:type T: array 
+
+		"""
+
+		assert T.shape==k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self.k))
+		self._transfer[z] = T 
+
+	def compute(self,z,k):
+
+
+		"""
+		Compute the transfer function at redshift z by linear interpolation
+
+		:param z: redshift
+		:type z: float.
+
+		:param k: wavenumbers at which to compute the transfer function (linearly interpolated with scipy.interp1d)
+		:type k: quantity
+
+		:returns: transfer function at k
+		:rtype: array 
+
+		"""
+
+		assert k.unit.physical_type=="wavenumber"
+
+		#If interpolator has not been built yet for the current redshift, build it
+		if z not in self._interpolated:
+
+			if z not in self._transfer:
+				raise ValueError("There is no information at redshift {0:.3f}".format(z))
+
+			self._interpolated[z] = interpolate.interp1d(self._k.value,self._transfer[z])
+
+		#Use interpolator to compute the transfer function
+		return self._interpolated[z](k.to((u.Mpc)**-1).value)

@@ -18,6 +18,8 @@ from .remote import SystemHandler,LocalGit
 from .settings import *
 
 from .deploy import JobHandler
+
+from ..simulations.camb import CAMBTransferFunction
 from ..simulations import Gadget2SnapshotDE
 from ..simulations.raytracing import PotentialPlane
 
@@ -2305,7 +2307,9 @@ class SimulationCollection(SimulationModel):
 			return catalogs
 
 
-	#################################################################################################################################
+	###################################################################
+	##################Useful methods for CAMB I/O######################
+	###################################################################
 
 	def writeCAMB(self,z,settings):
 
@@ -2336,8 +2340,32 @@ class SimulationCollection(SimulationModel):
 		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
+	def loadTransferFunction(self):
 
-	################################################################################################################################
+		"""
+		Loads in the CDM transfer function calculated with CAMB (k,delta(k)/k^2) for a unit super-horizon perturbation
+
+		:rtype: :py:class:`~lenstools.simulations.camb.CAMBTransferFunction`
+
+		"""
+
+		#Look in the home subdirectory for files camb_transferfunc_zxxxxxxxx.dat
+		tfr_files = self.ls("camb_transferfunc_z*.dat","home")
+		if not len(tfr_files):
+			raise ValueError("Transfer functions have not been computed yet!")
+
+		#Look for the wavenumbers in the first file
+		k = np.loadtxt(tfr_files[0],usecols=(0,))*self.cosmology.h*(self.Mpc_over_h**-1)
+		tfr = CAMBTransferFunction(k)
+
+		#Add transfer function information from each redshift
+		for f in tfr_files:
+			z, = re.search(r"z([0-9.]+)",f).groups()
+			transfer_values = np.loadtxt(f,usecols=(1,))
+			tfr.add(float(z.rstrip(".")),transfer_values)
+
+		#Return to user
+		return tfr
 
 	def camb2ngenic(self,z):
 
@@ -2361,6 +2389,7 @@ class SimulationCollection(SimulationModel):
 
 		print("[+] CAMB matter power spectrum at {0} converted into N-GenIC readable format at {1}".format(camb_ps_file,ngenic_ps_file))
 
+################################################################################################################################
 
 
 ##########################################################

@@ -109,6 +109,12 @@ Nicaea bindings
 .. autoclass:: lenstools.simulations.Nicaea
 	:members: fromCosmology,convergencePowerSpectrum,shearTwoPoint
 
+CAMB
+====
+
+.. autoclass:: lenstools.simulations.camb.CAMBTransferFunction
+	:inherited-members:
+
 N-body simulation snapshot handling
 ===================================
 
@@ -155,7 +161,7 @@ Directory tree handling
 	:members: path,mkdir,newCollection,getCollection,collections,newTelescopicMapSet,getTelescopicMapSet,telescopicmapsets
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationCollection
-	:members: newRealization,getRealization,realizations,newMapSet,getMapSet,writeCAMB,camb2ngenic
+	:members: newRealization,getRealization,realizations,newMapSet,getMapSet,writeCAMB,loadTransferFunction,camb2ngenic
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationIC
 	:members: newPlaneSet,getPlaneSet,writeNGenIC,writeGadget2
