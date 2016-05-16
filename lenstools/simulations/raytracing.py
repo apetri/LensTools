@@ -26,6 +26,7 @@ fftengine = NUMPYFFTPack()
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
 from .io import readFITSHeader,readFITS,saveFITS
+from .camb import TransferFunction
 
 #Enable garbage collection if not active already
 if not gc.isenabled():
@@ -318,6 +319,51 @@ class Plane(Spin0):
 		#Return the map values at the specified coordinates
 		return self.data[i,j]
 
+	#############################################################################################################################################################################
+
+	#TODO: not tested yet
+	def scaleWithTransfer(self,z,transfer,with_scale_factor=False,kmesh=None):
+
+		"""
+		Scale the pixel values to a different redshift than the one of the plane by applying a suitable transfer function. This operation works in place
+
+		:param z: new redshift to evaluate the plane at
+		:type z: float.
+
+		:param transfer: transfer function in Fourier space used to scale the plane pixel values
+		:type transfer: :py:class:`TransferFunction`
+
+		:param with_scale_factor: if True, multiply the pixel values by an additional (1+znew) / (1+z0) overall factor
+		:type with_scale_factor: bool.
+
+		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type kmesh: quantity
+
+		"""
+
+		#Type check
+		assert isinstance(transfer,TransferFunction)
+
+		#Original and final redshifts
+		z0 = self.redshift
+		z1 = z
+
+		#The scaling needs to be performed in Fourier space
+		ft_plane = fftengine.rfft2(self.data)
+
+		if kmesh is None:
+			lx,ly = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
+			kmesh = np.sqrt(lx**2+ly**2)*2.*np.pi / self.side_angle
+
+		#Multiply by the Fourier pixels by the transfer function
+		ft_plane *= transfer(z1,kmesh)
+		ft_plane /= transfer(z0,kmesh)
+
+		#Invert the transfer function to get the scaled plane in real space
+		self.data[:] = fftengine.irfft2(ft_plane)
+
+		if with_scale_factor:
+			self.data *= (1+z1)/(1+z0)
 
 ###########################################################
 #################DensityPlane class########################

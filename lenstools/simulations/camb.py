@@ -351,7 +351,7 @@ class TransferFunction(object):
 		assert T.shape==self._k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self._k))
 		self._transfer[z] = T 
 
-	def compute(self,z,k):
+	def __call__(self,z,k):
 
 
 		"""
@@ -385,3 +385,11 @@ class TransferFunction(object):
 
 class CAMBTransferFunction(TransferFunction):
 	pass
+
+##############################################################################################################################
+
+#k independent transfer function for testing D(z,k) = 1/1+z
+class TestTransferFunction(TransferFunction):
+
+	def __call__(self,z,k):
+		return np.ones(k.shape)/(1+z)
