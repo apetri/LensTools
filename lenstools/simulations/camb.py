@@ -37,6 +37,7 @@ class CAMBSettings(LTSettings):
 		self.nu_mass_degeneracies = 0
 		self.share_delta_neff = True
 
+		self.scalar_amplitude = 2.41e-9
 		self.pivot_scalar = 0.002 * u.Mpc**-1
 		self.pivot_tensor = 0.002 * u.Mpc**-1
 
@@ -216,7 +217,7 @@ class CAMBSettings(LTSettings):
 		s.write('pivot_tensor = {0:.3f}\n'.format(self.pivot_tensor.to(u.Mpc**-1).value))
 
 		s.write('initial_power_num = {0}\n'.format(1))
-		s.write('scalar_amp(1) = {0:.2e}\n'.format(2.41e-9))
+		s.write('scalar_amp(1) = {0:.2e}\n'.format(self.scalar_amplitude))
 		
 		if hasattr(cosmology,"ns"):
 			ns = cosmology.ns
@@ -319,7 +320,7 @@ class CAMBSettings(LTSettings):
 #########################################################################################################################################
 
 #CAMB transfer function
-class CAMBTransferFunction(object):
+class TransferFunction(object):
 
 	def __init__(self,k):
 
@@ -379,3 +380,8 @@ class CAMBTransferFunction(object):
 
 		#Use interpolator to compute the transfer function
 		return self._interpolated[z](k.to((u.Mpc)**-1).value)
+
+##############################################################################################################################
+
+class CAMBTransferFunction(TransferFunction):
+	pass
