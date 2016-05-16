@@ -2355,13 +2355,13 @@ class SimulationCollection(SimulationModel):
 			raise ValueError("Transfer functions have not been computed yet!")
 
 		#Look for the wavenumbers in the first file
-		k = np.loadtxt(tfr_files[0],usecols=(0,))*self.cosmology.h*(self.Mpc_over_h**-1)
+		k = np.loadtxt(self.path(tfr_files[0],"home"),usecols=(0,))*self.cosmology.h*(self.Mpc_over_h**-1)
 		tfr = CAMBTransferFunction(k)
 
 		#Add transfer function information from each redshift
 		for f in tfr_files:
 			z, = re.search(r"z([0-9.]+)",f).groups()
-			transfer_values = np.loadtxt(f,usecols=(1,))
+			transfer_values = np.loadtxt(self.path(f,"home"),usecols=(1,))
 			tfr.add(float(z.rstrip(".")),transfer_values)
 
 		#Return to user

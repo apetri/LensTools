@@ -347,7 +347,7 @@ class CAMBTransferFunction(object):
 
 		"""
 
-		assert T.shape==k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self.k))
+		assert T.shape==self._k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self._k))
 		self._transfer[z] = T 
 
 	def compute(self,z,k):
@@ -373,7 +373,7 @@ class CAMBTransferFunction(object):
 		if z not in self._interpolated:
 
 			if z not in self._transfer:
-				raise ValueError("There is no information at redshift {0:.3f}".format(z))
+				raise ValueError("There is no transfer function information at redshift {0:.3f}".format(z))
 
 			self._interpolated[z] = interpolate.interp1d(self._k.value,self._transfer[z])
 
