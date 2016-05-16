@@ -811,6 +811,31 @@ class RayTracer(object):
 		#If completed correctly, log info to the user
 		logray.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
 
+	#Load the lens
+	@staticmethod
+	def loadLens(lens):
+
+		if type(lens)==PotentialPlane:
+			return lens
+
+		elif type(lens)==str:
+				
+			logray.info("Reading plane from {0}...".format(lens))
+			current_lens = PotentialPlane.load(lens)
+			logray.info("Read plane from {0}...".format(lens))
+			logstderr.debug("Read plane: peak memory usage {0:.3f} (task)".format(peakMemory()))
+			
+			logray.info("Randomly rolling lens at z={0:.3f} along its axes...".format(current_lens.redshift))
+			current_lens.randomRoll()
+			logray.info("Rolled lens at z={0:.3f} along its axes...".format(current_lens.redshift))
+			logstderr.debug("Rolled lens: peak memory usage {0:.3f} (task)".format(peakMemory()))
+
+			return current_lens
+
+		else:
+			raise TypeError("Lens format not recognized!")
+
+
 	def randomRoll(self,seed=None):
 
 		"""
@@ -942,24 +967,8 @@ class RayTracer(object):
 		for k in range(last_lens+1):
 
 			#Load in the lens
-			if type(lens[k])==PotentialPlane:
-				current_lens = lens[k]
-			elif type(lens[k])==str:
-				
-				logray.info("Reading plane from {0}...".format(lens[k]))
-				current_lens = PotentialPlane.load(lens[k])
-				logray.info("Read plane from {0}...".format(lens[k]))
-				logstderr.debug("Read plane: peak memory usage {0:.3f} (task)".format(peakMemory()))
-				
-				np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens {0} redshift does not match info file specifications!".format(lens[k]))
-				
-				logray.info("Randomly rolling lens {0} along its axes...".format(k))
-				current_lens.randomRoll()
-				logray.info("Rolled lens {0} along its axes...".format(k))
-				logstderr.debug("Rolled lens: peak memory usage {0:.3f} (task)".format(peakMemory()))
-
-			else:
-				raise TypeError("Lens format not recognized!")
+			current_lens = self.loadLens(lens[k])
+			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
 			#Log
 			logray.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
@@ -1352,9 +1361,9 @@ class RayTracer(object):
 					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="yellow")[0])
 					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="yellow")[0])
 				
-				self.ax[0].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
+				self.ax[0].set_xlabel(r"$\chi$({0})".format(distance.unit.to_string()))
 				self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
-				self.ax[1].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
+				self.ax[1].set_xlabel(r"$\chi$({0})".format(distance.unit.to_string()))
 				self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
 
 				#Plot the lenses too
