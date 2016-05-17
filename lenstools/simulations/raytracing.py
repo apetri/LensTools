@@ -322,7 +322,7 @@ class Plane(Spin0):
 	#############################################################################################################################################################################
 
 	#TODO: not tested yet
-	def scaleWithTransfer(self,z,transfer,with_scale_factor=False,kmesh=None):
+	def scaleWithTransfer(self,z,tfr,with_scale_factor=False,kmesh=None):
 
 		"""
 		Scale the pixel values to a different redshift than the one of the plane by applying a suitable transfer function. This operation works in place
@@ -330,13 +330,13 @@ class Plane(Spin0):
 		:param z: new redshift to evaluate the plane at
 		:type z: float.
 
-		:param transfer: transfer function in Fourier space used to scale the plane pixel values
-		:type transfer: :py:class:`TransferFunction`
+		:param tfr: CDM transfer function in Fourier space used to scale the plane pixel values
+		:type tfr: :py:class:`TransferFunction`
 
 		:param with_scale_factor: if True, multiply the pixel values by an additional (1+znew) / (1+z0) overall factor
 		:type with_scale_factor: bool.
 
-		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in Fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
 		:type kmesh: quantity
 
 		"""
@@ -348,6 +348,9 @@ class Plane(Spin0):
 		z0 = self.redshift
 		z1 = z
 
+		#Log
+		logplanes.debug("Scaling fluctuations on lens at redshift {0:.3f} to redshift {1:.3f}".format(z0,z1))
+
 		#The scaling needs to be performed in Fourier space
 		ft_plane = fftengine.rfft2(self.data)
 
@@ -356,14 +359,51 @@ class Plane(Spin0):
 			kmesh = np.sqrt(lx**2+ly**2)*2.*np.pi / self.side_angle
 
 		#Multiply by the Fourier pixels by the transfer function
-		ft_plane *= transfer(z1,kmesh)
-		ft_plane /= transfer(z0,kmesh)
+		ft_plane *= tfr(z1,kmesh)
+		ft_plane /= tfr(z0,kmesh)
 
 		#Invert the transfer function to get the scaled plane in real space
 		self.data[:] = fftengine.irfft2(ft_plane)
 
 		if with_scale_factor:
 			self.data *= (1+z1)/(1+z0)
+
+		#Log
+		logplanes.debug("Scaled fluctuations on lens at redshift {0:.3f} to redshift {1:.3f}".format(z0,z1))
+
+########################################################################################
+
+#Scale fluctuations with transfer function
+class TransferSpecs(object):
+
+	def __init__(self,tfr,cur2target,with_scale_factor,kmesh):
+
+		"""
+		Specifications for fluctuations scaling
+
+		:param tfr: CDM transfer function in Fourier space used to scale the plane pixel values
+		:type tfr: :py:class:`TransferFunction`
+
+		:param cur2target: dictionary that converts the current lens redshift to the target lens redshift
+		:type cur2target: dict.
+
+		:param with_scale_factor: if True, multiply the pixel values by an additional (1+znew) / (1+z0) overall factor
+		:type with_scale_factor: bool.
+
+		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in Fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type kmesh: quantity
+
+		"""
+
+		#Sanity check
+		assert isinstance(transfer,TransferFunction)
+
+		self.tfr = tfr
+		self.cur2target = cur2target
+		self.with_scale_factor = with_scale_factor
+		self.kmesh = kmesh
+
+########################################################################################
 
 ###########################################################
 #################DensityPlane class########################
@@ -917,7 +957,7 @@ class RayTracer(object):
 	##################################################################################################################################
 
 
-	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False,callback=None,**kwargs):
+	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False,callback=None,transfer=None,**kwargs):
 
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z (backward ray tracing), through the system of gravitational lenses, and computes the deflection statistics
@@ -946,6 +986,9 @@ class RayTracer(object):
 		:param callback: if not None, this callback function is called on the current ray positions array at each step in the ray tracing; the current raytracing instance and the step number are passed as additional arguments, hence callback must match this signature
 		:type callback: callable
 
+		:param transfer: if not None, scales the fluctuations on each lens plane to a different redshift (before computing the ray defections) using a provided transfer function 
+		:type transfer: :py:class:`TransferSpecs`
+
 		:param kwargs: the keyword arguments are passed to the callback if not None
 		:type kwargs: dict.
 
@@ -957,6 +1000,7 @@ class RayTracer(object):
 		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
 		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
 		assert kind in ["positions","jacobians","shear","convergence"],"kind must be one in [positions,jacobians,shear,convergence]!"
+		assert transfer is None or isinstance(transfer,TransferSpecs)
 
 		#Allocate arrays for the intermediate light ray positions and deflections
 
@@ -1015,6 +1059,10 @@ class RayTracer(object):
 			#Load in the lens
 			current_lens = self.loadLens(lens[k])
 			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
+
+			#If transfer function is provided, scale to target redshift
+			if transfer is not None:
+				current_lens.scaleWithTransfer(transfer.cur2target[current_lens.redshift],tfr=transfer.tfr,with_scale_factor=transfer.with_scale_factor,kmesh=transfer.kmesh)
 
 			#Log
 			logray.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))

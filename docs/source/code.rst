@@ -132,7 +132,10 @@ Ray tracing simulations
 =======================
 
 .. autoclass:: lenstools.simulations.Plane
-	:members: save,load,randomRoll,toReal,toFourier
+	:members: save,load,randomRoll,toReal,toFourier,scaleWithTransfer
+
+.. autoclass:: lenstools.simulations.raytracing.TransferSpecs
+	:inherited-members:
 
 .. autoclass:: lenstools.simulations.DensityPlane
 	:members: potential
