@@ -1,5 +1,6 @@
 import os
 import StringIO
+import cPickle as pkl
 
 import numpy as np
 from scipy import interpolate
@@ -380,6 +381,42 @@ class TransferFunction(object):
 
 		#Use interpolator to compute the transfer function
 		return self._interpolated[z](k.to((u.Mpc)**-1).value)
+
+		#I/O
+		def save(self,filename):
+
+			"""
+			Pickle the TransferFunction instance
+
+			:param filename: name of the file to save the instance to
+			:type filename: str.
+
+			"""
+
+			with open(filename,"w") as fp:
+				pkl.dump(self,fp)
+
+		@classmethod
+		def read(cls,filename):
+
+			"""
+			Load a previously pickled TransferFunction instance
+
+			:param filename: name of the file from which the instance should be read
+			:type filename: str.
+
+			:rtype: :py:class:`TransferFunction`
+
+			"""
+
+			with open(filename,"r") as fp:
+				tfr = pkl.load(fp)
+
+			if isinstance(tfr,cls):
+				return tfr
+			else:
+				raise TypeError("Pickled instance is not of type {0}".format(cls.__name__))
+
 
 ##############################################################################################################################
 
