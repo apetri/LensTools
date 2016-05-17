@@ -321,8 +321,7 @@ class Plane(Spin0):
 
 	#############################################################################################################################################################################
 
-	#TODO: not tested yet
-	def scaleWithTransfer(self,z,tfr,with_scale_factor=False,kmesh=None):
+	def scaleWithTransfer(self,z,tfr,with_scale_factor=False,kmesh=None,scaling_method="uniform"):
 
 		"""
 		Scale the pixel values to a different redshift than the one of the plane by applying a suitable transfer function. This operation works in place
@@ -339,6 +338,9 @@ class Plane(Spin0):
 		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in Fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
 		:type kmesh: quantity
 
+		:param scaling_method: must be ether "uniform" (all pixels scaled by the same factor, in which case the transfer function at low k is used) or "FFT" in which the full transfer function should be used
+		:type scaling_method: str.
+
 		"""
 
 		#Type check
@@ -349,34 +351,44 @@ class Plane(Spin0):
 		z1 = z
 
 		#Log
-		logplanes.debug("Scaling fluctuations on lens at redshift {0:.3f} to redshift {1:.3f}".format(z0,z1))
+		logplanes.debug("Scaling fluctuations on lens at redshift {0:.3f} to redshift {1:.3f} with {2} method".format(z0,z1,scaling_method))
 
-		#The scaling needs to be performed in Fourier space
-		ft_plane = fftengine.rfft2(self.data)
+		if scaling_method=="uniform":
+			
+			#Scale all the pixels on the plane by the same factor
+			self.data *= tfr._transfer[z1][0] / tfr._transfer[z0][0] 
+		
+		elif scaling_method=="FFT":
 
-		if kmesh is None:
-			lx,ly = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
-			kmesh = np.sqrt(lx**2+ly**2)*2.*np.pi / self.side_angle
+			#The scaling is performed in Fourier space
+			ft_plane = fftengine.rfft2(self.data)
 
-		#Multiply by the Fourier pixels by the transfer function
-		ft_plane *= tfr(z1,kmesh)
-		ft_plane /= tfr(z0,kmesh)
+			if kmesh is None:
+				lx,ly = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
+				kmesh = np.sqrt(lx**2+ly**2)*2.*np.pi / self.side_angle
 
-		#Invert the transfer function to get the scaled plane in real space
-		self.data[:] = fftengine.irfft2(ft_plane)
+			#Multiply by the Fourier pixels by the transfer function
+			ft_plane *= tfr(z1,kmesh)
+			ft_plane /= tfr(z0,kmesh)
+
+			#Invert the transfer function to get the scaled plane in real space
+			self.data[:] = fftengine.irfft2(ft_plane)
+
+		else:
+			raise ValueError("Scaling method {0} not recognized".format(scaling_method))
 
 		if with_scale_factor:
 			self.data *= (1+z1)/(1+z0)
 
 		#Log
-		logplanes.debug("Scaled fluctuations on lens at redshift {0:.3f} to redshift {1:.3f}".format(z0,z1))
+		logplanes.debug("Scaled fluctuations on lens at redshift {0:.3f} to redshift {1:.3f} with method {2}".format(z0,z1,scaling_method))
 
 ########################################################################################
 
 #Scale fluctuations with transfer function
 class TransferSpecs(object):
 
-	def __init__(self,tfr,cur2target,with_scale_factor,kmesh):
+	def __init__(self,tfr,cur2target,with_scale_factor,kmesh,scaling_method):
 
 		"""
 		Specifications for fluctuations scaling
@@ -393,6 +405,9 @@ class TransferSpecs(object):
 		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in Fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
 		:type kmesh: quantity
 
+		:param scaling_method: must be ether "average" (all pixels scaled by the same factor, in which case the transfer function at low k is used) or "FFT" in which the full transfer function should be used
+		:type scaling_method: str.
+
 		"""
 
 		#Sanity check
@@ -402,6 +417,7 @@ class TransferSpecs(object):
 		self.cur2target = cur2target
 		self.with_scale_factor = with_scale_factor
 		self.kmesh = kmesh
+		self.scaling_method = scaling_method
 
 ########################################################################################
 
@@ -1062,7 +1078,7 @@ class RayTracer(object):
 
 			#If transfer function is provided, scale to target redshift
 			if transfer is not None:
-				current_lens.scaleWithTransfer(transfer.cur2target[current_lens.redshift],tfr=transfer.tfr,with_scale_factor=transfer.with_scale_factor,kmesh=transfer.kmesh)
+				current_lens.scaleWithTransfer(transfer.cur2target[current_lens.redshift],tfr=transfer.tfr,with_scale_factor=transfer.with_scale_factor,kmesh=transfer.kmesh,scaling_method=transfer.scaling_method)
 
 			#Log
 			logray.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
