@@ -349,8 +349,38 @@ class TransferFunction(object):
 
 		"""
 
+		if hasattr(self,"_sorted_z"):
+			del(self._sorted_z)
+
 		assert T.shape==self._k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self._k))
-		self._transfer[z] = T 
+		self._transfer[z] = T
+
+	def __getitem__(self,z):
+
+		"""
+		Returns the tabulated transfer function at z. If z is not in the table, returns the tabulated transfer function at the closest z available
+
+		:param z: redshift at which to output the tabulated transfer function
+		:type z: float.
+
+		:returns: (tabulated z,k,tabulated transfer function)
+		:rtype: tuple.
+
+		"""
+
+		#If the transfer function is not tabulated with z, use the closest z in the table
+		if not hasattr(self,"_sorted_z"):
+			self._sorted_z = np.sort(np.array(self._transfer.keys()))
+
+		if z in self._transfer:
+			zt = z
+		else:
+			zt = self._sorted_z[np.abs(self._sorted_z - z).argmin()] 
+
+		#Return
+		return zt,self._k,self._transfer[zt]
+
+
 
 	def __call__(self,z,k):
 
@@ -371,16 +401,21 @@ class TransferFunction(object):
 
 		assert k.unit.physical_type=="wavenumber"
 
+		#If the transfer function is not tabulated with z, use the closest z in the table
+		if not hasattr(self,"_sorted_z"):
+			self._sorted_z = np.sort(np.array(self._transfer.keys()))
+
+		if z in self._transfer:
+			zt = z
+		else:
+			zt = self._sorted_z[np.abs(self._sorted_z - z).argmin()] 
+
 		#If interpolator has not been built yet for the current redshift, build it
-		if z not in self._interpolated:
-
-			if z not in self._transfer:
-				raise ValueError("There is no transfer function information at redshift {0:.3f}".format(z))
-
-			self._interpolated[z] = interpolate.interp1d(self._k.value,self._transfer[z])
+		if zt not in self._interpolated:
+			self._interpolated[zt] = interpolate.interp1d(self._k.value,self._transfer[zt],fill_value=1,bounds_error=False)
 
 		#Use interpolator to compute the transfer function
-		return self._interpolated[z](k.to((u.Mpc)**-1).value)
+		return self._interpolated[zt](k.to((u.Mpc)**-1).value)
 
 	#I/O
 	def save(self,filename):

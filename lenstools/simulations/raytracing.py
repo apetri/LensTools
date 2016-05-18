@@ -344,7 +344,7 @@ class Plane(Spin0):
 		"""
 
 		#Type check
-		assert isinstance(transfer,TransferFunction)
+		assert isinstance(tfr,TransferFunction)
 
 		#Original and final redshifts
 		z0 = self.redshift
@@ -356,7 +356,13 @@ class Plane(Spin0):
 		if scaling_method=="uniform":
 			
 			#Scale all the pixels on the plane by the same factor
-			self.data *= tfr._transfer[z1][0] / tfr._transfer[z0][0] 
+			z0t,k,t0 = tfr[z0]
+			z1t,k,t1 = tfr[z1]
+
+			if z0t==z1t:
+				raise ValueError("The transfer function binning in z is too coarse! No scaling can be performed!")
+
+			self.data *= t1[0]/t0[0]
 		
 		elif scaling_method=="FFT":
 
