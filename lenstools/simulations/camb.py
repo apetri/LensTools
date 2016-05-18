@@ -1,4 +1,5 @@
 import os
+import re
 import StringIO
 import cPickle as pkl
 
@@ -10,6 +11,130 @@ from astropy.cosmology import FLRW
 #Option parsing method
 from .settings import select_parser,LTSettings
 
+#Parse CAMB output log
+def parseLog(fname):
+
+	"""
+	Parse CAMB output log
+
+	:param fname: file name or file descriptor
+	:type fname: str. or file.
+
+	:returns: parsed log
+	:rtype: dict.
+
+	"""
+
+	#Get the filehandle
+	if type(fname)==file:
+		fp = fname
+	else:
+		fp = open(fname,"r")
+
+	#Dictionary with parsed log
+	parsed = dict()
+	parsed["sigma8"] = dict()
+
+	#Cycle over the lines in the log
+	for line in fp.readlines():
+
+		#w0/wa
+		match = re.match(r"\(w0, wa\) = \(([-\.0-9]+),[\s]+([-\.0-9]+)\)",line) 
+		if match:
+			parsed["w0"],parsed["wa"] = [ float(v) for v in match.groups() ]
+			continue
+
+		#Parameters
+		match = re.match(r"Reion redshift[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["z_ion"] = float(match.groups()[0])
+
+		match = re.match(r"Om_b h\^2[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Obh2"] = float(match.groups()[0])
+
+		match = re.match(r"Om_c h\^2[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Omch2"] = float(match.groups()[0])
+
+		match = re.match(r"Om_nu h\^2[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Onuh2"] = float(match.groups()[0])
+
+		match = re.match(r"Om_Lambda[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Ode"] = float(match.groups()[0])
+
+		match = re.match(r"Om_K[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Omk"] = float(match.groups()[0])
+
+		match = re.match(r"Om_m \(1-Om_K-Om_L\)[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Om"] = float(match.groups()[0])
+
+		match = re.match(r"100 theta \(CosmoMC\)[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["100thetaMC"] = float(match.groups()[0])
+
+		match = re.match(r"Reion opt depth[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["tau_ion"] = float(match.groups()[0])
+
+		match = re.match(r"Age of universe\/GYr[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Age"] = float(match.groups()[0]) * u.Gyr
+
+		match = re.match(r"zstar[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["zstar"] = float(match.groups()[0])
+
+		match = re.match(r"r_s\(zstar\)/Mpc[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["rs"] = float(match.groups()[0]) * u.Mpc
+
+		match = re.match(r"zdrag[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["zdrag"] = float(match.groups()[0])
+
+		match = re.match(r"r_s\(zdrag\)/Mpc[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["rs(zdrag)"] = float(match.groups()[0]) * u.Mpc
+
+		match = re.match(r"k_D\(zstar\) Mpc[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["kD(zstar)"] = float(match.groups()[0]) / u.Mpc
+
+		match = re.match(r"100\*theta_D[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["100thetaD"] = float(match.groups()[0])
+
+		match = re.match(r"z_EQ \(if v_nu=1\)[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["zEQ"] = float(match.groups()[0])
+
+		match = re.match(r"100\*theta_EQ[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["100thetaEQ"] = float(match.groups()[0])
+
+		match = re.match(r"tau_recomb/Mpc[\s]+=[\s]+([0-9\.]+)[\s]+tau_now/Mpc =[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["tau_rec"],parsed["tau_now"] = [float(v)*u.Mpc for v in match.groups()]
+
+		match = re.match(r"[\s]+at z =[\s]+([0-9E\-\+\.]+)[\s]+sigma8 \(all matter\)=[\s]+([0-9\.]+)",line)
+		if match:
+			z,sigma8 = [ float(v) for v in match.groups() ]
+			parsed["sigma8"][z] = sigma8
+
+	#Return
+	if type(fname)!=file:
+		fp.close()
+	
+	return parsed
+
+
+
+##################################################################################################
 
 class CAMBSettings(LTSettings):
 

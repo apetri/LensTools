@@ -112,6 +112,8 @@ Nicaea bindings
 CAMB
 ====
 
+.. autofunction:: lenstools.simulations.camb.parseLog 
+
 .. autoclass:: lenstools.simulations.camb.CAMBTransferFunction
 	:inherited-members:
 
