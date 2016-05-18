@@ -2311,7 +2311,7 @@ class SimulationCollection(SimulationModel):
 	##################Useful methods for CAMB I/O######################
 	###################################################################
 
-	def writeCAMB(self,z,settings):
+	def writeCAMB(self,z,settings,fname="camb.param",output_root="camb"):
 
 		"""
 		Generates the parameter file that CAMB needs to read to evolve the current initial condition in time
@@ -2322,6 +2322,12 @@ class SimulationCollection(SimulationModel):
 		:param z: redshifts at which CAMB needs to compute the matter power spectrum
 		:type z: array.
 
+		:param fname: name of the parameter file to write
+		:type fname: str.
+
+		:param output_root: output root of camb products
+		:type output_root: str.
+
 		"""
 
 		#Safety type check
@@ -2330,9 +2336,9 @@ class SimulationCollection(SimulationModel):
 			z = np.array([z])
 
 		#Write the parameter file
-		camb_filename = os.path.join(self.home_subdir,"camb.param") 
+		camb_filename = os.path.join(self.home_subdir,fname) 
 		with self.syshandler.open(camb_filename,"w") as paramfile:
-			paramfile.write(settings.write(output_root=os.path.join(self.home_subdir,"camb"),cosmology=self.cosmology,redshifts=z))
+			paramfile.write(settings.write(output_root=os.path.join(self.home_subdir,output_root),cosmology=self.cosmology,redshifts=z))
 
 		print("[+] {0} written on {1}".format(camb_filename,self.syshandler.name))
 
