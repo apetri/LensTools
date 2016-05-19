@@ -2376,7 +2376,7 @@ class SimulationCollection(SimulationModel):
 		#Return to user
 		return tfr
 
-	def camb2ngenic(self,z):
+	def camb2ngenic(self,z,input_root="camb"):
 
 		"""
 		Read CAMB power spectrum file and convert it in a N-GenIC readable format
@@ -2384,9 +2384,12 @@ class SimulationCollection(SimulationModel):
 		:param z: redshift of the matter power spectrum file to convert
 		:type z: float.
 
+		:param input_root: name root of camb products
+		:type input_root: str.
+
 		"""
 
-		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"camb_matterpower_z{0:.6f}.dat".format(z))
+		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"{0}_matterpower_z{1:.6f}.dat".format(input_root,z))
 		if not(self.syshandler.exists(camb_ps_file)):
 			raise IOError("CAMB matter power spectrum file {0} does not exist yet!!".format(camb_ps_file))
 
@@ -2645,6 +2648,9 @@ class SimulationIC(SimulationCollection):
 		os.rmdir(new_plane.storage)
 		os.symlink(plane.storage,new_plane.storage)
 		print("[+] Linked plane set {0} to {1}".format(plane.storage,new_plane.storage))
+
+		#Restore settings
+		plane.settings.directory_name = old_plane_name
 
 	####################################################################################################################################
 
