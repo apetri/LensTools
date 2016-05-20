@@ -1413,7 +1413,7 @@ class RayTracer(object):
 		self._x_pos = list()
 		self._y_pos = list()
 
-	def displayRays(self,initial_positions,z=2.0,projection="2d",fig=None,ax=None):
+	def displayRays(self,initial_positions,z=2.0,projection="2d",fig=None,ax=None,axisbg="grey",raycolor="orange",lenscolor="blue"):
 
 		"""
 		Uses matplotlib to display a visual of the lens system and of the deflection that the light rays which traverse it undergo
@@ -1439,7 +1439,7 @@ class RayTracer(object):
 		if (fig is None) or (ax is None):
 
 			if projection=="2d":
-				self.fig,self.ax = plt.subplots(1,2,figsize=(16,8),subplot_kw={"axisbg":"black"})
+				self.fig,self.ax = plt.subplots(1,2,figsize=(16,8),subplot_kw={"axisbg":axisbg})
 			elif projection=="3d":
 				pass
 			else:
@@ -1474,8 +1474,8 @@ class RayTracer(object):
 			
 				for nray in range(pos.shape[2]):
 
-					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="yellow")[0])
-					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="yellow")[0])
+					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color=raycolor)[0])
+					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color=raycolor)[0])
 				
 				self.ax[0].set_xlabel(r"$\chi$({0})".format(distance.unit.to_string()))
 				self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
@@ -1487,7 +1487,7 @@ class RayTracer(object):
 					for i in range(2):
 						min = distance[-1]*pos.to(rad).value.min()
 						max = distance[-1]*pos.to(rad).value.max()
-						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color=lenscolor)
 
 
 			else:
@@ -1504,7 +1504,7 @@ class RayTracer(object):
 					for i in range(2):
 						min = distance[-1]*pos.to(rad).value.min()
 						max = distance[-1]*pos.to(rad).value.max()
-						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color=lenscolor)
 
 
 			#Adjust the x,y axis range
