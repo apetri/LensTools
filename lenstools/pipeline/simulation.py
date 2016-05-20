@@ -1,4 +1,5 @@
 from __future__ import division,with_statement
+from abc import ABCMeta,abstractproperty,abstractmethod
 
 import os
 import re
@@ -1448,18 +1449,17 @@ class SimulationBatch(object):
 				print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))	
 
 
+##############################################
+##############TreeNode class##################
+##############################################
 
+class TreeNode(object):
 
-#####################################################
-##############SimulationModel class##################
-#####################################################
+	__metaclass__ = ABCMeta
 
-class SimulationModel(object):
-
-	"""
-	Class handler of a weak lensing simulation model, defined by a set of cosmological parameters
-
-	"""
+	@abstractmethod
+	def __init__(self,*args):
+		pass
 
 	#######
 	#Paths#
@@ -1514,7 +1514,92 @@ class SimulationModel(object):
 		search_path = getattr(self,where)
 		return [os.path.basename(f) for f in self.syshandler.glob(os.path.join(search_path,glob))]
 
-	####################################################################################################
+	################################################################################################################################
+
+	def mkdir(self,directory):
+
+		"""
+		Create a sub-directory inside the current instance home and storage paths
+
+		:param directory: name of the directory to create
+		:type directory: str.
+
+		"""
+
+		for d in [self.home_subdir,self.storage_subdir]:
+
+			dir_to_make = os.path.join(d,directory)
+			
+			if not self.syshandler.exists(dir_to_make):
+				self.syshandler.mkdir(dir_to_make)
+				print("[+] {0} created on {1}".format(dir_to_make,self.syshandler.name))
+
+	################################################################################################################################
+
+	def mkfifo(self,names,method=None,where="storage_subdir"):
+
+		"""
+		Makes a list of named pipes
+
+		:param names: names of the named pipes
+		:type names: list.
+
+		:param where: where to put the named pipes, default is "storage_subdir"
+		:type where: str.
+
+		"""
+
+		if method is None:
+			method = lambda n:os.mkfifo(n)
+
+		for name in names:
+			pipe_name = self.syshandler.map(os.path.join(getattr(self,where),name))
+			method(pipe_name)
+			print("[+] Created named pipe {0}".format(pipe_name)) 
+
+	################################################################################################################################
+
+	def execute(self,filename,callback=None,where="storage_subdir",**kwargs):
+
+		"""
+		Calls a user defined function on the resource pointed to by filename; if None is provided, returns the full path to the map
+
+		:param filename: name of the file on which to call the callback
+		:type filename: str.
+
+		:param callback: user defined function that takes filename as first argument
+		:type callback: callable
+
+		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
+		:type where: str.
+
+		:param kwargs: key word arguments to be passed to callback
+		:type kwargs: dict.
+
+		:returns: the result of callback
+
+		"""
+
+		full_path = self.path(filename,where)
+		if full_path is None:
+			raise IOError("{0} does not exist!".format(filename))
+
+		if callback is None:
+			return full_path
+
+		#Call the function
+		return callback(full_path,**kwargs)
+
+#####################################################
+##############SimulationModel class##################
+#####################################################
+
+class SimulationModel(TreeNode):
+
+	"""
+	Class handler of a weak lensing simulation model, defined by a set of cosmological parameters
+
+	"""
 
 	@property
 	def cosmo_id(self):
@@ -1632,83 +1717,6 @@ class SimulationModel(object):
 
 		#Return
 		return specs
-
-
-	################################################################################################################################
-
-	def mkdir(self,directory):
-
-		"""
-		Create a sub-directory inside the current instance home and storage paths
-
-		:param directory: name of the directory to create
-		:type directory: str.
-
-		"""
-
-		for d in [self.home_subdir,self.storage_subdir]:
-
-			dir_to_make = os.path.join(d,directory)
-			
-			if not self.syshandler.exists(dir_to_make):
-				self.syshandler.mkdir(dir_to_make)
-				print("[+] {0} created on {1}".format(dir_to_make,self.syshandler.name))
-
-	################################################################################################################################
-
-	def mkfifo(self,names,method=None,where="storage_subdir"):
-
-		"""
-		Makes a list of named pipes
-
-		:param names: names of the named pipes
-		:type names: list.
-
-		:param where: where to put the named pipes, default is "storage_subdir"
-		:type where: str.
-
-		"""
-
-		if method is None:
-			method = lambda n:os.mkfifo(n)
-
-		for name in names:
-			pipe_name = self.syshandler.map(os.path.join(getattr(self,where),name))
-			method(pipe_name)
-			print("[+] Created named pipe {0}".format(pipe_name)) 
-
-	################################################################################################################################
-
-	def execute(self,filename,callback=None,where="storage_subdir",**kwargs):
-
-		"""
-		Calls a user defined function on the resource pointed to by filename; if None is provided, returns the full path to the map
-
-		:param filename: name of the file on which to call the callback
-		:type filename: str.
-
-		:param callback: user defined function that takes filename as first argument
-		:type callback: callable
-
-		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
-		:type where: str.
-
-		:param kwargs: key word arguments to be passed to callback
-		:type kwargs: dict.
-
-		:returns: the result of callback
-
-		"""
-
-		full_path = self.path(filename,where)
-		if full_path is None:
-			raise IOError("{0} does not exist!".format(filename))
-
-		if callback is None:
-			return full_path
-
-		#Call the function
-		return callback(full_path,**kwargs)
 
 	################################################################################################################################
 
