@@ -179,49 +179,40 @@ def flow(cmd_args):
 
 	#Nodes
 	pgm.add_node(daft.Node("parameters","Parameters",1,2.5,aspect=3.,plot_params=r_color))
-	pgm.add_node(daft.Node("geometry","geometry",3,2.5,aspect=3.))
-
-	#Seeds
-	pgm.add_node(daft.Node("seed1","seed 1",5,3.25,aspect=2.))
-	pgm.add_node(daft.Node("seed2","seed 2",5,2.5,aspect=2.))
-	pgm.add_node(daft.Node("seedN",r"seed $N$",5,1.75,aspect=2.))
+	pgm.add_node(daft.Node("geometry","geometry+seeds",4,2.5,aspect=4.))
 	
 	#ICS
-	pgm.add_node(daft.Node("ic1","IC 1",6.5,3.25,aspect=2.))
-	pgm.add_node(daft.Node("ic2","IC 2",6.5,2.5,aspect=2.))
-	pgm.add_node(daft.Node("icN","IC N",6.5,1.75,aspect=2.))
+	pgm.add_node(daft.Node("ic1","IC seed 1",6.5,3.25,aspect=2.5))
+	pgm.add_node(daft.Node("ic2","IC seed 2",6.5,2.5,aspect=2.5))
+	pgm.add_node(daft.Node("icN",r"IC seed $N$",6.5,1.75,aspect=2.5))
 
 	#Evolution
-	pgm.add_node(daft.Node("e1",r"$\rho^1(\mathbf{x},z)$",8.5,3.25,aspect=3.))
-	pgm.add_node(daft.Node("e2",r"$\rho^2(\mathbf{x},z)$",8.5,2.5,aspect=3.))
-	pgm.add_node(daft.Node("eN",r"$\rho^N(\mathbf{x},z)$",8.5,1.75,aspect=3.))
+	pgm.add_node(daft.Node("e1",r"$\delta^1(\mathbf{x},z)$",8.5,3.25,aspect=3.))
+	pgm.add_node(daft.Node("e2",r"$\delta^2(\mathbf{x},z)$",8.5,2.5,aspect=3.))
+	pgm.add_node(daft.Node("eN",r"$\delta^N(\mathbf{x},z)$",8.5,1.75,aspect=3.))
 
 	#Lens Planes
-	pgm.add_node(daft.Node("p1","Lens Planes 1",10.5,3.25,aspect=3.5))
-	pgm.add_node(daft.Node("p2","Lens Planes 2",10.5,2.5,aspect=3.5))
-	pgm.add_node(daft.Node("pN","Lens Planes N",10.5,1.75,aspect=3.5))
+	pgm.add_node(daft.Node("p1",r"Lens: $\sigma^1(\mathbf{x},z)$",10.5,3.25,aspect=3.5))
+	pgm.add_node(daft.Node("p2",r"Lens: $\sigma^2(\mathbf{x},z)$",10.5,2.5,aspect=3.5))
+	pgm.add_node(daft.Node("pN",r"Lens: $\sigma^N(\mathbf{x},z)$",10.5,1.75,aspect=3.5))
 
 	#Mix planes
-	pgm.add_plate(daft.Plate([9.4,1.0,2.1,3.0],label="Mix ICs"))
+	pgm.add_plate(daft.Plate([9.4,1.0,2.1,3.0],label="Mix seeds"))
 
 	#Lensing maps
 	pgm.add_node(daft.Node("lens","Lensing maps " + r"$(\kappa,\gamma)$",13.0,2.5,aspect=4.5,plot_params=g_color))
 
 	#Executables
-	pgm.add_node(daft.Node("camb","CAMB",3,0.5,aspect=2.,observed=True))
-	pgm.add_node(daft.Node("ngenic","NGen-IC",5,0.5,aspect=2.,observed=True))
+	pgm.add_node(daft.Node("camb","CAMB+NGen-IC",4,0.5,aspect=4.5,observed=True))
 	pgm.add_node(daft.Node("gadget","Gadget2",6.5,0.5,aspect=2.,observed=True))
 	pgm.add_node(daft.Node("planes","lenstools.planes",8.5,0.5,aspect=4.,observed=True))
 	pgm.add_node(daft.Node("ray","lenstools.raytracing",10.5,4.5,aspect=5.,observed=True))
 
 	#Edges
 	pgm.add_edge("parameters","geometry")
-	pgm.add_edge("geometry","seed1")
-	pgm.add_edge("geometry","seed2")
-	pgm.add_edge("geometry","seedN")
-	pgm.add_edge("seed1","ic1")
-	pgm.add_edge("seed2","ic2")
-	pgm.add_edge("seedN","icN")
+	pgm.add_edge("geometry","ic1")
+	pgm.add_edge("geometry","ic2")
+	pgm.add_edge("geometry","icN")
 	pgm.add_edge("ic1","e1")
 	pgm.add_edge("ic2","e2")
 	pgm.add_edge("icN","eN")
@@ -230,7 +221,6 @@ def flow(cmd_args):
 	pgm.add_edge("eN","pN")
 	pgm.add_edge("p2",'lens')
 	pgm.add_edge("camb","geometry")
-	pgm.add_edge("ngenic","seedN")
 	pgm.add_edge("gadget","icN")
 	pgm.add_edge("planes","eN")
 	pgm.add_edge("ray","p1")
@@ -418,12 +408,11 @@ method = dict()
 method["1"] = density_plane
 method["1b"] = potential_plane
 method["2"] = flow
-method["3"] = inheritance
-method["4"] = memory_usage
-method["5"] = convergence_visualize
-method["5b"] = convergence_stats
-method["6"] = eb_modes
-method["7"] = parameter_sampling
+method["3"] = memory_usage
+method["4"] = convergence_visualize
+method["4b"] = convergence_stats
+method["5"] = eb_modes
+method["6"] = parameter_sampling
 
 #Main
 def main():
