@@ -140,6 +140,17 @@ Gallery
 
    gallery
 
+
+IPython notebooks
+-----------------
+
+This is a list of IPython notebooks that show part of the LensTools functionality:
+
+- `Raytracing operations <http://nbviewer.jupyter.org/github/apetri/Notebooks/blob/master/gravitational_lensing.ipynb>`_
+- `Pipeline directory tree structure <http://nbviewer.jupyter.org/github/apetri/LensTools/blob/master/notebooks/dirtree.ipynb>`_
+- `Convergence/shear maps features <http://nbviewer.jupyter.org/github/apetri/LensTools/blob/master/notebooks/image.ipynb>`_
+- `Parameter sampling <http://nbviewer.jupyter.org/github/apetri/LensTools/blob/master/notebooks/sampling.ipynb>`_
+
 3D visualization with Mayavi
 ----------------------------
 
