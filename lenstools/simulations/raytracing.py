@@ -351,7 +351,7 @@ class Plane(Spin0):
 		z1 = z
 
 		#Log
-		logplanes.debug("Scaling fluctuations on lens at redshift {0:.3f} to redshift {1:.3f} with {2} method".format(z0,z1,scaling_method))
+		logplanes.debug("Scaling fluctuations on lens at redshift {0:.6f} to redshift {1:.6f} with method {2}".format(z0,z1,scaling_method))
 
 		if scaling_method=="uniform":
 			
@@ -387,7 +387,7 @@ class Plane(Spin0):
 			self.data *= (1+z1)/(1+z0)
 
 		#Log
-		logplanes.debug("Scaled fluctuations on lens at redshift {0:.3f} to redshift {1:.3f} with method {2}".format(z0,z1,scaling_method))
+		logplanes.debug("Scaled fluctuations on lens at redshift {0:.6f} to redshift {1:.6f} with method {2}".format(z0,z1,scaling_method))
 
 ########################################################################################
 
