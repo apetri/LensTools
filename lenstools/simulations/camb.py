@@ -583,6 +583,27 @@ class TransferFunction(object):
 class CAMBTransferFunction(TransferFunction):
 	pass
 
+class CAMBTransferFromPower(TransferFunction):
+
+	def add(self,z,T):
+
+		"""
+		Add transfer function information at redshift z
+
+		:param z: redshift
+		:type z: float.
+
+		:param T: CDM transfer function from CAMB output
+		:type T: array 
+
+		"""
+
+		if hasattr(self,"_sorted_z"):
+			del(self._sorted_z)
+
+		assert T.shape==self._k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self._k))
+		self._transfer[z] = np.sqrt(T) 
+
 ##############################################################################################################################
 
 #k independent transfer function for testing D(z,k) = 1/1+z

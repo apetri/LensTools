@@ -117,6 +117,9 @@ CAMB
 .. autoclass:: lenstools.simulations.camb.CAMBTransferFunction
 	:inherited-members:
 
+.. autoclass:: lenstools.simulations.camb.CAMBTransferFromPower
+	:inherited-members:
+
 N-body simulation snapshot handling
 ===================================
 

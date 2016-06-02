@@ -20,7 +20,7 @@ from .settings import *
 
 from .deploy import JobHandler
 
-from ..simulations.camb import CAMBTransferFunction
+from ..simulations.camb import CAMBTransferFromPower
 from ..simulations import Gadget2SnapshotDE
 from ..simulations.raytracing import PotentialPlane
 
@@ -2354,7 +2354,7 @@ class SimulationCollection(SimulationModel):
 		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
-	def loadTransferFunction(self,name_root="camb_transferfunc"):
+	def loadTransferFunction(self,name_root="camb_matterpower"):
 
 		"""
 		Loads in the CDM transfer function calculated with CAMB (k,delta(k)/k^2) for a unit super-horizon perturbation
@@ -2362,7 +2362,7 @@ class SimulationCollection(SimulationModel):
 		:param name_root: root of the file names that contain the transfer function
 		:type name_root: str.
 
-		:rtype: :py:class:`~lenstools.simulations.camb.CAMBTransferFunction`
+		:rtype: :py:class:`~lenstools.simulations.camb.CAMBTransferFromPower`
 
 		"""
 
@@ -2373,7 +2373,7 @@ class SimulationCollection(SimulationModel):
 
 		#Look for the wavenumbers in the first file
 		k = np.loadtxt(self.path(tfr_files[0],"home"),usecols=(0,))*self.cosmology.h*(self.Mpc_over_h**-1)
-		tfr = CAMBTransferFunction(k)
+		tfr = CAMBTransferFromPower(k)
 
 		#Add transfer function information from each redshift
 		for f in tfr_files:
