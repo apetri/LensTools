@@ -417,7 +417,7 @@ class TransferSpecs(object):
 		"""
 
 		#Sanity check
-		assert isinstance(transfer,TransferFunction)
+		assert isinstance(tfr,TransferFunction)
 
 		self.tfr = tfr
 		self.cur2target = cur2target
