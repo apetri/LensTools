@@ -36,3 +36,23 @@ def ifht(n,l_binned,func,**kwargs):
 	transform = integrate.simps(integrand,l_binned,axis=0)
 	
 	return theta,transform
+
+
+######################################################################################
+#################Approximate key matching dictionary##################################
+######################################################################################
+
+class ApproxDict(dict):
+
+	"""
+	Dictionary that looks up the closest key in the keychain
+
+	"""
+
+	def __init__(self,*args,**kwargs):
+		super(ApproxDict,self).__init__(*args,**kwargs)
+		self._sorted_keys = np.sort(self.keys())
+
+	def __getitem__(self,key):
+		closest_key = self._sorted_keys[np.abs(self._sorted_keys - key).argmin()]
+		return super(ApproxDict,self).__getitem__(closest_key)
