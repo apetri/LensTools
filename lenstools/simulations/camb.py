@@ -343,7 +343,7 @@ class CAMBSettings(LTSettings):
 		s.write('pivot_tensor = {0:.3f}\n'.format(self.pivot_tensor.to(u.Mpc**-1).value))
 
 		s.write('initial_power_num = {0}\n'.format(1))
-		s.write('scalar_amp(1) = {0:.2e}\n'.format(self.scalar_amplitude))
+		s.write('scalar_amp(1) = {0:.6e}\n'.format(self.scalar_amplitude))
 		
 		if hasattr(cosmology,"ns"):
 			ns = cosmology.ns

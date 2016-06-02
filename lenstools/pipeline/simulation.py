@@ -1512,7 +1512,7 @@ class TreeNode(object):
 		"""
 
 		search_path = getattr(self,where)
-		return [os.path.basename(f) for f in self.syshandler.glob(os.path.join(search_path,glob))]
+		return [os.path.relpath(f,search_path) for f in self.syshandler.glob(os.path.join(search_path,glob))]
 
 	################################################################################################################################
 
