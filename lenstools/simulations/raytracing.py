@@ -1087,7 +1087,7 @@ class RayTracer(object):
 				current_lens.scaleWithTransfer(transfer.cur2target[current_lens.redshift],tfr=transfer.tfr,with_scale_factor=transfer.with_scale_factor,kmesh=transfer.kmesh,scaling_method=transfer.scaling_method)
 
 			#Log
-			logray.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
+			logray.debug("Crossing lens {0} at redshift z={1:.3f}".format(k,current_lens.redshift))
 			start = time.time()
 			last_timestamp = start
 
@@ -1191,7 +1191,7 @@ class RayTracer(object):
 
 			#Log timestamp to cross lens
 			now = time.time()
-			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logray.debug("Lens {0} at z={1:.3f} crossed in {2:.3f}s".format(k,current_lens.redshift,now-start))
 			logstderr.debug("Lens {0} crossed: peak memory usage {1:.3f} (task)".format(k,peakMemory()))
 
 
