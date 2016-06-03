@@ -423,6 +423,8 @@ class CatalogSettings(LTSettings):
 
 	"""
 
+	_section = "CatalogSettings"
+
 	def __init__(self,**kwargs):
 	
 		#Name of catalog batch
@@ -461,7 +463,7 @@ class CatalogSettings(LTSettings):
 	def get(cls,options):
 
 		#Check that the config file has the appropriate section
-		section = "CatalogSettings"
+		section = cls._section
 		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
