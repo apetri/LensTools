@@ -126,6 +126,8 @@ class PlaneSettings(LTSettings):
 
 	"""
 
+	_section = "PlaneSettings"
+
 	def __init__(self,**kwargs):
 
 		#Name of the planes batch
@@ -159,7 +161,7 @@ class PlaneSettings(LTSettings):
 	def get(cls,options):
 
 		#Check that the config file has the appropriate section
-		section = "PlaneSettings"
+		section = cls._section
 		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
