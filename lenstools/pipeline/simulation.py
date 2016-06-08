@@ -761,7 +761,7 @@ class SimulationBatch(object):
 	##########################################Job submission scripts###########################################################################
 	###########################################################################################################################################
 
-	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,config_file="camb.param",chunks=1,**kwargs):
 
 		"""
 		Writes CAMB submission script
@@ -777,6 +777,9 @@ class SimulationBatch(object):
 
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
+
+		:param config_file: name of the CAMB configuration file
+		:type config_file: str.
 
 		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
 		:type kwargs: dict.
@@ -829,7 +832,7 @@ class SimulationBatch(object):
 				box_size = float(box_size) * model.Mpc_over_h
 				collection = model.getCollection(box_size=box_size,nside=nside)
 
-				parameter_file = os.path.join(collection.home_subdir,"camb.param")
+				parameter_file = os.path.join(collection.home_subdir,config_file)
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("CAMB parameter file at {0} does not exist yet!".format(parameter_file))
 
@@ -867,7 +870,7 @@ class SimulationBatch(object):
 
 	############################################################################################################################################
 
-	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,config_file="ngenic.param",chunks=1,**kwargs):
 
 		"""
 		Writes NGenIC submission script
@@ -883,6 +886,9 @@ class SimulationBatch(object):
 
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
+
+		:param config_file: name of the NGenIC config file
+		:type config_file: str.
 
 		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
 		:type kwargs: dict.
@@ -930,7 +936,7 @@ class SimulationBatch(object):
 
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
-				parameter_file = os.path.join(r.home_subdir,"ngenic.param")
+				parameter_file = os.path.join(r.home_subdir,config_file)
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("NGenIC parameter file at {0} does not exist yet!".format(parameter_file))
 
@@ -973,7 +979,7 @@ class SimulationBatch(object):
 	############################################################################################################################################
 
 
-	def writeNbodySubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeNbodySubmission(self,realization_list,job_settings,job_handler,config_file="gadget2.param",chunks=1,**kwargs):
 		
 		"""
 		Writes N-body simulation submission script
@@ -989,6 +995,9 @@ class SimulationBatch(object):
 
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
+
+		:param config_file: name of the Nbody configuration file
+		:type config_file: str.
 
 		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
 		:type kwargs: dict.
@@ -1046,7 +1055,7 @@ class SimulationBatch(object):
 
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
-				parameter_file = os.path.join(r.home_subdir,"gadget2.param")
+				parameter_file = os.path.join(r.home_subdir,config_file)
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("Gadget2 parameter file at {0} does not exist yet!".format(parameter_file))
 
