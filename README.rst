@@ -17,16 +17,15 @@ This python package collects together a suite of widely used analysis tools in W
 
 ::
    
-   @MISC{LensTools-ASCL,
-   
-      author = {{Petri}, A.},
-      title = "{LensTools: Weak Lensing computing tools}",
-      howpublished = {Astrophysics Source Code Library},
-      year = 2016,
-      month = feb,
-      archivePrefix = "ascl",
-      eprint = {1602.009},
-      adsurl = {http://adsabs.harvard.edu/abs/2016ascl.soft02009P},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-
-   }
+  @ARTICLE{LensTools,
+  author = {{Petri}, A.},
+  title = "{Mocking the Weak Lensing universe: the LensTools python computing package}",
+  journal = {ArXiv e-prints},
+  archivePrefix = "arXiv",
+  eprint = {1606.01903},
+  keywords = {Astrophysics - Cosmology and Nongalactic Astrophysics},
+  year = 2016,
+  month = jun,
+  adsurl = {http://adsabs.harvard.edu/abs/2016arXiv160601903P},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+  }

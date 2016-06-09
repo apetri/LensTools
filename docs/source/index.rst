@@ -31,25 +31,24 @@ This python add-on will handle basically every operation you will need to perfor
 Acknowledgement
 ---------------
 
-LensTools is open source and released under the MIT license. If you make use of LensTools in your work, please cite the corresponding entry in the Astrophysics Source Code Library (ASCL)
+LensTools is open source and released under the MIT license. If you make use of LensTools in your work, please cite it!
 
 ::
    
-   @MISC{LensTools-ASCL,
-   
-      author = {{Petri}, A.},
-      title = "{LensTools: Weak Lensing computing tools}",
-      howpublished = {Astrophysics Source Code Library},
-      year = 2016,
-      month = feb,
-      archivePrefix = "ascl",
-      eprint = {1602.009},
-      adsurl = {http://adsabs.harvard.edu/abs/2016ascl.soft02009P},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-
+   @ARTICLE{LensTools,
+   author = {{Petri}, A.},
+   title = "{Mocking the Weak Lensing universe: the LensTools python computing package}",
+   journal = {ArXiv e-prints},
+   archivePrefix = "arXiv",
+   eprint = {1606.01903},
+   keywords = {Astrophysics - Cosmology and Nongalactic Astrophysics},
+   year = 2016,
+   month = jun,
+   adsurl = {http://adsabs.harvard.edu/abs/2016arXiv160601903P},
+   adsnote = {Provided by the SAO/NASA Astrophysics Data System}
    }
 
-A regular code paper has been submitted for peer review and an electronic reference will be available soon. 
+The above code paper has been accepted for publication and will appear in the `Elsevier Astronomy and Computing journal <http://www.journals.elsevier.com/astronomy-and-computing/>`_. 
 
 Installation
 ------------
