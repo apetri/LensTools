@@ -58,9 +58,16 @@ The easiest way is to install through pip ::
 
 	pip install lenstools
 
+The LensTools installer will look for the optional dependencies (GSL, FFTW3, NICAEA) in the standard location /usr/local. If you want to specity a different location for these dependencies you need to specify it with the --install-option switch. For example running ::
 
-An alternative is to install from source by cloning or forking the `github repository <https://github.com/apetri/LensTools>`_ to download the source and build it manually. F
-First clone the repository (the original one, or your fork)::
+   pip install lenstools --install-option="--gsl=/my/path/to/gsl" 
+
+the installer will look for GSL under /my/path/to/gsl. If you do this don't forget to update the LD_LIBRARY_PATH environment variable ::
+
+   export LD_LIBRARY_PATH=/my/path/to/gsl:$LD_LIBRARY_PATH
+
+to ensure a correct dynamic linking for the external libraries. 
+An alternative is to install from source by cloning or forking the `github repository <https://github.com/apetri/LensTools>`_ to download the source and build it manually. First clone the repository (the original one, or your fork)::
    
    git clone https://github.com/apetri/LensTools
 
