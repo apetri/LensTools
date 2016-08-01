@@ -51,7 +51,7 @@ LensTools is open source and released under the MIT license. If you make use of 
   		adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 	}
 
-The above code paper has been accepted for publication and will appear in the `Elsevier Astronomy and Computing journal <http://www.journals.elsevier.com/astronomy-and-computing/>`_. 
+The above code paper is published on the `Elsevier Astronomy and Computing journal <http://www.journals.elsevier.com/astronomy-and-computing/>`_. 
 
 Installation
 ------------
