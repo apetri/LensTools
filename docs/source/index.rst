@@ -35,18 +35,21 @@ LensTools is open source and released under the MIT license. If you make use of 
 
 ::
    
-   @ARTICLE{LensTools,
-   author = {{Petri}, A.},
-   title = "{Mocking the Weak Lensing universe: the LensTools python computing package}",
-   journal = {ArXiv e-prints},
-   archivePrefix = "arXiv",
-   eprint = {1606.01903},
-   keywords = {Astrophysics - Cosmology and Nongalactic Astrophysics},
-   year = 2016,
-   month = jun,
-   adsurl = {http://adsabs.harvard.edu/abs/2016arXiv160601903P},
-   adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-   }
+	@ARTICLE{2016A&C....17...73P,
+   		author = {{Petri}, A.},
+    		title = "{Mocking the weak lensing universe: The LensTools Python computing package}",
+  		journal = {Astronomy and Computing},
+		archivePrefix = "arXiv",
+   		eprint = {1606.01903},
+ 		keywords = {Weak Gravitational Lensing, Simulations},
+     		year = 2016,
+    		month = oct,
+   		volume = 17,
+    		pages = {73-79},
+      		doi = {10.1016/j.ascom.2016.06.001},
+   		adsurl = {http://adsabs.harvard.edu/abs/2016A%26C....17...73P},
+  		adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+	}
 
 The above code paper has been accepted for publication and will appear in the `Elsevier Astronomy and Computing journal <http://www.journals.elsevier.com/astronomy-and-computing/>`_. 
 
