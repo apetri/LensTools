@@ -1266,12 +1266,8 @@ class RayTracer(object):
 			start = time.time()
 
 			#Load in the lens
-			if type(lens[k])==PotentialPlane:
-				current_lens = lens[k]
-			elif type(lens[k])==str:
-				current_lens = PotentialPlane.load(lens[k])
-			else:
-				raise TypeError("Lens format not recognized!")
+			current_lens = self.loadLens(lens[k])
+			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
 			#Extract the density at the ray positions
 			now = time.time()
