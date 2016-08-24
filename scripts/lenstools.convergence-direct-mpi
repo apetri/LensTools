@@ -6,7 +6,7 @@ from distutils import config
 
 import lenstools.scripts.raytracing
 from lenstools import SimulationBatch
-from lenstools.pipeline.settings import EnvironmentSettings,CatalogSettings,MapSettings
+from lenstools.pipeline.settings import EnvironmentSettings,MapSettings
 
 import logging
 from lenstools.simulations.logs import logpreamble
@@ -78,29 +78,19 @@ batch = SimulationBatch(environment_settings)
 if lens_settings.has_section("MapSettings"):
 
 	if (pool is None) or (pool.is_master()):
-		logpreamble.info("Starting the production of weak lensing simulated Maps")
+		logpreamble.info("Starting the production of weak lensing simulated Maps (direct density integration)")
 	map_settings = MapSettings.read(cmd_args.config_file)
 
-	#Cycle over ids to produce the planes
+	#Cycle over ids to produce the maps
 	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
+		lenstools.scripts.raytracing.convergenceDirect(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
 
 elif lens_settings.has_section("TelescopicMapSettings"):
 
 	if (pool is None) or (pool.is_master()):
-		logpreamble.info("Starting the production of weak lensing simulated Maps (telescopic)")
+		logpreamble.info("Starting the production of weak lensing simulated Maps (telescopic, direct density integration)")
 	map_settings = TelescopicMapSettings.read(cmd_args.config_file)
 
-	#Cycle over ids to produce the planes
+	#Cycle over ids to produce the maps
 	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
-
-elif lens_settings.has_section("CatalogSettings"):
-
-	if (pool is None) or (pool.is_master()):
-		logpreamble.info("Starting the production of weak lensing simulated Catalogs")
-	catalog_settings = CatalogSettings.read(cmd_args.config_file)
-
-	#Cycle over ids to produce the planes
-	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.simulatedCatalog(pool=pool,batch=batch,settings=catalog_settings,batch_id=batch_id)
+		lenstools.scripts.raytracing.convergenceDirect(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
