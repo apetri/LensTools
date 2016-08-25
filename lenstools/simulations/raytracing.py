@@ -1220,10 +1220,10 @@ class RayTracer(object):
 	###########Direct calculation of the convergence#########
 	#########################################################
 
-	def convergenceDirect(self,initial_positions,z=2.0,save_intermediate=False):
+	def convergenceDirect(self,initial_positions,z=2.0,save_intermediate=False,real_trajectory=False):
 
 		"""
-		Computes the convergence directly integrating the lensing density along the unperturbed line of sight
+		Computes the convergence directly integrating the lensing density along the line of sight (real or unperturbed)
 
 		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
 		:type initial_positions: numpy array or quantity
@@ -1233,6 +1233,9 @@ class RayTracer(object):
 
 		:param save_intermediate: save the intermediate values of the convergence as successive lenses are crossed
 		:type save_intermediate: bool.
+
+		:param real_trajectory: if True, integrate the density on the real light ray trajectory; if False the unperturbed trajectory is used
+		:type real_trajectory: bool.
 
 		:returns: convergence values at each of the initial positions
 
@@ -1253,6 +1256,12 @@ class RayTracer(object):
 		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
 		redshift = np.array([0.0] + self.redshift)
 		lens = self.lens
+
+		#Initial positions
+		current_positions = initial_positions.copy()
+
+		if real_trajectory:
+			current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
 
 		#Timestamp
 		now = time.time()
@@ -1275,7 +1284,7 @@ class RayTracer(object):
 			last_timestamp = now
 
 			#Compute full density plane
-			density = current_lens.density(initial_positions[0],initial_positions[1])
+			density = current_lens.density(current_positions[0],current_positions[1])
 
 			#Timestamp
 			now = time.time()
@@ -1287,6 +1296,31 @@ class RayTracer(object):
 				current_convergence += 0.5 * density
 			else:
 				current_convergence += 0.5 * density * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+
+			#Compute ray deflections
+			if real_trajectory:
+
+				#Compute deflections due to current lens
+				deflections = current_lens.deflectionAngles(current_positions[0],current_positions[1])
+
+				#Geometric factors
+				Ak = (distance[k+1] / distance[k+2]) * (1.0 + (distance[k+2] - distance[k+1])/(distance[k+1] - distance[k]))
+				Ck = -1.0 * (distance[k+2] - distance[k+1]) / distance[k+2]
+
+				#Compute the position on the next lens and log timestamp
+				current_deflection *= (Ak-1) 
+				now = time.time()
+				logray.debug("Geometrical weight factors calculations and deflection scaling completed in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
+
+				#Add deflections and log timestamp
+				current_deflection += Ck * deflections 
+				now = time.time()
+				logray.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
+
+				#Add deflection to current positions
+				current_positions += current_deflection
 
 			now = time.time()
 			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
