@@ -275,6 +275,9 @@ class MapSettings(LTSettings):
 		self.shear = False
 		self.omega = False
 
+		#Follow real ray trajectory in direct LOS integration
+		self.real_trajectory = False
+
 	def _init_plane_set(self):
 
 		#Set of lens planes to be used during ray tracing
@@ -342,6 +345,11 @@ class MapSettings(LTSettings):
 		self.convergence = options.getboolean(section,"convergence")
 		self.shear = options.getboolean(section,"shear")
 		self.omega = options.getboolean(section,"omega")
+
+		try:
+			self.real_trajectory = options.getboolean(section,"real_trajectory")
+		except NoOptionError:
+			pass
 
 	def _read_plane_set(self,options,section):
 		

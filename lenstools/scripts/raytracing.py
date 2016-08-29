@@ -463,7 +463,13 @@ def convergenceDirect(pool,batch,settings,batch_id):
 		normals = settings.mix_normals
 		map_realizations = settings.lens_map_realizations
 
-
+	#Follow or not real ray trajectory
+	real_trajectory = settings.real_trajectory
+	if (pool is None) or (pool.is_master()):
+		if real_trajectory:
+			logdriver.info("Real light ray trajectories will be followed during integration")
+		else:
+			logdriver.info("Unperturbed light ray trajectories will be followed during integration")
 
 	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
 	try:
@@ -604,7 +610,7 @@ def convergenceDirect(pool,batch,settings,batch_id):
 		else:
 
 			#Integrate the density on the line of sight
-			convergence = tracer.convergenceDirect(pos,z=source_redshift,save_intermediate=False)
+			convergence = tracer.convergenceDirect(pos,z=source_redshift,save_intermediate=False,real_trajectory=real_trajectory)
 
 			now = time.time()
 			logdriver.info("Direct density integration for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
