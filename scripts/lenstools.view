@@ -32,7 +32,7 @@ if not(len(cmd_args.filename)):
 for filename in cmd_args.filename:
 
 	if cmd_args.img_format is not None:
-		savename = ".".join([ p for p in os.path.split(filename)[-1].split(".")[:-1]])
+		savename = ".".join([ p for p in filename.split(".")[:-1]])
 		savename += ".{0}".format(cmd_args.img_format)
 	else:
 		savename = None 
