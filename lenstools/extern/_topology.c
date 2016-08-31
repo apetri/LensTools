@@ -11,10 +11,17 @@ The module is called _topology and it defines the methods below (see docstrings)
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+#include "lenstoolsPy3.h"
+
 #include "peaks.h"
 #include "differentials.h"
 #include "minkowski.h"
 #include "azimuth.h"
+
+#ifndef IS_PY3K
+static struct module_state _state;
+#endif
+
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for counting peaks in a 2D map";
@@ -51,15 +58,66 @@ static PyMethodDef module_methods[] = {
 } ;
 
 //_topology constructor
-PyMODINIT_FUNC init_topology(void){
 
+#ifdef IS_PY3K
+
+static struct PyModuleDef moduledef = {
+
+	PyModuleDef_HEAD_INIT,
+	"_topology",
+	NULL,
+	sizeof(struct module_state),
+	module_methods,
+	NULL,
+	myextension_trasverse,
+	myextension_clear,
+	NULL
+
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit_topology(void)
+
+#else
+
+#define INITERROR return
+
+void
+init_topology(void)
+#endif
+
+{
+#ifdef IS_PY3K
+	PyObject *m = PyModule_Create(&moduledef);
+#else
 	PyObject *m = Py_InitModule3("_topology",module_methods,module_docstring);
-	if(m==NULL) return;
+#endif
+
+	if(m==NULL)
+		INITERROR;
+	struct module_state *st = GETSTATE(m);
+
+	st->error = PyErr_NewException("_topology.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(m);
+        INITERROR;
+    }
 
 	/*Load numpy functionality*/
 	import_array();
 
+	/*Return*/
+#ifdef IS_PY3K
+	return m;
+#endif
+
 }
+
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 
 //peakCount() implementation
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args){

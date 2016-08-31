@@ -336,7 +336,7 @@ class FisherAnalysis(Analysis):
 
 		try:
 			self.check()
-		except Exception,e:
+		except Exception as e:
 			self.remove_model(-1)
 			raise RuntimeError(e)
 

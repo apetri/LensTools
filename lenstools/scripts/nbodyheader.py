@@ -29,5 +29,5 @@ def main(args=None):
 			
 			snap.close()
 
-	except Exception,e:
+	except Exception as e:
 		print(e)

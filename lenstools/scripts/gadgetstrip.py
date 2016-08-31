@@ -5,7 +5,7 @@ def main(filename):
 	#Open snapshot
 	try:
 		snap = configuration.snapshot_handler.open(filename)
-	except IOError,e:
+	except IOError as e:
 		print("{0} : {1}".format(filename,e))
 		return
 
