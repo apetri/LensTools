@@ -1293,9 +1293,9 @@ class RayTracer(object):
 
 			#Cumulate on the convergence
 			if k<last_lens:
-				current_convergence += 0.5 * density
+				current_convergence += 0.5 * density * (1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z)).decompose().value)
 			else:
-				current_convergence += 0.5 * density * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+				current_convergence += 0.5 * density * (1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z)).decompose().value) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 
 			#Compute ray deflections
 			if real_trajectory:
