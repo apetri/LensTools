@@ -1,7 +1,11 @@
-import os
+import sys,os
 import re
 import StringIO
-import cPickle as pkl
+
+if sys.version_info.major>=3:
+	import _pickle as pkl
+else:
+	import cPickle as pkl
 
 import numpy as np
 from scipy import interpolate

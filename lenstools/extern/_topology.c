@@ -78,7 +78,7 @@ static struct PyModuleDef moduledef = {
 #define INITERROR return NULL
 
 PyMODINIT_FUNC
-PyInit_topology(void)
+PyInit__topology(void)
 
 #else
 

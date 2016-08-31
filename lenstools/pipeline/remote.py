@@ -1,6 +1,10 @@
 from abc import ABCMeta,abstractproperty,abstractmethod
-import os,glob
-import cPickle
+import sys,os,glob
+
+if sys.version_info.major>=3:
+	import _pickle as pkl
+else:
+	import cPickle as pkl
 
 try:
 	from paramiko import SSHClient
@@ -118,10 +122,10 @@ class LocalSystem(SystemHandler):
 		return open(f,mode)
 
 	def pickleload(self,fp):
-		return cPickle.load(fp)
+		return pkl.load(fp)
 
 	def pickledump(self,obj,fp):
-		cPickle.dump(obj,fp)
+		pkl.dump(obj,fp)
 
 
 
@@ -192,10 +196,10 @@ class UnixSSH(SystemHandler):
 		return self.sftp.file(f,mode)
 
 	def pickleload(self,fp):
-		return cPickle.loads(fp.read())
+		return pkl.loads(fp.read())
 
 	def pickledump(self,obj,fp):
-		fp.write(cPickle.dumps(obj))
+		fp.write(pkl.dumps(obj))
 
 
 
@@ -251,30 +255,45 @@ class LocalGit(SystemHandler):
 		return GitFile(f,mode,repository=self.repository)
 
 	def pickleload(self,fp):
-		return cPickle.loads(fp.read())
+		return pkl.loads(fp.read())
 
 	def pickledump(self,obj,fp):
-		fp.write(cPickle.dumps(obj))
+		fp.write(pkl.dumps(obj))
 
 
 
 #Make sure to commit to the repo after the file is closed
-class GitFile(file):
+class GitFile(object):
 
-	def __init__(self,*args,**kwargs):
+	def __init__(self,fname,mode,repository):
 
-		super(GitFile,self).__init__(*args)
-		self.repository = kwargs["repository"]
+		self.fp = open(fname,mode)
+		self.repository = repository
 		assert self.repository is not None
 
 	def close(self):
 
-		super(GitFile,self).close()
+		#Close the file
+		self.fp.close()
 
 		#Commit to the repository on file closure
 		if ("w" in self.mode) or ("a" in self.mode):
 			added_filename = os.path.relpath(self.name,start=self.repository.working_dir)
 			self.repository.index.add([added_filename])
+
+	#I/O
+	def read(self):
+		return self.fp.read()
+
+	def write(self,content):
+		self.fp.write(content)
+
+	#Context managers
+	def __enter__(self):
+		return self
+
+	def __exit__(self,exception,value,traceback):
+		self.close()
 
 
 

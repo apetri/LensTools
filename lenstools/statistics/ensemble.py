@@ -14,7 +14,11 @@ from __future__ import division
 
 from operator import add
 from functools import reduce
-import cPickle as pickle
+
+if sys.version_info.major>=3:
+	import _pickle as pickle
+else:
+	import cPickle as pickle
 
 from ..utils.algorithms import pcaHandler as PCA
 
