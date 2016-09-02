@@ -12,6 +12,8 @@ The module is called _nicaea and it defines the methods below (see docstrings)
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+#include "lenstoolsPy3.h"
+
 #include "errorlist.h"
 #include "cosmo.h"
 #include "lensing.h"
@@ -20,6 +22,10 @@ The module is called _nicaea and it defines the methods below (see docstrings)
 #include "nicaea_wrappers.h"
 
 #define SPEC_IN_TUPLE 11
+
+#ifndef IS_PY3K
+static struct module_state _state;
+#endif
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface to the NICAEA computations";
@@ -51,15 +57,66 @@ static PyMethodDef module_methods[] = {
 } ;
 
 //_nicaea constructor
-PyMODINIT_FUNC init_nicaea(void){
 
+#ifdef IS_PY3K
+
+static struct PyModuleDef moduledef = {
+
+	PyModuleDef_HEAD_INIT,
+	"_nicaea",
+	module_docstring,
+	sizeof(struct module_state),
+	module_methods,
+	NULL,
+	myextension_trasverse,
+	myextension_clear,
+	NULL
+
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit__nicaea(void)
+
+#else
+
+#define INITERROR return
+
+void
+init_nicaea(void)
+#endif
+
+{
+#ifdef IS_PY3K
+	PyObject *m = PyModule_Create(&moduledef);
+#else
 	PyObject *m = Py_InitModule3("_nicaea",module_methods,module_docstring);
-	if(m==NULL) return;
+#endif
+
+	if(m==NULL)
+		INITERROR;
+	struct module_state *st = GETSTATE(m);
+
+	st->error = PyErr_NewException("_nicaea.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(m);
+        INITERROR;
+    }
 
 	/*Load numpy functionality*/
 	import_array();
 
+	/*Return*/
+#ifdef IS_PY3K
+	return m;
+#endif
+
 }
+
+//////////////////////////////////////////////
+//////////////////////////////////////////////
+//////////////////////////////////////////////
 
 //////////////////////////////////
 /*Implementation of extra_args*///
@@ -448,7 +505,11 @@ static PyObject *_nicaea_shearPowerSpectrum(PyObject *self,PyObject *args){
 
 static PyObject *_nicaea_shear2pt(PyObject *self,PyObject *args){
 
+#ifdef IS_PY3K
+	int pm=(int)PyLong_AsLong(extra_args(args));
+#else
 	int pm=(int)PyInt_AsLong(extra_args(args));
+#endif
 
 	if(pm==1){
 		

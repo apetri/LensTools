@@ -198,8 +198,8 @@ lenstools_includes = list()
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
 external_sources["_gadget2"] = ["_gadget2.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c"]
-#external_sources["_nbody"] = ["_nbody.c","grid.c","coordinates.c"]
-#external_sources["_pixelize"] = ["_pixelize.c","grid.c","coordinates.c"]
+external_sources["_nbody"] = ["_nbody.c","grid.c","coordinates.c"]
+external_sources["_pixelize"] = ["_pixelize.c","grid.c","coordinates.c"]
 
 ######################################################################################################################################
 
@@ -210,7 +210,7 @@ if gsl_location is not None:
 	print(green("[OK] Checked GSL installation, the Design feature will be installed"))
 	lenstools_includes.append(os.path.join(gsl_location,"include")) 
 	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
-	#external_sources["_design"] = ["_design.c","design.c"] 
+	external_sources["_design"] = ["_design.c","design.c"] 
 else:
 	print(red("[FAIL] GSL installation not found, the Design feature will not be installed"))
 	lenstools_link = ["-lm"]
@@ -233,7 +233,7 @@ if conf.getboolean("nicaea","install_python_bindings"):
 		lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
 
 		#Specify the NICAEA extension
-		#external_sources["_nicaea"] = ["_nicaea.c"]
+		external_sources["_nicaea"] = ["_nicaea.c"]
 
 	else:
 		print(red("[FAIL] NICAEA bindings will not be installed (either enable option or check GSL/FFTW3/NICAEA installations)"))
