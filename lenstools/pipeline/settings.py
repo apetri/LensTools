@@ -1,8 +1,11 @@
-import os
+import sys,os
 import ast
-import StringIO
 
-from ConfigParser import NoOptionError
+if sys.version_info.major>=3:
+	from configparser import NoOptionError
+else:
+	from ConfigParser import NoOptionError
+
 import json
 
 import numpy as np

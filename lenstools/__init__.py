@@ -7,22 +7,28 @@
 
 __version__ = "0.7-dev"
 
-from lenstools.utils.configuration import configuration
+import sys
 
-from image.convergence import ConvergenceMap,Mask
-from image.shear import ShearMap
-from image.noise import GaussianNoiseGenerator
+from .utils.configuration import configuration
+
+from .image.convergence import ConvergenceMap,Mask
+from .image.shear import ShearMap
+from .image.noise import GaussianNoiseGenerator
 from .statistics.ensemble import Ensemble
 
-import statistics.contours as contours
-import statistics.constraints as constraints
+from .statistics import contours,constraints
 
-from lenstools.pipeline.simulation import SimulationBatch
+from .pipeline.simulation import SimulationBatch
 
-import legacy.index as index
+from .legacy import index
 
 import os,pkg_resources
-import urllib2
+
+if sys.version_info.major>=3:
+	from urllib import request
+else:
+	import urllib2 as request
+
 import tarfile
 
 #External data needed by tests, may be downloaded
@@ -70,7 +76,7 @@ def getTestData(path="."):
 	data_filename = os.path.join(path,"data.tar.gz")
 
 	#Download the file
-	response = urllib2.urlopen(data_url)
+	response = request.urlopen(data_url)
 	with open(data_filename,"wb") as datafile:
 		print("[+] Downloading {0}...".format(data_url))
 		datafile.write(response.read())

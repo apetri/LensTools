@@ -12,6 +12,7 @@
 
 from __future__ import division,print_function,with_statement
 
+import sys
 from operator import mul
 from functools import reduce
 
@@ -38,7 +39,7 @@ except ImportError:
 
 from ..utils.algorithms import precision_bias_correction
 from .ensemble import Series,Ensemble,Panel 
-import samplers
+from . import samplers
 
 #########################################################
 #############Default Gaussian data likelihood############

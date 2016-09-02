@@ -1,6 +1,10 @@
 from __future__ import division
-import os
-import StringIO
+import sys,os
+
+if sys.version_info.major>=3:
+	from io import StringIO
+else:
+	from StringIO import StringIO
 
 from .nbody import NbodySnapshot
 from .. import extern as ext
@@ -154,7 +158,7 @@ class Gadget2Settings(LTSettings):
 
 		"""
 
-		output = StringIO.StringIO()
+		output = StringIO()
 
 		#Write preamble
 		output.write("% {0}\n\n".format(section))

@@ -1,12 +1,16 @@
 from __future__ import division,with_statement
 from abc import ABCMeta,abstractproperty,abstractmethod
 
-import os
+import sys,os
 import re
 import tarfile
 import json
 import itertools
-import StringIO
+
+if sys.version_info.major>=3:
+	from io import StringIO
+else:
+	from StringIO import StringIO
 
 import numpy as np
 import astropy.units as u
@@ -2959,7 +2963,7 @@ class SimulationPlanes(SimulationIC):
 
 		"""
 
-		s = StringIO.StringIO()
+		s = StringIO()
 		info_filename = self.path("info.txt")
 
 		#Look at all the planes present in the storage directory

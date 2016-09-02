@@ -12,6 +12,7 @@
 
 from __future__ import division
 
+import sys
 from operator import add
 from functools import reduce
 

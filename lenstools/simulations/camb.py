@@ -1,11 +1,12 @@
 import sys,os
 import re
-import StringIO
 
 if sys.version_info.major>=3:
 	import _pickle as pkl
+	from io import StringIO
 else:
 	import cPickle as pkl
+	from StringIO import StringIO
 
 import numpy as np
 from scipy import interpolate
@@ -260,7 +261,7 @@ class CAMBSettings(LTSettings):
 		z = -1.0*np.sort(-1.0*redshifts)
 
 		#Instantiate StringIO object
-		s = StringIO.StringIO()
+		s = StringIO()
 
 		s.write("output_root = {0}\n".format(output_root))
 

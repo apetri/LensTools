@@ -1,9 +1,16 @@
 from __future__ import division
 
-import StringIO
+import sys
+
+if sys.version_info.major>=3:
+	from io import StringIO
+	from configparser import NoOptionError
+else:
+	from StringIO import StringIO
+	from ConfigParser import NoOptionError
+
 from operator import add
 from functools import reduce
-from ConfigParser import NoOptionError
 
 from abc import ABCMeta,abstractproperty,abstractmethod
 
@@ -75,7 +82,7 @@ class JobHandler(object):
 		assert isinstance(settings,JobSettings)
 
 		#Write the preamble
-		s = StringIO.StringIO()
+		s = StringIO()
 
 		#Shell type
 		s.write("{0}\n".format(self.cluster_specs.shell_prefix))
@@ -166,7 +173,7 @@ class JobHandler(object):
 		#Check that the sum of the cores requested matches the job settings
 		assert reduce(add,cores)==settings.num_cores,"The number of cores requested does not match the execution statement!"
 
-		s = StringIO.StringIO()
+		s = StringIO()
 		s.write("""
 ###################################################
 #################Execution#########################

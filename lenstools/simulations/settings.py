@@ -3,12 +3,13 @@ import ast
 from abc import ABCMeta,abstractproperty,abstractmethod
 
 from distutils import config
-from ConfigParser import NoOptionError
 
 if sys.version_info.major>=3:
 	import _pickle as pkl
+	from configparser import NoOptionError
 else:
 	import cPickle as pkl
+	from ConfigParser import NoOptionError
 
 import json
 

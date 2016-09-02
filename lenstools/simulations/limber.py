@@ -10,8 +10,6 @@
 
 """
 
-import StringIO
-
 import numpy as np
 from scipy import interpolate,integrate
 
