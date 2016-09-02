@@ -116,8 +116,6 @@ class NbodySnapshot(object):
 		self._mass_unit = mass_unit.to(g).value
 		self._velocity_unit = velocity_unit.to(cm/s).value
 
-		assert (type(fp)==file) or (fp is None),"Call the open() method instead!!"
-
 		if fp is not None:
 		
 			self.fp = fp
@@ -189,7 +187,7 @@ class NbodySnapshot(object):
 
 			fp = open(cls.buildFilename(filename,pool,**kwargs),"r")
 		
-		elif type(filename)==file:
+		elif hasattr(filename,"read"):
 			
 			if pool is not None:
 				raise TypeError("Specifying file objects with MPIPools is not allowed!")
