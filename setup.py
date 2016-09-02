@@ -197,7 +197,7 @@ lenstools_includes = list()
 
 #List external package sources here
 external_sources["_topology"] = ["_topology.c","differentials.c","peaks.c","minkowski.c","coordinates.c","azimuth.c"]
-#external_sources["_gadget2"] = ["_gadget2.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c"]
+external_sources["_gadget2"] = ["_gadget2.c","read_gadget_header.c","read_gadget_particles.c","write_gadget_particles.c"]
 #external_sources["_nbody"] = ["_nbody.c","grid.c","coordinates.c"]
 #external_sources["_pixelize"] = ["_pixelize.c","grid.c","coordinates.c"]
 

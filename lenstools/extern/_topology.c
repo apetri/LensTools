@@ -65,7 +65,7 @@ static struct PyModuleDef moduledef = {
 
 	PyModuleDef_HEAD_INIT,
 	"_topology",
-	NULL,
+	module_docstring,
 	sizeof(struct module_state),
 	module_methods,
 	NULL,
