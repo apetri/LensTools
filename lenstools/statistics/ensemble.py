@@ -72,7 +72,7 @@ class Series(pd.Series):
 
 		values = np.concatenate([idx.values for idx in indices])
 		names = reduce(add,[ [idx.name]*len(idx) for idx in indices ])
-		return pd.MultiIndex.from_tuples(zip(names,values))
+		return pd.MultiIndex.from_tuples(list(zip(names,values)))
 
 	############################################################################################################################
 
@@ -370,7 +370,7 @@ class Ensemble(pd.DataFrame):
 		elif format=="matlab":
 			sio.savemat(filename,{"values": self.values},**kwargs)
 		elif format=="pickle":
-			with open(filename,"w") as fp:
+			with open(filename,"wb") as fp:
 				pickle.dump(self,fp)
 		else:
 			format(self,filename,**kwargs)
@@ -419,7 +419,7 @@ class Ensemble(pd.DataFrame):
 		"""
 
 		#Get the column names and grid values
-		columns = labels.keys()
+		columns = list(labels.keys())
 		if sort is not None:
 			columns.sort(key=sort.__getitem__)
 

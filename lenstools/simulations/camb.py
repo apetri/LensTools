@@ -558,7 +558,7 @@ class TransferFunction(object):
 
 		"""
 
-		with open(filename,"w") as fp:
+		with open(filename,"wb") as fp:
 			pkl.dump(self,fp)
 
 	@classmethod
@@ -574,7 +574,7 @@ class TransferFunction(object):
 
 		"""
 
-		with open(filename,"r") as fp:
+		with open(filename,"rb") as fp:
 			tfr = pkl.load(fp)
 
 		if isinstance(tfr,cls):

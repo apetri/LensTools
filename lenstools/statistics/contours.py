@@ -154,7 +154,7 @@ class ContourPlot(object):
 		score_ensemble = score_ensemble.sort_values(by=parameters)
 
 		#Check the feature names used to plot the contours (one contour plot for each feature name)
-		if type(feature_names) in [str,unicode]:
+		if type(feature_names)==str:
 			feature_names = [feature_names]
 
 		if feature_names is not None:
@@ -550,7 +550,7 @@ class ContourPlot(object):
 		"""
 
 		if not hasattr(self,"remaining_parameters"):
-			self.remaining_parameters = self.parameter_axes.keys()
+			self.remaining_parameters = list(self.parameter_axes.keys())
 			self.remaining_parameters.sort(key=self.parameter_axes.__getitem__)
 
 		self.ax.set_xlabel(self.parameter_labels[self.remaining_parameters[0]],fontsize=fontsize)
@@ -779,7 +779,7 @@ class ContourPlot(object):
 			self.contour = self.ax.contour(likelihood,values,colors=colors,origin="lower",extent=extent,aspect="auto",**kwargs)
 
 		#Contour labels
-		self.ax.proxy += [ plt.Rectangle((0,0),1,1,fc=color) for color in colors if color!=rc.func_globals["rcParams"]["axes.facecolor"] ]
+		self.ax.proxy += [ plt.Rectangle((0,0),1,1,fc=color) for color in colors if color!=rc.__globals__["rcParams"]["axes.facecolor"] ]
 		
 		if display_percentages:
 			plt.clabel(self.contour,fmt=fmt,inline=1,fontsize=9)

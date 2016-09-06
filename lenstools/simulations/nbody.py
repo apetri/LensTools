@@ -562,8 +562,7 @@ class NbodySnapshot(object):
 		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
 
 		#Direction of the plane
-		plane_directions = range(3)
-		plane_directions.pop(normal)
+		plane_directions = [ d for d in range(3) if d!=normal ]
 
 		#Get the particle positions if not available get
 		if hasattr(self,"positions"):
