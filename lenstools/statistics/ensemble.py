@@ -324,7 +324,7 @@ class Ensemble(pd.DataFrame):
 		else:
 			M = map
 
-		full_data = assemble(filter(lambda r:r is not None,M(_callback_wrapper,file_list)))
+		full_data = assemble([r for r in M(_callback_wrapper,file_list) if r is not None])
 
 		#Check if user provided column labels
 		if "columns" in kwargs.keys():
