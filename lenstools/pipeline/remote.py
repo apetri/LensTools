@@ -125,7 +125,7 @@ class LocalSystem(SystemHandler):
 		return pkl.load(fp)
 
 	def pickledump(self,obj,fp):
-		pkl.dump(obj,fp)
+		pkl.dump(obj,fp,protocol=2)
 
 
 
@@ -199,7 +199,7 @@ class UnixSSH(SystemHandler):
 		return pkl.loads(fp.read())
 
 	def pickledump(self,obj,fp):
-		fp.write(pkl.dumps(obj))
+		fp.write(pkl.dumps(obj,protocol=2))
 
 
 
@@ -258,7 +258,7 @@ class LocalGit(SystemHandler):
 		return pkl.loads(fp.read())
 
 	def pickledump(self,obj,fp):
-		fp.write(pkl.dumps(obj))
+		fp.write(pkl.dumps(obj,protocol=2))
 
 
 
@@ -268,6 +268,8 @@ class GitFile(object):
 	def __init__(self,fname,mode,repository):
 
 		self.fp = open(fname,mode)
+		self.name = fname
+		self.mode = mode
 		self.repository = repository
 		assert self.repository is not None
 

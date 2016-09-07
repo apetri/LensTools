@@ -500,7 +500,7 @@ class TransferFunction(object):
 
 		#If the transfer function is not tabulated with z, use the closest z in the table
 		if not hasattr(self,"_sorted_z"):
-			self._sorted_z = np.sort(np.array(self._transfer.keys()))
+			self._sorted_z = np.sort(np.array(list(self._transfer.keys())))
 
 		if z in self._transfer:
 			zt = z
@@ -533,7 +533,7 @@ class TransferFunction(object):
 
 		#If the transfer function is not tabulated with z, use the closest z in the table
 		if not hasattr(self,"_sorted_z"):
-			self._sorted_z = np.sort(np.array(self._transfer.keys()))
+			self._sorted_z = np.sort(np.array(list(self._transfer.keys())))
 
 		if z in self._transfer:
 			zt = z
@@ -559,7 +559,7 @@ class TransferFunction(object):
 		"""
 
 		with open(filename,"wb") as fp:
-			pkl.dump(self,fp)
+			pkl.dump(self,fp,protocol=2)
 
 	@classmethod
 	def read(cls,filename):
