@@ -185,7 +185,7 @@ class NbodySnapshot(object):
 
 		if type(filename)==str:
 
-			fp = open(cls.buildFilename(filename,pool,**kwargs),"r")
+			fp = open(cls.buildFilename(filename,pool,**kwargs),"rb")
 		
 		elif hasattr(filename,"read"):
 			

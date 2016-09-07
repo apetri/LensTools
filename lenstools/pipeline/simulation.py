@@ -1172,7 +1172,7 @@ class SimulationBatch(object):
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
 				#Check that the cores per simulation matches the number of files per snapshot
-				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p"),"r") as settingsfile:
+				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p"),"rb") as settingsfile:
 					gadget_settings = self.syshandler.pickleload(settingsfile)
 
 				assert gadget_settings.NumFilesPerSnapshot==job_settings.cores_per_simulation,"In the current implementation of plane generation, the number of MPI tasks must be the same as the number of files per snapshot!"
@@ -1772,7 +1772,7 @@ class SimulationModel(TreeNode):
 	def getCollection(self,box_size,nside=None):
 
 		#Allow to pass a geometry_id as first argument
-		if type(box_size) in [str,unicode]:
+		if isinstance(box_size,str):
 			try:
 				parts = box_size.split("b")
 				nside = int(parts[0])
@@ -1870,7 +1870,7 @@ class SimulationModel(TreeNode):
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Save a picked copy of the settings to use for future reference
-		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
@@ -1908,7 +1908,7 @@ class SimulationModel(TreeNode):
 					continue
 
 				#Pickle the settings
-				with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"r") as settingsfile:
+				with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"rb") as settingsfile:
 					settings = self.syshandler.pickleload(settingsfile)
 
 				#Parse the collections
@@ -1947,7 +1947,7 @@ class SimulationModel(TreeNode):
 			name,colnames,rednames = line.rstrip("\n").split(",")
 
 			#Pickle the settings
-			with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"rb") as settingsfile:
 				settings = self.syshandler.pickleload(settingsfile)
 
 			#Parse the collections
@@ -2169,7 +2169,7 @@ class SimulationCollection(SimulationModel):
 					self.info[map_set.cosmo_id][map_set.geometry_id]["map_sets"][settings.directory_name] = dict()
 
 		#Save a picked copy of the settings to use for future reference
-		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
@@ -2197,7 +2197,7 @@ class SimulationCollection(SimulationModel):
 			return None
 
 		#Read the settings from the pickled file
-		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"rb") as settingsfile:
 			settings = self.syshandler.pickleload(settingsfile) 
 
 		#Return to user
@@ -2263,7 +2263,7 @@ class SimulationCollection(SimulationModel):
 					self.info[catalog.cosmo_id][catalog.geometry_id]["catalogs"][settings.directory_name] = dict()
 
 		#Save a picked copy of the settings to use for future reference
-		with self.syshandler.open(os.path.join(catalog.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(catalog.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
@@ -2291,7 +2291,7 @@ class SimulationCollection(SimulationModel):
 			return None
 
 		#Read the settings from the pickled file
-		with self.syshandler.open(os.path.join(self.home_subdir,catalog_name,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,catalog_name,"settings.p"),"rb") as settingsfile:
 			settings = self.syshandler.pickleload(settingsfile) 
 
 		#Return to user
@@ -2364,7 +2364,7 @@ class SimulationCollection(SimulationModel):
 		print("[+] {0} written on {1}".format(camb_filename,self.syshandler.name))
 
 		#Save a pickled copy of the settings
-		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 	def loadTransferFunction(self,name_root="camb_matterpower"):
@@ -2458,13 +2458,13 @@ class SimulationIC(SimulationCollection):
 
 		#Try to load in the simulation settings, if any are present
 		try:
-			with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"rb") as settingsfile:
 				self.ngenic_settings = self.syshandler.pickleload(settingsfile)
 		except IOError:
 			pass
 
 		try:
-			with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"rb") as settingsfile:
 				self.gadget_settings = self.syshandler.pickleload(settingsfile)
 		except IOError:
 			pass
@@ -2607,7 +2607,7 @@ class SimulationIC(SimulationCollection):
 					self.info[new_plane_set.cosmo_id][new_plane_set.geometry_id]["nbody"][str(new_plane_set.ic_index)]["plane_sets"][settings.directory_name] = dict()
 
 		#Save a pickled copy of the settings for future reference
-		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the plane batch to a summary file
@@ -2636,7 +2636,7 @@ class SimulationIC(SimulationCollection):
 			return None
 
 		#Read plane settings from pickled file
-		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"rb") as settingsfile:
 			settings = self.syshandler.pickleload(settingsfile)
 
 		#Instantiate the SimulationPlanes object
@@ -2802,7 +2802,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("UnitVelocity_in_cm_per_s 			{0:.6e}\n".format(settings.UnitVelocity_in_cm_per_s))
 
 		#Save a pickled copy of the settings for future reference
-		with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Update the instance settings
@@ -2864,7 +2864,7 @@ class SimulationIC(SimulationCollection):
 			except (IndexError,IOError):
 				
 				#Read the initial redshift of the simulation from the NGenIC settings
-				with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as ngenicfile:
+				with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"rb") as ngenicfile:
 					ngenic_settings = self.syshandler.pickleload(ngenicfile)
 					assert isinstance(ngenic_settings,NGenICSettings)
 
@@ -2907,7 +2907,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write(settings.writeSection("softening"))
 
 		#Save a pickled copy of the settings for future reference
-		with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Update the instance settings

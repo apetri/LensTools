@@ -277,7 +277,7 @@ class Directives(LTSettings):
 		#Add necessary spaces to switches
 		for opt in settings._metadata:
 			option = getattr(settings,opt)
-			if type(option) in [str,unicode] and not(option.endswith("=")) and option.startswith("-"):
+			if isinstance(option,str) and not(option.endswith("=")) and option.startswith("-"):
 				setattr(settings,opt,option+" ")
 
 		return settings
@@ -331,7 +331,7 @@ class ClusterSpecs(LTSettings):
 		#Add necessary spaces to switches
 		for opt in settings._metadata:
 			option = getattr(settings,opt)
-			if type(option) in [str,unicode] and not(option.endswith("=")) and option.startswith("-"):
+			if isinstance(option,str) and not(option.endswith("=")) and option.startswith("-"):
 				setattr(settings,opt,option+" ")
 
 		return settings

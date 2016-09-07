@@ -134,7 +134,7 @@ def load_power_default(path,root_name="fiducial_matterpower_"):
 	zfind = lambda f:int(zregex.search(f).groups()[0])
 
 	#Find the number of power spectrum frames (one for each z)
-	power_spectrum_files = filter(lambda f:zfind(f)>0,glob.glob(os.path.join(path,root_name) + "*.dat"))
+	power_spectrum_files = list(filter(lambda f:zfind(f)>0,glob.glob(os.path.join(path,root_name) + "*.dat")))
 
 	#Redshift array
 	z_label = np.zeros(len(power_spectrum_files),dtype=np.int)
@@ -158,7 +158,7 @@ def load_power_default(path,root_name="fiducial_matterpower_"):
 	z = np.array([ label/100.0 for label in z_label ])
 
 	#The redshifts might not be in ascending order, we need to make sure they are
-	z_reindex = range(len(z))
+	z_reindex = list(range(len(z)))
 	z_reindex.sort(key=z.__getitem__)
 	z_reindex = np.array(z_reindex)
 
