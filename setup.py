@@ -1,6 +1,10 @@
 import os,sys,glob,re
 import platform
-import configparser
+
+if sys.version_info.major>=3:
+	import configparser as cfg
+else:
+	import ConfigParser as cfg
 
 
 #Names
@@ -145,7 +149,7 @@ def check_nicaea(conf):
 ############################################################
 
 #Read system dependent configuration file
-conf = configparser.ConfigParser()
+conf = cfg.ConfigParser()
 this = os.getenv("THIS")
 
 if (this is not None) and (os.path.isfile(default_cfg+"."+this)):
