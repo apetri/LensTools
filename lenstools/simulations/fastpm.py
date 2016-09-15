@@ -50,7 +50,7 @@ class FastPMSnapshot(NbodySnapshot):
 		###############################################
 
 		#Number of particles/files
-		header["num_particles_file"] = bigfile.BigData(self.fp).size
+		header["num_particles_file"] = bf_header["NC"][0]**3
 		header["num_particles_total"] = header["num_particles_file"]
 		header["num_files"] = 1
 
@@ -65,7 +65,7 @@ class FastPMSnapshot(NbodySnapshot):
 		header["box_size"] = bf_header["BoxSize"][0]*1.0e3
 
 		#Masses
-		header["masses"] = np.array([0.,bf_header["M0"][0],0.,0.,0.,0.])
+		header["masses"] = np.array([0.,bf_header["M0"][0]*header["h"],0.,0.,0.,0.])
 
 		#################
 
