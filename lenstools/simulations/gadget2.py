@@ -727,7 +727,9 @@ class Gadget2SnapshotDE(Gadget2Snapshot):
 
 	def getHeader(self):
 		header = Gadget2Header(ext._gadget2.getHeader(self.fp))
-		self.header["files"] = [self.fp.name]
+		header["files"] = [self.fp.name]
+
+		return header
 		 
 
 ##################################################################
