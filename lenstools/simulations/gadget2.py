@@ -287,6 +287,12 @@ class Gadget2Snapshot(NbodySnapshot):
 
 	############################################################################################
 
+	def setLimits(self):
+		self._first = None
+		self._last = None
+
+	############################################################################################
+
 	def getPositions(self,first=None,last=None,save=True):
 
 		"""

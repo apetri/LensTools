@@ -2059,14 +2059,14 @@ class SimulationCollection(SimulationModel):
 
 	################################################################################################################################
 
-	def newRealization(self,seed=0):
+	def newRealization(self,seed=0,**kwargs):
 		
 		#Check if there are already generated initial conditions in there
 		ics_present = self.syshandler.glob(os.path.join(self.storage_subdir,"ic*"))
 		new_ic_index = len(ics_present) + 1
 
 		#Generate the new initial condition
-		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed,syshandler=self.syshandler)
+		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed,syshandler=self.syshandler,**kwargs)
 
 		#Make dedicated directories for new initial condition,ics and snapshots
 		for d in [newIC.home_subdir,newIC.storage_subdir,newIC.ics_subdir,newIC.snapshot_subdir]:

@@ -73,6 +73,10 @@ class NbodySnapshot(object):
 		pass
 
 	@abstractmethod
+	def setLimits(self):
+		pass
+
+	@abstractmethod
 	def getPositions(self,first=None,last=None,save=True):
 		pass
 
@@ -162,6 +166,8 @@ class NbodySnapshot(object):
 			if h>0.0:
 				self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
 
+			#Set particle number limits that this instance will handle
+			self.setLimits()
 
 	@classmethod
 	def open(cls,filename,pool=None,header_kwargs=dict(),**kwargs):
@@ -512,7 +518,7 @@ class NbodySnapshot(object):
 
 	###################################################################################################################################################
 
-	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,kind="density",**kwargs):
+	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=4096,left_corner=None,thickness_resolution=1,smooth=1,kind="density",**kwargs):
 
 		"""
 		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
@@ -568,7 +574,7 @@ class NbodySnapshot(object):
 		if hasattr(self,"positions"):
 			positions = self.positions
 		else:
-			positions = self.getPositions(save=False)
+			positions = self.getPositions(first=self._first,last=self._last,save=False)
 
 		assert hasattr(self,"weights")
 		assert hasattr(self,"virial_radius")

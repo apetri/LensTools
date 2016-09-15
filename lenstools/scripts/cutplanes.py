@@ -11,6 +11,8 @@ from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemory
 
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings
+
+import lenstools.simulations
 from lenstools.simulations import DensityPlane,PotentialPlane
 
 from lenstools.utils import MPIWhirlPool
@@ -50,12 +52,19 @@ def main(pool,batch,settings,id,override):
 	realization = model.getCollection(box_size,nside).getRealization(ic)
 	snapshot_path = realization.snapshot_subdir
 	
-	#Base name of the snapshot files
+	#Snapshot handling
+	if settings.snapshot_handler not in lenstools.simulations.snapshot_allowed:
+		if (pool is None) or (pool.is_master()):
+			logdriver.error("Snapshot handler {0} not implemented".format(settings.snapshot_handler))
+		sys.exit(1)
+	
+	snapshot_handler = getattr(lenstools.simulations,settings.snapshot_handler)
 	SnapshotFileBase = realization.SnapshotFileBase
 
 	#Log to user
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Fast Fourier Transform operations handler: {0}".format(fftengine.__class__.__name__))
+		logdriver.info("N-body snapshot handler: {0}".format(settings.snapshot_handler))
 		logdriver.info("Reading snapshots from {0}".format(os.path.join(snapshot_path,SnapshotFileBase+"*")))
 
 	#Construct also the SimulationPlanes instance, to handle the current plane batch
@@ -157,18 +166,18 @@ def main(pool,batch,settings,id,override):
 			logdriver.info("Waiting for input files from snapshot {0}...".format(n))
 		
 		#Open the snapshot
-		snapshot_filename = realization.path(configuration.snapshot_handler.int2root(SnapshotFileBase,n),where="snapshot_subdir")
+		snapshot_filename = realization.path(snapshot_handler.int2root(SnapshotFileBase,n),where="snapshot_subdir")
 		if pool is not None:
 			logdriver.info("Task {0} reading nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
 
-		snap = configuration.snapshot_handler.open(snapshot_filename,pool=pool)
+		snap = snapshot_handler.open(snapshot_filename,pool=pool)
 
 		if pool is not None:
 			logdriver.debug("Task {0} read nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
 
 		#Get the positions of the particles
 		if not hasattr(snap,"positions"):
-			snap.getPositions()
+			snap.getPositions(first=snap._first,last=snap._last)
 
 		#Log memory usage
 		if (pool is None) or (pool.is_master()):

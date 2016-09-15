@@ -135,6 +135,9 @@ class PlaneSettings(LTSettings):
 
 		#Name of the planes batch
 		self.directory_name = "Planes"
+
+		#Snapshot class handler
+		self.snapshot_handler = "Gadget2SnapshotPipe"
 		
 		#Use the pickled options generated at the moment of the batch generation (advised)
 		self.override_with_local = True
@@ -171,6 +174,13 @@ class PlaneSettings(LTSettings):
 		settings = cls()
 		
 		settings.directory_name = options.get(section,"directory_name")
+
+		#Snapshot class handler
+		try:
+			settings.snapshot_handler = options.get(section,"snapshot_handler")
+		except NoOptionError:
+			pass
+
 		settings.override_with_local = options.getboolean(section,"override_with_local")
 		
 		settings.format = options.get(section,"format")
