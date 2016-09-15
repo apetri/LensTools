@@ -278,6 +278,7 @@ class Gadget2Snapshot(NbodySnapshot):
 	def getHeader(self):
 		
 		header = Gadget2Header(ext._gadget2.getHeader(self.fp))
+		header["files"] = [self.fp.name]
 
 		header["w0"] = -1.0
 		header["wa"] = 0.0
@@ -725,7 +726,8 @@ class Gadget2SnapshotDE(Gadget2Snapshot):
 	"""
 
 	def getHeader(self):
-		return Gadget2Header(ext._gadget2.getHeader(self.fp))
+		header = Gadget2Header(ext._gadget2.getHeader(self.fp))
+		self.header["files"] = [self.fp.name]
 		 
 
 ##################################################################

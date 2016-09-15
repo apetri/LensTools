@@ -130,7 +130,7 @@ class NbodySnapshot(object):
 			#Check that header has been loaded correctly
 			self._check_header()
 
-			self._header["files"] = [self.fp.name]
+			#Hubble parameter
 			h = self._header["h"]
 
 			#Define the Mpc/h, and kpc/h units for convenience
