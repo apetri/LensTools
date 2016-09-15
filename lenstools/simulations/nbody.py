@@ -145,7 +145,8 @@ class NbodySnapshot(object):
 				self._header["box_size"] = self._header["box_size"].to(self.Mpc_over_h)
 
 				#Read in the comoving distance
-				self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
+				if "comoving_distance" in self._header:
+					self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
 
 			else:
 				self._header["box_size"] *= kpc
@@ -639,8 +640,13 @@ class NbodySnapshot(object):
 		else:
 			logplanes.debug("Began gridding procedure")
 
-		#Gridding
+		##########
+		#Gridding#
+		##########
+
 		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
+
+		###################################################################################################################################
 
 		#Log
 		if self.pool is not None:

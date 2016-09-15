@@ -76,23 +76,47 @@ int grid3d(float *positions,float *weights,double *radius,double *concentration,
 	double i,j,k;
 
 	//Cycle through the particles and for each one compute the position on the grid
-	if(weights==NULL || radius==NULL || concentration==NULL || kernel==NULL){
+	if(radius==NULL || concentration==NULL || kernel==NULL){
 	
-		for(n=0;n<Npart;n++){
+		if(weights==NULL){
 
-			//Compute the position on the grid in the fastest way
-			i = (positions[3*n] - leftX)/sizeX;
-			j = (positions[3*n + 1] - leftY)/sizeY;
-			k = (positions[3*n + 2] - leftZ)/sizeZ;
+			for(n=0;n<Npart;n++){
 
-			//If the particle lands on the grid, put it in the correct pixel
-			if(i>=0 && i<nx && j>=0 && j<ny && k>=0 && k<nz){
+				//Compute the position on the grid in the fastest way
+				i = (positions[3*n] - leftX)/sizeX;
+				j = (positions[3*n + 1] - leftY)/sizeY;
+				k = (positions[3*n + 2] - leftZ)/sizeZ;
 
-				grid[((int)i)*ny*nz + ((int)j)*nz + (int)k] += 1.0;
+				//If the particle lands on the grid, put it in the correct pixel
+				if(i>=0 && i<nx && j>=0 && j<ny && k>=0 && k<nz){
 
+					grid[((int)i)*ny*nz + ((int)j)*nz + (int)k] += 1.0;
+
+				}
+			
+			}
+
+		} else{
+
+			for(n=0;n<Npart;n++){
+
+				//Compute the position on the grid in the fastest way
+				i = (positions[3*n] - leftX)/sizeX;
+				j = (positions[3*n + 1] - leftY)/sizeY;
+				k = (positions[3*n + 2] - leftZ)/sizeZ;
+
+				//If the particle lands on the grid, put it in the correct pixel
+				if(i>=0 && i<nx && j>=0 && j<ny && k>=0 && k<nz){
+
+					grid[((int)i)*ny*nz + ((int)j)*nz + (int)k] += weights[n];
+
+				}
+			
 			}
 
 		}
+
+	
 
 	} else{
 
