@@ -17,7 +17,7 @@ import numpy as np
 #astropy stuff, invaluable here
 from astropy.units import Mbyte,kpc,Mpc,cm,km,g,s,hour,day,deg,arcmin,rad,Msun,quantity,def_unit
 from astropy.constants import c
-from astropy.cosmology import w0waCDM
+from astropy.cosmology import w0waCDM,z_at_value
 
 #FFT engine
 from ..utils.fft import NUMPYFFTPack
@@ -551,7 +551,7 @@ class NbodySnapshot(object):
 		:param kwargs: accepted keyword are: 'density_placeholder', a pre-allocated numpy array, with a RMA window opened on it; this facilitates the communication with different processors by using a single RMA window during the execution. 'l_squared' a pre-computed meshgrid of squared multipoles used for smoothing
 		:type kwargs: dict.
 
-		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes, number of particles on the plane)
+		:returns: tuple(numpy 2D array with the density (or lensing potential),bin resolution along the axes, number of particles on the plane)
 
 		"""
 
@@ -562,11 +562,11 @@ class NbodySnapshot(object):
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 
 		#Redshift must be bigger than 0 or we cannot proceed
-		if self.header["redshift"]<=0.0:
+		if ("redshift" in self.header) and (self.header["redshift"]<=0.0):
 			raise ValueError("The snapshot redshift must be >0 for the lensing density to be defined!")
 
 		#Cosmological normalization factor
-		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
+		cosmo_normalization = 1.5 * self.header["H0"]**2 * self.header["Om0"] / c**2
 
 		#Direction of the plane
 		plane_directions = [ d for d in range(3) if d!=normal ]
@@ -720,8 +720,18 @@ class NbodySnapshot(object):
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = [(binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit,(binning[2][1:]-binning[2][:-1]).mean() * positions.unit]
 
-		#Longitudinal normalization factor
-		density_normalization = bin_resolution[normal] * self._header["comoving_distance"] / self._header["scale_factor"]
+		###############################################################################
+		#####################Longitudinal normalization factor#########################
+		#If the comoving distance is not provided in the header, the center is assumed#
+		###############################################################################
+
+		if "comoving_distance" in self.header:
+			density_normalization = bin_resolution[normal] * self.header["comoving_distance"] / self.header["scale_factor"]
+		else:
+			zlens = z_at_value(self.cosmology.comoving_distance,center)
+			alens = 1./(1+zlens)
+			density_normalization = bin_resolution[normal] * center / alens
+
 
 		#Normalize the density to the density fluctuation
 		density_projected /= self._header["num_particles_total"]
@@ -759,8 +769,15 @@ class NbodySnapshot(object):
 			density_ft[0,0] = 0.0
 
 			if kind=="potential":
+
+				#Find out the comoving distance
+				if "comoving_distance" in self.header:
+					chi = self.header["comoving_distance"]
+				else:
+					chi = center
+
 				#Solve the poisson equation
-				density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / self.header["comoving_distance"]**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
+				density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / chi**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
 
 			if smooth is not None:
 				#Perform the smoothing

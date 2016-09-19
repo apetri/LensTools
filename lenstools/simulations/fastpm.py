@@ -93,6 +93,11 @@ class FastPMSnapshot(NbodySnapshot):
 			self.positions = positions
 			self.aemit = aemit
 
+		#Initialize useless attributes to None
+		self.weights = None
+		self.virial_radius = None
+		self.concentration = None
+
 		#Return
 		return positions 
 
