@@ -118,6 +118,9 @@ class NGenICSettings(LTSettings):
 			setattr(self,key,kwargs[key])
 
 
+###########################################################################################################################
+###########################################################################################################################			
+
 #################################################
 ###########PlaneSettings class###################
 #################################################
@@ -125,7 +128,7 @@ class NGenICSettings(LTSettings):
 class PlaneSettings(LTSettings):
 
 	"""
-	Class handler of plane generation settings
+	Class handler of plane generation settings from constant time Nbody snapshots
 
 	"""
 
@@ -238,6 +241,104 @@ class PlaneSettings(LTSettings):
 		#Return to user
 		return settings
 
+##########################################################
+###########PlaneLightConeSettings class###################
+##########################################################
+
+class PlaneLightConeSettings(LTSettings):
+
+	"""
+	Class handler of plane generation settings from lightcone projection Nbody snapshots
+
+	"""
+
+	_section = "PlaneLightConeSettings"
+
+	def __init__(self,**kwargs):
+
+		#Name of the planes batch
+		self.directory_name = "Planes"
+
+		#Snapshot class handler
+		self.snapshot_handler = "FastPMSnapshot"
+		
+		#Use the pickled options generated at the moment of the batch generation (advised)
+		self.override_with_local = False
+
+		self.format = "fits"
+		self.name_format = "snap{0}_{1}Plane{2}_normal{3}.{4}"
+
+		#Lens discretization
+		self.zmax = 3.0
+		self.num_lenses = 20
+		self.normal = 2
+		self.plane_resolution = 64
+
+		#Optional, not usually changed
+		self.thickness_resolution = 1
+		self.smooth = 1
+		self.kind = "potential"
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def get(cls,options):
+
+		#Check that the config file has the appropriate section
+		section = cls._section
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
+
+		#Fill in the appropriate fields
+		settings = cls()
+		
+		settings.directory_name = options.get(section,"directory_name")
+
+		#Snapshot class handler
+		try:
+			settings.snapshot_handler = options.get(section,"snapshot_handler")
+		except NoOptionError:
+			pass
+
+		settings.override_with_local = options.getboolean(section,"override_with_local")
+		
+		settings.format = options.get(section,"format")
+		try:
+			settings.name_format = options.get(section,"name_format")
+		except NoOptionError:
+			pass
+		
+		settings.plane_resolution = options.getint(section,"plane_resolution")
+
+		#Lens discretization
+		settings.zmax = options.getfloat(section,"zmax")
+		settings.num_lenses = options.getint(section,"num_lenses")
+		settings.normal = options.getint(section,"normal")
+		settings.plane_resolution = options.getint(section,"plane_resolution")
+
+		#Optionals
+		try:
+			settings.thickness_resolution = options.getint(section,"thickness_resolution")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.smooth = options.getint(section,"smooth")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.kind = options.get(section,"kind")
+		except NoOptionError:
+			pass
+
+		#Return to user
+		return settings
+
+
+###########################################################################################################################
+###########################################################################################################################	
 
 #################################################
 ###########MapSettings class#####################

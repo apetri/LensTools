@@ -2595,7 +2595,7 @@ class SimulationIC(SimulationCollection):
 	def newPlaneSet(self,settings):
 
 		#Safety check
-		assert isinstance(settings,PlaneSettings)
+		assert isinstance(settings,PlaneSettings) or isinstance(settings,PlaneLightConeSettings)
 
 		#Instantiate a SimulationPlanes object
 		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFileBase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
@@ -2935,7 +2935,7 @@ class SimulationPlanes(SimulationIC):
 	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase,SnapshotFileBase,settings,**kwargs):
 
 		#Safety check
-		assert isinstance(settings,PlaneSettings)
+		assert isinstance(settings,PlaneSettings) or isinstance(settings,PlaneLightConeSettings)
 
 		#Call parent constructor
 		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase,SnapshotFileBase,**kwargs)

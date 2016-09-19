@@ -43,4 +43,4 @@ plane_settings = PlaneSettings.read(cmd_args.config_file)
 
 #Cycle over ids to produce the planes
 for batch_id in cmd_args.id:
-	lenstools.scripts.cutplanes.main(pool=None,batch=batch,settings=plane_settings,id=batch_id,override=cmd_args.override)
+	lenstools.scripts.cutplanes.cnstTime(pool=None,batch=batch,settings=plane_settings,batch_id=batch_id,override=cmd_args.override)
