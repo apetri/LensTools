@@ -2080,9 +2080,10 @@ class SimulationCollection(SimulationModel):
 					self.info[newIC.cosmo_id][newIC.geometry_id]["nbody"][str(newIC.ic_index)] = dict()
 					self.info[newIC.cosmo_id][newIC.geometry_id]["nbody"][str(newIC.ic_index)]["plane_sets"] = dict()
 
-		#Make new file with the number of the seed
+		#Make new file with the number of the seed, write the ICFileBase, SnapshotFileBase to the seed file
 		with self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w") as seedfile:
-			pass
+			contents = { "ICFileBase":newIC.ICFileBase, "SnapshotFileBase":newIC.SnapshotFileBase }
+			seedfile.write(json.dumps(contents))
 
 		#Keep track of the fact that we created a new nbody realization
 		with self.syshandler.open(os.path.join(self.environment.home,"realizations.txt"),"a") as logfile:
@@ -2100,8 +2101,18 @@ class SimulationCollection(SimulationModel):
 			return None
 
 		#Read the seed number
-		seed_filename = os.path.basename(self.syshandler.glob(os.path.join(newIC.home_subdir,"seed*"))[0])
-		newIC.seed = int(seed_filename.strip("seed"))
+		seed_filename = self.syshandler.glob(os.path.join(newIC.home_subdir,"seed*"))[0]
+		newIC.seed = int(os.path.basename(seed_filename).strip("seed"))
+
+		#Read ICFileBase,SnapshotFileBase from seed file
+		with self.syshandler.open(seed_filename,"r") as fp:
+
+			try:
+				contents = json.loads(fp.read())
+				newIC.ICFileBase = contents["ICFileBase"]
+				newIC.SnapshotFileBase = contents["SnapshotFileBase"]
+			except ValueError:
+				pass
 
 		#Return the SimulationIC instance
 		return newIC
@@ -2120,19 +2131,12 @@ class SimulationCollection(SimulationModel):
 		"""
 
 		if self.syshandler.exists(self.infofile):
-			ic_numbers = [ int(n) for n in self.info[self.cosmo_id][self.geometry_id]["nbody"].keys() ]
+			ic_numbers = [ int(n) for n in self.info[self.cosmo_id][self.geometry_id]["nbody"] ]
 		else:
 			ic_numbers = [ int(os.path.basename(d).strip("ic")) for d in self.syshandler.glob(os.path.join(self.home_subdir,"ic*")) ]
 		
-		ic_list = list()
-
-		for ic in ic_numbers:
-
-			seed = int(os.path.basename(self.syshandler.glob(os.path.join(self.home_subdir,"ic"+str(ic),"seed*"))[0]).strip("seed"))
-			ic_list.append(SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,ic,seed,syshandler=self.syshandler))
-
-		#Sort according to ic_index
-		ic_list.sort(key=lambda r:r.ic_index)
+		#Get realizations
+		ic_list = [ self.getRealization(ic) for ic in sorted(ic_numbers) ]
 
 		#Return to user
 		return ic_list
@@ -2436,7 +2440,7 @@ class SimulationIC(SimulationCollection):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase="ics",SnapshotFileBase="snapshot",**kwargs):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase="ics",SnapshotFileBase="snapshot",**kwargs):
 
 		super(SimulationIC,self).__init__(cosmology,environment,parameters,box_size,nside,**kwargs)
 
@@ -2453,7 +2457,7 @@ class SimulationIC(SimulationCollection):
 		self.snapshot_subdir = os.path.join(self.storage_subdir,"snapshots")
 
 		#Useful to keep track of
-		self.ICFilebase = ICFilebase
+		self.ICFileBase = ICFileBase
 		self.SnapshotFileBase = SnapshotFileBase
 
 		#Try to load in the simulation settings, if any are present
@@ -2472,7 +2476,7 @@ class SimulationIC(SimulationCollection):
 	def __repr__(self):
 
 		#Check if snapshots and/or initial conditions are present
-		ics_on_disk = self.syshandler.glob(os.path.join(self.ics_subdir,self.ICFilebase+"*"))
+		ics_on_disk = self.syshandler.glob(os.path.join(self.ics_subdir,self.ICFileBase+"*"))
 		snap_on_disk = self.syshandler.glob(os.path.join(self.snapshot_subdir,self.SnapshotFileBase+"*"))
 
 		return super(SimulationIC,self).__repr__() + " | ic={0},seed={1} | IC files on disk: {2} | Snapshot files on disk: {3}".format(self.ic_index,self.seed,len(ics_on_disk),len(snap_on_disk))
@@ -2594,7 +2598,7 @@ class SimulationIC(SimulationCollection):
 		assert isinstance(settings,PlaneSettings)
 
 		#Instantiate a SimulationPlanes object
-		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
+		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFileBase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
 
 		#Create the dedicated directory if not present already
 		for d in [new_plane_set.home_subdir,new_plane_set.storage_subdir]:
@@ -2640,7 +2644,7 @@ class SimulationIC(SimulationCollection):
 			settings = self.syshandler.pickleload(settingsfile)
 
 		#Instantiate the SimulationPlanes object
-		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
+		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFileBase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
 
 	####################################################################################################################################
 
@@ -2733,7 +2737,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("Box 			{0:.1f}\n".format(self.box_size.to(self.kpc_over_h).value))
 
 			#Base names for outputs
-			paramfile.write("FileBase			{0}\n".format(self.ICFilebase))
+			paramfile.write("FileBase			{0}\n".format(self.ICFileBase))
 			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.ics)))
 
 			#Glass file
@@ -2833,7 +2837,7 @@ class SimulationIC(SimulationCollection):
 		with self.syshandler.open(filename,"w") as paramfile:
 
 			#File names for initial condition and outputs
-			initial_condition_file = os.path.join(os.path.abspath(self.ics),self.ICFilebase)
+			initial_condition_file = os.path.join(os.path.abspath(self.ics),self.ICFileBase)
 			paramfile.write("InitCondFile			{0}\n".format(initial_condition_file))
 			paramfile.write("OutputDir			{0}{1}\n".format(self.snapshots,os.path.sep))
 			paramfile.write("EnergyFile			{0}\n".format(settings.EnergyFile))
@@ -2928,13 +2932,13 @@ class SimulationPlanes(SimulationIC):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,settings,**kwargs):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase,SnapshotFileBase,settings,**kwargs):
 
 		#Safety check
 		assert isinstance(settings,PlaneSettings)
 
 		#Call parent constructor
-		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,**kwargs)
+		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase,SnapshotFileBase,**kwargs)
 		self.settings = settings
 		self.name = settings.directory_name
 
