@@ -72,8 +72,12 @@ class FastPMSnapshot(NbodySnapshot):
 		return header
 
 	def setLimits(self):
-		self._first = None
-		self._last = None
+
+		if self.pool is None:
+			self._first = None
+			self._last = None
+		else:
+			raise NotImplementedError
 
 	def getPositions(self,first=None,last=None,save=True):
 
