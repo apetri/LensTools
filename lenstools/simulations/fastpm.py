@@ -92,6 +92,11 @@ class FastPMSnapshot(NbodySnapshot):
 			positions = data["Position"][first:last]*self.Mpc_over_h
 			aemit = data["Aemit"][first:last]
 
+		#Enforce periodic boundary conditions
+		for n in (0,1):
+			positions[:,n][positions[:,n]<0] += self.header["box_size"]
+			positions[:,n][positions[:,n]>self.header["box_size"]] -= self.header["box_size"]
+
 		#Maybe save
 		if save:
 			self.positions = positions
