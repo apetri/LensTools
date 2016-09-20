@@ -557,7 +557,7 @@ class NbodySnapshot(object):
 
 		#Sanity checks
 		assert normal in range(3),"There are only 3 dimensions!"
-		assert kind in ["density","potential"],"Specify density or potential plane!"
+		assert kind in ["density","potential","born"],"Specify density,potential or born plane!"
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 
@@ -670,7 +670,26 @@ class NbodySnapshot(object):
 		#Gridding#
 		##########
 
-		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
+		if kind=="born":
+
+			#Maximum comoving distance
+			chi_max = (center + thickness/2).to(positions.unit)
+
+			#Born density projection: need to convert transverse coordinates into angles
+			positions_projected = np.zeros_like(positions.value)
+			positions_projected[:,normal] = positions[:,normal].value
+			for d in plane_directions:
+
+				#Compute angles, rescale bins
+				positions_projected[:,d] = np.arctan(positions[:,d] / positions[:,normal]).to(deg).value
+				binning[d] = (np.arctan(binning[d]/chi_max.value)*rad).to(deg).value
+
+			#Perform the gridding in angular coordinates
+			density = ext._nbody.grid3d_nfw(positions_projected,tuple(binning),weights,rv,self.concentration)
+			#return density,positions_projected,binning
+
+		else:
+			density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
 
 		###################################################################################################################################
 
@@ -810,10 +829,16 @@ class NbodySnapshot(object):
 		lensing_potential = lensing_potential.decompose()
 		assert lensing_potential.unit.physical_type=="dimensionless"
 
+		#Add units to lensing potential
 		if kind=="potential":
 			lensing_potential *= rad**2
 		else:
 			lensing_potential = lensing_potential.value
+
+		#Convert to angular bins if performing born projection
+		if kind=="born":
+			for n in (0,1):
+				bin_resolution[n] = np.arctan(bin_resolution[n]/chi_max).to(deg)
 
 		#Return
 		return lensing_potential,bin_resolution,NumPartTotal
