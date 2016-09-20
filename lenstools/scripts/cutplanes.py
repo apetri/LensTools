@@ -14,6 +14,7 @@ from lenstools.pipeline.settings import PlaneSettings,PlaneLightConeSettings
 
 import lenstools.simulations
 from lenstools.simulations import DensityPlane,PotentialPlane
+from lenstools.image.convergence import ConvergenceMap
 
 from lenstools.utils import MPIWhirlPool
 from lenstools import configuration
@@ -426,9 +427,9 @@ def lightCone(pool,batch,settings,batch_id,override):
 	#Close the snapshot file
 	snap.close()
 
-	#TODO: If we are doing Born approximation, weight each particle by the lensing kernel (1-chi/chi_max)
+	#If we are doing Born approximation, weight each particle by the lensing kernel (1-chi/chi_max)
 	if kind=="born":
-		pass
+		snap.weights = 1. - (snap.positions[:,settings.normal] / chi_max).decompose().value
 
 	###########################################################################################
 
@@ -471,7 +472,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 					elif kind=="density":
 						plane_wrap = DensityPlane(plane,angle=snap.header["box_size"],redshift=zlens,comoving_distance=center,cosmology=snap.cosmology,num_particles=NumPart)
 					elif kind=="born":
-						raise NotImplementedError
+						plane_wrap = ConvergenceMap(plane,angle=resolution[0]*plane.shape[0])
 					else:
 						raise NotImplementedError("Plane of kind '{0}' not implemented!".format(kind))
 
