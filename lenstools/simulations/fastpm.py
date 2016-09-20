@@ -1,9 +1,10 @@
-from .nbody import NbodySnapshot
 import bigfile
 
 import numpy as np
 import astropy.units as u
 import astropy.constants as cnst
+
+from .nbody import NbodySnapshot
 
 ######################
 #FastPMSnapshot class#
@@ -77,7 +78,16 @@ class FastPMSnapshot(NbodySnapshot):
 			self._first = None
 			self._last = None
 		else:
-			raise NotImplementedError
+
+			#Divide equally between tasks
+			Nt,Np = self.pool.size+1,bigfile.BigData(self.fp).size
+			part_per_task = Np//Nt
+			self._first = part_per_task*self.pool.rank
+			self._last = part_per_task*(self.pool.rank+1)
+
+			#Add the remainder to the last task
+			if (Np%Nt) and (self.pool.rank==Nt-1):
+				self._last += Np%Nt
 
 	def getPositions(self,first=None,last=None,save=True):
 

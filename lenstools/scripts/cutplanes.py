@@ -414,7 +414,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 	snap = snapshot_handler.open(snapshot_filename,pool=pool)
 
 	if pool is not None:
-		logdriver.debug("Task {0} read nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
+		logdriver.debug("Task {0} read nbody snapshot from {1}, particles {2}-{3}".format(pool.comm.rank,snapshot_filename,snap._first,snap._last-1))
 
 	#Get the positions of the particles
 	if not hasattr(snap,"positions"):
@@ -451,7 +451,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 			for normal in normals:
 
 				if pool is None or pool.is_master():
-					logdriver.info("Cutting {0} projection at {1} with normal {2},thickness {3}, of size {4} x {4}".format(kind,pos,normal,thickness,snap.header["box_size"]))
+					logdriver.info("Cutting {0} projection at {1} with normal {2},thickness {3}, of size {4} x {4} ({5} x {5})".format(kind,pos,normal,thickness,snap.header["box_size"],plane_resolution))
 
 				############################
 				#####Do the cutting#########
