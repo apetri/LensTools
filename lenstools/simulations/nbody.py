@@ -619,9 +619,6 @@ class NbodySnapshot(object):
 
 			binning[normal] = np.linspace((center - thickness/2).to(positions.unit).value,(center + thickness/2).to(positions.unit).value,thickness_resolution+1)
 
-		#Now use gridding to compute the density along the slab
-		assert positions.value.dtype==np.float32
-
 		#Weights
 		if self.weights is not None:
 			weights = self.weights.astype(np.float32)
@@ -635,6 +632,33 @@ class NbodySnapshot(object):
 			rv = self.virial_radius.to(positions.unit).value
 		else:
 			rv = None
+
+		#Recompute resolution to make sure it represents the bin size correctly
+		bin_resolution = [ (binning[n][1:]-binning[n][:-1]).mean() * positions.unit for n in (0,1,2) ]
+
+		############################################################################################################
+		#################################Longitudinal normalization factor##########################################
+		#If the comoving distance is not provided in the header, the position along the normal direction is assumed#
+		############################################################################################################
+
+		if "comoving_distance" in self.header:
+			
+			#Constant time snapshots
+			density_normalization = bin_resolution[normal] * self.header["comoving_distance"] / self.header["scale_factor"]
+		
+		else:
+
+			#Light cone projection
+			assert hasattr(self,"aemit"), "Using light cone projection: you must provide an aemit array with getPositions()"
+
+			density_normalization = bin_resolution[normal] * positions.unit
+			if weights is None:
+				weights = (positions[:,normal].value / self.aemit).astype(np.float32)
+			else:
+				weights = (weights*positions[:,normal].value / self.aemit).astype(np.float32)
+
+		#Now use gridding to compute the density along the slab
+		assert positions.value.dtype==np.float32
 
 		#Log
 		if self.pool is not None:
@@ -718,22 +742,6 @@ class NbodySnapshot(object):
 		#If this task is not the master, we can return now
 		if (self.pool is not None) and not(self.pool.is_master()):
 			return (None,)*3
-
-		#Recompute resolution to make sure it represents the bin size correctly
-		bin_resolution = [(binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit,(binning[2][1:]-binning[2][:-1]).mean() * positions.unit]
-
-		###############################################################################
-		#####################Longitudinal normalization factor#########################
-		#If the comoving distance is not provided in the header, the center is assumed#
-		###############################################################################
-
-		if "comoving_distance" in self.header:
-			density_normalization = bin_resolution[normal] * self.header["comoving_distance"] / self.header["scale_factor"]
-		else:
-			zlens = z_at_value(self.cosmology.comoving_distance,center)
-			alens = 1./(1+zlens)
-			density_normalization = bin_resolution[normal] * center / alens
-
 
 		#Normalize the density to the density fluctuation
 		density_projected /= self._header["num_particles_total"]
