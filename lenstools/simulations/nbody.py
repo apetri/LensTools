@@ -522,7 +522,7 @@ class NbodySnapshot(object):
 	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=4096,left_corner=None,thickness_resolution=1,smooth=1,kind="density",**kwargs):
 
 		"""
-		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
+		Cuts a density (or lensing potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
 
 		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
 		:type normal: int. (0,1,2)
@@ -624,12 +624,14 @@ class NbodySnapshot(object):
 
 		#Weights
 		if self.weights is not None:
-			weights = (self.weights * self._header["num_particles_total"] / ((len(binning[0]) - 1) * (len(binning[1]) - 1) * (len(binning[2]) - 1))).astype(np.float32)
+			weights = self.weights.astype(np.float32)
 		else:
 			weights = None
 
 		#Virial radius
 		if self.virial_radius is not None:
+			assert weights is not None,"Particles have virial radiuses, you should specify their weight!"
+			weights  = (weights * self._header["num_particles_total"] / ((len(binning[0]) - 1) * (len(binning[1]) - 1) * (len(binning[2]) - 1))).astype(np.float32)
 			rv = self.virial_radius.to(positions.unit).value
 		else:
 			rv = None

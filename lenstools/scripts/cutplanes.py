@@ -348,7 +348,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 	thickness_resolution = settings.thickness_resolution
 	smooth = settings.smooth
 
-	#Kind (density or potential)
+	#Kind (density, potential or born)
 	kind = settings.kind
 
 	#Place holder for the lensing density on the plane
@@ -426,6 +426,12 @@ def lightCone(pool,batch,settings,batch_id,override):
 	#Close the snapshot file
 	snap.close()
 
+	#TODO: If we are doing Born approximation, weight each particle by the lensing kernel (1-chi/chi_max)
+	if kind=="born":
+		pass
+
+	###########################################################################################
+
 	#############################
 	#Cycle over the lens centers#
 	#############################
@@ -444,7 +450,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 			for normal in normals:
 
 				if pool is None or pool.is_master():
-					logdriver.info("Cutting {0} plane at {1} with normal {2},thickness {3}, of size {4} x {4}".format(kind,pos,normal,thickness,snap.header["box_size"]))
+					logdriver.info("Cutting {0} projection at {1} with normal {2},thickness {3}, of size {4} x {4}".format(kind,pos,normal,thickness,snap.header["box_size"]))
 
 				############################
 				#####Do the cutting#########
@@ -464,6 +470,8 @@ def lightCone(pool,batch,settings,batch_id,override):
 						plane_wrap = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=zlens,comoving_distance=center,cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
 					elif kind=="density":
 						plane_wrap = DensityPlane(plane,angle=snap.header["box_size"],redshift=zlens,comoving_distance=center,cosmology=snap.cosmology,num_particles=NumPart)
+					elif kind=="born":
+						raise NotImplementedError
 					else:
 						raise NotImplementedError("Plane of kind '{0}' not implemented!".format(kind))
 
