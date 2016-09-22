@@ -279,6 +279,12 @@ class PlaneLightConeSettings(LTSettings):
 		self.smooth = 1
 		self.kind = "potential"
 
+		#On the fly raytracing
+		self.do_lensing = False
+		self.born = False
+		self.fov = 3.0*u.deg
+		self.fov_resolution = 32
+
 		#Allow for kwargs override
 		for key in kwargs.keys():
 			setattr(self,key,kwargs[key])
@@ -317,7 +323,16 @@ class PlaneLightConeSettings(LTSettings):
 		settings.normal = options.getint(section,"normal")
 		settings.plane_resolution = options.getint(section,"plane_resolution")
 
-		#Optionals
+		#Weak lensing
+		settings.do_lensing = options.getboolean(section,"do_lensing")
+		settings.born = options.getboolean(section,"born")
+		settings.fov = options.getfloat(section,"fov_deg")*u.deg
+		settings.fov_resolution = options.getint(section,"fov_resolution")
+
+		###########
+		#Optionals#
+		###########
+
 		try:
 			settings.thickness_resolution = options.getint(section,"thickness_resolution")
 		except NoOptionError:

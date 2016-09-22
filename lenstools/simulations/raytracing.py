@@ -893,7 +893,7 @@ class RayTracer(object):
 		"""
 
 		#Sanity check
-		assert type(lens_specification) in [tuple,PotentialPlane]
+		assert type(lens_specification) in [tuple,self.lens_type]
 
 		#If specification is in tuple form, parse it
 		if type(lens_specification)==tuple:

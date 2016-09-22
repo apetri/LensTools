@@ -557,7 +557,7 @@ class NbodySnapshot(object):
 
 		#Sanity checks
 		assert normal in range(3),"There are only 3 dimensions!"
-		assert kind in ["density","potential","born"],"Specify density,potential or born plane!"
+		assert kind in ["density","potential"],"Specify density or potential plane!"
 		assert type(thickness)==quantity.Quantity and thickness.unit.physical_type=="length"
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 
@@ -648,14 +648,9 @@ class NbodySnapshot(object):
 		
 		else:
 
-			#Light cone projection
-			assert hasattr(self,"aemit"), "Using light cone projection: you must provide an aemit array with getPositions()"
-
-			density_normalization = bin_resolution[normal] * positions.unit
-			if weights is None:
-				weights = (positions[:,normal].value / self.aemit).astype(np.float32)
-			else:
-				weights = (weights*positions[:,normal].value / self.aemit).astype(np.float32)
+			#Light cone projection: use the lens center as the common comoving distance
+			zlens = z_at_value(self.cosmology.comoving_distance,center)
+			density_normalization = bin_resolution[normal] * center * (1.+zlens)
 
 		#Now use gridding to compute the density along the slab
 		assert positions.value.dtype==np.float32
@@ -670,26 +665,7 @@ class NbodySnapshot(object):
 		#Gridding#
 		##########
 
-		if kind=="born":
-
-			#Maximum comoving distance
-			chi_max = (center + thickness/2).to(positions.unit)
-
-			#Born density projection: need to convert transverse coordinates into angles
-			positions_projected = np.zeros_like(positions.value)
-			positions_projected[:,normal] = positions[:,normal].value
-			for d in plane_directions:
-
-				#Compute angles, rescale bins
-				positions_projected[:,d] = np.arctan(positions[:,d] / positions[:,normal]).to(deg).value
-				binning[d] = (np.arctan(binning[d]/chi_max.value)*rad).to(deg).value
-
-			#Perform the gridding in angular coordinates
-			density = ext._nbody.grid3d_nfw(positions_projected,tuple(binning),weights,rv,self.concentration)
-			#return density,positions_projected,binning
-
-		else:
-			density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
+		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
 
 		###################################################################################################################################
 
@@ -834,11 +810,6 @@ class NbodySnapshot(object):
 			lensing_potential *= rad**2
 		else:
 			lensing_potential = lensing_potential.value
-
-		#Convert to angular bins if performing born projection
-		if kind=="born":
-			for n in (0,1):
-				bin_resolution[n] = np.arctan(bin_resolution[n]/chi_max).to(deg)
 
 		#Return
 		return lensing_potential,bin_resolution,NumPartTotal

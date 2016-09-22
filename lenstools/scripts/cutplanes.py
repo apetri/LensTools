@@ -13,8 +13,12 @@ from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import PlaneSettings,PlaneLightConeSettings
 
 import lenstools.simulations
+import lenstools.simulations.nbody 
+
 from lenstools.simulations import DensityPlane,PotentialPlane
 from lenstools.image.convergence import ConvergenceMap
+
+from lenstools.simulations.raytracing import RayTracer
 
 from lenstools.utils import MPIWhirlPool
 from lenstools import configuration
@@ -23,7 +27,7 @@ import numpy as np
 from astropy.cosmology import z_at_value
 
 #FFT engine
-fftengine = configuration.fftengine()
+fftengine = lenstools.simulations.nbody.fftengine
 
 ################################################################
 ################Constant time snapshots#########################
@@ -388,7 +392,6 @@ def lightCone(pool,batch,settings,batch_id,override):
 	"plane_resolution" : plane_resolution,
 	"thickness_resolution" : thickness_resolution,
 	"smooth" : smooth,
-	"kind" : kind,
 	"density_placeholder" : density_projected,
 	"l_squared" : l_squared
 
@@ -427,9 +430,29 @@ def lightCone(pool,batch,settings,batch_id,override):
 	#Close the snapshot file
 	snap.close()
 
-	#If we are doing Born approximation, weight each particle by the lensing kernel (1-chi/chi_max)
-	if kind=="born":
-		snap.weights = 1. - (snap.positions[:,settings.normal] / chi_max).decompose().value
+	#############################
+	#Check weak lensing settings#
+	#############################
+
+	if settings.do_lensing:
+
+		if settings.born:
+
+			if kind!="density":
+				if (pool is None or pool.is_master()):
+					logdriver.info("Using Born approximation, override {0} lens type with density lens type".format(kind))
+				kind = "density"
+
+			tracer = RayTracer(lens_type=DensityPlane)
+
+		else:
+
+			if kind!="potential":
+				if (pool is None or pool.is_master()):
+					logdriver.info("Doing full raytracing, override {0} lens type with potential lens type".format(kind))
+				kind = "potential"
+
+			tracer = RayTracer(lens_type=PotentialPlane)
 
 	###########################################################################################
 
@@ -457,7 +480,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 				#####Do the cutting#########
 				############################
 				
-				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,**kwargs)
+				plane,resolution,NumPart = snap.cutPlaneGaussianGrid(normal=normal,center=pos,thickness=thickness,left_corner=np.zeros(3)*snap.Mpc_over_h,kind=kind,**kwargs)
 				
 				#######################################################################################################################################
 
@@ -466,21 +489,22 @@ def lightCone(pool,batch,settings,batch_id,override):
 
 				if (pool is None) or (pool.is_master()):
 			
-					#Wrap the plane in a PotentialPlane object
+					#Wrap the plane in a Plane object
 					if kind=="potential":
-						plane_wrap = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=zlens,comoving_distance=center,cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)
+						plane_wrap = PotentialPlane(plane.value,angle=snap.header["box_size"],redshift=zlens,comoving_distance=center,cosmology=snap.cosmology,num_particles=NumPart,unit=plane.unit)					
 					elif kind=="density":
 						plane_wrap = DensityPlane(plane,angle=snap.header["box_size"],redshift=zlens,comoving_distance=center,cosmology=snap.cosmology,num_particles=NumPart)
-					elif kind=="born":
-						plane_wrap = ConvergenceMap(plane,angle=resolution[0]*plane.shape[0])
 					else:
-						raise NotImplementedError("Plane of kind '{0}' not implemented!".format(kind))
+						raise NotImplementedError("Lens plane of kind '{0}' not implemented!".format(kind))
 
-					#Save the result
-					logdriver.info("Saving plane to {0}".format(plane_file))
-					plane_wrap.save(plane_file)
-					logdriver.debug("Saved plane to {0}".format(plane_file))
-
+					#Add the lens to the tracer if we are doing lensing, otherwise save the lens to disk
+					if settings.do_lensing:
+						logdriver.info("Adding lens of type {0} at redshift {1:.3f}".format(tracer.lens_type.__name__,plane_wrap.redshift))
+						tracer.addLens(plane_wrap)
+					else:
+						logdriver.info("Saving plane to {0}".format(plane_file))
+						plane_wrap.save(plane_file)
+						logdriver.debug("Saved plane to {0}".format(plane_file))
 
 				#Log peak memory usage
 				peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
@@ -507,5 +531,55 @@ def lightCone(pool,batch,settings,batch_id,override):
 	if (pool is None) or (pool.is_master()):
 		infofile.close()
 
-	if pool is None or pool.is_master():
+	##################################
+	##########Raytracing/Born#########
+	##################################
+
+	#Only master proceeds
+	if settings.do_lensing and ((pool is None) or (pool.is_master())):
+
+		#Add a fudge lens beyond the last redshift
+		chi_fudge = chi_end + thickness
+		z_fudge = z_at_value(snap.cosmology.comoving_distance,chi_fudge)
+		tracer.addLens(tracer.lens_type(np.zeros((plane_resolution,)*2),angle=snap.header["box_size"],redshift=z_fudge,comoving_distance=chi_fudge,cosmology=snap.cosmology,num_particles=None))
+
+		#Reorder the lenses
+		tracer.reorderLenses()
+
+		#Create the initial grid of ray initial positions
+		b = np.linspace(0.,settings.fov.value,settings.fov_resolution)
+		pos = np.array(np.meshgrid(b,b))*settings.fov.unit
+
+		if settings.born:
+
+			#Born approximation: integrate the density on the line of sight
+			conv_born = tracer.convergenceDirect(pos,z=zmax)
+			conv_map = ConvergenceMap(data=conv_born,angle=settings.fov)
+
+			#Save the convergence map on disk
+			map_file = batch.syshandler.map(os.path.join(save_path,settings.name_format.format(0,"kappaBorn",zmax,settings.normal,settings.format)))
+			logdriver.info("Saving Born convergence to {0}".format(map_file))
+			conv_map.save(map_file)
+			logdriver.debug("Saved Born convergence to {0}".format(map_file))
+
+		else:
+
+			#Full raytracing: trace the ray deflections, compute the convergence from the jacobian
+			jacobian = tracer.shoot(pos,z=zmax,kind="jacobians")
+			conv_map = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=settings.fov)
+
+			#Save the convergence map on disk
+			map_file = batch.syshandler.map(os.path.join(save_path,settings.name_format.format(0,"kappa",zmax,settings.normal,settings.format)))
+			logdriver.info("Saving convergence to {0}".format(map_file))
+			conv_map.save(map_file)
+			logdriver.debug("Saved convergence to {0}".format(map_file))
+
+	#################################################################################################
+
+	#Safety barrier sync
+	if pool is not None:
+		pool.comm.Barrier()
+
+	#Done
+	if (pool is None) or (pool.is_master()):
 		logdriver.info("DONE!!")
