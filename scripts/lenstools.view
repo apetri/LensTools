@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys,os
+import sys,os,glob
 import code
 import argparse
 
@@ -28,8 +28,13 @@ cmd_args = parser.parse_args()
 if not(len(cmd_args.filename)):
 	cmd_args.filename = sys.stdin.read().split("\n")
 
+#Expand globs
+filenames = list()
+for f in cmd_args.filename:
+	filenames += glob.glob(f)
+
 #Cycle over filenames
-for filename in cmd_args.filename:
+for filename in filenames:
 
 	if cmd_args.img_format is not None:
 		savename = ".".join([ p for p in os.path.split(filename)[-1].split(".")[:-1]])
