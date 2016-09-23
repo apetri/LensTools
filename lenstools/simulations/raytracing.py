@@ -319,6 +319,66 @@ class Plane(Spin0):
 		#Return the map values at the specified coordinates
 		return self.data[i,j]
 
+	def _grad(self,x=None,y=None,lmesh=None):
+
+		now = time.time()
+		last_timestamp = now
+
+		if self.space=="real":
+
+			#Scale x and y to lengths in case this is a physical plane
+			if self.side_angle.unit.physical_type=="length" and (x is not None) and (y is not None):
+				x = x.to(rad).value * self.comoving_distance
+				y = y.to(rad).value * self.comoving_distance
+			
+			#Compute the gradient of the potential map
+			deflection_x,deflection_y = self.gradient(x,y)
+			deflection = np.array([deflection_x,deflection_y])
+		
+		elif self.space=="fourier":
+
+			#It doesn't make sense to select (x,y) when we proceed with FFTs
+			assert (x is None) and (y is None),"It doesn't make sense to select (x,y) when we proceed with FFTs!"
+
+			#Compute deflections in fourier space
+			if lmesh is None:
+				l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
+			else:
+				l = lmesh
+
+			#Timestamp
+			now = time.time()
+			logplanes.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now 
+
+			ft_deflection = 2.0*np.pi*1.0j * l * self.data
+
+			#Timestamp
+			now = time.time()
+			logplanes.debug("Phase multiplications completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now 
+
+			#Go back in real space
+			deflection = fftengine.irfft2(ft_deflection)
+
+			#Timestamp
+			now = time.time()
+			logplanes.debug("Inverse FFTs completed in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now 
+
+		else:
+			raise ValueError("space must be either real or fourier!")
+
+		#Scale to units
+		deflection = deflection * self.unit
+		deflection /= self.resolution
+		
+		if self.side_angle.unit.physical_type=="length":
+			deflection *= self.comoving_distance
+			deflection /= rad
+
+		return deflection
+
 	#############################################################################################################################################################################
 
 	def scaleWithTransfer(self,z,tfr,with_scale_factor=False,kmesh=None,scaling_method="uniform"):
@@ -479,6 +539,29 @@ class DensityPlane(Plane):
 		#Instantiate the new PotentialPlane
 		return PotentialPlane(data=fftengine.irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
 
+	def densityGradient(self,x=None,y=None,lmesh=None):
+
+		"""
+		Computes the density gradient at selected positions with finite differences; it is also possible to proceed with FFTs
+
+		:param x: optional; if not None, compute the density gradient only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type x: array with units
+
+		:param y: optional; if not None, compute the density gradient only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type y: array with units
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
+
+		:returns: array with deflections of rays hitting the lens at (x,y)
+
+		"""
+
+		dgrad = self._grad(x,y,lmesh).to(1/rad)
+		if (x is not None) and (y is not None):
+			return dgrad
+		else:
+			return Spin1(dgrad.value,angle=self.side_angle)
 
 ###########################################################
 ###############PotentialPlane class########################
@@ -510,62 +593,8 @@ class PotentialPlane(Plane):
 
 		"""
 
-		now = time.time()
-		last_timestamp = now
+		deflection = self._grad(x,y,lmesh)
 
-		if self.space=="real":
-
-			#Scale x and y to lengths in case this is a physical plane
-			if self.side_angle.unit.physical_type=="length" and (x is not None) and (y is not None):
-				x = x.to(rad).value * self.comoving_distance
-				y = y.to(rad).value * self.comoving_distance
-			
-			#Compute the gradient of the potential map
-			deflection_x,deflection_y = self.gradient(x,y)
-			deflection = np.array([deflection_x,deflection_y])
-		
-		elif self.space=="fourier":
-
-			#It doesn't make sense to select (x,y) when we proceed with FFTs
-			assert (x is None) and (y is None),"It doesn't make sense to select (x,y) when we proceed with FFTs!"
-
-			#Compute deflections in fourier space
-			if lmesh is None:
-				l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
-			else:
-				l = lmesh
-
-			#Timestamp
-			now = time.time()
-			logplanes.debug("l meshgrid initialized in {0:.3f}s".format(now-last_timestamp))
-			last_timestamp = now 
-
-			ft_deflection = 2.0*np.pi*1.0j * l * self.data
-
-			#Timestamp
-			now = time.time()
-			logplanes.debug("Phase multiplications completed in {0:.3f}s".format(now-last_timestamp))
-			last_timestamp = now 
-
-			#Go back in real space
-			deflection = fftengine.irfft2(ft_deflection)
-
-			#Timestamp
-			now = time.time()
-			logplanes.debug("Inverse FFTs completed in {0:.3f}s".format(now-last_timestamp))
-			last_timestamp = now 
-
-		else:
-			raise ValueError("space must be either real or fourier!")
-
-		#Scale to units
-		deflection = deflection * self.unit
-		deflection /= self.resolution
-		
-		if self.side_angle.unit.physical_type=="length":
-			deflection *= self.comoving_distance
-			deflection /= rad
-		
 		assert deflection.unit.physical_type=="angle"
 		deflection = deflection.to(rad)
 
