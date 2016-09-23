@@ -1217,11 +1217,11 @@ class RayTracer(object):
 			else:
 				return current_jacobian
 
-	#########################################################
-	###########Direct calculation of the convergence#########
-	#########################################################
+	##################################################################################
+	###########Direct calculation of the convergence with Born approximation##########
+	##################################################################################
 
-	def convergenceDirect(self,initial_positions,z=2.0,save_intermediate=False,real_trajectory=False):
+	def convergenceBorn(self,initial_positions,z=2.0,save_intermediate=False,real_trajectory=False):
 
 		"""
 		Computes the convergence directly integrating the lensing density along the line of sight (real or unperturbed)

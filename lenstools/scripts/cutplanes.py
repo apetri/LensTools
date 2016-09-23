@@ -553,7 +553,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 		if settings.born:
 
 			#Born approximation: integrate the density on the line of sight
-			conv_born = tracer.convergenceDirect(pos,z=zmax)
+			conv_born = tracer.convergenceBorn(pos,z=zmax)
 			conv_map = ConvergenceMap(data=conv_born,angle=settings.fov)
 
 			#Save the convergence map on disk

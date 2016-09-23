@@ -83,7 +83,7 @@ if lens_settings.has_section("MapSettings"):
 
 	#Cycle over ids to produce the maps
 	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.convergenceDirect(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
+		lenstools.scripts.raytracing.convergenceBorn(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
 
 elif lens_settings.has_section("TelescopicMapSettings"):
 
@@ -93,4 +93,4 @@ elif lens_settings.has_section("TelescopicMapSettings"):
 
 	#Cycle over ids to produce the maps
 	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.convergenceDirect(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
+		lenstools.scripts.raytracing.convergenceBorn(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
