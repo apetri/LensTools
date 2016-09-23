@@ -978,8 +978,7 @@ class RayTracer(object):
 	#############################(backward ray tracing)###############################################################################
 	##################################################################################################################################
 
-
-	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False,callback=None,transfer=None,**kwargs):
+	def shoot(self,initial_positions,z=2.0,initial_deflection=None,kind="positions",save_intermediate=False,compute_all_deflections=False,callback=None,transfer=None,**kwargs):
 
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z (backward ray tracing), through the system of gravitational lenses, and computes the deflection statistics
@@ -992,9 +991,6 @@ class RayTracer(object):
 
 		:param initial_deflection: if not None, this is the initial deflection light rays undergo with respect to the line of sight (equivalent to specifying the first derivative IC on the lensing ODE); must have the same shape as initial_positions
 		:type initial_deflection: numpy array or quantity
-
-		:param precision: precision at which to compute weak lensing quantities, must be "first" for first order in the lensing potential, or "second" for added precision (not functional yet)
-		:type precision: str.
 
 		:param kind: what deflection statistics to compute; "positions" will calculate the ray deflections after they crossed the last lens, "jacobian" will compute the lensing jacobian matrix after the last lens, "shear" and "convergence" will compute the omonimous weak lensing statistics  
 		:type kind: str.
@@ -1343,6 +1339,29 @@ class RayTracer(object):
 		else:
 			return current_convergence
 
+	##################################################################################
+	###########Calculation of the convergence at second post-Born order###############
+	##################################################################################
+
+	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False):
+
+		"""
+		Computes the convergence at second post-born order
+
+		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
+		:type initial_positions: numpy array or quantity
+
+		:param z: redshift of the sources
+		:type z: float.
+
+		:param save_intermediate: save the intermediate values of the convergence as successive lenses are crossed
+		:type save_intermediate: bool.
+
+		:returns: convergence values (2-post born) at each of the initial positions
+
+		"""
+
+		raise NotImplementedError
 
 	#########################################################
 	############Forward ray tracing##########################
