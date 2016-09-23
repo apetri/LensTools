@@ -130,3 +130,22 @@ class FastPMSnapshot(NbodySnapshot):
 
 	def write(self,filename,files=1):
 		raise NotImplementedError
+
+
+##############################
+#FastPMSnapshotStretchZ class#
+##############################
+
+class FastPMSnapshotStretchZ(FastPMSnapshot):
+
+	"""
+	A class that handles FastPM simulation snapshots, replacing z coordinates with the comoving distance
+
+	"""
+
+	def getPositions(self,first=None,last=None,save=True):
+		super(FastPMSnapshotStretchZ,self).getPositions(first,last,True)
+
+		#Replace z with comoving distances
+		self.positions[:,2] = self.cosmology.comoving_distance(1./self.aemit-1.).to(self.positions.unit).astype(np.float32)
+		return self.positions
