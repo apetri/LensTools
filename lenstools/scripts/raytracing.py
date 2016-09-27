@@ -355,11 +355,20 @@ def singleRedshift(pool,batch,settings,batch_id):
 
 ############################################################################################################################################################################
 
-##########################################################
-#######Direct integration of the convergence##############
-##########################################################
+##############################################
+#######Line of sight integration##############
+##############################################
 
-def convergenceDirect(pool,batch,settings,batch_id):
+integration_types = {
+
+"born" : "Born approximation for the convergence (linear order in the lensing potential)",
+"postBorn2" : "Convergence at second order in the lensing potential",
+"postBorn1+2" : "Convergence at Born + second post Born order in the lensing potential",
+"omega2" : "Rotation at second order in the lensing potential"
+
+}
+
+def losIntegrate(pool,batch,settings,batch_id):
 
 	#Safety check
 	assert isinstance(pool,MPIWhirlPool) or (pool is None)
@@ -463,7 +472,14 @@ def convergenceDirect(pool,batch,settings,batch_id):
 		normals = settings.mix_normals
 		map_realizations = settings.lens_map_realizations
 
+	#Integration type
+	if settings.integration_type not in integration_types:
+		if (pool is None) or (pool.is_master()):
+			logdriver.error("Integration type {0} not supported, please choose one in {1}".format(settings.integration_type,integration_types))
+		sys.exit(1)
 
+	if (pool is None) or (pool.is_master()):
+		logdriver.info("Line of sight integration type: {0}".format(settings.integration_type))
 
 	#Decide which map realizations this MPI task will take care of (if pool is None, all of them)
 	try:
@@ -603,31 +619,28 @@ def convergenceDirect(pool,batch,settings,batch_id):
 
 		else:
 
-			#Integrate the density on the line of sight
-			convergence = tracer.convergenceDirect(pos,z=source_redshift,save_intermediate=False)
+			#Perform the line of sight integration (choose integration type)
+			if settings.integration_type=="born":
+				image = tracer.convergenceBorn(pos,z=source_redshift,save_intermediate=False)
+			elif settings.integration_type=="postBorn2":
+				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False)
+			elif settings.integration_type=="postBorn1+2":
+				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True)
+			elif settings.integration_type=="omega2":
+				image = tracer.omegaPostBorn2(pos,z=source_redshift,save_intermediate=False)
+
+			else:
+				raise NotImplementedError
 
 			now = time.time()
-			logdriver.info("Direct density integration for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+			logdriver.info("Line of sight integration for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
 			last_timestamp = now
 
-			#Compute shear,convergence and omega from the jacobians
-			if settings.convergence:
-		
-				convMap = ConvergenceMap(data=convergence,angle=map_angle)
-				savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
-				logdriver.info("Saving convergence map to {0}".format(savename)) 
-				convMap.save(savename)
-				logdriver.debug("Saved convergence map to {0}".format(savename)) 
-
-			##############################################################################################################################
-	
-			if settings.shear:
-				raise NotImplementedError("Shear calculation from E mode not implemented")
-
-			##############################################################################################################################
-	
-			if settings.omega:
-				pass
+			#Save the image
+			savename = batch.syshandler.map(os.path.join(save_path,"{0}_z{1:.2f}_{2:04d}r.{3}".format(settings.integration_type,source_redshift,r+1,settings.format)))
+			logdriver.info("Saving {0} map to {1}".format(settings.integration_type,savename))
+			Spin0(data=image,angle=map_angle).save(savename)
+			logdriver.debug("Saving {0} map to {1}".format(settings.integration_type,savename)) 
 
 		now = time.time()
 		

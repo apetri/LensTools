@@ -404,6 +404,9 @@ class MapSettings(LTSettings):
 		self.shear = False
 		self.omega = False
 
+		#Line of sight integration type
+		self.integration_type = "born"
+
 	def _init_plane_set(self):
 
 		#Set of lens planes to be used during ray tracing
@@ -468,9 +471,17 @@ class MapSettings(LTSettings):
 		except NoOptionError:
 			pass
 
-		self.convergence = options.getboolean(section,"convergence")
-		self.shear = options.getboolean(section,"shear")
-		self.omega = options.getboolean(section,"omega")
+		try:
+			self.convergence = options.getboolean(section,"convergence")
+			self.shear = options.getboolean(section,"shear")
+			self.omega = options.getboolean(section,"omega")
+		except NoOptionError:
+			pass
+
+		try:
+			self.integration_type = options.get(section,"integration_type")
+		except NoOptionError:
+			pass
 
 	def _read_plane_set(self,options,section):
 		
