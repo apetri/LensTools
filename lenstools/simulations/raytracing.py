@@ -1461,9 +1461,6 @@ class RayTracer(object):
 		#Initial positions
 		current_positions = initial_positions
 
-		if real_trajectory:
-			raise NotImplementedError
-
 		#Timestamp
 		now = time.time()
 		last_timestamp = now
@@ -1478,21 +1475,21 @@ class RayTracer(object):
 			#Start time for this lens
 			start = time.time()
 
-			#Lensing kernel
-			kernel = 1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
-
 			#Load in the lens
 			current_lens = self.loadLens(lens[k])
 			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
-			#Extract the density at the ray positions
-			now = time.time()
-			logray.debug("Extracting density values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
-			last_timestamp = now
+			#Lensing kernel
+			kernel = 1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
 
 			#################################################################################
 			##Compute lensing quantities (deflections, jacobian, density, density gradient)##
 			#################################################################################
+
+			#Extract the field values  at the ray positions
+			now = time.time()
+			logray.debug("Extracting field values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
+			last_timestamp = now
 
 			#Update local quantities
 			deflections_lcl = 0.5*current_lens.deflectionAngles(current_positions[0],current_positions[1])
@@ -1505,7 +1502,7 @@ class RayTracer(object):
 			#Update integrated quantities
 			if k<last_lens:
 				
-				current_convergence += kernel * ((shear_tensors_lcl*current_jacobians)[0,1,1,2].sum(0) + (density_grad_lcl*current_deflections).decompose().value.sum(0))
+				current_convergence += kernel * ((shear_tensors_lcl*current_jacobians)[[0,1,1,2]].sum(0) + (density_grad_lcl*current_deflections).decompose().value.sum(0))
 				if include_first_order:
 					current_convergence += kernel * density_lcl
 
@@ -1514,7 +1511,7 @@ class RayTracer(object):
 
 			else:
 
-				current_convergence += kernel * ((shear_tensors_lcl*current_jacobians)[0,1,1,2].sum(0) + (deflections_lcl*current_deflections).decompose().value.sum(0)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+				current_convergence += kernel * ((shear_tensors_lcl*current_jacobians)[[0,1,1,2]].sum(0) + (deflections_lcl*current_deflections).decompose().value.sum(0)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 				if include_first_order:
 					current_convergence += kernel * density_lcl * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
 			
@@ -1522,10 +1519,6 @@ class RayTracer(object):
 			now = time.time()
 			logray.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
-
-			#Compute ray deflections
-			if real_trajectory:
-				raise NotImplementedError
 
 			now = time.time()
 			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
