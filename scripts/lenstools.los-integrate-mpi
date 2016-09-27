@@ -78,7 +78,7 @@ batch = SimulationBatch(environment_settings)
 if lens_settings.has_section("MapSettings"):
 
 	if (pool is None) or (pool.is_master()):
-		logpreamble.info("Starting the production of weak lensing simulated Maps (direct density integration)")
+		logpreamble.info("Starting the production of weak lensing simulated Maps (direct line of sight integration)")
 	map_settings = MapSettings.read(cmd_args.config_file)
 
 	#Cycle over ids to produce the maps
@@ -88,7 +88,7 @@ if lens_settings.has_section("MapSettings"):
 elif lens_settings.has_section("TelescopicMapSettings"):
 
 	if (pool is None) or (pool.is_master()):
-		logpreamble.info("Starting the production of weak lensing simulated Maps (telescopic, direct density integration)")
+		logpreamble.info("Starting the production of weak lensing simulated Maps (telescopic, direct line of sight integration)")
 	map_settings = TelescopicMapSettings.read(cmd_args.config_file)
 
 	#Cycle over ids to produce the maps
