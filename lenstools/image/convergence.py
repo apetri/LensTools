@@ -591,6 +591,48 @@ class Spin0(object):
 
 			return hessian_xx,hessian_yy,hessian_xy
 
+	def gradLaplacian(self,x=None,y=None):
+
+		"""
+		"""
+
+		if (x is not None) and (y is not None):
+
+			assert x.shape==y.shape,"x and y must have the same shape!"
+
+			#x coordinates
+			if type(x)==u.quantity.Quantity:
+			
+				assert x.unit.physical_type==self.side_angle.unit.physical_type
+				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
+
+			else:
+
+				j = np.mod((x / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[1])	
+
+			#y coordinates
+			if type(y)==u.quantity.Quantity:
+			
+				assert y.unit.physical_type==self.side_angle.unit.physical_type
+				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
+
+			else:
+
+				i = np.mod((y / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[0])
+
+		else:
+			i = None
+			j = None
+
+		#Call the C backend
+		gl_x,gl_y = _topology.gradLaplacian(self.data,j,i)
+		
+		#Return the gradient of the laplacian
+		if (x is not None) and (y is not None):
+			return gl_x.reshape(x.shape),gl_y.reshape(x.shape)
+		else:
+			return gl_x,gl_y
+
 	################################################################################################################################################
 
 	def pdf(self,thresholds,norm=False):

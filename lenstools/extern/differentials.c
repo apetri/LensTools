@@ -83,3 +83,46 @@ void hessian(double *map,double *hess_xx_map,double *hess_yy_map,double *hess_xy
 
 
 }
+
+
+void gradLaplacian(double *map,double *grad_map_x,double *grad_map_y,long map_size,int Npoints,int *x_points,int *y_points){
+	
+	long i,j;
+	double grad_x,grad_y;
+
+	if(Npoints<0){
+	
+		for(i=0;i<map_size;i++){
+			for(j=0;j<map_size;j++){
+			
+			
+				grad_x = (map[coordinate(i+3,j,map_size)] + map[coordinate(i-1,j,map_size)] + map[coordinate(i+1,j+2,map_size)] + map[coordinate(i+1,j-2,map_size)] - 4*map[coordinate(i+1,j,map_size)])/8.0;
+				grad_x -= (map[coordinate(i+1,j,map_size)] + map[coordinate(i-3,j,map_size)] + map[coordinate(i-1,j+2,map_size)] + map[coordinate(i-1,j-2,map_size)] - 4*map[coordinate(i-1,j,map_size)])/8.0;
+				grad_y = (map[coordinate(i+2,j+1,map_size)] + map[coordinate(i-2,j+1,map_size)] + map[coordinate(i,j+3,map_size)] + map[coordinate(i,j-1,map_size)] - 4*map[coordinate(i,j+1,map_size)])/8.0;
+				grad_y -= (map[coordinate(i+2,j-1,map_size)] + map[coordinate(i-2,j-1,map_size)] + map[coordinate(i,j+1,map_size)] + map[coordinate(i,j-3,map_size)] - 4*map[coordinate(i,j-1,map_size)])/8.0;
+			
+				grad_map_x[coordinate(i,j,map_size)]=grad_x;
+				grad_map_y[coordinate(i,j,map_size)]=grad_y;
+			
+			
+			}
+		}
+	
+
+	} else{
+
+		for(i=0;i<Npoints;i++){
+
+			grad_x = (map[coordinate(x_points[i]+3,y_points[i],map_size)] + map[coordinate(x_points[i]-1,y_points[i],map_size)] + map[coordinate(x_points[i]+1,y_points[i]+2,map_size)] + map[coordinate(x_points[i]+1,y_points[i]-2,map_size)] - 4*map[coordinate(x_points[i]+1,y_points[i],map_size)])/8.0;
+			grad_x -= (map[coordinate(x_points[i]+1,y_points[i],map_size)] + map[coordinate(x_points[i]-3,y_points[i],map_size)] + map[coordinate(x_points[i]-1,y_points[i]+2,map_size)] + map[coordinate(x_points[i]-1,y_points[i]-2,map_size)] - 4*map[coordinate(x_points[i]-1,y_points[i],map_size)])/8.0;
+			grad_y = (map[coordinate(x_points[i]+2,y_points[i]+1,map_size)] + map[coordinate(x_points[i]-2,y_points[i]+1,map_size)] + map[coordinate(x_points[i],y_points[i]+3,map_size)] + map[coordinate(x_points[i],y_points[i]-1,map_size)] - 4*map[coordinate(x_points[i],y_points[i]+1,map_size)])/8.0;
+			grad_y -= (map[coordinate(x_points[i]+2,y_points[i]-1,map_size)] + map[coordinate(x_points[i]-2,y_points[i]-1,map_size)] + map[coordinate(x_points[i],y_points[i]+1,map_size)] + map[coordinate(x_points[i],y_points[i]-3,map_size)] - 4*map[coordinate(x_points[i],y_points[i]-1,map_size)])/8.0;
+			
+			grad_map_x[i]=grad_x;
+			grad_map_y[i]=grad_y;
+
+		}
+
+
+	}
+}
