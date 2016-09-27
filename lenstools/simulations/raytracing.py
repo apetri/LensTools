@@ -1517,7 +1517,7 @@ class RayTracer(object):
 			
 			#Timestamp
 			now = time.time()
-			logray.debug("Density values extracted in {0:.3f}s".format(now-last_timestamp))
+			logray.debug("Field values extracted in {0:.3f}s".format(now-last_timestamp))
 			last_timestamp = now
 
 			now = time.time()
@@ -1556,7 +1556,84 @@ class RayTracer(object):
 
 		"""
 
-		raise NotImplementedError
+		#Sanity check
+		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
+		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
+		assert self.lens_type==PotentialPlane
+
+		#Check that redshift is not too high given the current lenses
+		assert z<self.redshift[-1],"Given the current lenses you can trace up to redshift {0:.2f}!".format(self.redshift[-1])
+		last_lens = (z>np.array(self.redshift)).argmin() - 1
+
+		if save_intermediate:
+			all_omega = np.zeros((last_lens+1,) + initial_positions.shape[1:])
+
+		#Ordered references to the lenses
+		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
+		redshift = np.array([0.0] + self.redshift)
+		lens = self.lens
+
+		#Initial positions
+		current_positions = initial_positions
+
+		#Timestamp
+		now = time.time()
+		last_timestamp = now
+
+		#Loop that goes through the lenses
+		current_omega = np.zeros(initial_positions.shape[1:])
+		current_jacobians = np.zeros((3,)+initial_positions.shape[1:])
+		
+		for k in range(last_lens+1):
+
+			#Start time for this lens
+			start = time.time()
+
+			#Load in the lens
+			current_lens = self.loadLens(lens[k])
+			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
+
+			#Lensing kernel
+			kernel = 1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
+
+			#################################################################################
+			##Compute lensing quantities (deflections, jacobian, density, density gradient)##
+			#################################################################################
+
+			#Extract the field values  at the ray positions
+			now = time.time()
+			logray.debug("Extracting field values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
+			last_timestamp = now
+
+			#Update local quantities
+			shear_tensors_lcl = 0.5*current_lens.shearMatrix(current_positions[0],current_positions[1])
+
+			#Update integrated quantities
+			if k<last_lens:
+				current_omega += kernel * (shear_tensors_lcl[1]*current_jacobians[0]+shear_tensors_lcl[2]*current_jacobians[1]-shear_tensors_lcl[0]*current_jacobians[1]-shear_tensors_lcl[1]*current_jacobians[2])
+				current_jacobians += kernel * shear_tensors_lcl
+
+			else:
+				current_omega += kernel * (shear_tensors_lcl[1]*current_jacobians[0]+shear_tensors_lcl[2]*current_jacobians[1]-shear_tensors_lcl[0]*current_jacobians[1]-shear_tensors_lcl[1]*current_jacobians[2]) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
+			
+			#Timestamp
+			now = time.time()
+			logray.debug("Field values extracted in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
+			now = time.time()
+			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			last_timestamp = now
+
+			#Save the intermediate convergence values if option is enabled
+			if save_intermediate:
+				all_omega[k] = current_omega.copy()
+
+		#Return to the user
+		if save_intermediate:
+			return all_omega
+		else:
+			return current_omega
 
 	#########################################################
 	############Forward ray tracing##########################
