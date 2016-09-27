@@ -1492,26 +1492,26 @@ class RayTracer(object):
 			last_timestamp = now
 
 			#Update local quantities
-			deflections_lcl = 0.5*current_lens.deflectionAngles(current_positions[0],current_positions[1])
-			shear_tensors_lcl = 0.5*current_lens.shearMatrix(current_positions[0],current_positions[1])
+			deflections_lcl = current_lens.deflectionAngles(current_positions[0],current_positions[1])
+			shear_tensors_lcl = current_lens.shearMatrix(current_positions[0],current_positions[1])
 			density_grad_lcl = current_lens.densityGradient(current_positions[0],current_positions[1])
 
 			if include_first_order:
-				density_lcl = shear_tensors_lcl[0]+shear_tensors_lcl[2]
+				density_lcl = 0.5*(shear_tensors_lcl[0]+shear_tensors_lcl[2])
 
 			#Update integrated quantities
 			if k<last_lens:
 				
-				current_convergence += kernel * ((shear_tensors_lcl*current_jacobians)[[0,1,1,2]].sum(0) + (density_grad_lcl*current_deflections).decompose().value.sum(0))
+				current_convergence += kernel * ((0.5*shear_tensors_lcl*current_jacobians)[[0,1,1,2]].sum(0) + (density_grad_lcl*current_deflections).decompose().value.sum(0))
 				if include_first_order:
 					current_convergence += kernel * density_lcl
 
-				current_jacobians += kernel * shear_tensors_lcl
-				current_deflections += kernel * deflections_lcl
+				current_jacobians -= kernel * shear_tensors_lcl
+				current_deflections -= kernel * deflections_lcl
 
 			else:
 
-				current_convergence += kernel * ((shear_tensors_lcl*current_jacobians)[[0,1,1,2]].sum(0) + (deflections_lcl*current_deflections).decompose().value.sum(0)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+				current_convergence += kernel * ((0.5*shear_tensors_lcl*current_jacobians)[[0,1,1,2]].sum(0) + (deflections_lcl*current_deflections).decompose().value.sum(0)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 				if include_first_order:
 					current_convergence += kernel * density_lcl * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
 			
@@ -1606,15 +1606,15 @@ class RayTracer(object):
 			last_timestamp = now
 
 			#Update local quantities
-			shear_tensors_lcl = 0.5*current_lens.shearMatrix(current_positions[0],current_positions[1])
+			shear_tensors_lcl = current_lens.shearMatrix(current_positions[0],current_positions[1])
 
 			#Update integrated quantities
 			if k<last_lens:
-				current_omega += kernel * (shear_tensors_lcl[1]*current_jacobians[0]+shear_tensors_lcl[2]*current_jacobians[1]-shear_tensors_lcl[0]*current_jacobians[1]-shear_tensors_lcl[1]*current_jacobians[2])
-				current_jacobians += kernel * shear_tensors_lcl
+				current_omega += 0.5 * kernel * (shear_tensors_lcl[1]*current_jacobians[0]+shear_tensors_lcl[2]*current_jacobians[1]-shear_tensors_lcl[0]*current_jacobians[1]-shear_tensors_lcl[1]*current_jacobians[2])
+				current_jacobians -= kernel * shear_tensors_lcl
 
 			else:
-				current_omega += kernel * (shear_tensors_lcl[1]*current_jacobians[0]+shear_tensors_lcl[2]*current_jacobians[1]-shear_tensors_lcl[0]*current_jacobians[1]-shear_tensors_lcl[1]*current_jacobians[2]) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
+				current_omega += 0.5 * kernel * (shear_tensors_lcl[1]*current_jacobians[0]+shear_tensors_lcl[2]*current_jacobians[1]-shear_tensors_lcl[0]*current_jacobians[1]-shear_tensors_lcl[1]*current_jacobians[2]) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
 			
 			#Timestamp
 			now = time.time()
