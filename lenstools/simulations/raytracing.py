@@ -1511,7 +1511,7 @@ class RayTracer(object):
 
 			else:
 
-				current_convergence += kernel * ((0.5*shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0) + (deflections_lcl*current_deflections).decompose().value.sum(0)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+				current_convergence += kernel * ((0.5*shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0) + (density_grad_lcl*current_deflections).decompose().value.sum(0)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
 				if include_first_order:
 					current_convergence += kernel * density_lcl * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
 			
