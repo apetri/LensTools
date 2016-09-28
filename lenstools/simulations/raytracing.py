@@ -1614,9 +1614,9 @@ class RayTracer(object):
 			#Update integrated quantities
 			if k<last_lens:
 				current_omega += 0.5 * kernel * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1])
-				current_jacobians_0 -= shear_tensors_lcl
-				current_jacobians_1 -= shear_tensors_lcl*chi
-				current_jacobians = current_jacobians_0 + current_jacobians_1/chi
+				current_jacobians_0 += shear_tensors_lcl
+				current_jacobians_1 += shear_tensors_lcl*chi
+				current_jacobians = -current_jacobians_0 + current_jacobians_1/chi
 
 			else:
 				current_omega += 0.5 * kernel * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1]) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
