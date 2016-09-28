@@ -1467,7 +1467,13 @@ class RayTracer(object):
 
 		#Loop that goes through the lenses
 		current_convergence = np.zeros(initial_positions.shape[1:])
+		
+		current_deflections_0 = np.zeros(initial_positions.shape)*rad
+		current_deflections_1 = np.zeros(initial_positions.shape)*rad
 		current_deflections = np.zeros(initial_positions.shape)*rad
+		
+		current_jacobians_0 = np.zeros((3,)+initial_positions.shape[1:])
+		current_jacobians_1 = np.zeros((3,)+initial_positions.shape[1:])
 		current_jacobians = np.zeros((3,)+initial_positions.shape[1:])
 		
 		for k in range(last_lens+1):
@@ -1479,8 +1485,9 @@ class RayTracer(object):
 			current_lens = self.loadLens(lens[k])
 			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
-			#Lensing kernel
-			kernel = 1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
+			#Distances, lensing kernel
+			chi = distance[k+1]
+			kernel = 1. - (chi/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
 
 			#################################################################################
 			##Compute lensing quantities (deflections, jacobian, density, density gradient)##
@@ -1506,8 +1513,14 @@ class RayTracer(object):
 				if include_first_order:
 					current_convergence += kernel * density_lcl
 
-				current_jacobians -= kernel * shear_tensors_lcl
-				current_deflections -= kernel * deflections_lcl
+				current_deflections_0 += current_deflections
+				current_deflections_1 += chi*current_deflections
+				current_deflections = -current_deflections_0 + current_deflections_1/chi
+
+				current_jacobians_0 += shear_tensors_lcl
+				current_jacobians_1 += chi*shear_tensors_lcl
+				current_jacobians = -current_jacobians_0 + current_jacobians_1/chi
+
 
 			else:
 
