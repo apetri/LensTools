@@ -1486,6 +1486,7 @@ class RayTracer(object):
 			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
 			#Distances, lensing kernel
+			chi_prev = distance[k]
 			chi = distance[k+1]
 			kernel = 1. - (chi/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
 
@@ -1514,11 +1515,11 @@ class RayTracer(object):
 					current_convergence += kernel * density_lcl
 
 				current_deflections_0 += current_deflections
-				current_deflections_1 += chi*current_deflections
+				current_deflections_1 += current_deflections*(0.5*(chi+chi_prev))
 				current_deflections = -current_deflections_0 + current_deflections_1/chi
 
 				current_jacobians_0 += shear_tensors_lcl
-				current_jacobians_1 += chi*shear_tensors_lcl
+				current_jacobians_1 += shear_tensors_lcl*(0.5*(chi+chi_prev))
 				current_jacobians = -current_jacobians_0 + current_jacobians_1/chi
 
 
