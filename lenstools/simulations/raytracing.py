@@ -1609,6 +1609,7 @@ class RayTracer(object):
 			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
 			#Distances, lensing kernel
+			chi_prev = distance[k]
 			chi = distance[k+1]
 			kernel = 1. - (chi/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
 
@@ -1626,13 +1627,13 @@ class RayTracer(object):
 
 			#Update integrated quantities
 			if k<last_lens:
-				current_omega += 0.5 * kernel * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1])
+				current_omega += (0.5 * kernel) * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1])
 				current_jacobians_0 += shear_tensors_lcl
-				current_jacobians_1 += shear_tensors_lcl*chi
+				current_jacobians_1 += shear_tensors_lcl*(0.5*(chi+chi_prev))
 				current_jacobians = -current_jacobians_0 + current_jacobians_1/chi
 
 			else:
-				current_omega += 0.5 * kernel * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1]) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
+				current_omega += (0.5 * kernel) * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1]) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
 			
 			#Timestamp
 			now = time.time()
