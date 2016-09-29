@@ -31,8 +31,8 @@ from scipy.ndimage import filters
 #Units
 import astropy.units as u
 
-#FITS
-from astropy.io import fits
+#I/O
+from .io import loadScalarFITS,saveScalarFITS
 
 try:
 	import matplotlib.pyplot as plt
@@ -72,6 +72,8 @@ class Spin0(object):
 
 		#Extra keyword arguments
 		self._extra_attributes = kwargs.keys()
+		for key in kwargs:
+			setattr(self,key,kwargs[key])
 
 	@property
 	def info(self):
@@ -114,16 +116,11 @@ class Spin0(object):
 				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
 		if format=="fits":
-
-			hdu = fits.open(filename)
-			data = hdu[0].data
-			angle = hdu[0].header["ANGLE"] * u.deg
-			hdu.close()
+			return loadScalarFITS(cls,filename)
 
 		else:
 			angle,data = format(filename,**kwargs)
-		
-		return cls(data,angle)
+			return cls(data,angle)
 
 
 	def save(self,filename,format=None,double_precision=False):
@@ -152,15 +149,7 @@ class Spin0(object):
 
 		
 		if format=="fits":
-
-			if double_precision:
-				hdu = fits.PrimaryHDU(self.data)
-			else:
-				hdu = fits.PrimaryHDU(self.data.astype(np.float32))
-
-			hdu.header["ANGLE"] = (self.side_angle.to(u.deg).value,"angle of the map in degrees")
-			hdulist = fits.HDUList([hdu])
-			hdulist.writeto(filename,clobber=True)
+			saveScalarFITS(self,filename,double_precision)
 
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
@@ -1422,7 +1411,7 @@ class OmegaMap(Spin0):
 
 	"""
 	A class that handles 2D omega maps (curl part of the lensing jacobian) and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
-	
+
 	"""
 
 ###############################################

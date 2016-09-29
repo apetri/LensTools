@@ -46,14 +46,8 @@ class Plane(Spin0):
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
 		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles,filename=filename)
-		self.redshift = redshift
-		self.cosmology = cosmology
-		self.unit = unit
-		self.filename = filename
 
-		if num_particles is not None:
-			self.num_particles = num_particles
-		else:
+		if num_particles is None:
 			self.num_particles = -1
 
 		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
