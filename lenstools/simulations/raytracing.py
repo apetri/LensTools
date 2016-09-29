@@ -1514,7 +1514,7 @@ class RayTracer(object):
 					current_convergence += (0.5*kernel) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
 
 				if include_gp:
-				current_convergence += kernel * (density_grad_lcl*current_deflections).decompose().value.sum(0) 
+					current_convergence += kernel * (density_grad_lcl*current_deflections).decompose().value.sum(0) 
 				
 				if include_first_order:
 					current_convergence += kernel * density_lcl
