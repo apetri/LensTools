@@ -11,7 +11,7 @@ import sys
 
 from .utils.configuration import configuration
 
-from .image.convergence import ConvergenceMap,Mask
+from .image.convergence import ConvergenceMap,OmegaMap,Mask
 from .image.shear import ShearMap
 from .image.noise import GaussianNoiseGenerator
 from .statistics.ensemble import Ensemble
