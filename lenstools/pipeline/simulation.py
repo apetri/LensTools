@@ -640,6 +640,9 @@ class SimulationBatch(object):
 
 		#Instantiate new SimulationBatch object (home and storage will be the same)
 		environment = EnvironmentSettings(home=path,storage=path)
+		for key in ["cosmo_id_digits","name2attr","json_tree_file"]:
+			setattr(environment,key,getattr(self.environment,key))
+			
 		batchCopy = SimulationBatch(environment,syshandler)
 
 		#Walk down the directory tree and create the copied directories on the go (only if non existent already)
