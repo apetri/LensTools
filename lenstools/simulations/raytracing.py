@@ -1414,7 +1414,7 @@ class RayTracer(object):
 	###########Calculation of the convergence at second post-Born order###############
 	##################################################################################
 
-	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False,include_first_order=False):
+	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False,include_first_order=False,include_ll=True,include_gp=True):
 
 		"""
 		Computes the convergence at second post-born order
@@ -1430,6 +1430,12 @@ class RayTracer(object):
 
 		:param include_first_order: include the first order contribution to the convergence
 		:type include_first_order: bool.
+
+		:param include_ll: include lens-lens coupling
+		:type include_ll: bool.
+
+		:param include_gp: include geodesic perturbation
+		:type include_gp: bool.
 
 		:returns: convergence values (2-post born) at each of the initial positions
 
@@ -1504,7 +1510,12 @@ class RayTracer(object):
 			#Update integrated quantities
 			if k<last_lens:
 				
-				current_convergence += kernel * ((0.5*shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0) + (density_grad_lcl*current_deflections).decompose().value.sum(0))
+				if include_ll:
+					current_convergence += (0.5*kernel) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+
+				if include_gp:
+				current_convergence += kernel * (density_grad_lcl*current_deflections).decompose().value.sum(0) 
+				
 				if include_first_order:
 					current_convergence += kernel * density_lcl
 
@@ -1519,7 +1530,12 @@ class RayTracer(object):
 
 			else:
 
-				current_convergence += kernel * ((0.5*shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0) + (density_grad_lcl*current_deflections).decompose().value.sum(0)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+				if include_ll:
+					current_convergence += (0.5 * kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+
+				if include_gp:
+					current_convergence += (kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (density_grad_lcl*current_deflections).decompose().value.sum(0)
+				
 				if include_first_order:
 					current_convergence += kernel * density_lcl * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
 			
