@@ -1519,8 +1519,8 @@ class RayTracer(object):
 				if include_first_order:
 					current_convergence += kernel * density_lcl
 
-				current_deflections_0 += current_deflections
-				current_deflections_1 += current_deflections*(0.5*(chi+chi_prev))
+				current_deflections_0 += deflections_lcl
+				current_deflections_1 += deflections_lcl*(0.5*(chi+chi_prev))
 				current_deflections = -current_deflections_0 + current_deflections_1/chi
 
 				current_jacobians_0 += shear_tensors_lcl
