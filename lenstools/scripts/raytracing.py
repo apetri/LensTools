@@ -14,8 +14,7 @@ from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemory
 
 from lenstools.utils.mpi import MPIWhirlPool
 
-from lenstools.image.convergence import Spin0
-from lenstools import ConvergenceMap,ShearMap
+from lenstools import ConvergenceMap,OmegaMap,ShearMap
 from lenstools.catalog import Catalog,ShearCatalog
 
 from lenstools.simulations.raytracing import RayTracer
@@ -310,7 +309,7 @@ def singleRedshift(pool,batch,settings,batch_id):
 			#Compute shear,convergence and omega from the jacobians
 			if settings.convergence:
 		
-				convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle)
+				convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift)
 				savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 				logdriver.info("Saving convergence map to {0}".format(savename)) 
 				convMap.save(savename)
@@ -329,7 +328,7 @@ def singleRedshift(pool,batch,settings,batch_id):
 	
 			if settings.omega:
 		
-				omegaMap = Spin0(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle)
+				omegaMap = OmegaMap(data=-0.5*(jacobian[2]-jacobian[1]),angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift)
 				savename = batch.syshandler.map(os.path.join(save_path,"WLomega_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 				logdriver.info("Saving omega map to {0}".format(savename))
 				omegaMap.save(savename)
@@ -622,12 +621,19 @@ def losIntegrate(pool,batch,settings,batch_id):
 			#Perform the line of sight integration (choose integration type)
 			if settings.integration_type=="born":
 				image = tracer.convergenceBorn(pos,z=source_redshift,save_intermediate=False)
+				img_type = ConvergenceMap
+
 			elif settings.integration_type=="postBorn2":
 				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False)
+				img_type = ConvergenceMap
+
 			elif settings.integration_type=="postBorn1+2":
 				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True)
+				img_type = ConvergenceMap
+
 			elif settings.integration_type=="omega2":
 				image = tracer.omegaPostBorn2(pos,z=source_redshift,save_intermediate=False)
+				img_type = OmegaMap
 
 			else:
 				raise NotImplementedError
@@ -639,7 +645,7 @@ def losIntegrate(pool,batch,settings,batch_id):
 			#Save the image
 			savename = batch.syshandler.map(os.path.join(save_path,"{0}_z{1:.2f}_{2:04d}r.{3}".format(settings.integration_type,source_redshift,r+1,settings.format)))
 			logdriver.info("Saving {0} map to {1}".format(settings.integration_type,savename))
-			Spin0(data=image,angle=map_angle).save(savename)
+			img_type(data=image,angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift).save(savename)
 			logdriver.debug("Saving {0} map to {1}".format(settings.integration_type,savename)) 
 
 		now = time.time()
