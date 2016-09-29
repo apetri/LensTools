@@ -1414,6 +1414,16 @@ class ConvergenceMap(Spin0):
 
 	"""
 
+#########################################
+##########OmegaMap class#################
+#########################################
+
+class OmegaMap(Spin0):
+
+	"""
+	A class that handles 2D omega maps (curl part of the lensing jacobian) and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
+	
+	"""
 
 ###############################################
 ###################Mask class##################

@@ -1,5 +1,12 @@
 .. :changelog:
 
+0.8
++++
+
+- RayTracer can now perform line of sight integrations to approximate kappa (at Born and post Born 2) and omega (at post Born 2), without full raytracing
+- cutPlanes can now handle snapshots in FastPM format
+- If snapshots are provided in light cone projections, LensTools can do plane cutting, raytracing and LOS integrations in a single script  
+
 0.7-dev
 +++++++
 
