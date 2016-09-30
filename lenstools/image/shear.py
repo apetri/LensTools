@@ -24,8 +24,8 @@ fftengine = NUMPYFFTPack()
 #Units
 from astropy.units import deg,rad,arcsec,quantity
 
-#FITS
-from astropy.io import fits
+#I/O
+from .io import loadFITS,saveFITS
 
 try:
 	import matplotlib.pyplot as plt
@@ -42,7 +42,7 @@ except ImportError:
 class Spin1(object):
 
 
-	def __init__(self,data,angle):
+	def __init__(self,data,angle,**kwargs):
 
 		#Sanity check
 		assert angle.unit.physical_type in ["angle","length"]
@@ -56,6 +56,10 @@ class Spin1(object):
 			self.resolution = self.resolution.to(arcsec)
 			self.lmin = 2.0*np.pi/self.side_angle.to(rad).value
 			self.lmax = np.sqrt(2)*np.pi/self.resolution.to(rad).value
+
+		self._extra_args = kwargs.keys()
+		for key in kwargs:
+			setattr(self,key,kwargs[key])
 
 	@property
 	def info(self):
@@ -101,17 +105,12 @@ class Spin1(object):
 
 
 		if format=="fits":
-
-			hdu = fits.open(filename)
-			data = hdu[0].data
-			angle = hdu[0].header["ANGLE"] * deg
-			hdu.close()
+			return loadFITS(cls,filename)
 
 		else:
 
 			angle,data = format(filename,**kwargs)
-
-		return cls(data,angle)
+			return cls(data,angle)
 
 
 	def save(self,filename,format=None,double_precision=False):
@@ -140,15 +139,7 @@ class Spin1(object):
 
 
 		if format=="fits":
-
-			if double_precision:
-				hdu = fits.PrimaryHDU(self.data)
-			else:
-				hdu = fits.PrimaryHDU(self.data.astype(np.float32))
-
-			hdu.header["ANGLE"] = (self.side_angle.to(deg).value,"angle of the map in degrees")
-			hdulist = fits.HDUList([hdu])
-			hdulist.writeto(filename,clobber=True)
+			saveFITS(self,filename,double_precision)
 
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))

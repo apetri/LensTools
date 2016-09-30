@@ -3,7 +3,7 @@ from astropy.io import fits
 import astropy.units as u
 
 #Load scalar FITS image
-def loadScalarFITS(cls,filename):
+def loadFITS(cls,filename):
 
 	with fits.open(filename) as hdu:
 		data = hdu[0].data
@@ -11,10 +11,7 @@ def loadScalarFITS(cls,filename):
 		return cls(data,angle)
 
 #Write FITS scalar image
-def saveScalarFITS(self,filename,double_precision):
-
-	#A cosmology instance should be available in order to save in FITS format
-	assert self.cosmology is not None
+def saveFITS(self,filename,double_precision):
 		
 	#Create the hdu
 	if double_precision:

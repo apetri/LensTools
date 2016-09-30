@@ -32,7 +32,7 @@ from scipy.ndimage import filters
 import astropy.units as u
 
 #I/O
-from .io import loadScalarFITS,saveScalarFITS
+from .io import loadFITS,saveFITS
 
 try:
 	import matplotlib.pyplot as plt
@@ -116,7 +116,7 @@ class Spin0(object):
 				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
 		if format=="fits":
-			return loadScalarFITS(cls,filename)
+			return loadFITS(cls,filename)
 
 		else:
 			angle,data = format(filename,**kwargs)
@@ -149,7 +149,7 @@ class Spin0(object):
 
 		
 		if format=="fits":
-			saveScalarFITS(self,filename,double_precision)
+			saveFITS(self,filename,double_precision)
 
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
