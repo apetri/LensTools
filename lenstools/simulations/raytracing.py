@@ -1,4 +1,4 @@
-from ..image.convergence import Spin0,ConvergenceMap
+from ..image.convergence import Spin0,ConvergenceMap,OmegaMap
 from ..image.shear import Spin1,Spin2,ShearMap
 
 import sys
@@ -867,7 +867,7 @@ class DeflectionPlane(Spin1):
 		"""
 		Computes the omega field (i.e. the rotation) from the deflection angles by taking the appropriate components of the jacobian
 
-		:returns: Spin0 instance with the computed omega values
+		:returns: OmegaMap instance with the computed omega values
 
 		"""
 
@@ -876,7 +876,7 @@ class DeflectionPlane(Spin1):
 		omega = -0.5*(jacobian[2]-jacobian[1])
 
 		#Instantiate the convergence map
-		return Spin0(omega,angle=self.side_angle)
+		return OmegaMap(omega,angle=self.side_angle)
 
 
 	def shear(self):
