@@ -281,7 +281,7 @@ class PlaneLightConeSettings(LTSettings):
 
 		#On the fly raytracing
 		self.do_lensing = False
-		self.born = False
+		self.integration_type = "full"
 		self.fov = 3.0*u.deg
 		self.fov_resolution = 32
 
@@ -325,7 +325,7 @@ class PlaneLightConeSettings(LTSettings):
 
 		#Weak lensing
 		settings.do_lensing = options.getboolean(section,"do_lensing")
-		settings.born = options.getboolean(section,"born")
+		settings.integration_type = options.get(section,"integration_type")
 		settings.fov = options.getfloat(section,"fov_deg")*u.deg
 		settings.fov_resolution = options.getint(section,"fov_resolution")
 

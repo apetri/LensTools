@@ -16,7 +16,7 @@ import lenstools.simulations
 import lenstools.simulations.nbody 
 
 from lenstools.simulations import DensityPlane,PotentialPlane
-from lenstools.image.convergence import ConvergenceMap
+from lenstools.image.convergence import ConvergenceMap,OmegaMap
 
 from lenstools.simulations.raytracing import RayTracer
 
@@ -436,7 +436,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 
 	if settings.do_lensing:
 
-		if settings.born:
+		if settings.integration_type=="born":
 
 			if kind!="density":
 				if (pool is None or pool.is_master()):
@@ -449,7 +449,7 @@ def lightCone(pool,batch,settings,batch_id,override):
 
 			if kind!="potential":
 				if (pool is None or pool.is_master()):
-					logdriver.info("Doing full raytracing, override {0} lens type with potential lens type".format(kind))
+					logdriver.info("Integration type {0}, potential required, overriding {1} lens type with potential lens type".format(settings.integration_type,kind))
 				kind = "potential"
 
 			tracer = RayTracer(lens_type=PotentialPlane)
@@ -550,29 +550,36 @@ def lightCone(pool,batch,settings,batch_id,override):
 		b = np.linspace(0.,settings.fov.value,settings.fov_resolution)
 		pos = np.array(np.meshgrid(b,b))*settings.fov.unit
 
-		if settings.born:
+		if settings.integration_type=="full":
+			jacobian = tracer.shoot(pos,z=zmax,kind="jacobians")
+			image = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
 
-			#Born approximation: integrate the density on the line of sight
-			conv_born = tracer.convergenceBorn(pos,z=zmax)
-			conv_map = ConvergenceMap(data=conv_born,angle=settings.fov)
+		elif settings.integration_type=="born":
+			image = ConvergenceMap(tracer.convergenceBorn(pos,z=zmax),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
 
-			#Save the convergence map on disk
-			map_file = batch.syshandler.map(os.path.join(save_path,settings.name_format.format(0,"kappaBorn",zmax,settings.normal,settings.format)))
-			logdriver.info("Saving Born convergence to {0}".format(map_file))
-			conv_map.save(map_file)
-			logdriver.debug("Saved Born convergence to {0}".format(map_file))
+		elif settings.integration_type=="postBorn2":
+			image = ConvergenceMap(tracer.convergencePostBorn2(pos,z=zmax),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
+
+		elif settings.integration_type=="postBorn2-ll":
+			image = ConvergenceMap(tracer.convergencePostBorn2(pos,z=zmax,include_gp=False),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
+
+		elif settings.integration_type=="postBorn2-gp":
+			image = ConvergenceMap(tracer.convergencePostBorn2(pos,z=zmax,include_ll=False),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
+
+		elif settings.integration_type=="postBorn1+2":
+			image = ConvergenceMap(tracer.convergencePostBorn2(pos,z=zmax,include_first_order=True),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
+
+		elif settings.integration_type=="omega2":
+			image = OmegaMap(tracer.omegaPostBorn2(pos,z=zmax),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
 
 		else:
+			raise ValueError("Integration type {0} not supported!".format(settings.integration_type))
 
-			#Full raytracing: trace the ray deflections, compute the convergence from the jacobian
-			jacobian = tracer.shoot(pos,z=zmax,kind="jacobians")
-			conv_map = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=settings.fov)
-
-			#Save the convergence map on disk
-			map_file = batch.syshandler.map(os.path.join(save_path,settings.name_format.format(0,"kappa",zmax,settings.normal,settings.format)))
-			logdriver.info("Saving convergence to {0}".format(map_file))
-			conv_map.save(map_file)
-			logdriver.debug("Saved convergence to {0}".format(map_file))
+		#Save the image
+		image_file = batch.syshandler.map(os.path.join(save_path,settings.name_format.format(0,settings.integration_type,zmax,settings.normal,settings.format)))
+		logdriver.info("Saving {0} image to {1}".format(image.__class__.__name__,image_file))
+		image.save(image_file)
+		logdriver.debug("Saved image to {0}".format(image_file))
 
 	#################################################################################################
 
