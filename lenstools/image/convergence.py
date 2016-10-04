@@ -14,6 +14,7 @@ from __future__ import division
 
 from operator import mul
 from functools import reduce
+import numbers
 
 from ..extern import _topology
 
@@ -1325,7 +1326,7 @@ class Spin0(object):
 
 			new_data = self.data + rhs.data
 
-		elif type(rhs) == np.float:
+		elif isinstance(rhs,numbers.Number):
 
 			new_data = self.data + rhs
 
@@ -1365,7 +1366,7 @@ class Spin0(object):
 
 			new_data = self.data * rhs.data
 
-		elif type(rhs) == np.float:
+		elif isinstance(rhs,numbers.Number):
 
 			new_data = self.data * rhs
 
