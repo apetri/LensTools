@@ -1,4 +1,7 @@
-import bigfile
+try:
+	import bigfile
+except ImportError:
+	bigfile = None
 
 import numpy as np
 import astropy.units as u
@@ -25,6 +28,10 @@ class FastPMSnapshot(NbodySnapshot):
 
 	@classmethod
 	def open(cls,filename,pool=None,header_kwargs=dict(),**kwargs):
+
+		if bigfile is None:
+			raise ImportError("bigfile must be installed!")
+
 		fp = bigfile.BigFile(cls.buildFilename(filename,pool,**kwargs))
 		return cls(fp,pool,header_kwargs=header_kwargs)
 
