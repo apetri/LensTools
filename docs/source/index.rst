@@ -123,6 +123,7 @@ Weak Lensing simulations
    pipeline
    raytracing
    simulations
+   sample_settings
 
 Command line scripts
 --------------------
