@@ -7,4 +7,5 @@ pandas
 emcee
 astropy
 numexpr
+cython
 bigfile
