@@ -912,11 +912,6 @@ class Ensemble(pd.DataFrame):
 
 class SquareMatrix(Ensemble):
 
-	def __init__(self,*args,**kwargs):
-		super(SquareMatrix,self).__init__(*args,**kwargs)
-		if self.shape[0]!=self.shape[1]:
-			raise ValueError("This is not a square matrix!")
-
 	def __getitem__(self,item):
 		if isinstance(item,list):
 			return SquareMatrix(Ensemble(self)[item].loc[item])

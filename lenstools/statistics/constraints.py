@@ -674,11 +674,11 @@ class FisherAnalysis(Analysis):
 			features_covariance = features_covariance.values
 
 		#Check for correct shape of input
-		assert observed_feature.shape==self.feature_set.shape[1:]
-		assert features_covariance.shape==observed_feature.shape * 2 or features_covariance.shape==observed_feature.shape
+		assert (observed_feature.shape==self.feature_set.shape[1:]) or (observed_feature.shape[1:]==self.feature_set.shape[1:]) 
+		assert (features_covariance.shape==self.feature_set.shape[1:] * 2) or (features_covariance.shape==self.feature_set.shape[1:])
 
 		#Linear algebra manipulations (parameters = M x features)
-		if features_covariance.shape == observed_feature.shape * 2:
+		if features_covariance.shape==self.feature_set.shape[1:] * 2:
 			Y = np.linalg.solve(features_covariance,self.derivatives.values.transpose())
 		else:
 			Y = (1/features_covariance[:,np.newaxis]) * self.derivatives.values.transpose()
@@ -687,13 +687,16 @@ class FisherAnalysis(Analysis):
 		M = np.linalg.solve(XY,Y.transpose())
 
 		#Compute difference in parameters (with respect to the fiducial model)
-		dP = np.dot(M,observed_feature - self.feature_set[self._fiducial])
+		if observed_feature.ndim==1:
+			dP = np.dot(M,observed_feature - self.feature_set[self._fiducial])
+		else:
+			dP = np.dot(observed_feature - self.feature_set[[self._fiducial]],M.T)
 
 		#Return the actual best fit
 		if dP.ndim==1:
 			return self._constructor_sliced(self.parameter_set[self._fiducial,self.varied] + dP,index=self.derivatives.index)
 		else:
-			return self.__class__(self.parameter_set[self._fiducial,self.varied] + dP,columns=self.derivatives.index)
+			return self.__class__(self.parameter_set[self._fiducial,self.varied][None] + dP,columns=self.derivatives.index)
 
 
 	def classify(self,observed_feature,features_covariance,correct=None,labels=range(2),confusion=False):
