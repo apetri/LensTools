@@ -1,6 +1,10 @@
 import os,sys,glob,re
 import platform
-from distutils import config
+
+if sys.version_info.major>=3:
+	import configparser as cfg
+else:
+	import ConfigParser as cfg
 
 
 #Names
@@ -44,13 +48,8 @@ def yellow(s):
 
 #Shortcut for reading file
 def rd(filename):
-	
-	f = file(filename,"r")
-	r = f.read()
-	f.close()
-
-	return r
-
+	with open(filename,"r") as fp:
+		return fp.read()
 
 #Check GSL installation, necessary for using the Design feature
 def check_gsl(conf):
@@ -150,7 +149,7 @@ def check_nicaea(conf):
 ############################################################
 
 #Read system dependent configuration file
-conf = config.ConfigParser()
+conf = cfg.ConfigParser()
 this = os.getenv("THIS")
 
 if (this is not None) and (os.path.isfile(default_cfg+"."+this)):

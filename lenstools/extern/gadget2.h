@@ -37,4 +37,9 @@ int getPosVel(FILE *fp,long offset,float *data,int Npart);
 int getID(FILE *fp,long offset,int *data,int Npart);
 int writeSnapshot(FILE *fp,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart,int writeVel);
 
+int getHeaderFD(int fd,struct io_header_1 *header);
+int getPosVelFD(int fd,long offset,float *data,int Npart);
+int getIDFD(int fd,long offset,int *data,int Npart);
+int writeSnapshotFD(int fd,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart,int writeVel);
+
 #endif

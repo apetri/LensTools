@@ -72,5 +72,5 @@ batch = SimulationBatch(environment_settings)
 settings = settings_handler.read(cmd_args.config_file)
 
 #Cycle over ids to produce the planes
-for batch_id in cmd_args.id:
-	script_to_execute(pool=pool,batch=batch,settings=settings,id=batch_id,**kwargs)
+for node_id in cmd_args.id:
+	script_to_execute(pool=pool,batch=batch,settings=settings,node_id=node_id,**kwargs)

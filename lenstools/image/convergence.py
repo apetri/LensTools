@@ -14,6 +14,7 @@ from __future__ import division
 
 from operator import mul
 from functools import reduce
+import numbers
 
 from ..extern import _topology
 
@@ -31,8 +32,8 @@ from scipy.ndimage import filters
 #Units
 import astropy.units as u
 
-#FITS
-from astropy.io import fits
+#I/O
+from .io import loadFITS,saveFITS
 
 try:
 	import matplotlib.pyplot as plt
@@ -72,6 +73,8 @@ class Spin0(object):
 
 		#Extra keyword arguments
 		self._extra_attributes = kwargs.keys()
+		for key in kwargs:
+			setattr(self,key,kwargs[key])
 
 	@property
 	def info(self):
@@ -114,16 +117,11 @@ class Spin0(object):
 				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
 		if format=="fits":
-
-			hdu = fits.open(filename)
-			data = hdu[0].data
-			angle = hdu[0].header["ANGLE"] * u.deg
-			hdu.close()
+			return loadFITS(cls,filename)
 
 		else:
 			angle,data = format(filename,**kwargs)
-		
-		return cls(data,angle)
+			return cls(data,angle)
 
 
 	def save(self,filename,format=None,double_precision=False):
@@ -152,15 +150,7 @@ class Spin0(object):
 
 		
 		if format=="fits":
-
-			if double_precision:
-				hdu = fits.PrimaryHDU(self.data)
-			else:
-				hdu = fits.PrimaryHDU(self.data.astype(np.float32))
-
-			hdu.header["ANGLE"] = (self.side_angle.to(u.deg).value,"angle of the map in degrees")
-			hdulist = fits.HDUList([hdu])
-			hdulist.writeto(filename,clobber=True)
+			saveFITS(self,filename,double_precision)
 
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
@@ -590,6 +580,48 @@ class Spin0(object):
 				self.hessian_xy = hessian_xy
 
 			return hessian_xx,hessian_yy,hessian_xy
+
+	def gradLaplacian(self,x=None,y=None):
+
+		"""
+		"""
+
+		if (x is not None) and (y is not None):
+
+			assert x.shape==y.shape,"x and y must have the same shape!"
+
+			#x coordinates
+			if type(x)==u.quantity.Quantity:
+			
+				assert x.unit.physical_type==self.side_angle.unit.physical_type
+				j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
+
+			else:
+
+				j = np.mod((x / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[1])	
+
+			#y coordinates
+			if type(y)==u.quantity.Quantity:
+			
+				assert y.unit.physical_type==self.side_angle.unit.physical_type
+				i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
+
+			else:
+
+				i = np.mod((y / self.resolution.to(u.rad).value).astype(np.int32),self.data.shape[0])
+
+		else:
+			i = None
+			j = None
+
+		#Call the C backend
+		gl_x,gl_y = _topology.gradLaplacian(self.data,j,i)
+		
+		#Return the gradient of the laplacian
+		if (x is not None) and (y is not None):
+			return gl_x.reshape(x.shape),gl_y.reshape(x.shape)
+		else:
+			return gl_x,gl_y
 
 	################################################################################################################################################
 
@@ -1294,7 +1326,7 @@ class Spin0(object):
 
 			new_data = self.data + rhs.data
 
-		elif type(rhs) == np.float:
+		elif isinstance(rhs,numbers.Number):
 
 			new_data = self.data + rhs
 
@@ -1334,7 +1366,7 @@ class Spin0(object):
 
 			new_data = self.data * rhs.data
 
-		elif type(rhs) == np.float:
+		elif isinstance(rhs,numbers.Number):
 
 			new_data = self.data * rhs
 
@@ -1372,6 +1404,16 @@ class ConvergenceMap(Spin0):
 
 	"""
 
+#########################################
+##########OmegaMap class#################
+#########################################
+
+class OmegaMap(Spin0):
+
+	"""
+	A class that handles 2D omega maps (curl part of the lensing jacobian) and allows to compute their topological descriptors (power spectrum, peak counts, minkowski functionals)
+
+	"""
 
 ###############################################
 ###################Mask class##################

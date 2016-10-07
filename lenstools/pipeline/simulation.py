@@ -1,11 +1,16 @@
 from __future__ import division,with_statement
+from abc import ABCMeta,abstractproperty,abstractmethod
 
-import os
+import sys,os
 import re
 import tarfile
 import json
 import itertools
-import StringIO
+
+if sys.version_info.major>=3:
+	from io import StringIO
+else:
+	from StringIO import StringIO
 
 import numpy as np
 import astropy.units as u
@@ -18,10 +23,10 @@ from .remote import SystemHandler,LocalGit
 from .settings import *
 
 from .deploy import JobHandler
-from ..simulations import Gadget2Settings,Gadget2SnapshotDE
-from ..simulations.raytracing import PotentialPlane
 
-from ..simulations.camb import CAMBSettings
+from ..simulations.camb import CAMBTransferFromPower
+from ..simulations import Gadget2SnapshotDE
+from ..simulations.raytracing import PotentialPlane
 
 #####################################################
 ############Parse cosmology from string##############
@@ -635,6 +640,9 @@ class SimulationBatch(object):
 
 		#Instantiate new SimulationBatch object (home and storage will be the same)
 		environment = EnvironmentSettings(home=path,storage=path)
+		for key in ["cosmo_id_digits","name2attr","json_tree_file"]:
+			setattr(environment,key,getattr(self.environment,key))
+			
 		batchCopy = SimulationBatch(environment,syshandler)
 
 		#Walk down the directory tree and create the copied directories on the go (only if non existent already)
@@ -760,7 +768,7 @@ class SimulationBatch(object):
 	##########################################Job submission scripts###########################################################################
 	###########################################################################################################################################
 
-	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeCAMBSubmission(self,realization_list,job_settings,job_handler,config_file="camb.param",chunks=1,**kwargs):
 
 		"""
 		Writes CAMB submission script
@@ -776,6 +784,9 @@ class SimulationBatch(object):
 
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
+
+		:param config_file: name of the CAMB configuration file
+		:type config_file: str.
 
 		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
 		:type kwargs: dict.
@@ -828,7 +839,7 @@ class SimulationBatch(object):
 				box_size = float(box_size) * model.Mpc_over_h
 				collection = model.getCollection(box_size=box_size,nside=nside)
 
-				parameter_file = os.path.join(collection.home_subdir,"camb.param")
+				parameter_file = os.path.join(collection.home_subdir,config_file)
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("CAMB parameter file at {0} does not exist yet!".format(parameter_file))
 
@@ -866,7 +877,7 @@ class SimulationBatch(object):
 
 	############################################################################################################################################
 
-	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeNGenICSubmission(self,realization_list,job_settings,job_handler,config_file="ngenic.param",chunks=1,**kwargs):
 
 		"""
 		Writes NGenIC submission script
@@ -882,6 +893,9 @@ class SimulationBatch(object):
 
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
+
+		:param config_file: name of the NGenIC config file
+		:type config_file: str.
 
 		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
 		:type kwargs: dict.
@@ -929,7 +943,7 @@ class SimulationBatch(object):
 
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
-				parameter_file = os.path.join(r.home_subdir,"ngenic.param")
+				parameter_file = os.path.join(r.home_subdir,config_file)
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("NGenIC parameter file at {0} does not exist yet!".format(parameter_file))
 
@@ -972,7 +986,7 @@ class SimulationBatch(object):
 	############################################################################################################################################
 
 
-	def writeNbodySubmission(self,realization_list,job_settings,job_handler,chunks=1,**kwargs):
+	def writeNbodySubmission(self,realization_list,job_settings,job_handler,config_file="gadget2.param",chunks=1,**kwargs):
 		
 		"""
 		Writes N-body simulation submission script
@@ -988,6 +1002,9 @@ class SimulationBatch(object):
 
 		:param job_handler: handler of the cluster specific features (job scheduler, architecture, etc...)
 		:type job_handler: JobHandler
+
+		:param config_file: name of the Nbody configuration file
+		:type config_file: str.
 
 		:param kwargs: you can set one_script=True to include all the executables sequentially in a single script
 		:type kwargs: dict.
@@ -1045,7 +1062,7 @@ class SimulationBatch(object):
 
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
-				parameter_file = os.path.join(r.home_subdir,"gadget2.param")
+				parameter_file = os.path.join(r.home_subdir,config_file)
 				if not(self.syshandler.exists(parameter_file)):
 					raise IOError("Gadget2 parameter file at {0} does not exist yet!".format(parameter_file))
 
@@ -1158,7 +1175,7 @@ class SimulationBatch(object):
 				r = collection.getRealization(int(ic_number.strip("ic")))
 
 				#Check that the cores per simulation matches the number of files per snapshot
-				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p"),"r") as settingsfile:
+				with self.syshandler.open(os.path.join(r.home_subdir,"gadget2.p"),"rb") as settingsfile:
 					gadget_settings = self.syshandler.pickleload(settingsfile)
 
 				assert gadget_settings.NumFilesPerSnapshot==job_settings.cores_per_simulation,"In the current implementation of plane generation, the number of MPI tasks must be the same as the number of files per snapshot!"
@@ -1448,18 +1465,17 @@ class SimulationBatch(object):
 				print("[+] {0} written on {1}".format(script_filename,self.syshandler.name))	
 
 
+##############################################
+##############TreeNode class##################
+##############################################
 
+class TreeNode(object):
 
-#####################################################
-##############SimulationModel class##################
-#####################################################
+	__metaclass__ = ABCMeta
 
-class SimulationModel(object):
-
-	"""
-	Class handler of a weak lensing simulation model, defined by a set of cosmological parameters
-
-	"""
+	@abstractmethod
+	def __init__(self,*args):
+		pass
 
 	#######
 	#Paths#
@@ -1512,9 +1528,94 @@ class SimulationModel(object):
 		"""
 
 		search_path = getattr(self,where)
-		return [os.path.basename(f) for f in self.syshandler.glob(os.path.join(search_path,glob))]
+		return [os.path.relpath(f,search_path) for f in self.syshandler.glob(os.path.join(search_path,glob))]
 
-	####################################################################################################
+	################################################################################################################################
+
+	def mkdir(self,directory):
+
+		"""
+		Create a sub-directory inside the current instance home and storage paths
+
+		:param directory: name of the directory to create
+		:type directory: str.
+
+		"""
+
+		for d in [self.home_subdir,self.storage_subdir]:
+
+			dir_to_make = os.path.join(d,directory)
+			
+			if not self.syshandler.exists(dir_to_make):
+				self.syshandler.mkdir(dir_to_make)
+				print("[+] {0} created on {1}".format(dir_to_make,self.syshandler.name))
+
+	################################################################################################################################
+
+	def mkfifo(self,names,method=None,where="storage_subdir"):
+
+		"""
+		Makes a list of named pipes
+
+		:param names: names of the named pipes
+		:type names: list.
+
+		:param where: where to put the named pipes, default is "storage_subdir"
+		:type where: str.
+
+		"""
+
+		if method is None:
+			method = lambda n:os.mkfifo(n)
+
+		for name in names:
+			pipe_name = self.syshandler.map(os.path.join(getattr(self,where),name))
+			method(pipe_name)
+			print("[+] Created named pipe {0}".format(pipe_name)) 
+
+	################################################################################################################################
+
+	def execute(self,filename,callback=None,where="storage_subdir",**kwargs):
+
+		"""
+		Calls a user defined function on the resource pointed to by filename; if None is provided, returns the full path to the map
+
+		:param filename: name of the file on which to call the callback
+		:type filename: str.
+
+		:param callback: user defined function that takes filename as first argument
+		:type callback: callable
+
+		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
+		:type where: str.
+
+		:param kwargs: key word arguments to be passed to callback
+		:type kwargs: dict.
+
+		:returns: the result of callback
+
+		"""
+
+		full_path = self.path(filename,where)
+		if full_path is None:
+			raise IOError("{0} does not exist!".format(filename))
+
+		if callback is None:
+			return full_path
+
+		#Call the function
+		return callback(full_path,**kwargs)
+
+#####################################################
+##############SimulationModel class##################
+#####################################################
+
+class SimulationModel(TreeNode):
+
+	"""
+	Class handler of a weak lensing simulation model, defined by a set of cosmological parameters
+
+	"""
 
 	@property
 	def cosmo_id(self):
@@ -1633,83 +1734,6 @@ class SimulationModel(object):
 		#Return
 		return specs
 
-
-	################################################################################################################################
-
-	def mkdir(self,directory):
-
-		"""
-		Create a sub-directory inside the current instance home and storage paths
-
-		:param directory: name of the directory to create
-		:type directory: str.
-
-		"""
-
-		for d in [self.home_subdir,self.storage_subdir]:
-
-			dir_to_make = os.path.join(d,directory)
-			
-			if not self.syshandler.exists(dir_to_make):
-				self.syshandler.mkdir(dir_to_make)
-				print("[+] {0} created on {1}".format(dir_to_make,self.syshandler.name))
-
-	################################################################################################################################
-
-	def mkfifo(self,names,method=None,where="storage_subdir"):
-
-		"""
-		Makes a list of named pipes
-
-		:param names: names of the named pipes
-		:type names: list.
-
-		:param where: where to put the named pipes, default is "storage_subdir"
-		:type where: str.
-
-		"""
-
-		if method is None:
-			method = lambda n:os.mkfifo(n)
-
-		for name in names:
-			pipe_name = self.syshandler.map(os.path.join(getattr(self,where),name))
-			method(pipe_name)
-			print("[+] Created named pipe {0}".format(pipe_name)) 
-
-	################################################################################################################################
-
-	def execute(self,filename,callback=None,where="storage_subdir",**kwargs):
-
-		"""
-		Calls a user defined function on the resource pointed to by filename; if None is provided, returns the full path to the map
-
-		:param filename: name of the file on which to call the callback
-		:type filename: str.
-
-		:param callback: user defined function that takes filename as first argument
-		:type callback: callable
-
-		:param where: where to look for the resource, can be "home_subdir" or "storage_subdir"
-		:type where: str.
-
-		:param kwargs: key word arguments to be passed to callback
-		:type kwargs: dict.
-
-		:returns: the result of callback
-
-		"""
-
-		full_path = self.path(filename,where)
-		if full_path is None:
-			raise IOError("{0} does not exist!".format(filename))
-
-		if callback is None:
-			return full_path
-
-		#Call the function
-		return callback(full_path,**kwargs)
-
 	################################################################################################################################
 
 	def newCollection(self,box_size=240.0*u.Mpc,nside=512):
@@ -1751,7 +1775,7 @@ class SimulationModel(object):
 	def getCollection(self,box_size,nside=None):
 
 		#Allow to pass a geometry_id as first argument
-		if type(box_size) in [str,unicode]:
+		if isinstance(box_size,str):
 			try:
 				parts = box_size.split("b")
 				nside = int(parts[0])
@@ -1849,7 +1873,7 @@ class SimulationModel(object):
 				print("[+] {0} created on {1}".format(d,self.syshandler.name))
 
 		#Save a picked copy of the settings to use for future reference
-		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
@@ -1887,7 +1911,7 @@ class SimulationModel(object):
 					continue
 
 				#Pickle the settings
-				with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"r") as settingsfile:
+				with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"rb") as settingsfile:
 					settings = self.syshandler.pickleload(settingsfile)
 
 				#Parse the collections
@@ -1926,7 +1950,7 @@ class SimulationModel(object):
 			name,colnames,rednames = line.rstrip("\n").split(",")
 
 			#Pickle the settings
-			with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,name,"settings.p"),"rb") as settingsfile:
 				settings = self.syshandler.pickleload(settingsfile)
 
 			#Parse the collections
@@ -1973,8 +1997,28 @@ class SimulationCollection(SimulationModel):
 		return super(SimulationCollection,self).__repr__() + " | box={0},nside={1}".format(self.box_size,self.nside)
 
 
+	################################################################################################################################
+
+	#Can't call these methods anymore
 	def newCollection(self):
-		raise TypeError("This method should be called on SimulationModel instances!")
+		raise NotImplementedError
+
+	def getCollection(self):
+		raise NotImplementedError
+
+	@property
+	def collections(self):
+		raise NotImplementedError
+
+	def newTelescopicMapSet(self):
+		raise NotImplementedError
+
+	def getTelescopicMapSet(self):
+		raise NotImplementedError
+
+	@property
+	def telescopicmapsets(self):
+		raise NotImplementedError		
 
 	################################################################################################################################
 
@@ -2018,14 +2062,14 @@ class SimulationCollection(SimulationModel):
 
 	################################################################################################################################
 
-	def newRealization(self,seed=0):
+	def newRealization(self,seed=0,**kwargs):
 		
 		#Check if there are already generated initial conditions in there
 		ics_present = self.syshandler.glob(os.path.join(self.storage_subdir,"ic*"))
 		new_ic_index = len(ics_present) + 1
 
 		#Generate the new initial condition
-		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed,syshandler=self.syshandler)
+		newIC = SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,new_ic_index,seed,syshandler=self.syshandler,**kwargs)
 
 		#Make dedicated directories for new initial condition,ics and snapshots
 		for d in [newIC.home_subdir,newIC.storage_subdir,newIC.ics_subdir,newIC.snapshot_subdir]:
@@ -2039,9 +2083,10 @@ class SimulationCollection(SimulationModel):
 					self.info[newIC.cosmo_id][newIC.geometry_id]["nbody"][str(newIC.ic_index)] = dict()
 					self.info[newIC.cosmo_id][newIC.geometry_id]["nbody"][str(newIC.ic_index)]["plane_sets"] = dict()
 
-		#Make new file with the number of the seed
+		#Make new file with the number of the seed, write the ICFileBase, SnapshotFileBase to the seed file
 		with self.syshandler.open(os.path.join(newIC.home_subdir,"seed"+str(seed)),"w") as seedfile:
-			pass
+			contents = { "ICFileBase":newIC.ICFileBase, "SnapshotFileBase":newIC.SnapshotFileBase }
+			seedfile.write(json.dumps(contents))
 
 		#Keep track of the fact that we created a new nbody realization
 		with self.syshandler.open(os.path.join(self.environment.home,"realizations.txt"),"a") as logfile:
@@ -2059,8 +2104,18 @@ class SimulationCollection(SimulationModel):
 			return None
 
 		#Read the seed number
-		seed_filename = os.path.basename(self.syshandler.glob(os.path.join(newIC.home_subdir,"seed*"))[0])
-		newIC.seed = int(seed_filename.strip("seed"))
+		seed_filename = self.syshandler.glob(os.path.join(newIC.home_subdir,"seed*"))[0]
+		newIC.seed = int(os.path.basename(seed_filename).strip("seed"))
+
+		#Read ICFileBase,SnapshotFileBase from seed file
+		with self.syshandler.open(seed_filename,"r") as fp:
+
+			try:
+				contents = json.loads(fp.read())
+				newIC.ICFileBase = contents["ICFileBase"]
+				newIC.SnapshotFileBase = contents["SnapshotFileBase"]
+			except ValueError:
+				pass
 
 		#Return the SimulationIC instance
 		return newIC
@@ -2079,19 +2134,12 @@ class SimulationCollection(SimulationModel):
 		"""
 
 		if self.syshandler.exists(self.infofile):
-			ic_numbers = [ int(n) for n in self.info[self.cosmo_id][self.geometry_id]["nbody"].keys() ]
+			ic_numbers = [ int(n) for n in self.info[self.cosmo_id][self.geometry_id]["nbody"] ]
 		else:
 			ic_numbers = [ int(os.path.basename(d).strip("ic")) for d in self.syshandler.glob(os.path.join(self.home_subdir,"ic*")) ]
 		
-		ic_list = list()
-
-		for ic in ic_numbers:
-
-			seed = int(os.path.basename(self.syshandler.glob(os.path.join(self.home_subdir,"ic"+str(ic),"seed*"))[0]).strip("seed"))
-			ic_list.append(SimulationIC(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,ic,seed,syshandler=self.syshandler))
-
-		#Sort according to ic_index
-		ic_list.sort(key=lambda r:r.ic_index)
+		#Get realizations
+		ic_list = [ self.getRealization(ic) for ic in sorted(ic_numbers) ]
 
 		#Return to user
 		return ic_list
@@ -2128,7 +2176,7 @@ class SimulationCollection(SimulationModel):
 					self.info[map_set.cosmo_id][map_set.geometry_id]["map_sets"][settings.directory_name] = dict()
 
 		#Save a picked copy of the settings to use for future reference
-		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(map_set.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
@@ -2156,7 +2204,7 @@ class SimulationCollection(SimulationModel):
 			return None
 
 		#Read the settings from the pickled file
-		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"rb") as settingsfile:
 			settings = self.syshandler.pickleload(settingsfile) 
 
 		#Return to user
@@ -2222,7 +2270,7 @@ class SimulationCollection(SimulationModel):
 					self.info[catalog.cosmo_id][catalog.geometry_id]["catalogs"][settings.directory_name] = dict()
 
 		#Save a picked copy of the settings to use for future reference
-		with self.syshandler.open(os.path.join(catalog.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(catalog.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the map batch to a summary file
@@ -2250,7 +2298,7 @@ class SimulationCollection(SimulationModel):
 			return None
 
 		#Read the settings from the pickled file
-		with self.syshandler.open(os.path.join(self.home_subdir,catalog_name,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,catalog_name,"settings.p"),"rb") as settingsfile:
 			settings = self.syshandler.pickleload(settingsfile) 
 
 		#Return to user
@@ -2287,9 +2335,11 @@ class SimulationCollection(SimulationModel):
 			return catalogs
 
 
-	#################################################################################################################################
+	###################################################################
+	##################Useful methods for CAMB I/O######################
+	###################################################################
 
-	def writeCAMB(self,z,settings):
+	def writeCAMB(self,z,settings,fname="camb.param",output_root="camb"):
 
 		"""
 		Generates the parameter file that CAMB needs to read to evolve the current initial condition in time
@@ -2300,6 +2350,12 @@ class SimulationCollection(SimulationModel):
 		:param z: redshifts at which CAMB needs to compute the matter power spectrum
 		:type z: array.
 
+		:param fname: name of the parameter file to write
+		:type fname: str.
+
+		:param output_root: output root of camb products
+		:type output_root: str.
+
 		"""
 
 		#Safety type check
@@ -2308,20 +2364,47 @@ class SimulationCollection(SimulationModel):
 			z = np.array([z])
 
 		#Write the parameter file
-		camb_filename = os.path.join(self.home_subdir,"camb.param") 
+		camb_filename = os.path.join(self.home_subdir,fname) 
 		with self.syshandler.open(camb_filename,"w") as paramfile:
-			paramfile.write(settings.write(output_root=os.path.join(self.home_subdir,"camb"),cosmology=self.cosmology,redshifts=z))
+			paramfile.write(settings.write(output_root=os.path.join(self.home_subdir,output_root),cosmology=self.cosmology,redshifts=z))
 
 		print("[+] {0} written on {1}".format(camb_filename,self.syshandler.name))
 
 		#Save a pickled copy of the settings
-		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"camb.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
+	def loadTransferFunction(self,name_root="camb_matterpower"):
 
-	################################################################################################################################
+		"""
+		Loads in the CDM transfer function calculated with CAMB (k,delta(k)/k^2) for a unit super-horizon perturbation
 
-	def camb2ngenic(self,z):
+		:param name_root: root of the file names that contain the transfer function
+		:type name_root: str.
+
+		:rtype: :py:class:`~lenstools.simulations.camb.CAMBTransferFromPower`
+
+		"""
+
+		#Look in the home subdirectory for files camb_transferfunc_zxxxxxxxx.dat
+		tfr_files = self.ls(name_root+"_z*.dat","home")
+		if not len(tfr_files):
+			raise ValueError("Transfer functions have not been computed yet!")
+
+		#Look for the wavenumbers in the first file
+		k = np.loadtxt(self.path(tfr_files[0],"home"),usecols=(0,))*self.cosmology.h*(self.Mpc_over_h**-1)
+		tfr = CAMBTransferFromPower(k)
+
+		#Add transfer function information from each redshift
+		for f in tfr_files:
+			z, = re.search(r"z([0-9.]+)",f).groups()
+			transfer_values = np.loadtxt(self.path(f,"home"),usecols=(1,))
+			tfr.add(float(z.rstrip(".")),transfer_values)
+
+		#Return to user
+		return tfr
+
+	def camb2ngenic(self,z,input_root="camb"):
 
 		"""
 		Read CAMB power spectrum file and convert it in a N-GenIC readable format
@@ -2329,9 +2412,12 @@ class SimulationCollection(SimulationModel):
 		:param z: redshift of the matter power spectrum file to convert
 		:type z: float.
 
+		:param input_root: name root of camb products
+		:type input_root: str.
+
 		"""
 
-		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"camb_matterpower_z{0:.6f}.dat".format(z))
+		camb_ps_file = os.path.join(self.environment.home,self.cosmo_id,self.geometry_id,"{0}_matterpower_z{1:.6f}.dat".format(input_root,z))
 		if not(self.syshandler.exists(camb_ps_file)):
 			raise IOError("CAMB matter power spectrum file {0} does not exist yet!!".format(camb_ps_file))
 
@@ -2343,6 +2429,7 @@ class SimulationCollection(SimulationModel):
 
 		print("[+] CAMB matter power spectrum at {0} converted into N-GenIC readable format at {1}".format(camb_ps_file,ngenic_ps_file))
 
+################################################################################################################################
 
 
 ##########################################################
@@ -2356,7 +2443,7 @@ class SimulationIC(SimulationCollection):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase="ics",SnapshotFileBase="snapshot",**kwargs):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase="ics",SnapshotFileBase="snapshot",**kwargs):
 
 		super(SimulationIC,self).__init__(cosmology,environment,parameters,box_size,nside,**kwargs)
 
@@ -2373,18 +2460,18 @@ class SimulationIC(SimulationCollection):
 		self.snapshot_subdir = os.path.join(self.storage_subdir,"snapshots")
 
 		#Useful to keep track of
-		self.ICFilebase = ICFilebase
+		self.ICFileBase = ICFileBase
 		self.SnapshotFileBase = SnapshotFileBase
 
 		#Try to load in the simulation settings, if any are present
 		try:
-			with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"rb") as settingsfile:
 				self.ngenic_settings = self.syshandler.pickleload(settingsfile)
 		except IOError:
 			pass
 
 		try:
-			with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"r") as settingsfile:
+			with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"rb") as settingsfile:
 				self.gadget_settings = self.syshandler.pickleload(settingsfile)
 		except IOError:
 			pass
@@ -2392,7 +2479,7 @@ class SimulationIC(SimulationCollection):
 	def __repr__(self):
 
 		#Check if snapshots and/or initial conditions are present
-		ics_on_disk = self.syshandler.glob(os.path.join(self.ics_subdir,self.ICFilebase+"*"))
+		ics_on_disk = self.syshandler.glob(os.path.join(self.ics_subdir,self.ICFileBase+"*"))
 		snap_on_disk = self.syshandler.glob(os.path.join(self.snapshot_subdir,self.SnapshotFileBase+"*"))
 
 		return super(SimulationIC,self).__repr__() + " | ic={0},seed={1} | IC files on disk: {2} | Snapshot files on disk: {3}".format(self.ic_index,self.seed,len(ics_on_disk),len(snap_on_disk))
@@ -2411,8 +2498,42 @@ class SimulationIC(SimulationCollection):
 
 	###########################################################################
 
+	#Can't call these methods anymore
 	def newRealization(self,seed):
-		raise TypeError("This method should be called on SimulationCollection instances!")
+		raise NotImplementedError
+
+	@property
+	def realizations(self):
+		raise NotImplementedError
+
+	def getRealization(self,ic):
+		raise NotImplementedError
+
+	def newMapSet(self,mp):
+		raise NotImplementedError
+
+	@property
+	def mapsets(self):
+		raise NotImplementedError
+
+	def getMapSet(self,mp):
+		raise NotImplementedError
+
+	def newCatalog(self,ct):
+		raise NotImplementedError
+
+	@property
+	def catalogs(self):
+		raise NotImplementedError
+
+	def getCatalog(self,ct):
+		raise NotImplementedError
+
+	def camb2ngenic(self,*args):
+		raise NotImplementedError
+
+	def writeCAMB(self,*args):
+		raise NotImplementedError	
 
 	####################################################################################################################################
 
@@ -2477,10 +2598,10 @@ class SimulationIC(SimulationCollection):
 	def newPlaneSet(self,settings):
 
 		#Safety check
-		assert isinstance(settings,PlaneSettings)
+		assert isinstance(settings,PlaneSettings) or isinstance(settings,PlaneLightConeSettings)
 
 		#Instantiate a SimulationPlanes object
-		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
+		new_plane_set = SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFileBase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
 
 		#Create the dedicated directory if not present already
 		for d in [new_plane_set.home_subdir,new_plane_set.storage_subdir]:
@@ -2493,7 +2614,7 @@ class SimulationIC(SimulationCollection):
 					self.info[new_plane_set.cosmo_id][new_plane_set.geometry_id]["nbody"][str(new_plane_set.ic_index)]["plane_sets"][settings.directory_name] = dict()
 
 		#Save a pickled copy of the settings for future reference
-		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(new_plane_set.home_subdir,"settings.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Append the name of the plane batch to a summary file
@@ -2522,11 +2643,42 @@ class SimulationIC(SimulationCollection):
 			return None
 
 		#Read plane settings from pickled file
-		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"r") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,setname,"settings.p"),"rb") as settingsfile:
 			settings = self.syshandler.pickleload(settingsfile)
 
 		#Instantiate the SimulationPlanes object
-		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFilebase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
+		return SimulationPlanes(self.cosmology,self.environment,self.parameters,self.box_size,self.nside,self.ic_index,self.seed,self.ICFileBase,self.SnapshotFileBase,settings,syshandler=self.syshandler)
+
+	####################################################################################################################################
+
+	def linkPlaneSet(self,plane,linkname):
+
+		"""
+		Link an existing plane set to the current SimulationIC 
+
+		:param plane: existing plane set to link
+		:type plane: :py:class:`SimulationPlanes`
+
+		:param linkname: name to give the symlinked plane set
+		:type linkname: str.
+
+		"""
+
+		#Type check
+		assert isinstance(plane,SimulationPlanes)
+
+		#Create new plane in the directory tree
+		old_plane_name = plane.settings.directory_name
+		plane.settings.directory_name = linkname
+		new_plane = self.newPlaneSet(plane.settings)
+
+		#Perform the symbolic linking operation
+		os.rmdir(new_plane.storage)
+		os.symlink(plane.storage,new_plane.storage)
+		print("[+] Linked plane set {0} to {1}".format(plane.storage,new_plane.storage))
+
+		#Restore settings
+		plane.settings.directory_name = old_plane_name
 
 	####################################################################################################################################
 
@@ -2588,7 +2740,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("Box 			{0:.1f}\n".format(self.box_size.to(self.kpc_over_h).value))
 
 			#Base names for outputs
-			paramfile.write("FileBase			{0}\n".format(self.ICFilebase))
+			paramfile.write("FileBase			{0}\n".format(self.ICFileBase))
 			paramfile.write("OutputDir			{0}\n".format(os.path.abspath(self.ics)))
 
 			#Glass file
@@ -2657,7 +2809,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write("UnitVelocity_in_cm_per_s 			{0:.6e}\n".format(settings.UnitVelocity_in_cm_per_s))
 
 		#Save a pickled copy of the settings for future reference
-		with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Update the instance settings
@@ -2688,7 +2840,7 @@ class SimulationIC(SimulationCollection):
 		with self.syshandler.open(filename,"w") as paramfile:
 
 			#File names for initial condition and outputs
-			initial_condition_file = os.path.join(os.path.abspath(self.ics),self.ICFilebase)
+			initial_condition_file = os.path.join(os.path.abspath(self.ics),self.ICFileBase)
 			paramfile.write("InitCondFile			{0}\n".format(initial_condition_file))
 			paramfile.write("OutputDir			{0}{1}\n".format(self.snapshots,os.path.sep))
 			paramfile.write("EnergyFile			{0}\n".format(settings.EnergyFile))
@@ -2719,7 +2871,7 @@ class SimulationIC(SimulationCollection):
 			except (IndexError,IOError):
 				
 				#Read the initial redshift of the simulation from the NGenIC settings
-				with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"r") as ngenicfile:
+				with self.syshandler.open(os.path.join(self.home_subdir,"ngenic.p"),"rb") as ngenicfile:
 					ngenic_settings = self.syshandler.pickleload(ngenicfile)
 					assert isinstance(ngenic_settings,NGenICSettings)
 
@@ -2762,7 +2914,7 @@ class SimulationIC(SimulationCollection):
 			paramfile.write(settings.writeSection("softening"))
 
 		#Save a pickled copy of the settings for future reference
-		with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"w") as settingsfile:
+		with self.syshandler.open(os.path.join(self.home_subdir,"gadget2.p"),"wb") as settingsfile:
 			self.syshandler.pickledump(settings,settingsfile)
 
 		#Update the instance settings
@@ -2783,13 +2935,13 @@ class SimulationPlanes(SimulationIC):
 
 	"""
 
-	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,settings,**kwargs):
+	def __init__(self,cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase,SnapshotFileBase,settings,**kwargs):
 
 		#Safety check
-		assert isinstance(settings,PlaneSettings)
+		assert isinstance(settings,PlaneSettings) or isinstance(settings,PlaneLightConeSettings)
 
 		#Call parent constructor
-		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFilebase,SnapshotFileBase,**kwargs)
+		super(SimulationPlanes,self).__init__(cosmology,environment,parameters,box_size,nside,ic_index,seed,ICFileBase,SnapshotFileBase,**kwargs)
 		self.settings = settings
 		self.name = settings.directory_name
 
@@ -2818,7 +2970,7 @@ class SimulationPlanes(SimulationIC):
 
 		"""
 
-		s = StringIO.StringIO()
+		s = StringIO()
 		info_filename = self.path("info.txt")
 
 		#Look at all the planes present in the storage directory
@@ -2841,6 +2993,31 @@ class SimulationPlanes(SimulationIC):
 		s.seek(0)
 
 		return s.read()
+
+	###########################################################################
+
+	#Can't call these methods anymore
+	def newPlaneSet(self,*args):
+		raise NotImplementedError
+
+	@property
+	def planesets(self):
+		raise NotImplementedError
+
+	def getPlaneSet(self,*args):
+		raise NotImplementedError
+
+	def writeGadget2(self,*args):
+		raise NotImplementedError
+
+	def writeNGenIC(self,*args):
+		raise NotImplementedError
+
+	def pipe_snapshots(self,*args):
+		raise NotImplementedError
+	
+	def snapshotPath(self,*args):
+		raise NotImplementedError
 
 
 ##############################################################
@@ -2876,8 +3053,44 @@ class SimulationMaps(SimulationCollection):
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
 
-	
+	###########################################################################
 
+	#Can't call these methods anymore
+	def newRealization(self,seed):
+		raise NotImplementedError
+
+	@property
+	def realizations(self):
+		raise NotImplementedError
+
+	def getRealization(self,ic):
+		raise NotImplementedError
+
+	def newMapSet(self,mp):
+		raise NotImplementedError
+
+	@property
+	def mapsets(self):
+		raise NotImplementedError
+
+	def getMapSet(self,mp):
+		raise NotImplementedError
+
+	def newCatalog(self,ct):
+		raise NotImplementedError
+
+	@property
+	def catalogs(self):
+		raise NotImplementedError
+
+	def getCatalog(self,ct):
+		raise NotImplementedError
+
+	def camb2ngenic(self,*args):
+		raise NotImplementedError
+
+	def writeCAMB(self,*args):
+		raise NotImplementedError
 
 ########################################################################
 ##############SimulationTelescopicMaps class############################
@@ -2915,6 +3128,28 @@ class SimulationTelescopicMaps(SimulationModel):
 		#Build the new representation string
 		return super(SimulationTelescopicMaps,self).__repr__() + " | " + "-".join([c.geometry_id for c in self.mapcollections]) + " | " + "-".join([ "{0:.3f}".format(z) for z in self.redshifts ]) +" | Map files on disk: {0}".format(len(maps_on_disk))
 
+	################################################################################################################################
+
+	#Can't call these methods anymore
+	def newCollection(self):
+		raise NotImplementedError
+
+	def getCollection(self):
+		raise NotImplementedError
+
+	@property
+	def collections(self):
+		raise NotImplementedError
+
+	def newTelescopicMapSet(self):
+		raise NotImplementedError
+
+	def getTelescopicMapSet(self):
+		raise NotImplementedError
+
+	@property
+	def telescopicmapsets(self):
+		raise NotImplementedError		
 
 
 #################################################################
@@ -2986,6 +3221,48 @@ class SimulationCatalog(SimulationCollection):
 		sub_catalogs.sort(key=lambda c:c.first_realization)
 		return sub_catalogs
 
+	###########################################################################
+
+	#Can't call these methods anymore
+	def newRealization(self,seed):
+		raise NotImplementedError
+
+	@property
+	def realizations(self):
+		raise NotImplementedError
+
+	def getRealization(self,ic):
+		raise NotImplementedError
+
+	def newMapSet(self,mp):
+		raise NotImplementedError
+
+	@property
+	def mapsets(self):
+		raise NotImplementedError
+
+	def getMapSet(self,mp):
+		raise NotImplementedError
+
+	def newCatalog(self,ct):
+		raise NotImplementedError
+
+	@property
+	def catalogs(self):
+		raise NotImplementedError
+
+	def getCatalog(self,ct):
+		raise NotImplementedError
+
+	def camb2ngenic(self,*args):
+		raise NotImplementedError
+
+	def writeCAMB(self,*args):
+		raise NotImplementedError	
+
+
+####################################################################################################################################
+
 
 class SimulationSubCatalog(SimulationCatalog):
 
@@ -3010,6 +3287,10 @@ class SimulationSubCatalog(SimulationCatalog):
 	@property
 	def last_realization(self):
 		return self._last_realization
+
+	@property
+	def subcatalogs(self):
+		raise NotImplementedError
 
 
 

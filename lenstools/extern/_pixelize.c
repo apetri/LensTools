@@ -10,7 +10,12 @@ The module is called _pixelize and it defines the methods below (see docstrings)
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+#include "lenstoolsPy3.h"
 #include "grid.h"
+
+#ifndef IS_PY3K
+static struct module_state _state;
+#endif
 
 //Python module docstrings
 static char module_docstring[] = "This module provides a python interface for two dimensional pixelizations of catalogs";
@@ -28,15 +33,66 @@ static PyMethodDef module_methods[] = {
 } ;
 
 //_pixelize constructor
-PyMODINIT_FUNC init_pixelize(void){
 
+#ifdef IS_PY3K
+
+static struct PyModuleDef moduledef = {
+
+	PyModuleDef_HEAD_INIT,
+	"_pixelize",
+	module_docstring,
+	sizeof(struct module_state),
+	module_methods,
+	NULL,
+	myextension_trasverse,
+	myextension_clear,
+	NULL
+
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit__pixelize(void)
+
+#else
+
+#define INITERROR return
+
+void
+init_pixelize(void)
+#endif
+
+{
+#ifdef IS_PY3K
+	PyObject *m = PyModule_Create(&moduledef);
+#else
 	PyObject *m = Py_InitModule3("_pixelize",module_methods,module_docstring);
-	if(m==NULL) return;
+#endif
+
+	if(m==NULL)
+		INITERROR;
+	struct module_state *st = GETSTATE(m);
+
+	st->error = PyErr_NewException("_pixelize.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(m);
+        INITERROR;
+    }
 
 	/*Load numpy functionality*/
 	import_array();
 
+	/*Return*/
+#ifdef IS_PY3K
+	return m;
+#endif
+
 }
+
+//////////////////////////////////////////////
+//////////////////////////////////////////////
+//////////////////////////////////////////////
 
 
 //grid2d() implementation

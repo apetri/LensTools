@@ -1,12 +1,23 @@
 from __future__ import division
 
-import StringIO
+import sys
+
+if sys.version_info.major>=3:
+	from io import StringIO
+	from configparser import NoOptionError
+else:
+	from StringIO import StringIO
+	from ConfigParser import NoOptionError
+
 from operator import add
 from functools import reduce
 
 from abc import ABCMeta,abstractproperty,abstractmethod
 
+import astropy.units as u
+
 from .settings import JobSettings
+from ..simulations.settings import LTSettings
 
 ############################################################
 ###########JobHandler abstract class########################
@@ -71,7 +82,7 @@ class JobHandler(object):
 		assert isinstance(settings,JobSettings)
 
 		#Write the preamble
-		s = StringIO.StringIO()
+		s = StringIO()
 
 		#Shell type
 		s.write("{0}\n".format(self.cluster_specs.shell_prefix))
@@ -162,7 +173,7 @@ class JobHandler(object):
 		#Check that the sum of the cores requested matches the job settings
 		assert reduce(add,cores)==settings.num_cores,"The number of cores requested does not match the execution statement!"
 
-		s = StringIO.StringIO()
+		s = StringIO()
 		s.write("""
 ###################################################
 #################Execution#########################
@@ -179,7 +190,12 @@ class JobHandler(object):
 			if self.cluster_specs.multiple_executables_on_node:
 				s.write("{0} {1}{2} {3}{4} {5} &\n".format(self.cluster_specs.job_starter,self.cluster_specs.cores_at_execution_switch,cores[n],self.cluster_specs.offset_switch,offset,executable))
 			else:
-				s.write("{0} {1}{2} {3} &\n".format(self.cluster_specs.job_starter,self.cluster_specs.cores_at_execution_switch,cores[n],executable))
+				
+				if self.cluster_specs.offset_switch is not None:
+					nodes = cores[n]//self.cluster_specs.cores_per_node + (cores[n]%self.cluster_specs.cores_per_node>0)
+					s.write("{0} {1}{2} {3}{4} {5} &\n".format(self.cluster_specs.job_starter,self.cluster_specs.cores_at_execution_switch,cores[n],self.cluster_specs.offset_switch,nodes,executable))
+				else:
+					s.write("{0} {1}{2} {3} &\n".format(self.cluster_specs.job_starter,self.cluster_specs.cores_at_execution_switch,cores[n],executable))
 
 			#Increase offset
 			offset += cores[n]
@@ -192,11 +208,42 @@ class JobHandler(object):
 		return s.read()
 
 
+############################################################
+###########ParsedHandler class##############################
+############################################################
+
+class ParsedHandler(JobHandler):
+
+
+	"""
+	Job handler sub-class that allows to read the cluster specifications from a configuration file
+
+	"""
+
+	def setDirectives(self,filename):
+		self._directives = Directives.read(filename)
+
+	def setClusterSpecs(self,filename):
+		self._cluster_specs = ClusterSpecs.read(filename)
+
+	def __init__(self):
+		pass
+
+	@classmethod 
+	def read(cls,filename):
+		
+		handler = cls()
+		handler.setDirectives(filename)
+		handler.setClusterSpecs(filename)
+		
+		return handler
+
+
 ##########################################
 ########Directives class##################
 ##########################################
 
-class Directives(object):
+class Directives(LTSettings):
 
 	def __init__(self,**kwargs):
 
@@ -205,6 +252,36 @@ class Directives(object):
 		for key in kwargs:
 			setattr(self,key,kwargs[key])
 			self._metadata.append(key)
+
+	@classmethod
+	def get(cls,options):
+
+		settings = cls()
+		settings._metadata = list()
+		
+		#Parse options
+		section = "Directives"
+		for opt in ['user_email_switch','num_cores_switch','queue_type_switch','tasks_per_node_switch','directive_prefix','user_email_type','num_nodes_switch','stderr_switch','job_name_switch','wallclock_time_switch','stdout_switch']:
+			parsed = options.get(section,opt)
+			if parsed=="None":
+				setattr(settings,opt,None)
+			elif parsed=="True":
+				setattr(settings,opt,True)
+			elif parsed=="False":
+				setattr(settings,opt,False)
+			else:
+				setattr(settings,opt,parsed)
+
+			settings._metadata.append(opt)
+
+		#Add necessary spaces to switches
+		for opt in settings._metadata:
+			option = getattr(settings,opt)
+			if isinstance(option,str) and not(option.endswith("=")) and option.startswith("-"):
+				setattr(settings,opt,option+" ")
+
+		return settings
+
 
 
 ############################################
@@ -212,7 +289,7 @@ class Directives(object):
 ############################################
 
 
-class ClusterSpecs(object):
+class ClusterSpecs(LTSettings):
 
 	def __init__(self,**kwargs):
 
@@ -221,6 +298,43 @@ class ClusterSpecs(object):
 		for key in kwargs:
 			setattr(self,key,kwargs[key])
 			self._metadata.append(key)
+
+	@classmethod
+	def get(cls,options):
+		
+		settings = cls()
+		settings._metadata = list()
+
+		#Parse options
+		section = "ClusterSpecs"
+		for opt in ['multiple_executables_on_node','wait_switch','shell_prefix','execution_preamble','cores_per_node','memory_per_node','job_starter','offset_switch','charge_account_switch','cores_at_execution_switch']:
+			parsed = options.get(section,opt)
+			if parsed=="None":
+				setattr(settings,opt,None)
+			elif parsed=="True":
+				setattr(settings,opt,True)
+			elif parsed=="False":
+				setattr(settings,opt,False)
+			else:
+				setattr(settings,opt,parsed)
+
+			settings._metadata.append(opt)
+
+		settings.cores_per_node = int(settings.cores_per_node)
+		try:
+			memory_unit = getattr(u,options.get(section,"memory_unit"))
+		except NoOptionError:
+			memory_unit = u.Gbyte
+
+		settings.memory_per_node = int(settings.memory_per_node)*memory_unit
+
+		#Add necessary spaces to switches
+		for opt in settings._metadata:
+			option = getattr(settings,opt)
+			if isinstance(option,str) and not(option.endswith("=")) and option.startswith("-"):
+				setattr(settings,opt,option+" ")
+
+		return settings
 
 
 

@@ -43,7 +43,7 @@ class Parallelize(object):
 				return result
 		
 		#Restore the documentation
-		spreaded_func.func_doc = func.func_doc
+		spreaded_func.__doc__ = func.__doc__
 
 		#Return
 		return spreaded_func

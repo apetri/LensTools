@@ -160,7 +160,7 @@ class Design(Ensemble):
 			return design_table
 
 
-	def visualize(self,fig=None,ax=None,parameters=None,**kwargs):
+	def visualize(self,fig=None,ax=None,parameters=None,fontsize=20,**kwargs):
 
 		"""
 		Visualize the design configuration using matplotlib
@@ -202,14 +202,14 @@ class Design(Ensemble):
 
 		#Set the labels on the axes
 		px,py = self.parameters.index(parameters[0]),self.parameters.index(parameters[1])
-		self.ax.set_xlabel(self._labels[px])
-		self.ax.set_ylabel(self._labels[py])
+		self.ax.set_xlabel(self._labels[px],fontsize=fontsize)
+		self.ax.set_ylabel(self._labels[py],fontsize=fontsize)
 		self.ax.set_xlim(self._pmin[px],self._pmax[px])
 		self.ax.set_ylim(self._pmin[py],self._pmax[py])
 
 		if len(parameters)==3:
 			pz = self.parameters.index(parameters[2])
-			self.ax.set_zlabel(self._labels[pz])
+			self.ax.set_zlabel(self._labels[pz],fontsize=fontsize)
 			self.ax.set_zlim(self._pmin[pz],self._pmax[pz])
 
 		#Return

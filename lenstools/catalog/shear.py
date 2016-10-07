@@ -29,6 +29,7 @@ except ImportError:
 
 from .. import extern as ext
 from ..image.shear import ShearMap
+from ..utils.algorithms import step
 
 ##########################################################
 ################Catalog class#############################
@@ -60,7 +61,21 @@ class Catalog(tbl.Table):
 			
 			if fitsio is not None:
 				with fitsio.FITS(filename,"r") as hdulist:
-					return cls(hdulist[1].read())
+					
+					data = cls(hdulist[1].read())
+					header = hdulist[1].read_header()
+					
+					try:
+						data.meta["NGAL"] = header["NGAL"]
+					except ValueError:
+						pass
+
+					try:
+						data.meta["AUNIT"] = header["AUNIT"].replace(" ","")
+					except ValueError:
+						pass
+
+					return data
 		
 		return super(Catalog,cls).read(filename,*args,**kwargs)
 
@@ -203,6 +218,34 @@ class Catalog(tbl.Table):
 
 	########################################################################################
 
+	def rebin(self,intervals,field="z"):
+
+		"""
+		Re-bin the catalog according to one of the columns
+
+		:param intervals: list of interval tuples
+		:type intervals: list.
+
+		:param field: column along which to re-bin
+		:type field: str.
+
+		:returns: list of re-binned catalogs
+		:rtype: :py:class:`ShearCatalog`
+
+		"""
+		catalog_columns = self.colnames 
+
+		#Group by column interval
+		self["group"] = step(self[field],intervals,np.array(range(1,len(intervals)+1)))
+		catalog_rebinned = list()
+		for n,i in enumerate(intervals):
+			catalog_rebinned.append(self[self["group"]==n+1][catalog_columns])
+
+		#Return re-binned catalog to user
+		return catalog_rebinned
+
+
+	########################################################################################
 	
 	def visualize(self,map_size,npixel,field_quantity=None,origin=np.zeros(2)*u.deg,smooth=None,fig=None,ax=None,colorbar=False,cmap="jet",**kwargs):
 

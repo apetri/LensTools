@@ -11,31 +11,20 @@ from ConfigParser import NoOptionError
 from lenstools.utils import MPIWhirlPool
 
 from lenstools.simulations.nbody import NbodySnapshot
-from lenstools.simulations.gadget2 import Gadget2Snapshot
+from lenstools.simulations.gadget2 import Gadget2SnapshotDE
+from lenstools.simulations.logs import logdriver
 
 from lenstools.pipeline.simulation import SimulationBatch
 
 import numpy as np
 import astropy.units as u
 
-################################################
-###########Loggers##############################
-################################################
-
-console = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-console.setFormatter(formatter)
-
-logdriver = logging.getLogger("lenstools.driver")
-logdriver.addHandler(console)
-logdriver.propagate = False
-
 #Orchestra director of the execution
 def powerSpectrumExecution():
 
 	script_to_execute = matterPowerSpectrum
 	settings_handler = PowerSpectrumSettings
-	kwargs = {"fmt":Gadget2Snapshot}
+	kwargs = {"fmt":Gadget2SnapshotDE}
 
 	return script_to_execute,settings_handler,kwargs
 
@@ -43,7 +32,7 @@ def powerSpectrumExecution():
 ################Snapshot power spectrum#########################
 ################################################################
 
-def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
+def matterPowerSpectrum(pool,batch,settings,node_id,**kwargs):
 
 	assert "fmt" in kwargs.keys()
 	fmt = kwargs["fmt"]
@@ -55,7 +44,7 @@ def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
 	assert isinstance(settings,PowerSpectrumSettings)
 
 	#Split the id into the model,collection and realization parts
-	cosmo_id,geometry_id = id.split("|")
+	cosmo_id,geometry_id = node_id.split("|")
 
 	#Get a handle on the simulation model
 	model = batch.getModel(cosmo_id)
@@ -88,6 +77,14 @@ def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
 	#Construct the array of bin edges
 	k_egdes  = np.linspace(settings.kmin,settings.kmax,settings.num_k_bins+1).to(model.Mpc_over_h**-1)
 
+	#Placeholder for the density MPI communications
+	density_placeholder = np.empty((settings.fft_grid_size,)*3,dtype=np.float32)
+	if pool is not None:
+		pool.openWindow(density_placeholder)
+
+		if pool.is_master():
+			logdriver.debug("Opened density window of type {0}".format(pool._window_type))
+
 	#Cycle over snapshots
 	for n in range(settings.first_snapshot,settings.last_snapshot+1):
 
@@ -96,7 +93,7 @@ def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
 
 		#Log to user
 		if (pool is None) or (pool.is_master()):
-			logdriver.info("Processing snapshot {0} of model {1}".format(n,id))
+			logdriver.info("Processing snapshot {0} of model {1}".format(n,node_id))
 			logdriver.info("Allocated memory for power spectrum Ensemble {0}".format(power_ensemble.shape))
 
 		for r,ic in enumerate(settings.nbody_realizations):
@@ -115,7 +112,7 @@ def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
 					sys.exit(1)
 
 			snap = fmt.open(realization.snapshotPath(n,sub=None),pool=pool)
-			k,power_ensemble[r],hits = snap.powerSpectrum(k_egdes,resolution=settings.fft_grid_size,return_num_modes=True)
+			k,power_ensemble[r],hits = snap.powerSpectrum(k_egdes,resolution=settings.fft_grid_size,return_num_modes=True,density_placeholder=density_placeholder)
 			snap.close()
 
 			#Safety barrier sync
@@ -145,8 +142,19 @@ def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
 		if pool is not None:
 			pool.comm.Barrier()
 
+	###########
+	#Completed#
+	###########
 
-	#Completed
+	#Close the RMA window
+	if pool is not None:
+		pool.comm.Barrier()
+		pool.closeWindow()
+		
+		if pool.is_master():
+			logdriver.debug("Closed density window of type {0}".format(pool._window_type))
+
+
 	if pool is None or pool.is_master():
 		logdriver.info("DONE!!")
 

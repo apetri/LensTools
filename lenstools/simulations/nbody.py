@@ -17,7 +17,7 @@ import numpy as np
 #astropy stuff, invaluable here
 from astropy.units import Mbyte,kpc,Mpc,cm,km,g,s,hour,day,deg,arcmin,rad,Msun,quantity,def_unit
 from astropy.constants import c
-from astropy.cosmology import w0waCDM
+from astropy.cosmology import w0waCDM,z_at_value
 
 #FFT engine
 from ..utils.fft import NUMPYFFTPack
@@ -73,6 +73,10 @@ class NbodySnapshot(object):
 		pass
 
 	@abstractmethod
+	def setLimits(self):
+		pass
+
+	@abstractmethod
 	def getPositions(self,first=None,last=None,save=True):
 		pass
 
@@ -116,8 +120,6 @@ class NbodySnapshot(object):
 		self._mass_unit = mass_unit.to(g).value
 		self._velocity_unit = velocity_unit.to(cm/s).value
 
-		assert (type(fp)==file) or (fp is None),"Call the open() method instead!!"
-
 		if fp is not None:
 		
 			self.fp = fp
@@ -128,7 +130,7 @@ class NbodySnapshot(object):
 			#Check that header has been loaded correctly
 			self._check_header()
 
-			self._header["files"] = [self.fp.name]
+			#Hubble parameter
 			h = self._header["h"]
 
 			#Define the Mpc/h, and kpc/h units for convenience
@@ -143,7 +145,8 @@ class NbodySnapshot(object):
 				self._header["box_size"] = self._header["box_size"].to(self.Mpc_over_h)
 
 				#Read in the comoving distance
-				self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
+				if "comoving_distance" in self._header:
+					self._header["comoving_distance"] = (self._header["comoving_distance"] / 1.0e3) * self.Mpc_over_h
 
 			else:
 				self._header["box_size"] *= kpc
@@ -164,6 +167,8 @@ class NbodySnapshot(object):
 			if h>0.0:
 				self.cosmology = w0waCDM(H0=self._header["H0"],Om0=self._header["Om0"],Ode0=self._header["Ode0"],w0=self._header["w0"],wa=self._header["wa"])
 
+			#Set particle number limits that this instance will handle
+			self.setLimits()
 
 	@classmethod
 	def open(cls,filename,pool=None,header_kwargs=dict(),**kwargs):
@@ -187,9 +192,9 @@ class NbodySnapshot(object):
 
 		if type(filename)==str:
 
-			fp = open(cls.buildFilename(filename,pool,**kwargs),"r")
+			fp = open(cls.buildFilename(filename,pool,**kwargs),"rb")
 		
-		elif type(filename)==file:
+		elif hasattr(filename,"read"):
 			
 			if pool is not None:
 				raise TypeError("Specifying file objects with MPIPools is not allowed!")
@@ -396,7 +401,7 @@ class NbodySnapshot(object):
 		self.velocities = velocities
 
 
-	def massDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False):
+	def massDensity(self,resolution=0.5*Mpc,smooth=None,left_corner=None,save=False,density_placeholder=None):
 
 		"""
 		Uses a C backend gridding function to compute the matter mass density fluctutation for the current snapshot: the density is evaluated using a nearest neighbor search
@@ -412,6 +417,9 @@ class NbodySnapshot(object):
 
 		:param save: if True saves the density histogram and resolution as instance attributes
 		:type save: bool.
+
+		:param density placeholder: if not None, it is used as a fixed memory chunk for MPI communications of the density
+		:type density_placeholder: array
 
 		:returns: tuple(numpy 3D array with the (unsmoothed) matter density fluctuation on a grid,bin resolution along the axes)  
 
@@ -473,10 +481,18 @@ class NbodySnapshot(object):
 
 		#Accumulate from the other processors
 		if self.pool is not None:
+
+			if density_placeholder is not None:
+
+				density_placeholder[:] = density
+				self.pool.comm.Barrier()
+				self.pool.accumulate()
+
+			else:
 			
-			self.pool.openWindow(density)
-			self.pool.accumulate()
-			self.pool.closeWindow()
+				self.pool.openWindow(density)
+				self.pool.accumulate()
+				self.pool.closeWindow()
 
 		#Recompute resolution to make sure it represents the bin size correctly
 		bin_resolution = ((xi[1:]-xi[:-1]).mean() * positions.unit,(yi[1:]-yi[:-1]).mean() * positions.unit,(zi[1:]-zi[:-1]).mean() * positions.unit)
@@ -503,10 +519,10 @@ class NbodySnapshot(object):
 
 	###################################################################################################################################################
 
-	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=0.1*Mpc,left_corner=None,thickness_resolution=0.1*Mpc,smooth=None,kind="density",**kwargs):
+	def cutPlaneGaussianGrid(self,normal=2,thickness=0.5*Mpc,center=7.0*Mpc,plane_resolution=4096,left_corner=None,thickness_resolution=1,smooth=1,kind="density",**kwargs):
 
 		"""
-		Cuts a density (or gravitational potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
+		Cuts a density (or lensing potential) plane out of the snapshot by computing the particle number density on a slab and performing Gaussian smoothing; the plane coordinates are cartesian comoving
 
 		:param normal: direction of the normal to the plane (0 is x, 1 is y and 2 is z)
 		:type normal: int. (0,1,2)
@@ -535,7 +551,7 @@ class NbodySnapshot(object):
 		:param kwargs: accepted keyword are: 'density_placeholder', a pre-allocated numpy array, with a RMA window opened on it; this facilitates the communication with different processors by using a single RMA window during the execution. 'l_squared' a pre-computed meshgrid of squared multipoles used for smoothing
 		:type kwargs: dict.
 
-		:returns: tuple(numpy 3D array with the (unsmoothed) particle number density,bin resolution along the axes, number of particles on the plane)
+		:returns: tuple(numpy 2D array with the density (or lensing potential),bin resolution along the axes, number of particles on the plane)
 
 		"""
 
@@ -546,21 +562,20 @@ class NbodySnapshot(object):
 		assert type(center)==quantity.Quantity and center.unit.physical_type=="length"
 
 		#Redshift must be bigger than 0 or we cannot proceed
-		if self.header["redshift"]<=0.0:
+		if ("redshift" in self.header) and (self.header["redshift"]<=0.0):
 			raise ValueError("The snapshot redshift must be >0 for the lensing density to be defined!")
 
 		#Cosmological normalization factor
-		cosmo_normalization = 1.5 * self._header["H0"]**2 * self._header["Om0"] / c**2
+		cosmo_normalization = 1.5 * self.header["H0"]**2 * self.header["Om0"] / c**2
 
 		#Direction of the plane
-		plane_directions = range(3)
-		plane_directions.pop(normal)
+		plane_directions = [ d for d in range(3) if d!=normal ]
 
 		#Get the particle positions if not available get
 		if hasattr(self,"positions"):
 			positions = self.positions
 		else:
-			positions = self.getPositions(save=False)
+			positions = self.getPositions(first=self._first,last=self._last,save=False)
 
 		assert hasattr(self,"weights")
 		assert hasattr(self,"virial_radius")
@@ -604,20 +619,41 @@ class NbodySnapshot(object):
 
 			binning[normal] = np.linspace((center - thickness/2).to(positions.unit).value,(center + thickness/2).to(positions.unit).value,thickness_resolution+1)
 
-		#Now use gridding to compute the density along the slab
-		assert positions.value.dtype==np.float32
-
 		#Weights
 		if self.weights is not None:
-			weights = (self.weights * self._header["num_particles_total"] / ((len(binning[0]) - 1) * (len(binning[1]) - 1) * (len(binning[2]) - 1))).astype(np.float32)
+			weights = self.weights.astype(np.float32)
 		else:
 			weights = None
 
 		#Virial radius
 		if self.virial_radius is not None:
+			assert weights is not None,"Particles have virial radiuses, you should specify their weight!"
+			weights  = (weights * self._header["num_particles_total"] / ((len(binning[0]) - 1) * (len(binning[1]) - 1) * (len(binning[2]) - 1))).astype(np.float32)
 			rv = self.virial_radius.to(positions.unit).value
 		else:
 			rv = None
+
+		#Recompute resolution to make sure it represents the bin size correctly
+		bin_resolution = [ (binning[n][1:]-binning[n][:-1]).mean() * positions.unit for n in (0,1,2) ]
+
+		############################################################################################################
+		#################################Longitudinal normalization factor##########################################
+		#If the comoving distance is not provided in the header, the position along the normal direction is assumed#
+		############################################################################################################
+
+		if "comoving_distance" in self.header:
+			
+			#Constant time snapshots
+			density_normalization = bin_resolution[normal] * self.header["comoving_distance"] / self.header["scale_factor"]
+		
+		else:
+
+			#Light cone projection: use the lens center as the common comoving distance
+			zlens = z_at_value(self.cosmology.comoving_distance,center)
+			density_normalization = bin_resolution[normal] * center * (1.+zlens)
+
+		#Now use gridding to compute the density along the slab
+		assert positions.value.dtype==np.float32
 
 		#Log
 		if self.pool is not None:
@@ -625,8 +661,13 @@ class NbodySnapshot(object):
 		else:
 			logplanes.debug("Began gridding procedure")
 
-		#Gridding
+		##########
+		#Gridding#
+		##########
+
 		density = ext._nbody.grid3d_nfw(positions.value,tuple(binning),weights,rv,self.concentration)
+
+		###################################################################################################################################
 
 		#Log
 		if self.pool is not None:
@@ -697,12 +738,6 @@ class NbodySnapshot(object):
 		if (self.pool is not None) and not(self.pool.is_master()):
 			return (None,)*3
 
-		#Recompute resolution to make sure it represents the bin size correctly
-		bin_resolution = [(binning[0][1:]-binning[0][:-1]).mean() * positions.unit,(binning[1][1:]-binning[1][:-1]).mean() * positions.unit,(binning[2][1:]-binning[2][:-1]).mean() * positions.unit]
-
-		#Longitudinal normalization factor
-		density_normalization = bin_resolution[normal] * self._header["comoving_distance"] / self._header["scale_factor"]
-
 		#Normalize the density to the density fluctuation
 		density_projected /= self._header["num_particles_total"]
 		density_projected *= (self._header["box_size"]**3 / (bin_resolution[0]*bin_resolution[1]*bin_resolution[2])).decompose().value
@@ -739,8 +774,15 @@ class NbodySnapshot(object):
 			density_ft[0,0] = 0.0
 
 			if kind=="potential":
+
+				#Find out the comoving distance
+				if "comoving_distance" in self.header:
+					chi = self.header["comoving_distance"]
+				else:
+					chi = center
+
 				#Solve the poisson equation
-				density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / self.header["comoving_distance"]**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
+				density_ft *= -2.0 * (bin_resolution[0] * bin_resolution[1] / chi**2).decompose().value / (l_squared * ((2.0*np.pi)**2))
 
 			if smooth is not None:
 				#Perform the smoothing
@@ -763,6 +805,7 @@ class NbodySnapshot(object):
 		lensing_potential = lensing_potential.decompose()
 		assert lensing_potential.unit.physical_type=="dimensionless"
 
+		#Add units to lensing potential
 		if kind=="potential":
 			lensing_potential *= rad**2
 		else:
@@ -1234,7 +1277,7 @@ class NbodySnapshot(object):
 	#############################################################################################################################################
 
 
-	def powerSpectrum(self,k_edges,resolution=None,return_num_modes=False):
+	def powerSpectrum(self,k_edges,resolution=None,return_num_modes=False,density_placeholder=None):
 
 		"""
 		Computes the power spectrum of the relative density fluctuations in the snapshot at the wavenumbers specified by k_edges; a discrete particle number density is computed before hand to prepare the FFT grid
@@ -1247,6 +1290,9 @@ class NbodySnapshot(object):
 
 		:param return_num_modes: if True returns the mode counting for each k bin as the last element in the return tuple
 		:type return_num_modes: bool.
+
+		:param density placeholder: if not None, it is used as a fixed memory chunk for MPI communications in the density calculations
+		:type density_placeholder: array
 
 		:returns: tuple(k_values(bin centers),power spectrum at the specified k_values)
 
@@ -1264,7 +1310,7 @@ class NbodySnapshot(object):
 
 		#Compute the gridded number density
 		if not hasattr(self,"density"):
-			density,bin_resolution = self.massDensity(resolution=resolution) 
+			density,bin_resolution = self.massDensity(resolution=resolution,density_placeholder=density_placeholder) 
 		else:
 			assert resolution is None,"The spatial resolution is already specified in the attributes of this instance! Call massDensity() to modify!"
 			density,bin_resolution = self.density,self.resolution
@@ -1280,7 +1326,7 @@ class NbodySnapshot(object):
 
 		#Sanity check on maximum k: maximum is limited by the grid resolution
 		if k_edges.max() > k_max:
-			print("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}, distortions might start to appear already at {2}): results might be inaccurate".format(k_edges.max(),k_max,k_max_recommended))
+			logstderr.warning("Your grid resolution is too low to compute accurately the power on {0} (maximum recommended {1}, distortions might start to appear already at {2}): results might be inaccurate".format(k_edges.max(),k_max,k_max_recommended))
 
 		#Perform the FFT
 		density_ft = fftengine.rfftn(density)

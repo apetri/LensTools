@@ -1,8 +1,10 @@
 Welcome to LensTools!
 +++++++++++++++++++++
 
-.. image:: https://travis-ci.org/apetri/LensTools.svg?branch=master
+.. image:: https://travis-ci.org/apetri/LensTools.svg?branch=python3
     	:target: https://travis-ci.org/apetri/LensTools
+.. image:: https://coveralls.io/repos/github/apetri/LensTools/badge.svg?branch=python3 
+	:target: https://coveralls.io/github/apetri/LensTools?branch=python3
 .. image:: http://img.shields.io/pypi/dm/lenstools.svg?style=flat
         :target: https://pypi.python.org/pypi/lenstools/
 .. image:: http://img.shields.io/pypi/v/lenstools.svg?style=flat
@@ -17,15 +19,18 @@ This python package collects together a suite of widely used analysis tools in W
 
 ::
    
-  @ARTICLE{LensTools,
-  author = {{Petri}, A.},
-  title = "{Mocking the Weak Lensing universe: the LensTools python computing package}",
-  journal = {ArXiv e-prints},
-  archivePrefix = "arXiv",
-  eprint = {1606.01903},
-  keywords = {Astrophysics - Cosmology and Nongalactic Astrophysics},
-  year = 2016,
-  month = jun,
-  adsurl = {http://adsabs.harvard.edu/abs/2016arXiv160601903P},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-  }
+   @ARTICLE{2016A&C....17...73P,
+        author = {{Petri}, A.},
+        title = "{Mocking the weak lensing universe: The LensTools Python computing package}",
+        journal = {Astronomy and Computing},
+        archivePrefix = "arXiv",
+        eprint = {1606.01903},
+        keywords = {Weak Gravitational Lensing, Simulations},
+        year = 2016,
+        month = oct,
+        volume = 17,
+        pages = {73-79},
+        doi = {10.1016/j.ascom.2016.06.001},
+        adsurl = {http://adsabs.harvard.edu/abs/2016A%26C....17...73P},
+        adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}

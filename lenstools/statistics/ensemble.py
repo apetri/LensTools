@@ -12,9 +12,14 @@
 
 from __future__ import division
 
+import sys
 from operator import add
 from functools import reduce
-import cPickle as pickle
+
+if sys.version_info.major>=3:
+	import _pickle as pickle
+else:
+	import cPickle as pickle
 
 from ..utils.algorithms import pcaHandler as PCA
 
@@ -67,7 +72,7 @@ class Series(pd.Series):
 
 		values = np.concatenate([idx.values for idx in indices])
 		names = reduce(add,[ [idx.name]*len(idx) for idx in indices ])
-		return pd.MultiIndex.from_tuples(zip(names,values))
+		return pd.MultiIndex.from_tuples(list(zip(names,values)))
 
 	############################################################################################################################
 
@@ -319,7 +324,7 @@ class Ensemble(pd.DataFrame):
 		else:
 			M = map
 
-		full_data = assemble(filter(lambda r:r is not None,M(_callback_wrapper,file_list)))
+		full_data = assemble([r for r in M(_callback_wrapper,file_list) if r is not None])
 
 		#Check if user provided column labels
 		if "columns" in kwargs.keys():
@@ -365,10 +370,32 @@ class Ensemble(pd.DataFrame):
 		elif format=="matlab":
 			sio.savemat(filename,{"values": self.values},**kwargs)
 		elif format=="pickle":
-			with open(filename,"w") as fp:
+			with open(filename,"wb") as fp:
 				pickle.dump(self,fp)
 		else:
 			format(self,filename,**kwargs)
+
+	#############################################################
+	######Construct a random ensemble for testing purposes#######
+	#############################################################
+
+	@classmethod
+	def random(cls,nobs=10,columns=list("abc")):
+
+		"""
+		Construct a random ensemble for testing purposes, sampling from a univariate normal distribution in each column
+
+		:param nobs: number of observations (rows)
+		:type nobs: int.
+
+		:param columns: columns of the ensemble
+		:type columns: list.
+
+		:rtype: :py:class:`Ensemble`
+
+		"""
+
+		return cls(np.random.randn(nobs,len(columns)),columns=columns)
 
 
 	#################################################
@@ -392,7 +419,7 @@ class Ensemble(pd.DataFrame):
 		"""
 
 		#Get the column names and grid values
-		columns = labels.keys()
+		columns = list(labels.keys())
 		if sort is not None:
 			columns.sort(key=sort.__getitem__)
 
@@ -615,6 +642,9 @@ class Ensemble(pd.DataFrame):
 
 	##########################################################################################################################################################################
 
+	def cov(self,*args,**kwargs):
+		return SquareMatrix(super(Ensemble,self).cov(*args,**kwargs))
+
 	def covariance(self,bootstrap=False,bootstrap_size=10,resample=10,seed=None,pool=None):
 
 		"""
@@ -635,7 +665,8 @@ class Ensemble(pd.DataFrame):
 		:param pool: MPI pool for multiprocessing (imported from emcee https://github.com/dfm/emcee)
 		:type pool: MPI pool object
 
-		:returns: ndarray with the covariance matrix, has shape (self.data[1],self.data[1]) 
+		:returns: Covariance matrix, has shape (self.data[1],self.data[1]) 
+		:rtype: :py:class:`SquareMatrix`
 
 		""" 
 
@@ -825,8 +856,6 @@ class Ensemble(pd.DataFrame):
 		return self.reindex(self.index[np.random.permutation(np.arange(len(self)))])
 
 
-	#####################################################################################################################
-
 	####################################
 	#############Visualization##########
 	####################################
@@ -877,6 +906,38 @@ class Ensemble(pd.DataFrame):
 		#Return the handle
 		return self.ax
 
+##############################################
+########SquareMatrix class####################
+##############################################
+
+class SquareMatrix(Ensemble):
+
+	def __init__(self,*args,**kwargs):
+		super(SquareMatrix,self).__init__(*args,**kwargs)
+		if self.shape[0]!=self.shape[1]:
+			raise ValueError("This is not a square matrix!")
+
+	def __getitem__(self,item):
+		if isinstance(item,list):
+			return SquareMatrix(Ensemble(self)[item].loc[item])
+		else:
+			return Ensemble(self)[item][item]
+
+	def invert(self):
+
+		"""
+		Compute the inverse
+
+		:rtype: :py:class:`SquareMatrix`
+
+		"""
+		return self.__class__(np.linalg.inv(self.values),index=self.index,columns=self.columns)
+
+	def cov(self,*args,**kwargs):
+		raise NotImplementedError("This method is not implemented for SquareMatrix!")
+
+	def covariance(self,*args,**kwargs):
+		raise NotImplementedError("This method is not implemented for SquareMatrix!")
 
 #######################################
 ########Panel class####################

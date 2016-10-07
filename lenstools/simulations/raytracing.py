@@ -1,4 +1,4 @@
-from ..image.convergence import Spin0,ConvergenceMap
+from ..image.convergence import Spin0,ConvergenceMap,OmegaMap
 from ..image.shear import Spin1,Spin2,ShearMap
 
 import sys
@@ -26,6 +26,7 @@ fftengine = NUMPYFFTPack()
 from astropy.units import km,s,Mpc,rad,deg,dimensionless_unscaled,quantity
 
 from .io import readFITSHeader,readFITS,saveFITS
+from .camb import TransferFunction
 
 #Enable garbage collection if not active already
 if not gc.isenabled():
@@ -45,14 +46,8 @@ class Plane(Spin0):
 		assert (cosmology is not None) or (comoving_distance is not None),"cosmology and comoving_distance cannot be both None!!"
 
 		super(Plane,self).__init__(data,angle,masked=masked,redshift=redshift,cosmology=cosmology,comoving_distance=comoving_distance,unit=unit,num_particles=num_particles,filename=filename)
-		self.redshift = redshift
-		self.cosmology = cosmology
-		self.unit = unit
-		self.filename = filename
 
-		if num_particles is not None:
-			self.num_particles = num_particles
-		else:
+		if num_particles is None:
 			self.num_particles = -1
 
 		#If a comoving distance is provided, use that; otherwise it needs to be computed from the astropy cosmology instance
@@ -318,89 +313,7 @@ class Plane(Spin0):
 		#Return the map values at the specified coordinates
 		return self.data[i,j]
 
-
-###########################################################
-#################DensityPlane class########################
-###########################################################
-
-class DensityPlane(Plane):
-
-	"""
-	Class handler of a lens density plane, inherits from the parent Plane class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
-
-	"""
-
-	def potential(self,lmesh=None):
-
-		"""
-		Computes the lensing potential from the density plane solving the Poisson equation via FFTs
-
-		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
-		:type lmesh: array
-
-		:returns: PotentialPlane instance with the computed lensing potential
-
-		"""
-
-		if self.side_angle.unit.physical_type=="length":
-			raise NotImplementedError("potential calculations for physical planes not implemented yet")
-
-		#Initialize l meshgrid
-		if lmesh is None:
-			l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
-		else:
-			l = lmesh
-
-		#Compute the magnitude squared of the wavenumber
-		l_squared = l[0]**2 + l[1]**2
-		l_squared[0,0] = 1.0
-
-		#Go with the FFTs
-		if self.space=="real":
-			density_ft = fftengine.rfft2(self.data)
-		elif self.space=="fourier":
-			density_ft = self.data.copy()
-		else:
-			raise ValueError("space must be either real or fourier!")
-
-
-		#Invert the laplacian
-		density_ft *= -2.0*((self.resolution.to(rad).value)**2) / (l_squared * ((2.0*np.pi)**2))
-		density_ft[0,0] = 0.0
-
-		#Instantiate the new PotentialPlane
-		return PotentialPlane(data=fftengine.irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
-
-
-###########################################################
-###############PotentialPlane class########################
-###########################################################
-
-class PotentialPlane(Plane):
-
-	"""
-	Class handler of a lens potential plane, inherits from the parent Plane class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
-
-	"""
-
-	
-	def deflectionAngles(self,x=None,y=None,lmesh=None):
-
-		"""
-		Computes the deflection angles for the given lensing potential by taking the gradient of the potential map; it is also possible to proceed with FFTs
-
-		:param x: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
-		:type x: array with units
-
-		:param y: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
-		:type y: array with units
-
-		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
-		:type lmesh: array
-
-		:returns: DeflectionPlane instance, or array with deflections of rays hitting the lens at (x,y)
-
-		"""
+	def _grad(self,x=None,y=None,lmesh=None):
 
 		now = time.time()
 		last_timestamp = now
@@ -457,7 +370,225 @@ class PotentialPlane(Plane):
 		if self.side_angle.unit.physical_type=="length":
 			deflection *= self.comoving_distance
 			deflection /= rad
+
+		return deflection
+
+	#############################################################################################################################################################################
+
+	def scaleWithTransfer(self,z,tfr,with_scale_factor=False,kmesh=None,scaling_method="uniform"):
+
+		"""
+		Scale the pixel values to a different redshift than the one of the plane by applying a suitable transfer function. This operation works in place
+
+		:param z: new redshift to evaluate the plane at
+		:type z: float.
+
+		:param tfr: CDM transfer function in Fourier space used to scale the plane pixel values
+		:type tfr: :py:class:`TransferFunction`
+
+		:param with_scale_factor: if True, multiply the pixel values by an additional (1+znew) / (1+z0) overall factor
+		:type with_scale_factor: bool.
+
+		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in Fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type kmesh: quantity
+
+		:param scaling_method: must be ether "uniform" (all pixels scaled by the same factor, in which case the transfer function at low k is used) or "FFT" in which the full transfer function should be used
+		:type scaling_method: str.
+
+		"""
+
+		#Type check
+		assert isinstance(tfr,TransferFunction)
+
+		#Original and final redshifts
+		z0 = self.redshift
+		z1 = z
+
+		#Log
+		logplanes.debug("Scaling fluctuations on lens at redshift {0:.6f} to redshift {1:.6f} with method {2}".format(z0,z1,scaling_method))
+
+		if scaling_method=="uniform":
+			
+			#Scale all the pixels on the plane by the same factor
+			z0t,k,t0 = tfr[z0]
+			z1t,k,t1 = tfr[z1]
+
+			if z0t==z1t:
+				raise ValueError("The transfer function binning in z is too coarse! No scaling can be performed!")
+
+			self.data *= t1[0]/t0[0]
 		
+		elif scaling_method=="FFT":
+
+			#The scaling is performed in Fourier space
+			ft_plane = fftengine.rfft2(self.data)
+
+			if kmesh is None:
+				lx,ly = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
+				kmesh = np.sqrt(lx**2+ly**2)*2.*np.pi / self.side_angle
+
+			#Multiply by the Fourier pixels by the transfer function
+			ft_plane *= tfr(z1,kmesh)
+			ft_plane /= tfr(z0,kmesh)
+
+			#Invert the transfer function to get the scaled plane in real space
+			self.data[:] = fftengine.irfft2(ft_plane)
+
+		else:
+			raise ValueError("Scaling method {0} not recognized".format(scaling_method))
+
+		if with_scale_factor:
+			self.data *= (1+z1)/(1+z0)
+
+		#Log
+		logplanes.debug("Scaled fluctuations on lens at redshift {0:.6f} to redshift {1:.6f} with method {2}".format(z0,z1,scaling_method))
+
+########################################################################################
+
+#Scale fluctuations with transfer function
+class TransferSpecs(object):
+
+	def __init__(self,tfr,cur2target,with_scale_factor,kmesh,scaling_method):
+
+		"""
+		Specifications for fluctuations scaling
+
+		:param tfr: CDM transfer function in Fourier space used to scale the plane pixel values
+		:type tfr: :py:class:`TransferFunction`
+
+		:param cur2target: dictionary that converts the current lens redshift to the target lens redshift
+		:type cur2target: dict.
+
+		:param with_scale_factor: if True, multiply the pixel values by an additional (1+znew) / (1+z0) overall factor
+		:type with_scale_factor: bool.
+
+		:param kmesh: the comoving wavenumber meshgrid (kx,ky) necessary for the calculations in Fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type kmesh: quantity
+
+		:param scaling_method: must be ether "average" (all pixels scaled by the same factor, in which case the transfer function at low k is used) or "FFT" in which the full transfer function should be used
+		:type scaling_method: str.
+
+		"""
+
+		#Sanity check
+		assert isinstance(tfr,TransferFunction)
+
+		self.tfr = tfr
+		self.cur2target = cur2target
+		self.with_scale_factor = with_scale_factor
+		self.kmesh = kmesh
+		self.scaling_method = scaling_method
+
+########################################################################################
+
+###########################################################
+#################DensityPlane class########################
+###########################################################
+
+class DensityPlane(Plane):
+
+	"""
+	Class handler of a lens density plane, inherits from the parent Plane class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+
+	"""
+
+	def potential(self,lmesh=None):
+
+		"""
+		Computes the lensing potential from the density plane solving the Poisson equation via FFTs
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
+
+		:returns: PotentialPlane instance with the computed lensing potential
+
+		"""
+
+		if self.side_angle.unit.physical_type=="length":
+			raise NotImplementedError("potential calculations for physical planes not implemented yet")
+
+		#Initialize l meshgrid
+		if lmesh is None:
+			l = np.array(np.meshgrid(fftengine.rfftfreq(self.data.shape[0]),fftengine.fftfreq(self.data.shape[0])))
+		else:
+			l = lmesh
+
+		#Compute the magnitude squared of the wavenumber
+		l_squared = l[0]**2 + l[1]**2
+		l_squared[0,0] = 1.0
+
+		#Go with the FFTs
+		if self.space=="real":
+			density_ft = fftengine.rfft2(self.data)
+		elif self.space=="fourier":
+			density_ft = self.data.copy()
+		else:
+			raise ValueError("space must be either real or fourier!")
+
+
+		#Invert the laplacian
+		density_ft *= -2.0*((self.resolution.to(rad).value)**2) / (l_squared * ((2.0*np.pi)**2))
+		density_ft[0,0] = 0.0
+
+		#Instantiate the new PotentialPlane
+		return PotentialPlane(data=fftengine.irfft2(density_ft),angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,num_particles=self.num_particles,unit=rad**2)
+
+	def densityGradient(self,x=None,y=None,lmesh=None):
+
+		"""
+		Computes the density gradient at selected positions with finite differences; it is also possible to proceed with FFTs
+
+		:param x: optional; if not None, compute the density gradient only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type x: array with units
+
+		:param y: optional; if not None, compute the density gradient only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type y: array with units
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
+
+		:returns: array with deflections of rays hitting the lens at (x,y)
+
+		"""
+
+		dgrad = self._grad(x,y,lmesh).to(1/rad)
+		if (x is not None) and (y is not None):
+			return dgrad
+		else:
+			return Spin1(dgrad.value,angle=self.side_angle)
+
+###########################################################
+###############PotentialPlane class########################
+###########################################################
+
+class PotentialPlane(Plane):
+
+	"""
+	Class handler of a lens potential plane, inherits from the parent Plane class; additionally it defines redshift and comoving distance attributes that are needed for ray tracing operations
+
+	"""
+
+	
+	def deflectionAngles(self,x=None,y=None,lmesh=None):
+
+		"""
+		Computes the deflection angles for the given lensing potential by taking the gradient of the potential map; it is also possible to proceed with FFTs
+
+		:param x: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type x: array with units
+
+		:param y: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type y: array with units
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
+
+		:returns: DeflectionPlane instance, or array with deflections of rays hitting the lens at (x,y)
+
+		"""
+
+		deflection = self._grad(x,y,lmesh)
+
 		assert deflection.unit.physical_type=="angle"
 		deflection = deflection.to(rad)
 
@@ -471,6 +602,7 @@ class PotentialPlane(Plane):
 			#Otherwise return the whole DeflectionPlane instance if we computed the entire mesh
 			return DeflectionPlane(deflection,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=rad)
 
+	#########################################################################################################################################
 
 	def shearMatrix(self,x=None,y=None,lmesh=None):
 
@@ -549,6 +681,7 @@ class PotentialPlane(Plane):
 		else:
 			return ShearTensorPlane(tensor,angle=self.side_angle,redshift=self.redshift,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
 
+	#########################################################################################################################################
 
 	def density(self,x=None,y=None):
 
@@ -592,7 +725,7 @@ class PotentialPlane(Plane):
 
 		#Scale the units
 		laplacian = laplacian * self.unit
-		laplacian /= self.resolution**2
+		laplacian /= (self.resolution**2)
 
 		if self.side_angle.unit.physical_type=="length":
 			laplacian *= self.comoving_distance**2
@@ -606,6 +739,61 @@ class PotentialPlane(Plane):
 			return 0.5*laplacian
 		else:
 			return DensityPlane(0.5*laplacian,angle=self.side_angle,cosmology=self.cosmology,redshift=self.redshift,comoving_distance=self.comoving_distance,num_particles=self.num_particles,unit=dimensionless_unscaled)
+
+	#########################################################################################################################################
+
+	def densityGradient(self,x=None,y=None):
+
+		"""
+		Computes the density for the given lensing potential by taking the gradient of the potential map; it is also possible to proceed with FFTs
+
+		:param x: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular x positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type x: array with units
+
+		:param y: optional; if not None, compute the deflection angles only for rays hitting the lens at the particular y positions (mainly for speedup in case there are less light rays than the plane resolution allows; must proceed in real space to allow speedup)
+		:type y: array with units
+
+		:param lmesh: the FFT frequency meshgrid (lx,ly) necessary for the calculations in fourier space; if None, a new one is computed from scratch (must have the appropriate dimensions)
+		:type lmesh: array
+
+		:returns: DeflectionPlane instance, or array with deflections of rays hitting the lens at (x,y)
+
+		"""
+
+		now = time.time()
+		last_timestamp = now
+
+		if self.space=="real":
+
+			#Scale x and y to lengths in case this is a physical plane
+			if self.side_angle.unit.physical_type=="length" and (x is not None) and (y is not None):
+				x = x.to(rad).value * self.comoving_distance
+				y = y.to(rad).value * self.comoving_distance
+			
+			#Compute the gradient of the density map
+			grad_x,grad_y = self.gradLaplacian(x,y)
+			grad = np.array([grad_x,grad_y])
+		
+		elif self.space=="fourier":
+
+			raise NotImplementedError 
+
+		else:
+			raise ValueError("space must be either real or fourier!")
+
+		#Scale to units
+		grad = grad * self.unit
+		grad /= (self.resolution**3)
+		
+		if self.side_angle.unit.physical_type=="length":
+			grad *= (self.comoving_distance**3)
+			grad /= (rad**3)
+
+		#Return
+		if (x is not None) and (y is not None):
+			return 0.5*grad.to(1/rad)
+		else:
+			return Spin1(0.5*grad.to(1/rad).value,angle=self.side_angle)
 
 
 #############################################################
@@ -657,13 +845,10 @@ class DeflectionPlane(Spin1):
 		return jac.decompose().value
 
 
-	def convergence(self,precision="first"):
+	def convergence(self):
 
 		"""
 		Computes the convergence from the deflection angles by taking the appropriate components of the jacobian
-
-		:param precision: if "first" computes the convergence at first order in the lensing potential (only one implemented so far)
-		:type precision: str.
 
 		:returns: ConvergenceMap instance with the computed convergence values
 
@@ -671,21 +856,18 @@ class DeflectionPlane(Spin1):
 
 		#Compute the jacobian and the convergence by tracing it
 		jacobian = self.jacobian()
-		convergence = -0.5*(jacobian[0]+jacobian[3])
+		convergence = 0.5*(jacobian[0]+jacobian[3])
 
 		#Instantiate the convergence map
 		return ConvergenceMap(convergence,angle=self.side_angle)
 
 
-	def omega(self,precision="first"):
+	def omega(self):
 
 		"""
-		Computes the omega field (i.e. the real space B mode) from the deflection angles by taking the appropriate components of the jacobian
+		Computes the omega field (i.e. the rotation) from the deflection angles by taking the appropriate components of the jacobian
 
-		:param precision: if "first" computes omega at first order in the lensing potential (only one implemented so far)
-		:type precision: str.
-
-		:returns: Spin0 instance with the computed omega values
+		:returns: OmegaMap instance with the computed omega values
 
 		"""
 
@@ -694,16 +876,13 @@ class DeflectionPlane(Spin1):
 		omega = -0.5*(jacobian[2]-jacobian[1])
 
 		#Instantiate the convergence map
-		return Spin0(omega,angle=self.side_angle)
+		return OmegaMap(omega,angle=self.side_angle)
 
 
-	def shear(self,precision="first"):
+	def shear(self):
 
 		"""
-		Computes the shear from the deflection angles by taking the appropriate components of the jacobian
-
-		:param precision: if "first" computes the shear at first order in the lensing potential (only one implemented so far)
-		:type precision: str. 
+		Computes the shear from the deflection angles by taking the appropriate components of the jacobian 
 
 		:returns: ShearMap instance with the computed convergence values
 
@@ -759,12 +938,13 @@ class RayTracer(object):
 
 	"""
 
-	def __init__(self,lens_mesh_size=None):
+	def __init__(self,lens_mesh_size=None,lens_type=PotentialPlane):
 
 		self.Nlenses = 0
 		self.lens = list()
 		self.distance = list()
 		self.redshift = list()
+		self.lens_type = lens_type
 
 		#If we know the size of the lens planes already we can compute, once and for all, the FFT meshgrid
 		if lens_mesh_size is not None:
@@ -784,7 +964,7 @@ class RayTracer(object):
 		"""
 
 		#Sanity check
-		assert type(lens_specification) in [tuple,PotentialPlane]
+		assert type(lens_specification) in [tuple,self.lens_type]
 
 		#If specification is in tuple form, parse it
 		if type(lens_specification)==tuple:
@@ -810,6 +990,30 @@ class RayTracer(object):
 
 		#If completed correctly, log info to the user
 		logray.debug("Added lens at redshift {0:.3f}(comoving distance {1:.3f})".format(self.redshift[-1],self.distance[-1]))
+
+	#Load the lens
+	def loadLens(self,lens):
+
+		if type(lens)==self.lens_type:
+			return lens
+
+		elif type(lens)==str:
+				
+			logray.info("Reading plane from {0}...".format(lens))
+			current_lens = self.lens_type.load(lens)
+			logray.info("Read plane from {0}...".format(lens))
+			logstderr.debug("Read plane: peak memory usage {0:.3f} (task)".format(peakMemory()))
+			
+			logray.info("Randomly rolling lens at z={0:.3f} along its axes...".format(current_lens.redshift))
+			current_lens.randomRoll()
+			logray.info("Rolled lens at z={0:.3f} along its axes...".format(current_lens.redshift))
+			logstderr.debug("Rolled lens: peak memory usage {0:.3f} (task)".format(peakMemory()))
+
+			return current_lens
+
+		else:
+			raise TypeError("Lens format not recognized!")
+
 
 	def randomRoll(self,seed=None):
 
@@ -845,8 +1049,7 @@ class RayTracer(object):
 	#############################(backward ray tracing)###############################################################################
 	##################################################################################################################################
 
-
-	def shoot(self,initial_positions,z=2.0,initial_deflection=None,precision="first",kind="positions",save_intermediate=False,compute_all_deflections=False,callback=None,**kwargs):
+	def shoot(self,initial_positions,z=2.0,initial_deflection=None,kind="positions",save_intermediate=False,compute_all_deflections=False,callback=None,transfer=None,**kwargs):
 
 		"""
 		Shots a bucket of light rays from the observer to the sources at redshift z (backward ray tracing), through the system of gravitational lenses, and computes the deflection statistics
@@ -860,9 +1063,6 @@ class RayTracer(object):
 		:param initial_deflection: if not None, this is the initial deflection light rays undergo with respect to the line of sight (equivalent to specifying the first derivative IC on the lensing ODE); must have the same shape as initial_positions
 		:type initial_deflection: numpy array or quantity
 
-		:param precision: precision at which to compute weak lensing quantities, must be "first" for first order in the lensing potential, or "second" for added precision (not functional yet)
-		:type precision: str.
-
 		:param kind: what deflection statistics to compute; "positions" will calculate the ray deflections after they crossed the last lens, "jacobian" will compute the lensing jacobian matrix after the last lens, "shear" and "convergence" will compute the omonimous weak lensing statistics  
 		:type kind: str.
 
@@ -875,6 +1075,9 @@ class RayTracer(object):
 		:param callback: if not None, this callback function is called on the current ray positions array at each step in the ray tracing; the current raytracing instance and the step number are passed as additional arguments, hence callback must match this signature
 		:type callback: callable
 
+		:param transfer: if not None, scales the fluctuations on each lens plane to a different redshift (before computing the ray defections) using a provided transfer function 
+		:type transfer: :py:class:`TransferSpecs`
+
 		:param kwargs: the keyword arguments are passed to the callback if not None
 		:type kwargs: dict.
 
@@ -883,9 +1086,11 @@ class RayTracer(object):
 		"""
 
 		#Sanity check
+		assert self.lens_type==PotentialPlane, "Lens type must be PotentialPlane"
 		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
 		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
 		assert kind in ["positions","jacobians","shear","convergence"],"kind must be one in [positions,jacobians,shear,convergence]!"
+		assert transfer is None or isinstance(transfer,TransferSpecs)
 
 		#Allocate arrays for the intermediate light ray positions and deflections
 
@@ -942,27 +1147,15 @@ class RayTracer(object):
 		for k in range(last_lens+1):
 
 			#Load in the lens
-			if type(lens[k])==PotentialPlane:
-				current_lens = lens[k]
-			elif type(lens[k])==str:
-				
-				logray.info("Reading plane from {0}...".format(lens[k]))
-				current_lens = PotentialPlane.load(lens[k])
-				logray.info("Read plane from {0}...".format(lens[k]))
-				logstderr.debug("Read plane: peak memory usage {0:.3f} (task)".format(peakMemory()))
-				
-				np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens {0} redshift does not match info file specifications!".format(lens[k]))
-				
-				logray.info("Randomly rolling lens {0} along its axes...".format(k))
-				current_lens.randomRoll()
-				logray.info("Rolled lens {0} along its axes...".format(k))
-				logstderr.debug("Rolled lens: peak memory usage {0:.3f} (task)".format(peakMemory()))
+			current_lens = self.loadLens(lens[k])
+			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
-			else:
-				raise TypeError("Lens format not recognized!")
+			#If transfer function is provided, scale to target redshift
+			if transfer is not None:
+				current_lens.scaleWithTransfer(transfer.cur2target[current_lens.redshift],tfr=transfer.tfr,with_scale_factor=transfer.with_scale_factor,kmesh=transfer.kmesh,scaling_method=transfer.scaling_method)
 
 			#Log
-			logray.debug("Crossing lens {0} at redshift z={1:.2f}".format(k,current_lens.redshift))
+			logray.debug("Crossing lens {0} at redshift z={1:.3f}".format(k,current_lens.redshift))
 			start = time.time()
 			last_timestamp = start
 
@@ -1059,11 +1252,14 @@ class RayTracer(object):
 
 			#Optionally, call the callback function on the current positions
 			if callback is not None:
-				callback(current_positions,self,k,**kwargs)
+				if kind=="positions":
+					callback(current_positions,self,k,**kwargs)
+				elif kind=="jacobians":
+					callback(current_jacobian,self,k,**kwargs)
 
 			#Log timestamp to cross lens
 			now = time.time()
-			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			logray.debug("Lens {0} at z={1:.3f} crossed in {2:.3f}s".format(k,current_lens.redshift,now-start))
 			logstderr.debug("Lens {0} crossed: peak memory usage {1:.3f} (task)".format(k,peakMemory()))
 
 
@@ -1088,14 +1284,14 @@ class RayTracer(object):
 			else:
 				return current_jacobian
 
-	#########################################################
-	###########Direct calculation of the convergence#########
-	#########################################################
+	##################################################################################
+	###########Direct calculation of the convergence with Born approximation##########
+	##################################################################################
 
-	def convergenceDirect(self,initial_positions,z=2.0,save_intermediate=False):
+	def convergenceBorn(self,initial_positions,z=2.0,save_intermediate=False,real_trajectory=False):
 
 		"""
-		Computes the convergence directly integrating the lensing density along the unperturbed line of sight
+		Computes the convergence directly integrating the lensing density along the line of sight (real or unperturbed)
 
 		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
 		:type initial_positions: numpy array or quantity
@@ -1105,6 +1301,9 @@ class RayTracer(object):
 
 		:param save_intermediate: save the intermediate values of the convergence as successive lenses are crossed
 		:type save_intermediate: bool.
+
+		:param real_trajectory: if True, integrate the density on the real light ray trajectory; if False the unperturbed trajectory is used
+		:type real_trajectory: bool.
 
 		:returns: convergence values at each of the initial positions
 
@@ -1126,6 +1325,12 @@ class RayTracer(object):
 		redshift = np.array([0.0] + self.redshift)
 		lens = self.lens
 
+		#Initial positions
+		current_positions = initial_positions.copy()
+
+		if real_trajectory:
+			current_deflection = np.zeros(initial_positions.shape) * initial_positions.unit
+
 		#Timestamp
 		now = time.time()
 		last_timestamp = now
@@ -1138,12 +1343,8 @@ class RayTracer(object):
 			start = time.time()
 
 			#Load in the lens
-			if type(lens[k])==PotentialPlane:
-				current_lens = lens[k]
-			elif type(lens[k])==str:
-				current_lens = PotentialPlane.load(lens[k])
-			else:
-				raise TypeError("Lens format not recognized!")
+			current_lens = self.loadLens(lens[k])
+			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
 
 			#Extract the density at the ray positions
 			now = time.time()
@@ -1151,7 +1352,12 @@ class RayTracer(object):
 			last_timestamp = now
 
 			#Compute full density plane
-			density = current_lens.density(initial_positions[0],initial_positions[1])
+			if self.lens_type==PotentialPlane:
+				density = current_lens.density(current_positions[0],current_positions[1])
+			elif self.lens_type==DensityPlane:
+				density = current_lens.getValues(current_positions[0],current_positions[1])
+			else:
+				raise TypeError("Lens format not recognized!")
 
 			#Timestamp
 			now = time.time()
@@ -1160,9 +1366,34 @@ class RayTracer(object):
 
 			#Cumulate on the convergence
 			if k<last_lens:
-				current_convergence += 0.5 * density
+				current_convergence += density * (1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z).to(Mpc).value))
 			else:
-				current_convergence += 0.5 * density * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+				current_convergence += density * (1. - (distance[k+1]/current_lens.cosmology.comoving_distance(z).to(Mpc).value)) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+
+			#Compute ray deflections
+			if real_trajectory:
+
+				#Compute deflections due to current lens
+				deflections = current_lens.deflectionAngles(current_positions[0],current_positions[1])
+
+				#Geometric factors
+				Ak = (distance[k+1] / distance[k+2]) * (1.0 + (distance[k+2] - distance[k+1])/(distance[k+1] - distance[k]))
+				Ck = -1.0 * (distance[k+2] - distance[k+1]) / distance[k+2]
+
+				#Compute the position on the next lens and log timestamp
+				current_deflection *= (Ak-1) 
+				now = time.time()
+				logray.debug("Geometrical weight factors calculations and deflection scaling completed in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
+
+				#Add deflections and log timestamp
+				current_deflection += Ck * deflections 
+				now = time.time()
+				logray.debug("Deflection angles computed in {0:.3f}s".format(now-last_timestamp))
+				last_timestamp = now
+
+				#Add deflection to current positions
+				current_positions += current_deflection
 
 			now = time.time()
 			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
@@ -1179,6 +1410,260 @@ class RayTracer(object):
 		else:
 			return current_convergence
 
+	##################################################################################
+	###########Calculation of the convergence at second post-Born order###############
+	##################################################################################
+
+	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False,include_first_order=False,include_ll=True,include_gp=True):
+
+		"""
+		Computes the convergence at second post-born order
+
+		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
+		:type initial_positions: numpy array or quantity
+
+		:param z: redshift of the sources
+		:type z: float.
+
+		:param save_intermediate: save the intermediate values of the convergence as successive lenses are crossed
+		:type save_intermediate: bool.
+
+		:param include_first_order: include the first order contribution to the convergence
+		:type include_first_order: bool.
+
+		:param include_ll: include lens-lens coupling
+		:type include_ll: bool.
+
+		:param include_gp: include geodesic perturbation
+		:type include_gp: bool.
+
+		:returns: convergence values (2-post born) at each of the initial positions
+
+		"""
+
+		#Sanity check
+		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
+		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
+		assert self.lens_type==PotentialPlane
+
+		#Check that redshift is not too high given the current lenses
+		assert z<self.redshift[-1],"Given the current lenses you can trace up to redshift {0:.2f}!".format(self.redshift[-1])
+		last_lens = (z>np.array(self.redshift)).argmin() - 1
+
+		if save_intermediate:
+			all_convergence = np.zeros((last_lens+1,) + initial_positions.shape[1:])
+
+		#Ordered references to the lenses
+		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
+		redshift = np.array([0.0] + self.redshift)
+		lens = self.lens
+
+		#Initial positions
+		current_positions = initial_positions
+
+		#Timestamp
+		now = time.time()
+		last_timestamp = now
+
+		#Loop that goes through the lenses
+		current_convergence = np.zeros(initial_positions.shape[1:])
+		
+		current_deflections_0 = np.zeros(initial_positions.shape)*rad
+		current_deflections_1 = np.zeros(initial_positions.shape)*rad
+		current_deflections = np.zeros(initial_positions.shape)*rad
+		
+		current_jacobians_0 = np.zeros((3,)+initial_positions.shape[1:])
+		current_jacobians_1 = np.zeros((3,)+initial_positions.shape[1:])
+		current_jacobians = np.zeros((3,)+initial_positions.shape[1:])
+		
+		for k in range(last_lens+1):
+
+			#Start time for this lens
+			start = time.time()
+
+			#Load in the lens
+			current_lens = self.loadLens(lens[k])
+			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
+
+			#Distances, lensing kernel
+			chi_prev = distance[k]
+			chi = distance[k+1]
+			kernel = 1. - (chi/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
+
+			#################################################################################
+			##Compute lensing quantities (deflections, jacobian, density, density gradient)##
+			#################################################################################
+
+			#Extract the field values  at the ray positions
+			now = time.time()
+			logray.debug("Extracting field values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
+			last_timestamp = now
+
+			#Update local quantities
+			deflections_lcl = current_lens.deflectionAngles(current_positions[0],current_positions[1])
+			shear_tensors_lcl = current_lens.shearMatrix(current_positions[0],current_positions[1])
+			density_grad_lcl = current_lens.densityGradient(current_positions[0],current_positions[1])
+
+			if include_first_order:
+				density_lcl = 0.5*(shear_tensors_lcl[0]+shear_tensors_lcl[1])
+
+			#Update integrated quantities
+			if k<last_lens:
+				
+				if include_ll:
+					current_convergence += (0.5*kernel) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+
+				if include_gp:
+					current_convergence += kernel * (density_grad_lcl*current_deflections).decompose().value.sum(0) 
+				
+				if include_first_order:
+					current_convergence += kernel * density_lcl
+
+				current_deflections_0 += deflections_lcl
+				current_deflections_1 += deflections_lcl*(0.5*(chi+chi_prev))
+				current_deflections = -current_deflections_0 + current_deflections_1/chi
+
+				current_jacobians_0 += shear_tensors_lcl
+				current_jacobians_1 += shear_tensors_lcl*(0.5*(chi+chi_prev))
+				current_jacobians = -current_jacobians_0 + current_jacobians_1/chi
+
+
+			else:
+
+				if include_ll:
+					current_convergence += (0.5 * kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+
+				if include_gp:
+					current_convergence += (kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (density_grad_lcl*current_deflections).decompose().value.sum(0)
+				
+				if include_first_order:
+					current_convergence += kernel * density_lcl * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
+			
+			#Timestamp
+			now = time.time()
+			logray.debug("Field values extracted in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
+			now = time.time()
+			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			last_timestamp = now
+
+			#Save the intermediate convergence values if option is enabled
+			if save_intermediate:
+				all_convergence[k] = current_convergence.copy()
+
+		#Return to the user
+		if save_intermediate:
+			return all_convergence
+		else:
+			return current_convergence
+
+	########################################################################
+	###########Calculation of omega at second post-Born order###############
+	########################################################################
+
+	def omegaPostBorn2(self,initial_positions,z=2.0,save_intermediate=False):
+
+		"""
+		Computes the omega at second post-born order
+
+		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
+		:type initial_positions: numpy array or quantity
+
+		:param z: redshift of the sources
+		:type z: float.
+
+		:param save_intermediate: save the intermediate values of the convergence as successive lenses are crossed
+		:type save_intermediate: bool.
+
+		:returns: omega values (2-post born) at each of the initial positions
+
+		"""
+
+		#Sanity check
+		assert initial_positions.ndim>=2 and initial_positions.shape[0]==2,"initial positions shape must be (2,...)!"
+		assert type(initial_positions)==quantity.Quantity and initial_positions.unit.physical_type=="angle"
+		assert self.lens_type==PotentialPlane
+
+		#Check that redshift is not too high given the current lenses
+		assert z<self.redshift[-1],"Given the current lenses you can trace up to redshift {0:.2f}!".format(self.redshift[-1])
+		last_lens = (z>np.array(self.redshift)).argmin() - 1
+
+		if save_intermediate:
+			all_omega = np.zeros((last_lens+1,) + initial_positions.shape[1:])
+
+		#Ordered references to the lenses
+		distance = np.array([ d.to(Mpc).value for d in [0.0*Mpc] + self.distance ])
+		redshift = np.array([0.0] + self.redshift)
+		lens = self.lens
+
+		#Initial positions
+		current_positions = initial_positions
+
+		#Timestamp
+		now = time.time()
+		last_timestamp = now
+
+		#Loop that goes through the lenses
+		current_omega = np.zeros(initial_positions.shape[1:])
+		current_jacobians_0 = np.zeros((3,)+initial_positions.shape[1:])
+		current_jacobians_1 = np.zeros((3,)+initial_positions.shape[1:])
+		current_jacobians = np.zeros((3,)+initial_positions.shape[1:])
+		
+		for k in range(last_lens+1):
+
+			#Start time for this lens
+			start = time.time()
+
+			#Load in the lens
+			current_lens = self.loadLens(lens[k])
+			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
+
+			#Distances, lensing kernel
+			chi_prev = distance[k]
+			chi = distance[k+1]
+			kernel = 1. - (chi/current_lens.cosmology.comoving_distance(z).to(Mpc).value)
+
+			#################################################################################
+			##Compute lensing quantities (deflections, jacobian, density, density gradient)##
+			#################################################################################
+
+			#Extract the field values  at the ray positions
+			now = time.time()
+			logray.debug("Extracting field values from lens {0} at redshift {1:2f}".format(k,current_lens.redshift))
+			last_timestamp = now
+
+			#Update local quantities
+			shear_tensors_lcl = current_lens.shearMatrix(current_positions[0],current_positions[1])
+
+			#Update integrated quantities
+			if k<last_lens:
+				current_omega += (0.5 * kernel) * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1])
+				current_jacobians_0 += shear_tensors_lcl
+				current_jacobians_1 += shear_tensors_lcl*(0.5*(chi+chi_prev))
+				current_jacobians = -current_jacobians_0 + current_jacobians_1/chi
+
+			else:
+				current_omega += (0.5 * kernel) * (shear_tensors_lcl[2]*current_jacobians[0]+shear_tensors_lcl[1]*current_jacobians[2]-shear_tensors_lcl[0]*current_jacobians[2]-shear_tensors_lcl[2]*current_jacobians[1]) * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
+			
+			#Timestamp
+			now = time.time()
+			logray.debug("Field values extracted in {0:.3f}s".format(now-last_timestamp))
+			last_timestamp = now
+
+			now = time.time()
+			logray.debug("Lens {0} crossed in {1:.3f}s".format(k,now-start))
+			last_timestamp = now
+
+			#Save the intermediate convergence values if option is enabled
+			if save_intermediate:
+				all_omega[k] = current_omega.copy()
+
+		#Return to the user
+		if save_intermediate:
+			return all_omega
+		else:
+			return current_omega
 
 	#########################################################
 	############Forward ray tracing##########################
@@ -1285,7 +1770,7 @@ class RayTracer(object):
 		self._x_pos = list()
 		self._y_pos = list()
 
-	def displayRays(self,initial_positions,z=2.0,projection="2d",fig=None,ax=None):
+	def displayRays(self,initial_positions,z=2.0,projection="2d",fig=None,ax=None,axisbg="grey",raycolor="orange",lenscolor="blue"):
 
 		"""
 		Uses matplotlib to display a visual of the lens system and of the deflection that the light rays which traverse it undergo
@@ -1311,7 +1796,7 @@ class RayTracer(object):
 		if (fig is None) or (ax is None):
 
 			if projection=="2d":
-				self.fig,self.ax = plt.subplots(1,2,figsize=(16,8),subplot_kw={"axisbg":"black"})
+				self.fig,self.ax = plt.subplots(1,2,figsize=(16,8),subplot_kw={"axisbg":axisbg})
 			elif projection=="3d":
 				pass
 			else:
@@ -1346,12 +1831,12 @@ class RayTracer(object):
 			
 				for nray in range(pos.shape[2]):
 
-					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color="yellow")[0])
-					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color="yellow")[0])
+					self._x_pos.append(self.ax[0].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,0,nray].to(rad),color=raycolor)[0])
+					self._y_pos.append(self.ax[1].plot(distance[:pos.shape[0]],distance[:pos.shape[0]]*pos[:,1,nray].to(rad),color=raycolor)[0])
 				
-				self.ax[0].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
+				self.ax[0].set_xlabel(r"$\chi$({0})".format(distance.unit.to_string()))
 				self.ax[0].set_ylabel(r"$x$({0})".format(distance.unit.to_string()))
-				self.ax[1].set_xlabel(r"$w$({0})".format(distance.unit.to_string()))
+				self.ax[1].set_xlabel(r"$\chi$({0})".format(distance.unit.to_string()))
 				self.ax[1].set_ylabel(r"$y$({0})".format(distance.unit.to_string()))
 
 				#Plot the lenses too
@@ -1359,7 +1844,7 @@ class RayTracer(object):
 					for i in range(2):
 						min = distance[-1]*pos.to(rad).value.min()
 						max = distance[-1]*pos.to(rad).value.max()
-						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color=lenscolor)
 
 
 			else:
@@ -1376,7 +1861,7 @@ class RayTracer(object):
 					for i in range(2):
 						min = distance[-1]*pos.to(rad).value.min()
 						max = distance[-1]*pos.to(rad).value.max()
-						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color="red")
+						self.ax[i].plot(d*np.ones(100),np.linspace(min,max,100),color=lenscolor)
 
 
 			#Adjust the x,y axis range

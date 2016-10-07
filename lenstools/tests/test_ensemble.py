@@ -33,7 +33,7 @@ try:
 except ValueError:
 	logging.debug("No reason to create one, one process only!!")
 	pool = None
-except TypeError:
+except (TypeError,ImportError):
 	pool = None
 
 #The only parallelized part is the loading of the ensemble (that's the computationally expensive part)
@@ -188,7 +188,7 @@ def test_cut():
 	ax.plot(l,l*(l+1)*conv_ensemble.mean()/(2.0*np.pi),label="Full")
 
 	#Perform the cut
-	l_cut = filter(lambda ell:ell>=10000.0 and ell<=30000.0,conv_ensemble.columns)
+	l_cut = list(filter(lambda ell:ell>=10000.0 and ell<=30000.0,conv_ensemble.columns))
 	conv_ensemble_cut = conv_ensemble[l_cut]
 	assert conv_ensemble_cut.shape[1] == len(l_cut)
 	l_cut = np.array(l_cut)

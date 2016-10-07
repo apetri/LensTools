@@ -1,5 +1,19 @@
 .. :changelog:
 
+0.8
++++
+
+- RayTracer can now perform line of sight integrations to approximate kappa (at Born and post Born 2) and omega (at post Born 2), without full raytracing
+- cutPlanes can now handle snapshots in FastPM format
+- If snapshots are provided in light cone projections, LensTools can do plane cutting, raytracing and LOS integrations in a single script  
+
+0.7-dev
++++++++
+
+- ShearCatalog allows to re-bin galaxies according to redshift
+- Introduced a SquareMaxtrix class (inherits from Ensemble) for square matrix operations, with column name support
+- Protect nodes in a SimulationBatch to call forbidden methods
+
 0.6
 +++
 

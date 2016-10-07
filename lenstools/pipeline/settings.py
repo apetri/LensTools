@@ -1,13 +1,19 @@
-import os
+import sys,os
 import ast
 
-from ConfigParser import NoOptionError
+if sys.version_info.major>=3:
+	from configparser import NoOptionError
+else:
+	from ConfigParser import NoOptionError
+
 import json
 
 import numpy as np
 import astropy.units as u
 
 from ..simulations.settings import select_parser,LTSettings
+from ..simulations.camb import CAMBSettings
+from ..simulations.gadget2 import Gadget2Settings
 
 
 ############################################################
@@ -112,6 +118,9 @@ class NGenICSettings(LTSettings):
 			setattr(self,key,kwargs[key])
 
 
+###########################################################################################################################
+###########################################################################################################################			
+
 #################################################
 ###########PlaneSettings class###################
 #################################################
@@ -119,14 +128,19 @@ class NGenICSettings(LTSettings):
 class PlaneSettings(LTSettings):
 
 	"""
-	Class handler of plane generation settings
+	Class handler of plane generation settings from constant time Nbody snapshots
 
 	"""
+
+	_section = "PlaneSettings"
 
 	def __init__(self,**kwargs):
 
 		#Name of the planes batch
 		self.directory_name = "Planes"
+
+		#Snapshot class handler
+		self.snapshot_handler = "Gadget2SnapshotPipe"
 		
 		#Use the pickled options generated at the moment of the batch generation (advised)
 		self.override_with_local = True
@@ -156,13 +170,20 @@ class PlaneSettings(LTSettings):
 	def get(cls,options):
 
 		#Check that the config file has the appropriate section
-		section = "PlaneSettings"
+		section = cls._section
 		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields
 		settings = cls()
 		
 		settings.directory_name = options.get(section,"directory_name")
+
+		#Snapshot class handler
+		try:
+			settings.snapshot_handler = options.get(section,"snapshot_handler")
+		except NoOptionError:
+			pass
+
 		settings.override_with_local = options.getboolean(section,"override_with_local")
 		
 		settings.format = options.get(section,"format")
@@ -220,6 +241,119 @@ class PlaneSettings(LTSettings):
 		#Return to user
 		return settings
 
+##########################################################
+###########PlaneLightConeSettings class###################
+##########################################################
+
+class PlaneLightConeSettings(LTSettings):
+
+	"""
+	Class handler of plane generation settings from lightcone projection Nbody snapshots
+
+	"""
+
+	_section = "PlaneLightConeSettings"
+
+	def __init__(self,**kwargs):
+
+		#Name of the planes batch
+		self.directory_name = "Planes"
+
+		#Snapshot class handler
+		self.snapshot_handler = "FastPMSnapshot"
+		
+		#Use the pickled options generated at the moment of the batch generation (advised)
+		self.override_with_local = False
+
+		self.format = "fits"
+		self.name_format = "snap{0}_{1}Plane{2}_normal{3}.{4}"
+
+		#Lens discretization
+		self.zmax = 3.0
+		self.num_lenses = 20
+		self.normal = 2
+		self.plane_resolution = 64
+
+		#Optional, not usually changed
+		self.thickness_resolution = 1
+		self.smooth = 1
+		self.kind = "potential"
+
+		#On the fly raytracing
+		self.do_lensing = False
+		self.integration_type = "full"
+		self.fov = 3.0*u.deg
+		self.fov_resolution = 32
+
+		#Allow for kwargs override
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def get(cls,options):
+
+		#Check that the config file has the appropriate section
+		section = cls._section
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
+
+		#Fill in the appropriate fields
+		settings = cls()
+		
+		settings.directory_name = options.get(section,"directory_name")
+
+		#Snapshot class handler
+		try:
+			settings.snapshot_handler = options.get(section,"snapshot_handler")
+		except NoOptionError:
+			pass
+
+		settings.override_with_local = options.getboolean(section,"override_with_local")
+		
+		settings.format = options.get(section,"format")
+		try:
+			settings.name_format = options.get(section,"name_format")
+		except NoOptionError:
+			pass
+		
+		settings.plane_resolution = options.getint(section,"plane_resolution")
+
+		#Lens discretization
+		settings.zmax = options.getfloat(section,"zmax")
+		settings.num_lenses = options.getint(section,"num_lenses")
+		settings.normal = options.getint(section,"normal")
+		settings.plane_resolution = options.getint(section,"plane_resolution")
+
+		#Weak lensing
+		settings.do_lensing = options.getboolean(section,"do_lensing")
+		settings.integration_type = options.get(section,"integration_type")
+		settings.fov = options.getfloat(section,"fov_deg")*u.deg
+		settings.fov_resolution = options.getint(section,"fov_resolution")
+
+		###########
+		#Optionals#
+		###########
+
+		try:
+			settings.thickness_resolution = options.getint(section,"thickness_resolution")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.smooth = options.getint(section,"smooth")
+		except NoOptionError:
+			pass
+
+		try:
+			settings.kind = options.get(section,"kind")
+		except NoOptionError:
+			pass
+
+		#Return to user
+		return settings
+
+
+###########################################################################################################################
+###########################################################################################################################	
 
 #################################################
 ###########MapSettings class#####################
@@ -265,9 +399,13 @@ class MapSettings(LTSettings):
 		self.seed = 0
 
 		#Which lensing quantities do we need?
+		self.tomographic_convergence = False
 		self.convergence = True
 		self.shear = False
 		self.omega = False
+
+		#Line of sight integration type
+		self.integration_type = "born"
 
 	def _init_plane_set(self):
 
@@ -328,9 +466,22 @@ class MapSettings(LTSettings):
 
 		self.seed = options.getint(section,"seed")
 
-		self.convergence = options.getboolean(section,"convergence")
-		self.shear = options.getboolean(section,"shear")
-		self.omega = options.getboolean(section,"omega")
+		try:
+			self.tomographic_convergence = options.getboolean(section,"tomographic_convergence")
+		except NoOptionError:
+			pass
+
+		try:
+			self.convergence = options.getboolean(section,"convergence")
+			self.shear = options.getboolean(section,"shear")
+			self.omega = options.getboolean(section,"omega")
+		except NoOptionError:
+			pass
+
+		try:
+			self.integration_type = options.get(section,"integration_type")
+		except NoOptionError:
+			pass
 
 	def _read_plane_set(self,options,section):
 		
@@ -414,6 +565,8 @@ class CatalogSettings(LTSettings):
 
 	"""
 
+	_section = "CatalogSettings"
+
 	def __init__(self,**kwargs):
 	
 		#Name of catalog batch
@@ -452,7 +605,7 @@ class CatalogSettings(LTSettings):
 	def get(cls,options):
 
 		#Check that the config file has the appropriate section
-		section = "CatalogSettings"
+		section = cls._section
 		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
 
 		#Fill in the appropriate fields

@@ -13,7 +13,7 @@ import logging
 import time
 
 np.random.seed(1)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 #Instantiate the RayTracer
 tracer = RayTracer(lens_mesh_size=512)

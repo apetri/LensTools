@@ -15,7 +15,12 @@ from __future__ import division,print_function,with_statement
 from operator import mul
 from functools import reduce
 
-import cPickle as pickle
+import sys
+
+if sys.version_info.major>=3:
+	import _pickle as pickle
+else:
+	import cPickle as pickle
 
 #########################################################
 
@@ -336,7 +341,7 @@ class FisherAnalysis(Analysis):
 
 		try:
 			self.check()
-		except Exception,e:
+		except Exception as e:
 			self.remove_model(-1)
 			raise RuntimeError(e)
 

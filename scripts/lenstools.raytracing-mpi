@@ -83,7 +83,7 @@ if lens_settings.has_section("MapSettings"):
 
 	#Cycle over ids to produce the planes
 	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,id=batch_id)
+		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
 
 elif lens_settings.has_section("TelescopicMapSettings"):
 
@@ -93,7 +93,7 @@ elif lens_settings.has_section("TelescopicMapSettings"):
 
 	#Cycle over ids to produce the planes
 	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,id=batch_id)
+		lenstools.scripts.raytracing.singleRedshift(pool=pool,batch=batch,settings=map_settings,batch_id=batch_id)
 
 elif lens_settings.has_section("CatalogSettings"):
 
@@ -103,4 +103,4 @@ elif lens_settings.has_section("CatalogSettings"):
 
 	#Cycle over ids to produce the planes
 	for batch_id in cmd_args.id:
-		lenstools.scripts.raytracing.simulatedCatalog(pool=pool,batch=batch,settings=catalog_settings,id=batch_id)
+		lenstools.scripts.raytracing.simulatedCatalog(pool=pool,batch=batch,settings=catalog_settings,batch_id=batch_id)

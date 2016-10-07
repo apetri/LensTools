@@ -10,7 +10,12 @@ The module is called _gadget2 and it defines the methods below (see docstrings)
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+#include "lenstoolsPy3.h"
 #include "gadget2.h"
+
+#ifndef IS_PY3K
+static struct module_state _state;
+#endif
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for reading Gadget2 snapshots";
@@ -37,15 +42,66 @@ static PyMethodDef module_methods[] = {
 } ;
 
 //_gadget constructor
-PyMODINIT_FUNC init_gadget2(void){
 
+#ifdef IS_PY3K
+
+static struct PyModuleDef moduledef = {
+
+	PyModuleDef_HEAD_INIT,
+	"_gadget2",
+	module_docstring,
+	sizeof(struct module_state),
+	module_methods,
+	NULL,
+	myextension_trasverse,
+	myextension_clear,
+	NULL
+
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit__gadget2(void)
+
+#else
+
+#define INITERROR return
+
+void
+init_gadget2(void)
+#endif
+
+{
+#ifdef IS_PY3K
+	PyObject *m = PyModule_Create(&moduledef);
+#else
 	PyObject *m = Py_InitModule3("_gadget2",module_methods,module_docstring);
-	if(m==NULL) return;
+#endif
+
+	if(m==NULL)
+		INITERROR;
+	struct module_state *st = GETSTATE(m);
+
+	st->error = PyErr_NewException("_gadget2.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(m);
+        INITERROR;
+    }
 
 	/*Load numpy functionality*/
 	import_array();
 
+	/*Return*/
+#ifdef IS_PY3K
+	return m;
+#endif
+
 }
+
+//////////////////////////////////////////////
+//////////////////////////////////////////////
+//////////////////////////////////////////////
 
 //getHeader() implementation
 static PyObject *_gadget2_getHeader(PyObject *self,PyObject *args){
@@ -63,6 +119,16 @@ static PyObject *_gadget2_getHeader(PyObject *self,PyObject *args){
 	}
 
 	//Get a file pointer out of the file object
+#ifdef IS_PY3K
+	
+	int fd = PyObject_AsFileDescriptor(file_obj);
+	if(fd==-1) INITERROR ;
+
+	//Read in the header
+	int endianness = getHeaderFD(fd,&header);
+
+#else
+
 	FILE *fp = PyFile_AsFile(file_obj);
 	PyFile_IncUseCount((PyFileObject *)file_obj);
 
@@ -71,6 +137,8 @@ static PyObject *_gadget2_getHeader(PyObject *self,PyObject *args){
 
 	//Release the file object
 	PyFile_DecUseCount((PyFileObject *)file_obj);
+
+#endif
 
 	//Exit if there was a problem (endianness check shall return 1 or 0, no exceptions; if not, the snapshot has the wrong format)
 	if(endianness==-1){
@@ -186,6 +254,22 @@ static PyObject *_gadget2_getPosVel(PyObject *self,PyObject *args){
 	float *particle_data = (float *)PyArray_DATA(particle_data_array);
 
 	//Get a file pointer out of the file object
+#ifdef IS_PY3K
+
+	int fd = PyObject_AsFileDescriptor(file_obj);
+	if(fd==-1) INITERROR ;
+
+	//Read in the positions of the partcles
+	if(getPosVelFD(fd,offset,particle_data,NumPart)==-1){
+
+		Py_DECREF(particle_data_array);
+		PyErr_SetString(PyExc_IOError,"End of file reached, the information requested is not available!");
+		INITERROR ;
+	
+	}
+
+#else
+
 	FILE *fp = PyFile_AsFile(file_obj); 
 	PyFile_IncUseCount((PyFileObject *)file_obj);
 
@@ -201,6 +285,8 @@ static PyObject *_gadget2_getPosVel(PyObject *self,PyObject *args){
 
 	//Release the file pointer
 	PyFile_DecUseCount((PyFileObject *)file_obj);
+
+#endif
 
 	//Return the array with the particle data (positions or velocities)
 	return particle_data_array;
@@ -232,6 +318,22 @@ static PyObject *_gadget2_getID(PyObject *self,PyObject *args){
 	int *id_data = (int *)PyArray_DATA(id_data_array);
 
 	//Get a file pointer out of the file object
+#ifdef IS_PY3K
+
+	int fd = PyObject_AsFileDescriptor(file_obj);
+	if(fd==-1) INITERROR;
+
+	//Read in the IDs of the particles
+	if(getIDFD(fd,offset,id_data,NumPart)==-1){
+
+		Py_DECREF(id_data_array);
+		PyErr_SetString(PyExc_IOError,"End of file reached, the information requested is not available!");
+		INITERROR ;
+
+	}	
+
+#else
+
 	FILE *fp = PyFile_AsFile(file_obj); 
 	PyFile_IncUseCount((PyFileObject *)file_obj);
 
@@ -248,6 +350,8 @@ static PyObject *_gadget2_getID(PyObject *self,PyObject *args){
 
 	//Release the file pointer
 	PyFile_DecUseCount((PyFileObject *)file_obj);
+
+#endif
 
 	//Return the array with the particle data (positions or velocities)
 	return id_data_array;
@@ -310,6 +414,15 @@ static PyObject *_gadget2_write(PyObject *self,PyObject *args){
 	header.comoving_distance = PyFloat_AsDouble(PyDict_GetItemString(header_obj,"comoving_distance"));
 
 	//simple ints
+#ifdef IS_PY3K
+	header.flag_cooling = (int)PyLong_AsLong(PyDict_GetItemString(header_obj,"flag_cooling"));
+	header.flag_sfr = (int)PyLong_AsLong(PyDict_GetItemString(header_obj,"flag_sfr"));
+	header.flag_feedback = (int)PyLong_AsLong(PyDict_GetItemString(header_obj,"flag_feedback"));
+	header.num_files = (int)PyLong_AsLong(PyDict_GetItemString(header_obj,"num_files"));
+	header.flag_stellarage = (int)PyLong_AsLong(PyDict_GetItemString(header_obj,"flag_stellarage"));
+	header.flag_metals = (int)PyLong_AsLong(PyDict_GetItemString(header_obj,"flag_metals"));
+	header.flag_entropy_instead_u = (int)PyLong_AsLong(PyDict_GetItemString(header_obj,"flag_entropy_instead_u"));
+#else
 	header.flag_cooling = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_cooling"));
 	header.flag_sfr = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_sfr"));
 	header.flag_feedback = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_feedback"));
@@ -317,6 +430,7 @@ static PyObject *_gadget2_write(PyObject *self,PyObject *args){
 	header.flag_stellarage = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_stellarage"));
 	header.flag_metals = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_metals"));
 	header.flag_entropy_instead_u = (int)PyInt_AsLong(PyDict_GetItemString(header_obj,"flag_entropy_instead_u"));
+#endif
 
 
 	//double and int arrays

@@ -5,11 +5,9 @@ from ..pipeline.settings import *
 from ..pipeline.remote import LocalGit
 
 from ..pipeline.simulation import LensToolsCosmology
+from ..pipeline.settings import Gadget2Settings
 
-from ..simulations import Gadget2Settings
-from .. import data
-
-from .. import dataExtern
+from .. import data,dataExtern
 
 import numpy as np
 

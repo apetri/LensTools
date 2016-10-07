@@ -285,12 +285,12 @@ After the creation of the directory tree that will host the simulation products 
 Matter power spectra (CAMB)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Einstein-Boltzmann code CAMB_ is used at the first step of the pipeline to compute the matter power spectra that are necessary to produce the initial conditions for the :math:`N`--body runs. CAMB needs its own parameter file to run, but in order to make things simpler, lenstools provides the :py:class:`~lenstools.simulations.camb.CAMBSettings` class. Typing 
+The Einstein-Boltzmann code CAMB_ is used at the first step of the pipeline to compute the matter power spectra that are necessary to produce the initial conditions for the :math:`N`--body runs. CAMB needs its own parameter file to run, but in order to make things simpler, lenstools provides the :py:class:`~lenstools.pipeline.settings.CAMBSettings` class. Typing 
 
 ::
 
 	>>> import lenstools
-	>>> from lenstools.simulations.camb import CAMBSettings
+	>>> from lenstools.pipeline.settings import CAMBSettings
 	>>> camb_settings = CAMBSettings()
 
 You will have access to the default settings of the CAMB code; you can edit these settings to fit your needs, and then generate the INI parameter file that CAMB will need to run 
@@ -361,11 +361,11 @@ Note that the IC file count increased from 0 to 256, but the snapshot count is s
 Gravitational evolution (Gadget2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The next step in the pipeline is to run Gadget2_ to evolve the initial conditions in time. Again, the Gadget2 tunable settings are handled by lenstools via the :py:class:`~lenstools.simulations.gadget2.Gadget2Settings`:
+The next step in the pipeline is to run Gadget2_ to evolve the initial conditions in time. Again, the Gadget2 tunable settings are handled by lenstools via the :py:class:`~lenstools.pipeline.settings.Gadget2Settings`:
 
 ::
 	
-	>>> from lenstools.simulations.gadget2 import Gadget2Settings
+	>>> from lenstools.pipeline.settings import Gadget2Settings
 	>>> gadget_settings = Gadget2Settings()
 
 In the gadget_settings instance, you may want to be especially careful in selecting the appropriate values for the OutputScaleFactor and NumFilesPerSnapshot attributes, which will direct which snapshots will be written to disk and in how many files each snapshot will be split. You can generate the Gadget2 parameter file just typing
@@ -671,56 +671,39 @@ to generate the submission script.
 Job handlers for different clusters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each computer cluster comes with its own job sheduler and job submission directives. lenstools facilitates the transition between clusters by translating the platform--independent options contained in "job.ini" into cluster specific directives through the :py:class:`~lenstools.pipeline.deploy.JobHandler` objects. Currently the "-s" switch that you can pass to lenstools.submission accepts the values "Stampede" (that will select the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` handler) and "edison" (that will select :py:class:`~lenstools.pipeline.cluster.EdisonHandler`). Should you want to use a different computer cluster, this is what you have to do. Create a file called mycluster.py, and implement a class MyCluster as follows (this is just an example)
+Each computer cluster comes with its own job sheduler and job submission directives. lenstools facilitates the transition between clusters by translating the platform--independent options contained in "job.ini" into cluster specific directives through the :py:class:`~lenstools.pipeline.deploy.JobHandler` objects. Currently the "-s" switch that you can pass to lenstools.submission accepts the values "Stampede" (that will select the :py:class:`~lenstools.pipeline.cluster.StampedeHandler` handler) and "edison" (that will select :py:class:`~lenstools.pipeline.cluster.EdisonHandler`). Should you want to use a different computer cluster, this is what you have to do. Create a file called mycluster.ini, and fill it according to this template (changing the values of the options to adapt to your own cluster)
 
 ::
 
-	#mycluster.py
+	[Directives]
 
-	from lenstools.pipeline.deploy import JobHandler,Directives,ClusterSpecs
-	import astropy.units as u 
+	directive_prefix = #SBATCH 
+	job_name_switch = -J  
+	stdout_switch = -o  
+	stderr_switch = -e  
+	num_cores_switch = -n  
+	num_nodes_switch = -N  
+	tasks_per_node_switch = None
+	queue_type_switch = -p  
+	wallclock_time_switch = -t  
+	user_email_switch = --mail-user=
+	user_email_type = --mail-type=all
 
-	_SLURMspecs = {
-	"directive_prefix" : "#SBATCH",
-	"charge_account_switch" : "-A ",
-	"job_name_switch" : "-J ",
-	"stdout_switch" : "-o ",
-	"stderr_switch" : "-e ",
-	"num_cores_switch" : "-n ",
-	"num_nodes_switch" : "-N ",
-	"tasks_per_node_switch" : None,
-	"queue_type_switch" : "-p ",
-	"wallclock_time_switch" : "-t ",
-	"user_email_switch" : "--mail-user=",
-	"user_email_type" : "--mail-type=all",
-	}
+	[ClusterSpecs]
 
-	_MyClusterSpecs = {
-	"shell_prefix" : "#!/bin/bash",
-	"execution_preamble" : None,
-	"job_starter" : "ibrun",
-	"cores_per_node" : 16,
-	"memory_per_node" : 32.0*u.Gbyte,
-	"cores_at_execution_switch" : "-n ",
-	"offset_switch" : "-o ",
-	"wait_switch" : "wait",
-	"multiple_executables_on_node" : True
-	}
+	shell_prefix = #!/bin/bash
+	execution_preamble = None
+	charge_account_switch = -A  
+	job_starter = ibrun 
+	cores_per_node = 16 
+	memory_per_node = 32 
+	memory_unit = Gbyte 
+	cores_at_execution_switch = -n  
+	offset_switch = -o  
+	wait_switch = wait 
+	multiple_executables_on_node = True 
 
-	class MyCluster(JobHandler):
-
-		"""
-		Job handler for my cluster 
-
-		"""
-
-		def setDirectives(self):
-			self._directives = Directives(**_SLURMspecs)
-
-		def setClusterSpecs(self):
-			self._cluster_specs = ClusterSpecs(**_MyClusterSpecs) 
-
-After doing this, you just need to pass the string "mycluster.MyCluster" to the "-s" switch when you run lenstools.submission and you are all set!
+After doing this, you just need to pass the cluster configuration file name "mycluster.ini" to the "-s" switch when you run lenstools.submission and you are all set!
 
 
 Post processing
@@ -730,7 +713,7 @@ This section shows an example on how to do some post processing on the products 
 
 ::
 
-	>>> def methodThatMeasuresSomething(pool,batch,settings,id,**kwargs):
+	>>> def methodThatMeasuresSomething(pool,batch,settings,node_id,**kwargs):
 		...
 
 where 
@@ -738,7 +721,7 @@ where
 - pool is a :py:class:`~lenstools.utils.MPIWhirlPool` instance that will take care of the parallelization of the code
 - batch is the simulation batch object, i.e. an instance of :py:class:`~lenstools.pipeline.SimulationBatch`
 - settings are the tunable settings of the code
-- id is the particular batch subset to process, for example "Om0.300_Ol0.700|512b240|ic1"
+- node_id is the particular batch subset to process, for example "Om0.300_Ol0.700|512b240|ic1"
 - kwargs are any other keyword arguments you may want to pass to the methodThatMeasuresSomething method
 
 lenstools will take care of distributing the methodThatMeasuresSomething calls on the computer cluster you are running on. Below is a working example of how to measure the 3D matter power spectrum out of the simulation boxes. 
@@ -764,31 +747,20 @@ Create a file "matter_power_spectrum.py"
 	from lenstools.utils import MPIWhirlPool
 
 	from lenstools.simulations.nbody import NbodySnapshot
-	from lenstools.simulations.gadget2 import Gadget2Snapshot
+	from lenstools.simulations.gadget2 import Gadget2SnapshotDE
+	from lenstools.simulations.logs import logdriver
 
 	from lenstools.pipeline.simulation import SimulationBatch
 
 	import numpy as np
 	import astropy.units as u
 
-	################################################
-	###########Loggers##############################
-	################################################
-
-	console = logging.StreamHandler(sys.stdout)
-	formatter = logging.Formatter("%(asctime)s:%(name)-12s:%(levelname)-4s: %(message)s",datefmt='%m-%d %H:%M')
-	console.setFormatter(formatter)
-
-	logdriver = logging.getLogger("lenstools.driver")
-	logdriver.addHandler(console)
-	logdriver.propagate = False
-
 	#Orchestra director of the execution
 	def powerSpectrumExecution():
 
 		script_to_execute = matterPowerSpectrum
 		settings_handler = PowerSpectrumSettings
-		kwargs = {"fmt":Gadget2Snapshot}
+		kwargs = {"fmt":Gadget2SnapshotDE}
 
 		return script_to_execute,settings_handler,kwargs
 
@@ -796,7 +768,7 @@ Create a file "matter_power_spectrum.py"
 	################Snapshot power spectrum#########################
 	################################################################
 
-	def matterPowerSpectrum(pool,batch,settings,id,**kwargs):
+	def matterPowerSpectrum(pool,batch,settings,node_id,**kwargs):
 
 		assert "fmt" in kwargs.keys()
 		fmt = kwargs["fmt"]
@@ -808,7 +780,7 @@ Create a file "matter_power_spectrum.py"
 		assert isinstance(settings,PowerSpectrumSettings)
 
 		#Split the id into the model,collection and realization parts
-		cosmo_id,geometry_id = id.split("|")
+		cosmo_id,geometry_id = node_id.split("|")
 
 		#Get a handle on the simulation model
 		model = batch.getModel(cosmo_id)
@@ -841,6 +813,14 @@ Create a file "matter_power_spectrum.py"
 		#Construct the array of bin edges
 		k_egdes  = np.linspace(settings.kmin,settings.kmax,settings.num_k_bins+1).to(model.Mpc_over_h**-1)
 
+		#Placeholder for the density MPI communications
+		density_placeholder = np.empty((settings.fft_grid_size,)*3,dtype=np.float32)
+		if pool is not None:
+			pool.openWindow(density_placeholder)
+
+			if pool.is_master():
+				logdriver.debug("Opened density window of type {0}".format(pool._window_type))
+
 		#Cycle over snapshots
 		for n in range(settings.first_snapshot,settings.last_snapshot+1):
 
@@ -849,7 +829,7 @@ Create a file "matter_power_spectrum.py"
 
 			#Log to user
 			if (pool is None) or (pool.is_master()):
-				logdriver.info("Processing snapshot {0} of model {1}".format(n,id))
+				logdriver.info("Processing snapshot {0} of model {1}".format(n,node_id))
 				logdriver.info("Allocated memory for power spectrum Ensemble {0}".format(power_ensemble.shape))
 
 			for r,ic in enumerate(settings.nbody_realizations):
@@ -857,7 +837,7 @@ Create a file "matter_power_spectrum.py"
 				#Log to user
 				if (pool is None) or (pool.is_master()):
 					logdriver.info("Processing N-body realization {0}".format(ic))
-				
+			
 				#Instantiate the appropriate SimulationIC object
 				realization = collection.getRealization(ic)
 
@@ -868,7 +848,7 @@ Create a file "matter_power_spectrum.py"
 						sys.exit(1)
 
 				snap = fmt.open(realization.snapshotPath(n,sub=None),pool=pool)
-				k,power_ensemble[r],hits = snap.powerSpectrum(k_egdes,resolution=settings.fft_grid_size,return_num_modes=True)
+				k,power_ensemble[r],hits = snap.powerSpectrum(k_egdes,resolution=settings.fft_grid_size,return_num_modes=True,density_placeholder=density_placeholder)
 				snap.close()
 
 				#Safety barrier sync
@@ -888,7 +868,7 @@ Create a file "matter_power_spectrum.py"
 
 			#Save the ensemble
 			if (pool is None) or (pool.is_master()):
-				
+			
 				savename = os.path.join(collection.home_subdir,settings.ensemble_name,settings.ensemble_name+"_snap{0:03d}.npy".format(n))
 				logdriver.info("Saving power spectrum Ensemble ({0}) to {1}".format(power_ensemble.unit.to_string(),savename))
 				np.save(savename,power_ensemble.value)
@@ -898,8 +878,19 @@ Create a file "matter_power_spectrum.py"
 			if pool is not None:
 				pool.comm.Barrier()
 
+		###########
+		#Completed#
+		###########
 
-		#Completed
+		#Close the RMA window
+		if pool is not None:
+			pool.comm.Barrier()
+			pool.closeWindow()
+		
+			if pool.is_master():
+				logdriver.debug("Closed density window of type {0}".format(pool._window_type))
+
+
 		if pool is None or pool.is_master():
 			logdriver.info("DONE!!")
 
@@ -952,22 +943,22 @@ Create a file "matter_power_spectrum.py"
 			#Read in the nbody realizations that make up the ensemble
 			settings.nbody_realizations = list()
 			for r in options.get(section,"nbody_realizations").split(","): 
-				
+			
 				try:
 					l,h = r.split("-")
 					settings.nbody_realizations.extend(range(int(l),int(h)+1))
 				except ValueError:
 					settings.nbody_realizations.extend([int(r)])
-			
+		
 			settings.first_snapshot = options.getint(section,"first_snapshot")
 			settings.last_snapshot = options.getint(section,"last_snapshot")
-			
+		
 			settings.fft_grid_size = options.getint(section,"fft_grid_size")
 
 			settings.length_unit = getattr(u,options.get(section,"length_unit"))
 			settings.kmin = options.getfloat(section,"kmin") * settings.length_unit**-1
 			settings.kmax = options.getfloat(section,"kmax") * settings.length_unit**-1
-			
+		
 			settings.num_k_bins = options.getint(section,"num_k_bins")
 
 			#Return to user

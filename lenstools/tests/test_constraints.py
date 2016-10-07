@@ -56,7 +56,7 @@ def test_fisher():
 
 	#Sanity check
 	assert derivatives.shape == (3,len(l))
-	assert f.varied == range(3)
+	assert f.varied == [0,1,2]
 
 	#Plot the results
 	for n in range(3): 
@@ -148,14 +148,14 @@ def test_interpolation():
 	plt.clf()
 
 	#Train the interpolators
-	analysis.train(use_parameters=range(3))
+	analysis.train(use_parameters=[0,1,2])
 	assert hasattr(analysis,"_interpolator")
 	assert hasattr(analysis,"_num_bins")
 
 	#Emulator portability test with pickle/unpickle
 	analysis.save("analysis.pkl")
 	emulator = Emulator.read("analysis.pkl")
-	emulator.train(use_parameters=range(3))
+	emulator.train(use_parameters=[0,1,2])
 
 	#Predict the power spectrum at the remaining point
 	predicted_Pl = emulator.predict(testing_model.squeeze())

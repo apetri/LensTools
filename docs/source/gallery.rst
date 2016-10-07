@@ -14,3 +14,5 @@ Gallery
 	examples/design
 	examples/gadget_io
 	examples/confidence_contours
+	examples/sampling
+	examples/parameter_priors

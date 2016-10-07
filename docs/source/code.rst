@@ -29,6 +29,9 @@ Statistics
 .. autoclass:: lenstools.statistics.ensemble.Ensemble
 	:members: nobs,read,readall,read_sql_table,read_sql_query,compute,save,concat,meshgrid,combine_from_dict,combine_columns,suppress_indices,group,covariance,bootstrap,principalComponents,project,compare,selfChi2,shuffle,imshow 
 
+.. autoclass:: lenstools.statistics.ensemble.SquareMatrix
+	:members: invert
+
 .. autoclass:: lenstools.statistics.database.Database
 	:inherited-members:
 
@@ -106,6 +109,17 @@ Nicaea bindings
 .. autoclass:: lenstools.simulations.Nicaea
 	:members: fromCosmology,convergencePowerSpectrum,shearTwoPoint
 
+CAMB
+====
+
+.. autofunction:: lenstools.simulations.camb.parseLog 
+
+.. autoclass:: lenstools.simulations.camb.CAMBTransferFunction
+	:inherited-members:
+
+.. autoclass:: lenstools.simulations.camb.CAMBTransferFromPower
+	:inherited-members:
+
 N-body simulation snapshot handling
 ===================================
 
@@ -123,7 +137,10 @@ Ray tracing simulations
 =======================
 
 .. autoclass:: lenstools.simulations.Plane
-	:members: save,load,randomRoll,toReal,toFourier
+	:members: save,load,randomRoll,toReal,toFourier,scaleWithTransfer
+
+.. autoclass:: lenstools.simulations.raytracing.TransferSpecs
+	:inherited-members:
 
 .. autoclass:: lenstools.simulations.DensityPlane
 	:members: potential
@@ -152,7 +169,7 @@ Directory tree handling
 	:members: path,mkdir,newCollection,getCollection,collections,newTelescopicMapSet,getTelescopicMapSet,telescopicmapsets
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationCollection
-	:members: newRealization,getRealization,realizations,newMapSet,getMapSet,writeCAMB,camb2ngenic
+	:members: newRealization,getRealization,realizations,newMapSet,getMapSet,writeCAMB,loadTransferFunction,camb2ngenic
 
 .. autoclass:: lenstools.pipeline.simulation.SimulationIC
 	:members: newPlaneSet,getPlaneSet,writeNGenIC,writeGadget2
@@ -172,13 +189,13 @@ Tunable settings
 .. autoclass:: lenstools.pipeline.settings.EnvironmentSettings
 	:inherited-members:
 
-.. autoclass:: lenstools.simulations.camb.CAMBSettings
+.. autoclass:: lenstools.pipeline.settings.CAMBSettings
 	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.settings.NGenICSettings
 	:inherited-members:
 
-.. autoclass:: lenstools.simulations.Gadget2Settings
+.. autoclass:: lenstools.pipeline.settings.Gadget2Settings
 	:inherited-members:
 
 .. autoclass:: lenstools.pipeline.settings.PlaneSettings

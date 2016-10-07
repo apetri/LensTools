@@ -12,10 +12,14 @@
 
 from __future__ import division,print_function,with_statement
 
+import sys
 from operator import mul
 from functools import reduce
 
-import cPickle as pickle
+if sys.version_info.major>=3:
+	import _pickle as pickle
+else:
+	import cPickle as pickle
 
 #########################################################
 
@@ -35,7 +39,7 @@ except ImportError:
 
 from ..utils.algorithms import precision_bias_correction
 from .ensemble import Series,Ensemble,Panel 
-import samplers
+from . import samplers
 
 #########################################################
 #############Default Gaussian data likelihood############
@@ -548,11 +552,8 @@ class FisherAnalysis(Analysis):
 		:returns: list with the indices of the varied parameters
 
 		"""
-
-		loc = self.where().keys()
-		loc.sort()
 		
-		return loc 
+		return list(sorted(self.where())) 
 
 
 	def compute_derivatives(self):
@@ -569,8 +570,7 @@ class FisherAnalysis(Analysis):
 
 		#Find the varied parameters and their locations
 		loc_varied = self.where()
-		par_varied = loc_varied.keys()
-		par_varied.sort()
+		par_varied = list(sorted(loc_varied))
 
 		#Allocate space for the derivatives
 		derivatives = np.zeros((len(par_varied),)+self.feature_set.shape[1:])
@@ -1174,7 +1174,7 @@ class Emulator(Analysis):
 		else:
 			M = map
 		
-		chi2_list = M(chi2_wrapper,parameter_chunks)
+		chi2_list = list(M(chi2_wrapper,parameter_chunks))
 
 		return np.array(chi2_list).reshape(num_points)
 

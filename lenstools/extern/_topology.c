@@ -11,17 +11,25 @@ The module is called _topology and it defines the methods below (see docstrings)
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+#include "lenstoolsPy3.h"
+
 #include "peaks.h"
 #include "differentials.h"
 #include "minkowski.h"
 #include "azimuth.h"
+
+#ifndef IS_PY3K
+static struct module_state _state;
+#endif
+
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for counting peaks in a 2D map";
 static char peakCount_docstring[] = "Calculate the peak counts in a 2D map";
 static char peakLocations_docstring[] = "Find the peak locations in a 2D map";
 static char gradient_docstring[] = "Compute the gradient of a 2D image";
-static char hessian_docstring[] = "Compute the hessian of a 2D image"; 
+static char hessian_docstring[] = "Compute the hessian of a 2D image";
+static char gradLaplacian_docstring[] = "Compute the gradient of the laplacian of a 2D image"; 
 static char minkowski_docstring[] = "Measure the three Minkowski functionals of a 2D image";
 static char rfft2_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 2D image";
 static char rfft3_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 3D scalar field";
@@ -31,6 +39,7 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args);
 static PyObject *_topology_peakLocations(PyObject *self,PyObject *args);
 static PyObject *_topology_gradient(PyObject *self,PyObject *args);
 static PyObject *_topology_hessian(PyObject *self,PyObject *args);
+static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args);
 static PyObject *_topology_minkowski(PyObject *self,PyObject *args);
 static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args);
 static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args);
@@ -43,6 +52,7 @@ static PyMethodDef module_methods[] = {
 	{"peakLocations",_topology_peakLocations,METH_VARARGS,peakLocations_docstring},
 	{"gradient",_topology_gradient,METH_VARARGS,gradient_docstring},
 	{"hessian",_topology_hessian,METH_VARARGS,hessian_docstring},
+	{"gradLaplacian",_topology_gradLaplacian,METH_VARARGS,gradLaplacian_docstring},
 	{"minkowski",_topology_minkowski,METH_VARARGS,minkowski_docstring},
 	{"rfft2_azimuthal",_topology_rfft2_azimuthal,METH_VARARGS,rfft2_azimuthal_docstring},
 	{"rfft3_azimuthal",_topology_rfft3_azimuthal,METH_VARARGS,rfft3_azimuthal_docstring},
@@ -51,15 +61,66 @@ static PyMethodDef module_methods[] = {
 } ;
 
 //_topology constructor
-PyMODINIT_FUNC init_topology(void){
 
+#ifdef IS_PY3K
+
+static struct PyModuleDef moduledef = {
+
+	PyModuleDef_HEAD_INIT,
+	"_topology",
+	module_docstring,
+	sizeof(struct module_state),
+	module_methods,
+	NULL,
+	myextension_trasverse,
+	myextension_clear,
+	NULL
+
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit__topology(void)
+
+#else
+
+#define INITERROR return
+
+void
+init_topology(void)
+#endif
+
+{
+#ifdef IS_PY3K
+	PyObject *m = PyModule_Create(&moduledef);
+#else
 	PyObject *m = Py_InitModule3("_topology",module_methods,module_docstring);
-	if(m==NULL) return;
+#endif
+
+	if(m==NULL)
+		INITERROR;
+	struct module_state *st = GETSTATE(m);
+
+	st->error = PyErr_NewException("_topology.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(m);
+        INITERROR;
+    }
 
 	/*Load numpy functionality*/
 	import_array();
 
+	/*Return*/
+#ifdef IS_PY3K
+	return m;
+#endif
+
 }
+
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 
 //peakCount() implementation
 static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
@@ -601,6 +662,131 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 
 	/*Done, now return*/
 	return hessian_output;
+
+}
+
+//gradLaplacian() implementation
+static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args){
+
+	PyObject *map_obj,*x_obj,*y_obj;
+	PyObject *x_array,*y_array;
+	int Npoints, *x_data,*y_data;
+
+	/*Parse the input*/
+	if(!PyArg_ParseTuple(args,"OOO",&map_obj,&x_obj,&y_obj)){ 
+		return NULL;
+	}
+
+	/*Interpret the input as a numpy array*/
+	PyObject *map_array = PyArray_FROM_OTF(map_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+	if(map_array==NULL){
+		return NULL;
+	}
+
+	/*If not None, interpret also x and y as numpy arrays*/
+	if(x_obj!=Py_None && y_obj!=Py_None){
+
+		x_array = PyArray_FROM_OTF(x_obj,NPY_INT32,NPY_IN_ARRAY);
+		y_array = PyArray_FROM_OTF(y_obj,NPY_INT32,NPY_IN_ARRAY);
+
+		if(x_array==NULL || y_array==NULL){
+			Py_XDECREF(x_array);
+			Py_XDECREF(y_array);
+			Py_DECREF(map_array);
+			return NULL;
+		}
+
+		Npoints = (int)PyArray_SIZE(x_array);
+
+		/*Get data pointers*/
+		x_data = (int *)PyArray_DATA(x_array);
+		y_data = (int *)PyArray_DATA(y_array);
+
+	} else{
+
+		x_array = NULL;
+		y_array = NULL;
+		Npoints = -1;
+		x_data = NULL;
+		y_data = NULL;
+	}
+
+	/*Get the size of the map (in pixels)*/
+	int Nside = (int)PyArray_DIM(map_array,0);
+
+	/*Interpret as numpy arrays*/
+	PyObject *gradient_x_array, *gradient_y_array;
+
+	/*Prepare the new array objects that will hold the gradients along x and y*/
+	if(Npoints<0){
+		
+		npy_intp dims[] = {(npy_intp) Nside, (npy_intp) Nside};
+		gradient_x_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+		gradient_y_array = PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+	}
+	else{
+
+		npy_intp dims[] = {(npy_intp) Npoints};
+		gradient_x_array = PyArray_SimpleNew(1,dims,NPY_DOUBLE);
+		gradient_y_array = PyArray_SimpleNew(1,dims,NPY_DOUBLE);
+
+	}
+
+	/*Throw exception if this failed*/
+	if(gradient_x_array==NULL || gradient_y_array==NULL){
+		
+		Py_DECREF(map_array);
+		Py_XDECREF(gradient_x_array);
+		Py_XDECREF(gradient_y_array);
+		
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
+		return NULL;
+	}
+
+	/*Call the underlying C function that computes the gradient*/
+	gradLaplacian((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(gradient_x_array),(double *)PyArray_DATA(gradient_y_array),Nside,Npoints,x_data,y_data);
+
+	/*Prepare a tuple container for the output*/
+	PyObject *gradient_output = PyTuple_New(2);
+	
+	if(PyTuple_SetItem(gradient_output,0,gradient_x_array)){
+
+		Py_DECREF(map_array);
+
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+
+		Py_DECREF(gradient_x_array);
+		Py_DECREF(gradient_y_array);
+		Py_DECREF(gradient_output);
+		return NULL;
+
+	}
+
+	if(PyTuple_SetItem(gradient_output,1,gradient_y_array)){
+
+		Py_DECREF(map_array);
+		
+		if(x_array!=NULL) Py_DECREF(x_array);
+		if(y_array!=NULL) Py_DECREF(y_array);
+		
+		Py_DECREF(gradient_x_array);
+		Py_DECREF(gradient_y_array);
+		Py_DECREF(gradient_output);
+		return NULL;
+
+	}
+
+	/*Clean up*/
+	Py_DECREF(map_array);
+	
+	if(x_array!=NULL) Py_DECREF(x_array);
+	if(y_array!=NULL) Py_DECREF(y_array);
+
+	/*Done, now return*/
+	return gradient_output;
 
 }
 

@@ -1,13 +1,145 @@
-import os
-import StringIO
+import sys,os
+import re
+
+if sys.version_info.major>=3:
+	import _pickle as pkl
+	from io import StringIO
+else:
+	import cPickle as pkl
+	from StringIO import StringIO
 
 import numpy as np
+from scipy import interpolate
 import astropy.units as u
 from astropy.cosmology import FLRW
 
 #Option parsing method
 from .settings import select_parser,LTSettings
 
+#Parse CAMB output log
+def parseLog(fname):
+
+	"""
+	Parse CAMB output log
+
+	:param fname: file name or file descriptor
+	:type fname: str. or file.
+
+	:returns: parsed log
+	:rtype: dict.
+
+	"""
+
+	#Get the filehandle
+	if type(fname)==file:
+		fp = fname
+	else:
+		fp = open(fname,"r")
+
+	#Dictionary with parsed log
+	parsed = dict()
+	parsed["sigma8"] = dict()
+
+	#Cycle over the lines in the log
+	for line in fp.readlines():
+
+		#w0/wa
+		match = re.match(r"\(w0, wa\) = \(([-\.0-9]+),[\s]+([-\.0-9]+)\)",line) 
+		if match:
+			parsed["w0"],parsed["wa"] = [ float(v) for v in match.groups() ]
+			continue
+
+		#Parameters
+		match = re.match(r"Reion redshift[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["z_ion"] = float(match.groups()[0])
+
+		match = re.match(r"Om_b h\^2[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Obh2"] = float(match.groups()[0])
+
+		match = re.match(r"Om_c h\^2[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Omch2"] = float(match.groups()[0])
+
+		match = re.match(r"Om_nu h\^2[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Onuh2"] = float(match.groups()[0])
+
+		match = re.match(r"Om_Lambda[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Ode"] = float(match.groups()[0])
+
+		match = re.match(r"Om_K[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Omk"] = float(match.groups()[0])
+
+		match = re.match(r"Om_m \(1-Om_K-Om_L\)[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Om"] = float(match.groups()[0])
+
+		match = re.match(r"100 theta \(CosmoMC\)[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["100thetaMC"] = float(match.groups()[0])
+
+		match = re.match(r"Reion opt depth[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["tau_ion"] = float(match.groups()[0])
+
+		match = re.match(r"Age of universe\/GYr[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["Age"] = float(match.groups()[0]) * u.Gyr
+
+		match = re.match(r"zstar[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["zstar"] = float(match.groups()[0])
+
+		match = re.match(r"r_s\(zstar\)/Mpc[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["rs"] = float(match.groups()[0]) * u.Mpc
+
+		match = re.match(r"zdrag[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["zdrag"] = float(match.groups()[0])
+
+		match = re.match(r"r_s\(zdrag\)/Mpc[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["rs(zdrag)"] = float(match.groups()[0]) * u.Mpc
+
+		match = re.match(r"k_D\(zstar\) Mpc[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["kD(zstar)"] = float(match.groups()[0]) / u.Mpc
+
+		match = re.match(r"100\*theta_D[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["100thetaD"] = float(match.groups()[0])
+
+		match = re.match(r"z_EQ \(if v_nu=1\)[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["zEQ"] = float(match.groups()[0])
+
+		match = re.match(r"100\*theta_EQ[\s]+=[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["100thetaEQ"] = float(match.groups()[0])
+
+		match = re.match(r"tau_recomb/Mpc[\s]+=[\s]+([0-9\.]+)[\s]+tau_now/Mpc =[\s]+([0-9\.]+)",line)
+		if match:
+			parsed["tau_rec"],parsed["tau_now"] = [float(v)*u.Mpc for v in match.groups()]
+
+		match = re.match(r"[\s]+at z =[\s]+([0-9E\-\+\.]+)[\s]+sigma8 \(all matter\)=[\s]+([0-9\.]+)",line)
+		if match:
+			z,sigma8 = [ float(v) for v in match.groups() ]
+			parsed["sigma8"][z] = sigma8
+
+	#Return
+	if type(fname)!=file:
+		fp.close()
+	
+	return parsed
+
+
+
+##################################################################################################
 
 class CAMBSettings(LTSettings):
 
@@ -36,6 +168,7 @@ class CAMBSettings(LTSettings):
 		self.nu_mass_degeneracies = 0
 		self.share_delta_neff = True
 
+		self.scalar_amplitude = 2.41e-9
 		self.pivot_scalar = 0.002 * u.Mpc**-1
 		self.pivot_tensor = 0.002 * u.Mpc**-1
 
@@ -128,7 +261,7 @@ class CAMBSettings(LTSettings):
 		z = -1.0*np.sort(-1.0*redshifts)
 
 		#Instantiate StringIO object
-		s = StringIO.StringIO()
+		s = StringIO()
 
 		s.write("output_root = {0}\n".format(output_root))
 
@@ -169,11 +302,19 @@ class CAMBSettings(LTSettings):
 		#Hubble constant
 		s.write("hubble = {0:.6f}\n".format(cosmology.h * 100))
 
+		#Dark energy parameters
 		if hasattr(cosmology,"w0"):
 			w0 = cosmology.w0
 		else:
-			w0 = -1.0
+			w0 = -1.
+
+		if hasattr(cosmology,"wa"):
+			wa = cosmology.wa
+		else:
+			wa = 0.
+
 		s.write("w = {0:.6f}\n".format(w0))
+		s.write("wa = {0:.6f}\n".format(wa))
 
 		s.write("\n\n#####################################\n\n")
 
@@ -207,7 +348,7 @@ class CAMBSettings(LTSettings):
 		s.write('pivot_tensor = {0:.3f}\n'.format(self.pivot_tensor.to(u.Mpc**-1).value))
 
 		s.write('initial_power_num = {0}\n'.format(1))
-		s.write('scalar_amp(1) = {0:.2e}\n'.format(2.41e-9))
+		s.write('scalar_amp(1) = {0:.6e}\n'.format(self.scalar_amplitude))
 		
 		if hasattr(cosmology,"ns"):
 			ns = cosmology.ns
@@ -307,3 +448,171 @@ class CAMBSettings(LTSettings):
 		s.seek(0)
 		return s.read()
 
+#########################################################################################################################################
+
+#CAMB transfer function
+class TransferFunction(object):
+
+	def __init__(self,k):
+
+		"""
+		:param k: wavenumbers at which the transfer function is computed at
+		:type k: quantity
+
+		"""
+
+		assert k.unit.physical_type=="wavenumber"
+		self._k = k.to((u.Mpc)**-1)
+		self._transfer = dict()
+		self._interpolated = dict()
+
+	def add(self,z,T):
+
+		"""
+		Add transfer function information at redshift z
+
+		:param z: redshift
+		:type z: float.
+
+		:param T: CDM transfer function from CAMB output
+		:type T: array 
+
+		"""
+
+		if hasattr(self,"_sorted_z"):
+			del(self._sorted_z)
+
+		assert T.shape==self._k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self._k))
+		self._transfer[z] = T
+
+	def __getitem__(self,z):
+
+		"""
+		Returns the tabulated transfer function at z. If z is not in the table, returns the tabulated transfer function at the closest z available
+
+		:param z: redshift at which to output the tabulated transfer function
+		:type z: float.
+
+		:returns: (tabulated z,k,tabulated transfer function)
+		:rtype: tuple.
+
+		"""
+
+		#If the transfer function is not tabulated with z, use the closest z in the table
+		if not hasattr(self,"_sorted_z"):
+			self._sorted_z = np.sort(np.array(list(self._transfer.keys())))
+
+		if z in self._transfer:
+			zt = z
+		else:
+			zt = self._sorted_z[np.abs(self._sorted_z - z).argmin()] 
+
+		#Return
+		return zt,self._k,self._transfer[zt]
+
+
+
+	def __call__(self,z,k):
+
+
+		"""
+		Compute the transfer function at redshift z by linear interpolation
+
+		:param z: redshift
+		:type z: float.
+
+		:param k: wavenumbers at which to compute the transfer function (linearly interpolated with scipy.interp1d)
+		:type k: quantity
+
+		:returns: transfer function at k
+		:rtype: array 
+
+		"""
+
+		assert k.unit.physical_type=="wavenumber"
+
+		#If the transfer function is not tabulated with z, use the closest z in the table
+		if not hasattr(self,"_sorted_z"):
+			self._sorted_z = np.sort(np.array(list(self._transfer.keys())))
+
+		if z in self._transfer:
+			zt = z
+		else:
+			zt = self._sorted_z[np.abs(self._sorted_z - z).argmin()] 
+
+		#If interpolator has not been built yet for the current redshift, build it
+		if zt not in self._interpolated:
+			self._interpolated[zt] = interpolate.interp1d(self._k.value,self._transfer[zt],fill_value=1,bounds_error=False)
+
+		#Use interpolator to compute the transfer function
+		return self._interpolated[zt](k.to((u.Mpc)**-1).value)
+
+	#I/O
+	def save(self,filename):
+
+		"""
+		Pickle the TransferFunction instance
+
+		:param filename: name of the file to save the instance to
+		:type filename: str.
+
+		"""
+
+		with open(filename,"wb") as fp:
+			pkl.dump(self,fp,protocol=2)
+
+	@classmethod
+	def read(cls,filename):
+
+		"""
+		Load a previously pickled TransferFunction instance
+
+		:param filename: name of the file from which the instance should be read
+		:type filename: str.
+
+		:rtype: :py:class:`TransferFunction`
+
+		"""
+
+		with open(filename,"rb") as fp:
+			tfr = pkl.load(fp)
+
+		if isinstance(tfr,cls):
+			return tfr
+		else:
+			raise TypeError("Pickled instance is not of type {0}".format(cls.__name__))
+
+
+##############################################################################################################################
+
+class CAMBTransferFunction(TransferFunction):
+	pass
+
+class CAMBTransferFromPower(TransferFunction):
+
+	def add(self,z,T):
+
+		"""
+		Add transfer function information at redshift z
+
+		:param z: redshift
+		:type z: float.
+
+		:param T: CDM transfer function from CAMB output
+		:type T: array 
+
+		"""
+
+		if hasattr(self,"_sorted_z"):
+			del(self._sorted_z)
+
+		assert T.shape==self._k.shape,"There should be exactly one transfer function value for each wavenumber! len(T)={0} len(k)={1}".format(len(T),len(self._k))
+		self._transfer[z] = np.sqrt(T) 
+
+##############################################################################################################################
+
+#k independent transfer function for testing D(z,k) = 1/1+z
+class TestTransferFunction(TransferFunction):
+
+	def __call__(self,z,k):
+		return np.ones(k.shape)/(1+z)

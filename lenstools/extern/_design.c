@@ -10,7 +10,12 @@ The module is called _design and it defines the methods below (see docstrings)
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+#include "lenstoolsPy3.h"
 #include "design.h"
+
+#ifndef IS_PY3K
+static struct module_state _state;
+#endif
 
 //Python module docstrings 
 static char module_docstring[] = "This module provides a python interface for sampling a N-dimensional parameter space";
@@ -34,15 +39,66 @@ static PyMethodDef module_methods[] = {
 } ;
 
 //_design constructor
-PyMODINIT_FUNC init_design(void){
 
+#ifdef IS_PY3K
+
+static struct PyModuleDef moduledef = {
+
+	PyModuleDef_HEAD_INIT,
+	"_design",
+	module_docstring,
+	sizeof(struct module_state),
+	module_methods,
+	NULL,
+	myextension_trasverse,
+	myextension_clear,
+	NULL
+
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit__design(void)
+
+#else
+
+#define INITERROR return
+
+void
+init_design(void)
+#endif
+
+{
+#ifdef IS_PY3K
+	PyObject *m = PyModule_Create(&moduledef);
+#else
 	PyObject *m = Py_InitModule3("_design",module_methods,module_docstring);
-	if(m==NULL) return;
+#endif
+
+	if(m==NULL)
+		INITERROR;
+	struct module_state *st = GETSTATE(m);
+
+	st->error = PyErr_NewException("_design.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(m);
+        INITERROR;
+    }
 
 	/*Load numpy functionality*/
 	import_array();
 
+	/*Return*/
+#ifdef IS_PY3K
+	return m;
+#endif
+
 }
+
+//////////////////////////////////////////////
+//////////////////////////////////////////////
+//////////////////////////////////////////////
 
 //////////////////////////////////////////////////
 /*Function implementations using backend C code*/
