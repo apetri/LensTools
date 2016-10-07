@@ -35,7 +35,15 @@ before_install:
 
 #Install packages
 install:
-- conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy sqlalchemy matplotlib nose pandas numexpr astropy
+- conda install --yes python=$TRAVIS_PYTHON_VERSION atlas 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION scipy 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION sqlalchemy 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION matplotlib 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION nose 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION pandas 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION numexpr 
+- conda install --yes python=$TRAVIS_PYTHON_VERSION astropy
 
 #Coverage packages
 - pip install coveralls
