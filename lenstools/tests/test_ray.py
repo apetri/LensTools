@@ -144,7 +144,7 @@ def test_callback():
 
 
 
-def test_convergence_direct():
+def test_convergence_born():
 
 	z_final = 2.0
 
@@ -154,12 +154,12 @@ def test_convergence_direct():
 	pos = np.array([xx,yy]) * deg
 
 	#Compute the convergence
-	conv = tracer.convergenceDirect(pos,z=z_final)
+	conv = tracer.convergenceBorn(pos,z=z_final)
 
 	#Wrap into a ConvergenceMap and visualize
 	conv_map = ConvergenceMap(data=conv,angle=tracer.lens[0].side_angle)
 	conv_map.visualize(colorbar=True)
-	conv_map.savefig("convergence_direct.png")
+	conv_map.savefig("convergence_born.png")
 
 
 def test_distortion():
