@@ -1,6 +1,6 @@
 .. :changelog:
 
-0.8
+0.9
 +++
 
 - RayTracer can now perform line of sight integrations to approximate kappa (Born, lens-lens and geodesic perturbation) and omega (lens-lens), without full raytracing
