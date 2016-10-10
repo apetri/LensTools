@@ -19,14 +19,15 @@ This python add-on will handle basically every operation you will need to perfor
 - Survey masks
 - Efficient :math:`E` and :math:`B` mode decompositions of shear maps
 - Artificial noise generation engines
-- All functionality of pandas_ DataFrame readily available (and improved!)
-- Easy to compute parameter statistical inferences
-- Easy input/output from :math:`N`-body simulation snapshots in the Gadget2 binary format
+- All functionality of pandas_ DataFrame readily available (and improved!) for row-ordered data
+- Easy to use statistical methods for parameter sampling
+- Easy input/output from :math:`N`-body simulation snapshots in the Gadget2 and FastPM formats
 - Interfaces with existing simulation sets
-- Ray Tracing simulations
+- Ray Tracing simulations: full raytracing, Born approximation, second order post-Born
+- Efficient directory tree handling for Weak Lensing simulation pipelines
 - CPU vectorization of expensive computations via numpy
 - Easy multiprocessing and cluster deployment via the mpi4py_ module
-- *Future prospect*: taking advantage of numpy offload capabilities to Intel Xeon Phi coprocessors to boost performance (planned) 
+- *Future prospect*: take advantage of numpy offload capabilities to Intel Xeon Phi coprocessors to boost performance (planned) 
 
 Acknowledgement
 ---------------
@@ -100,7 +101,7 @@ Dependencies
 .. _NICAEA: http://www.cosmostat.org/software/nicaea/
 .. _fftw3: http://www.fftw.org
 
-The core features require the standard numpy_, scipy_ , and additionally  astropy_ (mainly for the cosmology and measure units support) and emcee_ (from which LensTools borrows the MPI Pool utility), and the Test suite requires additionally the matplotlib_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to use the SQL database querying shortcuts embedded in LensTools, you will need the sqlalchemy_ package too. If you want to run the calculations in parallel on a computer cluster you will need to install mpi4py_ (a python wrapper for the MPI library). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway). One of the lenstools features, namely the :py:class:`~lenstools.simulations.Design` class, requires that you have a working version of GSL_ to link to; if you don't have one, just hit *enter* during the installation process and the package will work correctly without this additional feature. The installation if the NICAEA_ bindings additionally requires a working installation of the fftw3_ library. 
+The core features require the standard numpy_, scipy_ ,pandas_ and additionally  astropy_ (mainly for the cosmology and measure units support) and emcee_ (from which LensTools borrows the MPI Pool utility), and the Test suite requires additionally the matplotlib_ package. matpoltlib should eventually be installed if you want to use the plotting engines of LensTools. If you want to use the SQL database querying shortcuts embedded in LensTools, you will need the sqlalchemy_ package too. If you want to run the calculations in parallel on a computer cluster you will need to install mpi4py_ (a python wrapper for the MPI library). Installation of all these packages is advised (if you run astrophysical data analyses you should use them anyway). One of the lenstools features, namely the :py:class:`~lenstools.simulations.Design` class, requires that you have a working version of GSL_ to link to; if you don't have one, just hit *enter* during the installation process and the package will work correctly without this additional feature. The installation if the NICAEA_ bindings additionally requires a working installation of the fftw3_ library. 
 
 Test
 ----
