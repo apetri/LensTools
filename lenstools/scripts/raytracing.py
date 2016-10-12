@@ -365,6 +365,7 @@ integration_types = {
 "postBorn2-ll" : "Convergence due to lens-lens coupling", 
 "postBorn2-gp" : "Convergence due to geodesic perturbation",
 "postBorn1+2" : "Convergence at Born + second post Born order in the lensing potential",
+"postBorn1+2-gp" : "Convergence at Born + second post Born order (geodesic perturbation only)",
 "omega2" : "Rotation at second order in the lensing potential"
 
 }
@@ -639,6 +640,10 @@ def losIntegrate(pool,batch,settings,batch_id):
 
 			elif settings.integration_type=="postBorn1+2":
 				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True)
+				img_type = ConvergenceMap
+
+			elif settings.integration_type=="postBorn1+2-gp":
+				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,include_ll=False)
 				img_type = ConvergenceMap
 
 			elif settings.integration_type=="omega2":

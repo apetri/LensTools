@@ -3048,7 +3048,7 @@ class SimulationMaps(SimulationCollection):
 	def __repr__(self):
 
 		#Count the number of map files on disk
-		maps_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"WL*"))
+		maps_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"*.{0}".format(self.settings.format)))
 
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
