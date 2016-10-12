@@ -211,12 +211,14 @@ class Ensemble(pd.DataFrame):
 
 		"""
 
-		if filename.endswith(".pkl"):
-			callback_loader = pd.read_pickle
-		elif filename.endswith(".sqlite"):
-			callback_loader = cls._read_sql
-		elif filename.endswith(".npy"):
-			callback_loader = lambda f:np.load(f)
+		if callback_loader is None:
+
+			if filename.endswith(".pkl"):
+				callback_loader = pd.read_pickle
+			elif filename.endswith(".sqlite"):
+				callback_loader = cls._read_sql
+			elif filename.endswith(".npy"):
+				callback_loader = lambda f:np.load(f)
 
 		#Read the Ensemble
 		loaded_ensemble = callback_loader(filename,**kwargs)
