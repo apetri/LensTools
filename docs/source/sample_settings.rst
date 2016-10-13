@@ -48,4 +48,12 @@ Line of sight integration
 
 .. literalinclude:: ../../lenstools/data/los_default.ini
 	:language: ini
-	:linenos: 
+	:linenos:
+
+Integration types
++++++++++++++++++
+
+.. literalinclude:: ../../lenstools/scripts/__init__.py
+	:language: python
+	:linenos:
+	
