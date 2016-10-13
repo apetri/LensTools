@@ -361,6 +361,7 @@ def singleRedshift(pool,batch,settings,batch_id):
 integration_types = {
 
 "born" : "Born approximation for the convergence (linear order in the lensing potential)",
+"born-rt" : "Semi-Born approximation: integrate the density on the real ray trajectory",
 "postBorn2" : "Convergence at second order in the lensing potential (lens-lens + geodesic perturbation)",
 "postBorn2-ll" : "Convergence due to lens-lens coupling", 
 "postBorn2-gp" : "Convergence due to geodesic perturbation",
@@ -624,6 +625,10 @@ def losIntegrate(pool,batch,settings,batch_id):
 			#Perform the line of sight integration (choose integration type)
 			if settings.integration_type=="born":
 				image = tracer.convergenceBorn(pos,z=source_redshift,save_intermediate=False)
+				img_type = ConvergenceMap
+
+			elif settings.integration_type=="born-rt":
+				image = tracer.convergenceBorn(pos,z=source_redshift,real_trajectory=True,save_intermediate=False)
 				img_type = ConvergenceMap
 
 			elif settings.integration_type=="postBorn2":

@@ -557,6 +557,9 @@ def lightCone(pool,batch,settings,batch_id,override):
 		elif settings.integration_type=="born":
 			image = ConvergenceMap(tracer.convergenceBorn(pos,z=zmax),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
 
+		elif settings.integration_type=="born-rt":
+			image = ConvergenceMap(tracer.convergenceBorn(pos,z=zmax,real_trajectory=True),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
+
 		elif settings.integration_type=="postBorn2":
 			image = ConvergenceMap(tracer.convergencePostBorn2(pos,z=zmax),angle=settings.fov,redshift=zmax,cosmology=snap.cosmology)
 
