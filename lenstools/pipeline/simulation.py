@@ -1775,7 +1775,7 @@ class SimulationModel(TreeNode):
 	def getCollection(self,box_size,nside=None):
 
 		#Allow to pass a geometry_id as first argument
-		if isinstance(box_size,str):
+		if hasattr(box_size,"format"):
 			try:
 				parts = box_size.split("b")
 				nside = int(parts[0])
