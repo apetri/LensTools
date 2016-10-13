@@ -21,6 +21,8 @@ from lenstools.simulations.raytracing import RayTracer
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,CatalogSettings
 
+from lenstools.scripts import integration_types
+
 import numpy as np
 import astropy.units as u
 
@@ -353,23 +355,6 @@ def singleRedshift(pool,batch,settings,batch_id):
 		logdriver.info("Total runtime {0:.3f}s".format(now-begin))
 
 ############################################################################################################################################################################
-
-##############################################
-#######Line of sight integration##############
-##############################################
-
-integration_types = {
-
-"born" : "Born approximation for the convergence (linear order in the lensing potential)",
-"born-rt" : "Semi-Born approximation: integrate the density on the real ray trajectory",
-"postBorn2" : "Convergence at second order in the lensing potential (lens-lens + geodesic perturbation)",
-"postBorn2-ll" : "Convergence due to lens-lens coupling", 
-"postBorn2-gp" : "Convergence due to geodesic perturbation",
-"postBorn1+2" : "Convergence at Born + second post Born order in the lensing potential",
-"postBorn1+2-gp" : "Convergence at Born + second post Born order (geodesic perturbation only)",
-"omega2" : "Rotation at second order in the lensing potential"
-
-}
 
 def losIntegrate(pool,batch,settings,batch_id):
 
