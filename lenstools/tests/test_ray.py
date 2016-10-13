@@ -1,7 +1,7 @@
 import os
 
 from ..simulations.raytracing import RayTracer,PotentialPlane,DeflectionPlane
-from .. import ConvergenceMap,ShearMap
+from .. import ConvergenceMap,OmegaMap,ShearMap
 
 from .. import dataExtern
 
@@ -160,6 +160,44 @@ def test_convergence_born():
 	conv_map = ConvergenceMap(data=conv,angle=tracer.lens[0].side_angle)
 	conv_map.visualize(colorbar=True)
 	conv_map.savefig("convergence_born.png")
+
+def test_convergence_born_rt():
+
+	z_final = 2.0
+
+	#Start a bucket of light rays from these positions
+	b = np.linspace(0.0,tracer.lens[0].side_angle.to(deg).value,512)
+	xx,yy = np.meshgrid(b,b)
+	pos = np.array([xx,yy]) * deg
+
+	#Compute the convergence
+	conv = ConvergenceMap(tracer.convergenceBorn(pos,z=z_final,real_trajectory=True),angle=tracer.lens[0].side_angle)
+
+	#visualize and save
+	conv.visualize(colorbar=True)
+	conv.savefig("convergence_born_rt.png")
+
+def test_post_born2():
+	
+	z_final = 2.0
+
+	#Start a bucket of light rays from these positions
+	b = np.linspace(0.0,tracer.lens[0].side_angle.to(deg).value,512)
+	xx,yy = np.meshgrid(b,b)
+	pos = np.array([xx,yy]) * deg
+
+	#Compute the convergence
+	conv_ll = ConvergenceMap(tracer.convergencePostBorn2(pos,z=z_final,include_gp=False),angle=tracer.lens[0].side_angle)
+	conv_gp = ConvergenceMap(tracer.convergencePostBorn2(pos,z=z_final,include_ll=False),angle=tracer.lens[0].side_angle)
+	omega_pb2 = OmegaMap(tracer.omegaPostBorn2(pos,z=z_final),angle=tracer.lens[0].side_angle)
+
+	#Visualize and save
+	conv_ll.visualize(colorbar=True)
+	conv_ll.savefig("convergence_ll.png")
+	conv_gp.visualize(colorbar=True)
+	conv_gp.savefig("convergence_gp.png")
+	omega_pb2.visualize(colorbar=True)
+	omega_pb2.savefig("omega_pb2.png")
 
 
 def test_distortion():
