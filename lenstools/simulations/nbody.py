@@ -190,7 +190,7 @@ class NbodySnapshot(object):
 
 		"""
 
-		if type(filename)==str:
+		if hasattr(filename,"format"):
 
 			fp = open(cls.buildFilename(filename,pool,**kwargs),"rb")
 		
@@ -201,7 +201,7 @@ class NbodySnapshot(object):
 			fp = filename
 		
 		else:
-			raise TypeError("filename must be string or file!")
+			raise TypeError("filename type is {0}, must be string or file!".format(type(filename)))
 		
 		return cls(fp,pool,header_kwargs=header_kwargs)
 
