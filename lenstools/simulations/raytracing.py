@@ -795,6 +795,47 @@ class PotentialPlane(Plane):
 		else:
 			return Spin1(0.5*grad.to(1/rad).value,angle=self.side_angle)
 
+	#########################################################################################################################################
+
+	def quadGP(self,x=None,y=None):
+
+		"""
+		Computes the quadratic geodesic perturbation integrand (grad potential dot grad density) for the given lensing potential plane
+
+		:param x: optional; if not None, focus only on these x positions
+		:type x: array with units
+
+		:param y: optional; if not None, focus only on these y positions
+		:type y: array with units
+
+		:returns: Plane instance, or array with deflections of rays hitting the lens at (x,y)
+
+		"""
+
+		#Scale x and y to lengths in case this is a physical plane
+		if self.side_angle.unit.physical_type=="length" and (x is not None) and (y is not None):
+			x = x.to(rad).value * self.comoving_distance
+			y = y.to(rad).value * self.comoving_distance
+
+		#Compute gradients
+		px,py = self.gradient(x,y)
+		dx,dy = self.gradLaplacian(x,y)
+
+		#Dot product
+		gp2 = (px*dx + py*dy) * (self.unit**2) / (self.resolution**4)
+
+		if self.side_angle.unit.physical_type=="length":
+			gp2 *= (self.comoving_distance**4)
+			gp2 /= (rad**4)
+
+		assert gp2.unit.physical_type=="dimensionless"
+
+		#Return
+		if (x is not None) and (y is not None):
+			return gp2.decompose().value
+		else:
+			return Plane(gp2.decompose().value,angle=self.side_angle,comoving_distance=self.comoving_distance,cosmology=self.cosmology,unit=dimensionless_unscaled)
+
 
 #############################################################
 ################DeflectionPlane class########################
