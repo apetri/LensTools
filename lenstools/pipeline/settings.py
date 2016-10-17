@@ -401,6 +401,7 @@ class MapSettings(LTSettings):
 		#Which lensing quantities do we need?
 		self.tomographic_convergence = False
 		self.convergence = True
+		self.convergence_ks = False
 		self.shear = False
 		self.omega = False
 
@@ -466,6 +467,8 @@ class MapSettings(LTSettings):
 
 		self.seed = options.getint(section,"seed")
 
+		###########################################################################################
+
 		try:
 			self.tomographic_convergence = options.getboolean(section,"tomographic_convergence")
 		except NoOptionError:
@@ -473,10 +476,25 @@ class MapSettings(LTSettings):
 
 		try:
 			self.convergence = options.getboolean(section,"convergence")
+		except NoOptionError:
+			pass
+
+		try:
+			self.convergence_ks = options.getboolean(section,"convergence_ks")
+		except NoOptionError:
+			pass
+
+		try:
 			self.shear = options.getboolean(section,"shear")
+		except NoOptionError:
+			pass
+
+		try:
 			self.omega = options.getboolean(section,"omega")
 		except NoOptionError:
 			pass
+
+		###########################################################################################
 
 		try:
 			self.integration_type = options.get(section,"integration_type")

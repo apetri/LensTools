@@ -63,6 +63,7 @@ def test_ray_simple():
 	conv = dfl.convergence()
 	shear = dfl.shear()
 	omega = dfl.omega()
+	conv_ks = shear.convergence()
 
 	now = time.time()
 	logging.info("Weak lensing calculations completed in {0:.3f}s".format(now-last_timestamp))
@@ -71,6 +72,8 @@ def test_ray_simple():
 	#Finally visualize the result
 	conv.visualize(colorbar=True)
 	conv.savefig("raytraced_convergence.png")
+	conv_ks.visualize(colorbar=True)
+	conv_ks.savefig("raytraced_convergence_ks.png")
 	omega.visualize(colorbar=True)
 	omega.savefig("raytraced_omega.png")
 	shear.visualize(colorbar=True)

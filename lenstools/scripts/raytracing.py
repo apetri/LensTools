@@ -319,12 +319,20 @@ def singleRedshift(pool,batch,settings,batch_id):
 
 			##############################################################################################################################
 	
-			if settings.shear:
+			if settings.shear or settings.convergence_ks:
 		
-				shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle)
-				savename = batch.syshandler.map(os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
-				logdriver.info("Saving shear map to {0}".format(savename))
-				shearMap.save(savename) 
+				shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift)
+
+				if settings.shear:
+					savename = batch.syshandler.map(os.path.join(save_path,"WLshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+					logdriver.info("Saving shear map to {0}".format(savename))
+					shearMap.save(savename)
+
+				if settings.convergence_ks:
+					convMap = shearMap.convergence() 
+					savename = batch.syshandler.map(os.path.join(save_path,"WLconv-ks_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+					logdriver.info("Saving convergence (KS) map to {0}".format(savename))
+					convMap.save(savename)
 
 			##############################################################################################################################
 	

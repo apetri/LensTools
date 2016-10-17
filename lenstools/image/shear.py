@@ -619,7 +619,7 @@ class ShearMap(Spin2):
 	def convergence(self):
 		
 		"""
-		Reconstructs the convergence from the E component of the shear
+		Reconstructs the convergence from the E component of the shear (KS method)
 
 		:returns: new ConvergenceMap instance 
 
@@ -632,6 +632,7 @@ class ShearMap(Spin2):
 		conv = fftengine.irfft2(ft_E)
 
 		#Return the ConvergenceMap instance
-		return ConvergenceMap(conv,self.side_angle)
+		kwargs = dict((k,getattr(self,k)) for k in self._extra_args)
+		return ConvergenceMap(conv,self.side_angle,**kwargs)
 
 
