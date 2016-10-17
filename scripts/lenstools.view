@@ -66,7 +66,7 @@ for filename in filenames:
 		
 		plt.ion()
 		plt.show()
-		code.interact(banner="[{0}]".format(filename),local=locals())
+		code.interact(banner="[{0}] (image instance stored in 'img')".format(filename),local=locals())
 
 	if savename is not None:
 		img.savefig(savename)
