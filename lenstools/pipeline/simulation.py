@@ -212,7 +212,16 @@ class SimulationBatch(object):
 	@property
 	def storage(self):
 		return self.storage_subdir
-		
+
+	############
+	#Tree edges#
+	############
+
+	@property
+	def edges(self):
+		return self.models
+
+	#############################################
 
 	def __init__(self,environment,syshandler=configuration.syshandler,indicize=False):
 
@@ -1477,6 +1486,14 @@ class TreeNode(object):
 	def __init__(self,*args):
 		pass
 
+	############
+	#Tree edges#
+	############
+
+	@abstractproperty
+	def edges(self):
+		pass
+
 	#######
 	#Paths#
 	#######
@@ -1821,6 +1838,9 @@ class SimulationModel(TreeNode):
 
 		return collection_list
 
+	@property
+	def edges(self):
+		return self.collections
 
 	################################################
 	############Telescopic map sets#################
@@ -2334,6 +2354,9 @@ class SimulationCollection(SimulationModel):
 		finally:
 			return catalogs
 
+	@property
+	def edges(self):
+		return self.realizations + self.mapsets + self.catalogs
 
 	###################################################################
 	##################Useful methods for CAMB I/O######################
@@ -2710,6 +2733,9 @@ class SimulationIC(SimulationCollection):
 		finally:
 			return plane_sets
 
+	@property
+	def edges(self):
+		return self.planesets
 
 	####################################################################################################################################
 
@@ -2963,6 +2989,10 @@ class SimulationPlanes(SimulationIC):
 		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
 		return " | ".join(parent_repr)
 
+	@property
+	def edges(self):
+		return list()
+
 	def mkinfo(self):
 
 		"""
@@ -3053,6 +3083,10 @@ class SimulationMaps(SimulationCollection):
 		#Build the new representation string
 		return super(SimulationMaps,self).__repr__() + " | Map set: {0} | Map files on disk: {1} ".format(self.settings.directory_name,len(maps_on_disk))
 
+	@property
+	def edges(self):
+		return list()
+
 	###########################################################################
 
 	#Can't call these methods anymore
@@ -3127,6 +3161,10 @@ class SimulationTelescopicMaps(SimulationModel):
 
 		#Build the new representation string
 		return super(SimulationTelescopicMaps,self).__repr__() + " | " + "-".join([c.geometry_id for c in self.mapcollections]) + " | " + "-".join([ "{0:.3f}".format(z) for z in self.redshifts ]) +" | Map files on disk: {0}".format(len(maps_on_disk))
+
+	@property
+	def edges(self):
+		return list()
 
 	################################################################################################################################
 
@@ -3221,6 +3259,10 @@ class SimulationCatalog(SimulationCollection):
 		sub_catalogs.sort(key=lambda c:c.first_realization)
 		return sub_catalogs
 
+	@property
+	def edges(self):
+		return self.subcatalogs
+
 	###########################################################################
 
 	#Can't call these methods anymore
@@ -3279,6 +3321,9 @@ class SimulationSubCatalog(SimulationCatalog):
 		#Build the new representation string
 		return super(SimulationCatalog,self).__repr__() + " | Sub-catalog set: {0}({1}-{2}) | Catalog files on disk: {3} ".format(self.settings.directory_name,self.first_realization,self.last_realization,len(catalogs_on_disk))
 
+	@property
+	def edges(self):
+		return list()
 
 	@property 
 	def first_realization(self):
