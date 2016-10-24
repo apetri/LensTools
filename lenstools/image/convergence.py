@@ -37,6 +37,7 @@ from .io import loadFITS,saveFITS
 
 try:
 	import matplotlib.pyplot as plt
+	from mpl_toolkits.axes_grid1 import make_axes_locatable
 	matplotlib = True
 except ImportError:
 	matplotlib = False
@@ -308,7 +309,10 @@ class Spin0(object):
 
 		#Add a colorbar maybe
 		if colorbar:
-			cbar = plt.colorbar(ax0,ax=self.ax)
+
+			divider = make_axes_locatable(self.ax)
+			cax = divider.append_axes("right",size="5%",pad=0.05)
+			cbar = plt.colorbar(ax0,cax=cax)
 
 			if cbar_label is not None:
 				cbar.set_label(r"{0}".format(cbar_label),size=18)
