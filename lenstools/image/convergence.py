@@ -828,7 +828,9 @@ class Spin0(object):
 		"""
 
 		assert thresholds is not None
-		midpoints = 0.5 * (thresholds[:-1] + thresholds[1:])
+		if isinstance(thresholds,tuple):
+			assert len(thresholds)==2
+			thresholds = np.array(thresholds)
 
 		#Check if the map is masked
 		if self._masked:
@@ -860,6 +862,54 @@ class Spin0(object):
 		peak_values,peak_locations = _topology.peakLocations(self.data,mask_profile,thresholds,sigma,relevant_pixels)
 
 		return peak_values,(peak_locations*self.resolution).to(self.side_angle.unit)
+
+
+	def peakDistances(self,thresholds,norm=False):
+		
+		"""
+		Compute the pairwise distance between local maxima on the map
+
+		:param thresholds: thresholds extremes that define the binning of the peak histogram
+		:type thresholds: array
+
+		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
+		:type norm: bool.
+
+		:returns: pairwise distance
+		:rtype: quantity
+
+		"""
+
+		#Locate peaks first
+		height,loc = self.locatePeaks(thresholds,norm)
+
+		#Measure pairwise distances
+		distances = np.sqrt(((loc[None]-loc[:,None])**2).sum(-1))
+		i,j = np.indices(distances.shape)
+
+		#Return
+		return distances[i>j]
+
+
+	def peakTwoPCF(self,thresholds,scales,norm=False):
+
+		"""
+		Compute the two point function of the peaks on the map
+
+		:param thresholds: thresholds extremes that define the binning of the peak histogram
+		:type thresholds: array
+
+		:param scales: radial binning of the 2pcf
+		:type scales: quantity
+
+		:param norm: normalization; if set to a True, interprets the thresholds array as units of sigma (the map standard deviation)
+		:type norm: bool.
+
+		:returns: (bin centers, peak 2pcf)
+		:rtype: tuple
+
+		"""
+		raise NotImplementedError
 
 
 	################################################################################################################################################
