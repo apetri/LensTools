@@ -370,7 +370,7 @@ def singleRedshift(pool,batch,settings,batch_id):
 
 def save_intermediate(add_on,tracer,k,ctype,map_batch=None,map_angle=None,realization=None):
 	savename = os.path.join(map_batch.home,"{0}-lens{1}-{2:04d}r.fits".format(ctype,k,realization))
-	side = map_angle.to(u.rad).value*tracer.comoving_distance(k)
+	side = map_angle.to(u.rad).value*tracer.distance[k]
 	ConvergenceMap(add_on,angle=side).save(savename)
 
 ########################################################################################################################
