@@ -71,3 +71,6 @@ for filename in filenames:
 	if savename is not None:
 		img.savefig(savename)
 
+	#Close the figure
+	plt.close(img.fig)
+
