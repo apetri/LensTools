@@ -7,8 +7,17 @@ def loadFITS(cls,filename):
 
 	with fits.open(filename) as hdu:
 		data = hdu[0].data
-		angle = hdu[0].header["ANGLE"] * u.deg
-		return cls(data,angle)
+
+		if "ANGLE" in hdu[0].header:
+			angle = hdu[0].header["ANGLE"] * u.deg
+			return cls(data,angle)
+
+		elif "SIDE" in hdu[0].header:
+			side = hdu[0].header["SIDE"] * u.Mpc
+			return cls(data,side)
+
+		else:
+			raise AttributeError("No ANGLE or SIDE keyword in header!")
 
 #Write FITS scalar image
 def saveFITS(self,filename,double_precision):
@@ -31,7 +40,11 @@ def saveFITS(self,filename,double_precision):
 	if hasattr(self,"redshift"):
 		hdu.header["Z"] = (self.redshift,"Redshift of the background sources")
 	
-	hdu.header["ANGLE"] = (self.side_angle.to(u.deg).value,"Side angle in degrees")
+	if self.side_angle.unit_type=="angle":
+		hdu.header["ANGLE"] = (self.side_angle.to(u.deg).value,"Side angle in degrees")
+	else:
+		hdu.header["SIDE"] = (self.side_angle.to(u.Mpc).value,"Side in Mpc")
+
 	hdu.header["ITYPE"] = (self.__class__.__name__,"Image type") 
 
 	#Save the image
