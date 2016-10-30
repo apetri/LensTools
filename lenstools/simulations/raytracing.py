@@ -1455,10 +1455,10 @@ class RayTracer(object):
 	###########Calculation of the convergence at second post-Born order###############
 	##################################################################################
 
-	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False,include_first_order=False,include_ll=True,include_gp=True):
+	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False,include_first_order=False,include_ll=True,include_gp=True,callback=None,**kwargs):
 
 		"""
-		Computes the convergence at second post-born order
+		Computes the convergence at second post-born order with a double line of sight integral
 
 		:param initial_positions: initial angular positions of the light ray bucket, according to the observer; if unitless, the positions are assumed to be in radians. initial_positions[0] is x, initial_positions[1] is y
 		:type initial_positions: numpy array or quantity
@@ -1477,6 +1477,12 @@ class RayTracer(object):
 
 		:param include_gp: include geodesic perturbation
 		:type include_gp: bool.
+
+		:param callback: function is called on each contribution to the convergence during the LOS integration. The signature of the callback is callback(array_ov_values,tracer,k,type,**kwargs)
+		:type callback: callable.
+
+		:param kwargs: additional keyword arguments to be passed to the callback
+		:type kwargs: dict.
 
 		:returns: convergence values (2-post born) at each of the initial positions
 
@@ -1552,13 +1558,22 @@ class RayTracer(object):
 			if k<last_lens:
 				
 				if include_ll:
-					current_convergence += (0.5*kernel) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+					add_on = (0.5*kernel) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+					current_convergence += add_on
+					if callback is not None:
+						callback(add_on,self,k,"ll",**kwargs)
 
 				if include_gp:
-					current_convergence += kernel * (density_grad_lcl*current_deflections).decompose().value.sum(0) 
+					add_on = kernel * (density_grad_lcl*current_deflections).decompose().value.sum(0)
+					current_convergence += add_on
+					if callback is not None:
+						callback(add_on,self,k,"gp",**kwargs)
 				
 				if include_first_order:
-					current_convergence += kernel * density_lcl
+					add_on = kernel * density_lcl
+					current_convergence += add_on
+					if callback is not None:
+						callback(add_on,self,k,"born",**kwargs)
 
 				current_deflections_0 += deflections_lcl
 				current_deflections_1 += deflections_lcl*(0.5*(chi+chi_prev))
@@ -1572,13 +1587,22 @@ class RayTracer(object):
 			else:
 
 				if include_ll:
-					current_convergence += (0.5 * kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+					add_on = (0.5 * kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (shear_tensors_lcl*current_jacobians)[[0,1,2,2]].sum(0)
+					current_convergence += add_on
+					if callback is not None:
+						callback(add_on,self,k,"ll",**kwargs)
 
 				if include_gp:
-					current_convergence += (kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (density_grad_lcl*current_deflections).decompose().value.sum(0)
+					add_on = (kernel * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])) * (density_grad_lcl*current_deflections).decompose().value.sum(0)
+					current_convergence += add_on
+					if callback is not None:
+						callback(add_on,self,k,"gp",**kwargs)
 				
 				if include_first_order:
-					current_convergence += kernel * density_lcl * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1]) 
+					add_on = kernel * density_lcl * (z - redshift[k+1]) / (redshift[k+2] - redshift[k+1])
+					current_convergence += add_on
+					if callback is not None:
+						callback(add_on,self,k,"born",**kwargs)
 			
 			#Timestamp
 			now = time.time()

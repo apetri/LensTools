@@ -364,6 +364,17 @@ def singleRedshift(pool,batch,settings,batch_id):
 
 ############################################################################################################################################################################
 
+#########################################################
+#######Save intermediate results of LOS integration######
+#########################################################
+
+def save_intermediate(add_on,tracer,k,ctype,map_batch=None,map_angle=None,realization=None):
+	savename = os.path.join(map_batch.home,"{0}-lens{1}-{2:04d}r.fits".format(ctype,k,realization))
+	side = map_angle.to(u.rad).value*tracer.comoving_distance(k)
+	ConvergenceMap(add_on,angle=side).save(savename)
+
+########################################################################################################################
+
 def losIntegrate(pool,batch,settings,batch_id):
 
 	#Safety check
@@ -608,58 +619,57 @@ def losIntegrate(pool,batch,settings,batch_id):
 		xx,yy = np.meshgrid(b,b)
 		pos = np.array([xx,yy]) * map_angle.unit
 
+		#Save intermediate results
 		if settings.tomographic_convergence:
+			callback = save_intermediate
+		else:
+			callback = None
 
-			#Trace the ray deflections and save the convergence at every step
-			raise NotImplementedError("Tomographic convergence direct not implemented!")
+		#Perform the line of sight integration (choose integration type)
+		if settings.integration_type=="born":
+			image = tracer.convergenceBorn(pos,z=source_redshift,save_intermediate=False)
+			img_type = ConvergenceMap
+
+		elif settings.integration_type=="born-rt":
+			image = tracer.convergenceBorn(pos,z=source_redshift,real_trajectory=True,save_intermediate=False)
+			img_type = ConvergenceMap
+
+		elif settings.integration_type=="postBorn2":
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			img_type = ConvergenceMap
+
+		elif settings.integration_type=="postBorn2-ll":
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_gp=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			img_type = ConvergenceMap
+
+		elif settings.integration_type=="postBorn2-gp":
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_ll=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			img_type = ConvergenceMap
+
+		elif settings.integration_type=="postBorn1+2":
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			img_type = ConvergenceMap
+
+		elif settings.integration_type=="postBorn1+2-gp":
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,include_ll=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			img_type = ConvergenceMap
+
+		elif settings.integration_type=="omega2":
+			image = tracer.omegaPostBorn2(pos,z=source_redshift,save_intermediate=False)
+			img_type = OmegaMap
 
 		else:
+			raise NotImplementedError
 
-			#Perform the line of sight integration (choose integration type)
-			if settings.integration_type=="born":
-				image = tracer.convergenceBorn(pos,z=source_redshift,save_intermediate=False)
-				img_type = ConvergenceMap
+		now = time.time()
+		logdriver.info("Line of sight integration for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
+		last_timestamp = now
 
-			elif settings.integration_type=="born-rt":
-				image = tracer.convergenceBorn(pos,z=source_redshift,real_trajectory=True,save_intermediate=False)
-				img_type = ConvergenceMap
-
-			elif settings.integration_type=="postBorn2":
-				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False)
-				img_type = ConvergenceMap
-
-			elif settings.integration_type=="postBorn2-ll":
-				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_gp=False)
-				img_type = ConvergenceMap
-
-			elif settings.integration_type=="postBorn2-gp":
-				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_ll=False)
-				img_type = ConvergenceMap
-
-			elif settings.integration_type=="postBorn1+2":
-				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True)
-				img_type = ConvergenceMap
-
-			elif settings.integration_type=="postBorn1+2-gp":
-				image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,include_ll=False)
-				img_type = ConvergenceMap
-
-			elif settings.integration_type=="omega2":
-				image = tracer.omegaPostBorn2(pos,z=source_redshift,save_intermediate=False)
-				img_type = OmegaMap
-
-			else:
-				raise NotImplementedError
-
-			now = time.time()
-			logdriver.info("Line of sight integration for realization {0} completed in {1:.3f}s".format(r+1,now-last_timestamp))
-			last_timestamp = now
-
-			#Save the image
-			savename = batch.syshandler.map(os.path.join(save_path,"{0}_z{1:.2f}_{2:04d}r.{3}".format(settings.integration_type,source_redshift,r+1,settings.format)))
-			logdriver.info("Saving {0} map to {1}".format(settings.integration_type,savename))
-			img_type(data=image,angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift).save(savename)
-			logdriver.debug("Saving {0} map to {1}".format(settings.integration_type,savename)) 
+		#Save the image
+		savename = batch.syshandler.map(os.path.join(save_path,"{0}_z{1:.2f}_{2:04d}r.{3}".format(settings.integration_type,source_redshift,r+1,settings.format)))
+		logdriver.info("Saving {0} map to {1}".format(settings.integration_type,savename))
+		img_type(data=image,angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift).save(savename)
+		logdriver.debug("Saving {0} map to {1}".format(settings.integration_type,savename)) 
 
 		now = time.time()
 		
