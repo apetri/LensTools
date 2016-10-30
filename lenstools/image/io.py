@@ -40,7 +40,7 @@ def saveFITS(self,filename,double_precision):
 	if hasattr(self,"redshift"):
 		hdu.header["Z"] = (self.redshift,"Redshift of the background sources")
 	
-	if self.side_angle.unit_type=="angle":
+	if self.side_angle.unit.physical_type=="angle":
 		hdu.header["ANGLE"] = (self.side_angle.to(u.deg).value,"Side angle in degrees")
 	else:
 		hdu.header["SIDE"] = (self.side_angle.to(u.Mpc).value,"Side in Mpc")
