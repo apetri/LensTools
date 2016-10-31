@@ -1455,7 +1455,7 @@ class RayTracer(object):
 	###########Calculation of the convergence at second post-Born order###############
 	##################################################################################
 
-	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False,include_first_order=False,include_ll=True,include_gp=True,callback=None,**kwargs):
+	def convergencePostBorn2(self,initial_positions,z=2.0,save_intermediate=False,include_first_order=False,include_ll=True,include_gp=True,transpose_up_to=-1,callback=None,**kwargs):
 
 		"""
 		Computes the convergence at second post-born order with a double line of sight integral
@@ -1477,6 +1477,9 @@ class RayTracer(object):
 
 		:param include_gp: include geodesic perturbation
 		:type include_gp: bool.
+
+		:param transpose_up_to: transpose all the lenses before a certain index before integration
+		:type transpose_up_to: int.
 
 		:param callback: function is called on each contribution to the convergence during the LOS integration. The signature of the callback is callback(array_ov_values,tracer,k,type,**kwargs)
 		:type callback: callable.
@@ -1531,6 +1534,11 @@ class RayTracer(object):
 			#Load in the lens
 			current_lens = self.loadLens(lens[k])
 			np.testing.assert_approx_equal(current_lens.redshift,self.redshift[k],significant=4,err_msg="Loaded lens ({0}) redshift does not match info file specifications {1} neq {2}!".format(k,current_lens.redshift,self.redshift[k]))
+
+			#Maybe transpose
+			if k<=transpose_up_to:
+				logray.debug("Transposing pixel values for lens {0}".format(k))
+				current_lens.data = current_lens.data.T
 
 			#Distances, lensing kernel
 			chi_prev = distance[k]

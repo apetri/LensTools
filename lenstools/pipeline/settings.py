@@ -398,6 +398,9 @@ class MapSettings(LTSettings):
 		#Random seed used to generate multiple map realizations
 		self.seed = 0
 
+		#Transpose lenses up to a certain index
+		self.transpose_up_to = -1
+
 		#Which lensing quantities do we need?
 		self.tomographic_convergence = False
 		self.convergence = True
@@ -466,6 +469,10 @@ class MapSettings(LTSettings):
 		self.source_redshift = options.getfloat(section,"source_redshift")
 
 		self.seed = options.getint(section,"seed")
+		try:
+			self.transpose_up_to = options.getint(section,"transpose_up_to")
+		except NoOptionError:
+			pass
 
 		###########################################################################################
 

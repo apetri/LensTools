@@ -636,23 +636,23 @@ def losIntegrate(pool,batch,settings,batch_id):
 			img_type = ConvergenceMap
 
 		elif settings.integration_type=="postBorn2":
-			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,transpose_up_to=settings.transpose_up_to,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
 			img_type = ConvergenceMap
 
 		elif settings.integration_type=="postBorn2-ll":
-			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_gp=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_gp=False,transpose_up_to=settings.transpose_up_to,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
 			img_type = ConvergenceMap
 
 		elif settings.integration_type=="postBorn2-gp":
-			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_ll=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=False,include_ll=False,transpose_up_to=settings.transpose_up_to,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
 			img_type = ConvergenceMap
 
 		elif settings.integration_type=="postBorn1+2":
-			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,callback=callback,transpose_up_to=settings.transpose_up_to,map_batch=map_batch,map_angle=map_angle,realization=r+1)
 			img_type = ConvergenceMap
 
 		elif settings.integration_type=="postBorn1+2-gp":
-			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,include_ll=False,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,include_ll=False,transpose_up_to=settings.transpose_up_to,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
 			img_type = ConvergenceMap
 
 		elif settings.integration_type=="omega2":
@@ -667,7 +667,11 @@ def losIntegrate(pool,batch,settings,batch_id):
 		last_timestamp = now
 
 		#Save the image
-		savename = batch.syshandler.map(os.path.join(save_path,"{0}_z{1:.2f}_{2:04d}r.{3}".format(settings.integration_type,source_redshift,r+1,settings.format)))
+		savename = batch.syshandler.map(os.path.join(save_path,"{0}_z{1:.2f}_{2:04d}r".format(settings.integration_type,source_redshift,r+1)))
+		if settings.transpose_up_to>=0:
+			savename += "_t{0}".format(settings.transpose_up_to)
+		savename += ".{0}".format(settings.format)
+		
 		logdriver.info("Saving {0} map to {1}".format(settings.integration_type,savename))
 		img_type(data=image,angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift).save(savename)
 		logdriver.debug("Saving {0} map to {1}".format(settings.integration_type,savename)) 
