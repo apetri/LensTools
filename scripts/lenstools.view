@@ -20,6 +20,7 @@ parser.add_argument("-pd","--planedensity",dest="planedensity",action="store_tru
 parser.add_argument("-f","--format",dest="img_format",type=str,default=None,help="Format of the image to save on disk; if None, no image is saved")
 parser.add_argument("-i","--interactive",dest="interactive",action="store_true",default=False,help="Switch to interactive mode after plotting")
 parser.add_argument("-cm","--colormap",dest="colormap",action="store",type=str,default="jet",help="matplotlib color map name")
+parser.add_argument("-S","--smooth",dest="smooth",action="store",type=int,default=None,help="smoothing scale in units of pixel")
 parser.add_argument("-l","--label",dest="label",action="store",type=str,default=None,help="optional label to give to the image colorbar")
 
 cmd_args = parser.parse_args()
@@ -60,6 +61,11 @@ for filename in filenames:
 	except IOError:
 		continue
 	
+	#Smooth
+	if cmd_args.smooth is not None:
+		img.smooth(cmd_args.smooth*img.resolution,kind="gaussianFFT",inplace=True)
+
+	#Visualize
 	img.visualize(colorbar=True,cmap=cmd_args.colormap,cbar_label=cmd_args.label)
 
 	if cmd_args.interactive:
