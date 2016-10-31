@@ -15,6 +15,7 @@ integration_types = {
 "postBorn2-ll" : "Convergence due to lens-lens coupling", 
 "postBorn2-gp" : "Convergence due to geodesic perturbation",
 "postBorn1+2" : "Convergence at Born + second post Born order in the lensing potential",
+"postBorn1+2-ll" : "Convergence at Born + second post Born order (lens-lens only)",
 "postBorn1+2-gp" : "Convergence at Born + second post Born order (geodesic perturbation only)",
 "omega2" : "Rotation at second order in the lensing potential"
 

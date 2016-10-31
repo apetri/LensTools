@@ -655,6 +655,10 @@ def losIntegrate(pool,batch,settings,batch_id):
 			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,include_ll=False,transpose_up_to=settings.transpose_up_to,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
 			img_type = ConvergenceMap
 
+		elif settings.integration_type=="postBorn1+2-ll":
+			image = tracer.convergencePostBorn2(pos,z=source_redshift,save_intermediate=False,include_first_order=True,include_gp=False,transpose_up_to=settings.transpose_up_to,callback=callback,map_batch=map_batch,map_angle=map_angle,realization=r+1)
+			img_type = ConvergenceMap			
+
 		elif settings.integration_type=="omega2":
 			image = tracer.omegaPostBorn2(pos,z=source_redshift,save_intermediate=False)
 			img_type = OmegaMap
@@ -671,7 +675,7 @@ def losIntegrate(pool,batch,settings,batch_id):
 		if settings.transpose_up_to>=0:
 			savename += "_t{0}".format(settings.transpose_up_to)
 		savename += ".{0}".format(settings.format)
-		
+
 		logdriver.info("Saving {0} map to {1}".format(settings.integration_type,savename))
 		img_type(data=image,angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift).save(savename)
 		logdriver.debug("Saving {0} map to {1}".format(settings.integration_type,savename)) 
