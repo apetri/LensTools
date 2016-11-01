@@ -369,7 +369,7 @@ def singleRedshift(pool,batch,settings,batch_id):
 #########################################################
 
 def save_intermediate(add_on,tracer,k,ctype,map_batch=None,map_angle=None,realization=None):
-	savename = os.path.join(map_batch.home,"{0}-lens{1}-{2:04d}r.fits".format(ctype,k,realization))
+	savename = os.path.join(map_batch.storage,"{0}-lens{1}-{2:04d}r.fits".format(ctype,k,realization))
 	logdriver.info("Saving z={0:.3f} add-on to convergence to {1}".format(tracer.redshift[k],savename))
 	side = map_angle.to(u.rad).value*tracer.distance[k]
 	ConvergenceMap(add_on,angle=side).save(savename)
