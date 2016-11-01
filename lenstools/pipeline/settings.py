@@ -389,6 +389,7 @@ class MapSettings(LTSettings):
 		self.format = "fits"
 		self.plane_format = "fits"
 		self.plane_name_format = "snap{0}_potentialPlane{1}_normal{2}.{3}"
+		self.lens_type = "PotentialPlane"
 
 		self.map_resolution = 128
 		self.map_angle = 1.6 * u.deg
@@ -458,6 +459,11 @@ class MapSettings(LTSettings):
 
 		try:
 			self.plane_name_format = options.get(section,"plane_name_format")
+		except NoOptionError:
+			pass
+
+		try:
+			self.lens_type = options.get(section,"lens_type")
 		except NoOptionError:
 			pass
 		

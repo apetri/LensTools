@@ -17,7 +17,7 @@ from lenstools.utils.mpi import MPIWhirlPool
 from lenstools import ConvergenceMap,OmegaMap,ShearMap
 from lenstools.catalog import Catalog,ShearCatalog
 
-from lenstools.simulations.raytracing import RayTracer
+from lenstools.simulations.raytracing import RayTracer,DensityPlane
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import MapSettings,TelescopicMapSettings,CatalogSettings
 
@@ -544,7 +544,12 @@ def losIntegrate(pool,batch,settings,batch_id):
 	for rloc,r in enumerate(range(first_map_realization,last_map_realization)):
 
 		#Instantiate the RayTracer
-		tracer = RayTracer()
+		if settings.lens_type=="PotentialPlane":
+			tracer = RayTracer()
+		elif settings.lens_type=="DensityPlane":
+			tracer = RayTracer(lens_type=DensityPlane)
+		else:
+			raise ValueError("Lens type {0} not recognized!".format(settings.lens_type))
 
 		#Force garbage collection
 		gc.collect()
