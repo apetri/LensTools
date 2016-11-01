@@ -1559,6 +1559,10 @@ class RayTracer(object):
 			shear_tensors_lcl = current_lens.shearMatrix(current_positions[0],current_positions[1])
 			density_grad_lcl = current_lens.densityGradient(current_positions[0],current_positions[1])
 
+			#Save geodesic perturbation term
+			if callback is not None:
+				callback((deflections_lcl*density_grad_lcl).decompose().value.sum(0),self,k,"gpgd",**kwargs)
+
 			if include_first_order:
 				density_lcl = 0.5*(shear_tensors_lcl[0]+shear_tensors_lcl[1])
 
