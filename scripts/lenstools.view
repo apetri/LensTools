@@ -3,6 +3,8 @@ import sys,os,glob
 import code
 import argparse
 
+sys.modules["mpi4py"] = None
+
 #LensTools
 from lenstools.image.convergence import Spin0
 from lenstools.image.shear import Spin1
