@@ -2983,7 +2983,7 @@ class SimulationPlanes(SimulationIC):
 			parent_repr.pop(-1)
 
 		#Count the number of plane files on disk
-		planes_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"*"))
+		planes_on_disk = self.syshandler.glob(os.path.join(self.storage_subdir,"*.{0}".format(self.settings.format)))
 
 		#Build the new representation string
 		parent_repr.append("Plane set: {0} , Plane files on disk: {1}".format(self.settings.directory_name,len(planes_on_disk)))
