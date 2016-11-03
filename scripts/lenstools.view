@@ -13,6 +13,13 @@ from lenstools.simulations.raytracing import Plane,PotentialPlane
 #Matplotlib
 import matplotlib.pyplot as plt
 
+#Seaborn
+try:
+	import seaborn as sns
+	sns.set(font_scale=2)
+except ImportError:
+	pass
+
 #Read command line options
 parser = argparse.ArgumentParser(prog=os.path.split(sys.argv[0])[-1])
 parser.add_argument("filename",nargs="*")
@@ -69,6 +76,7 @@ for filename in filenames:
 
 	#Visualize
 	img.visualize(colorbar=True,cmap=cmd_args.colormap,cbar_label=cmd_args.label)
+	img.ax.grid(b=False)
 
 	if cmd_args.interactive:
 		
