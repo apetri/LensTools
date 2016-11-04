@@ -236,7 +236,7 @@ class Spin0(object):
 		#x coordinates
 		if type(x)==u.quantity.Quantity:
 			
-			assert x.unit.physical_type=="angle"
+			assert x.unit.physical_type==self.side_angle.unit.physical_type
 			j = np.mod(((x / self.resolution).decompose().value).astype(np.int32),self.data.shape[1])
 
 		else:
@@ -246,7 +246,7 @@ class Spin0(object):
 		#y coordinates
 		if type(y)==u.quantity.Quantity:
 			
-			assert y.unit.physical_type=="angle"
+			assert y.unit.physical_type==self.side_angle.unit.physical_type
 			i = np.mod(((y / self.resolution).decompose().value).astype(np.int32),self.data.shape[0])
 
 		else:
@@ -278,7 +278,7 @@ class Spin0(object):
 		#Initialize the meshgrid
 		xx,yy = np.meshgrid(x,y) * extent.unit
 
-		return self.__class__(data=self.getValues(xx,yy),angle=(self.resolution*xx.shape[0]).to(extent.unit))
+		return self.__class__(data=self.getValues(xx,yy),angle=(self.resolution*xx.shape[0]).to(extent.unit),_extent=extent)
 
 
 
@@ -303,7 +303,12 @@ class Spin0(object):
 			self.ax = ax
 
 		#Plot the map
-		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=plt.get_cmap(cmap),**kwargs)
+		if hasattr(self,"_extent"):
+			extent = self._extent.to(self.side_angle.unit).value
+		else:
+			extent = [0,self.side_angle.value,0,self.side_angle.value]
+
+		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=extent,cmap=plt.get_cmap(cmap),**kwargs)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 
