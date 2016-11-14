@@ -616,10 +616,43 @@ class ShearMap(Spin2):
 
 	"""
 
+	@classmethod
+	def fromConvergence(cls,conv):
+
+		"""
+		Construct a shear map from a ConvergenceMap instance using the Kaiser Squires method
+
+		:param conv: input convergence map 
+		:type conv: ConvergenceMap
+
+		:returns: reconstructed shear map
+		:rtype: ShearMap
+
+		"""
+
+		#Type check
+		assert isinstance(conv,ConvergenceMap)
+
+		#Multipoles
+		lx = fftengine.rfftfreq(conv.data.shape[0])[None]
+		ly = fftengine.fftfreq(conv.data.shape[0])[:,None]
+		lsquared = lx**2 + ly**2
+		lsquared[0,0] = 1
+
+		#FFT forward, rotation, FFT backwards
+		conv_fft = fftengine.rfft2(conv.data)
+		s1 = fftengine.irfft2((lx**2-ly**2)*conv_fft/lsquared)
+		s2 = fftengine.irfft2(-2*lx*ly*conv_fft/lsquared)
+
+		#Return
+		kwargs = dict((k,getattr(conv,k)) for k in conv._extra_attributes)
+		return cls(np.array([s1,s2]),conv.side_angle,**kwargs)
+
+
 	def convergence(self):
 		
 		"""
-		Reconstructs the convergence from the E component of the shear (KS method)
+		Reconstructs the convergence from the E component of the shear (Kaiser Squires method)
 
 		:returns: new ConvergenceMap instance 
 
@@ -632,7 +665,7 @@ class ShearMap(Spin2):
 		conv = fftengine.irfft2(ft_E)
 
 		#Return the ConvergenceMap instance
-		kwargs = dict((k,getattr(self,k)) for k in self._extra_args)
+		kwargs = dict((k,getattr(self,k)) for k in self._extra_attributes)
 		return ConvergenceMap(conv,self.side_angle,**kwargs)
 
 
