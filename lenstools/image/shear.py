@@ -427,7 +427,7 @@ class Spin2(Spin1):
 		cos_phi[sin_2_phi==0] = np.sqrt(0.5*(1.0 + cos_2_phi[sin_2_phi==0]))
 
 		#Draw map using matplotlib quiver
-		self.ax.quiver(x*self.side_angle.value/self.data.shape[2],y*self.side_angle.value/self.data.shape[1],cos_phi[x,y],sin_phi[x,y],headwidth=0,units="height",scale=x.shape[0]/multiplier)
+		self.ax.quiver((x+0.5)*self.side_angle.value/self.data.shape[2],(y+0.5)*self.side_angle.value/self.data.shape[1],cos_phi[y,x],sin_phi[y,x],headwidth=0,units="height",scale=x.shape[0]/multiplier)
 
 		#Axes labels
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()))
@@ -642,7 +642,7 @@ class ShearMap(Spin2):
 		#FFT forward, rotation, FFT backwards
 		conv_fft = fftengine.rfft2(conv.data)
 		s1 = fftengine.irfft2((lx**2-ly**2)*conv_fft/lsquared)
-		s2 = fftengine.irfft2(-2*lx*ly*conv_fft/lsquared)
+		s2 = fftengine.irfft2(2*lx*ly*conv_fft/lsquared)
 
 		#Return
 		kwargs = dict((k,getattr(conv,k)) for k in conv._extra_attributes)
