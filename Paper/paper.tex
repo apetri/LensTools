@@ -131,7 +131,7 @@ which can be translated into a second order differential equation for the light 
 
 \begin{equation}
 \label{deflections}
-\delta\pmb{\beta}_k = (B_k-1)\delta\pmb{\beta}_{k-1} + C_k\pmb{\alpha}_k \,\, ; \,\, \delta\pmb{\beta}_0=0
+\delta\pmb{\beta}_{k+1} = (B_k-1)\delta\pmb{\beta}_k + C_k\pmb{\alpha}_k \,\, ; \,\, \delta\pmb{\beta}_0=0
 \end{equation}
 
 \begin{equation}
@@ -141,13 +141,13 @@ which can be translated into a second order differential equation for the light 
 
 \begin{equation}
 \label{sheartensorproduct}
-\delta\bb{A}_k = (B_k-1)\delta\bb{A}_{k-1} + C_k\bb{T}_k\bb{A}_k \,\, ; \,\, \delta\bb{A}_0=0
+\delta\bb{A}_{k+1} = (B_k-1)\delta\bb{A}_k + C_k\bb{T}_k\bb{A}_k \,\, ; \,\, \delta\bb{A}_0=0
 \end{equation}
 %
 where $\bb{A}$ is the Jacobian matrix of the trajectory $\pmb{\beta}$ with respect to the initial light ray position $\pmb{\theta}$, $\bb{A}_k=\nabla_{\pmb{\theta}}\pmb{\beta}_k(\pmb{\theta})$. The factors $B_k,C_k$ depend on the geometry of the lens system
 
 \begin{equation}
-B_k = \frac{\chi_{k+1}}{\chi_{k+2}}\left(1 + \frac{\chi_{k+2}-\chi_{k+1}}{\chi_{k+1}-\chi_k}\right) \,\,\,\, ; \,\,\,\, C_k = \frac{\chi_{k+1}}{\chi_{k+2}} - 1 \\ \\
+B_k = \frac{\chi_{k}}{\chi_{k+1}}\left(1 + \frac{\chi_{k+1}-\chi_{k}}{\chi_{k}-\chi_{k-1}}\right) \,\,\,\, ; \,\,\,\, C_k = \frac{\chi_{k}}{\chi_{k+1}} - 1 \\ \\
 \end{equation} 
 %
 where we use the subscript $k$ to indicate the redshift $z_k$ of the $k$--th lens for notational simplicity. After tracing the evolution of $\bb{A}$ from the observer to the source at $z_s$, we are able to evaluate the cosmic shear $\pmb{\gamma}$ and convergence $\kappa$ at $z_s$ looking at the components of $\bb{A}$
