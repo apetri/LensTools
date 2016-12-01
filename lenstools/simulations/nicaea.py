@@ -115,17 +115,7 @@ def _check_redshift(z,distribution,distribution_parameters,**kwargs):
 ##################################################################
 
 def _delta_dot(delta,z,cosmology):
-
-	#Densities
-	Ode = cosmology.Ode(z)
-	w = cosmology.w(z)
-
-	#Inhomogeneous term in the ODE
-	inhomogeneous = np.array([0.0,-1.5 * Ode * (1+3*w) / (1+z)**2])
-
-	#Return
-	return _jacobian_delta_dot(delta,z,cosmology).dot(delta) + inhomogeneous
-
+	return _jacobian_delta_dot(delta,z,cosmology).dot(delta)
 
 def _jacobian_delta_dot(delta,z,cosmology):
 
