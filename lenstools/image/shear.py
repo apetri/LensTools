@@ -261,7 +261,7 @@ class Spin1(object):
 
 
 	
-	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),colorbar=False,cmap="jet",cbar_label=None,**kwargs):
+	def visualize(self,fig=None,ax=None,component_labels=(r"$\gamma_1$",r"$\gamma_2$"),colorbar=False,cmap="viridis",cbar_label=None,**kwargs):
 
 		"""
 		Visualize the shear map; the kwargs are passed to imshow 

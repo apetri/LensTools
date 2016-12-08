@@ -282,7 +282,7 @@ class Spin0(object):
 
 
 
-	def visualize(self,fig=None,ax=None,colorbar=False,cmap="jet",cbar_label=None,**kwargs):
+	def visualize(self,fig=None,ax=None,colorbar=False,cmap="viridis",cbar_label=None,**kwargs):
 
 		"""
 		Visualize the convergence map; the kwargs are passed to imshow 
