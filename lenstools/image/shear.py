@@ -28,9 +28,10 @@ from astropy.units import deg,rad,arcsec,quantity
 from .io import loadFITS,saveFITS
 
 try:
+	import matplotlib
 	import matplotlib.pyplot as plt
 	from matplotlib.colors import LogNorm
-	matplotlib = True
+	matplotlib = matplotlib
 except ImportError:
 	matplotlib = False
 
@@ -281,16 +282,22 @@ class Spin1(object):
 			self.fig = fig
 			self.ax = ax
 
+		#Build the color map
+		if isinstance(cmap,matplotlib.colors.Colormap):
+			cmap = cmap
+		else:
+			cmap = plt.get_cmap(cmap)
+
 		#Plot the map
 		if colorbar:
 
 			for i in range(self.data.shape[0]):
-				plt.colorbar(self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],**kwargs),ax=self.ax[i])
+				plt.colorbar(self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=cmap,**kwargs),ax=self.ax[i])
 		
 		else:
 
 			for i in range(self.data.shape[0]):
-				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=plt.get_cmap(cmap),**kwargs)
+				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=cmap,**kwargs)
 
 		#Axes labels
 		for i in range(self.data.shape[0]):

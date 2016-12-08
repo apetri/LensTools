@@ -36,9 +36,10 @@ import astropy.units as u
 from .io import loadFITS,saveFITS
 
 try:
+	import matplotlib
 	import matplotlib.pyplot as plt
 	from mpl_toolkits.axes_grid1 import make_axes_locatable
-	matplotlib = True
+	matplotlib = matplotlib
 except ImportError:
 	matplotlib = False
 
@@ -308,7 +309,14 @@ class Spin0(object):
 		else:
 			extent = [0,self.side_angle.value,0,self.side_angle.value]
 
-		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=extent,cmap=plt.get_cmap(cmap),**kwargs)
+		#Build the color map
+		if isinstance(cmap,matplotlib.colors.Colormap):
+			cmap = cmap
+		else:
+			cmap = plt.get_cmap(cmap)
+
+		#Visualize
+		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=extent,cmap=cmap,**kwargs)
 		self.ax.grid(b=False)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
