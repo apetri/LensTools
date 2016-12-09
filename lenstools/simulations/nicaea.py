@@ -235,6 +235,10 @@ class Nicaea(w0waCDM):
 
 		return ",".join(pieces[:3] + [si8_piece,ns_piece] + pieces[3:])
 
+	#Cosmology ID useful for book--keeping
+	def cosmo_id(self,parameters=["Om"],legend={"Om":"Om0"},fmt="{0:.3f}"):
+		return "_".join([p + fmt.format(getattr(self,legend[p])) for p in parameters])
+
 	@classmethod
 	def fromCosmology(cls,cosmo):
 
