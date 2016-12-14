@@ -865,7 +865,7 @@ class Spin0(object):
 		N = np.exp(-0.5*(v**2))*G*dv*(self.data.shape[0]**2)/((t**2)*(2*np.pi)**1.5)
 
 		#Plot the histogram
-		self.ax.plot(0.5*(thresholds[1:]+thresholds[:-1]),N,label=r"${\rm Gaussian}$")
+		self.ax.plot(0.5*(thresholds[1:]+thresholds[:-1]),N,**kwargs)
 
 
 	def locatePeaks(self,thresholds,norm=False):
