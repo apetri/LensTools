@@ -19,6 +19,7 @@ import numbers
 from ..extern import _topology
 
 import numpy as np
+import scipy.special as sp
 
 #FFT engine
 from ..utils.fft import NUMPYFFTPack
@@ -818,6 +819,53 @@ class Spin0(object):
 			self.ax.set_xlabel(r"$\kappa$",fontsize=22)
 			ax_top.set_xlabel(r"$\kappa/\sigma_\kappa$",fontsize=22)
 			self.ax.set_ylabel(r"$N_{\rm pk}(\kappa)$",fontsize=22)
+
+	def gaussianPeakHistogram(self,thresholds,norm=False,fig=None,ax=None,**kwargs):
+		
+		"""
+		Plot the Gaussian field approximation (Bond 1987) to the peak histogram
+
+		"""
+
+
+		if not matplotlib:
+			raise ImportError("matplotlib is not installed, cannot plot the peak histogram!")
+
+		#Instantiate figure
+		if (fig is None) or (ax is None):
+			
+			self.fig,self.ax = plt.subplots()
+
+		else:
+
+			self.fig = fig
+			self.ax = ax
+
+		#Compute the gradient and laplacian expectation values
+		gx,gy = self.gradient()
+		hxx,hyy,hxy = self.hessian()
+
+		sigma0 = self.data.std()
+		sigma1 = np.sqrt((gx**2+gy**2).mean())
+		sigma2 = np.sqrt(((hxx+hyy)**2).mean())
+
+		#Compute special parameters
+		g = sigma1**2 / (sigma0*sigma2)
+		t = np.sqrt(2)*sigma1/sigma2
+		v = 0.5*(thresholds[1:]+thresholds[:-1])
+		dv = thresholds[1:] - thresholds[:-1]
+		if not(norm):
+			v /= sigma0
+			dv /= sigma0
+
+		x = v*g
+
+		#Compute G,N
+		G = (x**2-g**2)*(1-0.5*sp.erfc(x/np.sqrt(2*(1-g**2)))) + x*(1-g**2)*np.exp(-x**2/(2*(1-g**2)))/np.sqrt(2*np.pi*(1-g**2)) + np.exp(-x**2/(3-2*(g**2)))*(1-0.5*sp.erfc(x/np.sqrt(2*(1-g**2)*(3-2*(g**2)))))/np.sqrt(3-2*(g**2))
+		N = np.exp(-0.5*(v**2))*G*dv*(self.data.shape[0]**2)/((t**2)*(2*np.pi)**1.5)
+
+		#Plot the histogram
+		self.ax.plot(0.5*(thresholds[1:]+thresholds[:-1]),N,label=r"${\rm Gaussian}$")
 
 
 	def locatePeaks(self,thresholds,norm=False):
