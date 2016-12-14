@@ -1,5 +1,10 @@
 .. :changelog:
 
+1.0
++++
+
+- Plot Gaussian prediction for peak histograms (Bond et. al. 1987)
+
 0.9
 +++
 
