@@ -407,6 +407,7 @@ class MapSettings(LTSettings):
 		self.convergence = True
 		self.convergence_ks = False
 		self.shear = False
+		self.reduced_shear = False
 		self.omega = False
 
 		#Line of sight integration type
@@ -499,6 +500,11 @@ class MapSettings(LTSettings):
 
 		try:
 			self.shear = options.getboolean(section,"shear")
+		except NoOptionError:
+			pass
+
+		try:
+			self.reduced_shear = options.getboolean(section,"reduced_shear")
 		except NoOptionError:
 			pass
 
@@ -627,6 +633,9 @@ class CatalogSettings(LTSettings):
 		self.lens_catalog_realizations = 1
 		self.first_realization = 1
 
+		#Reduced shear
+		self.reduced_shear = False
+
 		#Allow for kwargs override
 		for key in kwargs.keys():
 			setattr(self,key,kwargs[key])
@@ -686,6 +695,11 @@ class CatalogSettings(LTSettings):
 			settings.first_realization = options.getint(section,"first_realization")
 		except NoOptionError:
 			settings.first_realization = 1
+
+		try:
+			settings.reduced_shear = options.getboolean(section,"reduced_shear")
+		except NoOptionError:
+			pass
 
 		#Return to user
 		return settings

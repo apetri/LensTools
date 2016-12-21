@@ -309,17 +309,19 @@ def singleRedshift(pool,batch,settings,batch_id):
 			last_timestamp = now
 
 			#Compute shear,convergence and omega from the jacobians
-			if settings.convergence:
+			if settings.convergence or settings.reduced_shear:
 		
 				convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift)
-				savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
-				logdriver.info("Saving convergence map to {0}".format(savename)) 
-				convMap.save(savename)
-				logdriver.debug("Saved convergence map to {0}".format(savename)) 
+				
+				if settings.convergence:
+					savename = batch.syshandler.map(os.path.join(save_path,"WLconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+					logdriver.info("Saving convergence map to {0}".format(savename)) 
+					convMap.save(savename)
+					logdriver.debug("Saved convergence map to {0}".format(savename)) 
 
 			##############################################################################################################################
 	
-			if settings.shear or settings.convergence_ks:
+			if settings.shear or settings.convergence_ks or settings.reduced_shear:
 		
 				shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift)
 
@@ -333,6 +335,13 @@ def singleRedshift(pool,batch,settings,batch_id):
 					savename = batch.syshandler.map(os.path.join(save_path,"WLconv-ks_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
 					logdriver.info("Saving convergence (KS) map to {0}".format(savename))
 					convMap.save(savename)
+
+				if settings.reduced_shear:
+					for ng in (0,1):
+						shearMap.data[ng] /= (1. - convMap.data)
+					savename = batch.syshandler.map(os.path.join(save_path,"WLredshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+					logdriver.info("Saving reduced shear map to {0}".format(savename))
+					shearMap.save(savename)
 
 			##############################################################################################################################
 	
@@ -949,7 +958,10 @@ def simulatedCatalog(pool,batch,settings,batch_id):
 		last_timestamp = now
 
 		#Build the shear catalog and save it to disk
-		shear_catalog = ShearCatalog([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])],names=("shear1","shear2"))
+		if settings.reduced_shear:
+			shear_catalog = ShearCatalog([(jacobian[3]-jacobian[0])/(jacobian[3]+jacobian[0]),-(jacobian[1]+jacobian[2])/(jacobian[3]+jacobian[0])],names=("shear1","shear2"))
+		else:
+			shear_catalog = ShearCatalog([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])],names=("shear1","shear2"))
 
 		for n,galaxy_position_file in enumerate(settings.input_files):
 
@@ -959,12 +971,21 @@ def simulatedCatalog(pool,batch,settings,batch_id):
 				galaxies_before = 0
 		
 			#Build savename
-			if len(catalog_subdirectory):
-				shear_catalog_savename = batch.syshandler.map(os.path.join(catalog_save_path,catalog_subdirectory[r//realizations_in_subdir],"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format)))
+			if settings.reduced_shear:
+				shear_root = "WLredshear_"
 			else:
-				shear_catalog_savename = batch.syshandler.map(os.path.join(catalog_save_path,"WLshear_"+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format)))
+				shear_root = "WLshear_"
+
+			if len(catalog_subdirectory):
+				shear_catalog_savename = batch.syshandler.map(os.path.join(catalog_save_path,catalog_subdirectory[r//realizations_in_subdir],shear_root+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format)))
+			else:
+				shear_catalog_savename = batch.syshandler.map(os.path.join(catalog_save_path,shear_root+os.path.basename(galaxy_position_file.split(".")[0])+"_{0:04d}r.{1}".format(r+1,settings.format)))
 			
-			logdriver.info("Saving simulated shear catalog to {0}".format(shear_catalog_savename))
+			if settings.reduced_shear:
+				logdriver.info("Saving simulated reduced shear catalog to {0}".format(shear_catalog_savename))
+			else:
+				logdriver.info("Saving simulated shear catalog to {0}".format(shear_catalog_savename))
+			
 			shear_catalog[galaxies_before:galaxies_before+galaxies_in_catalog[n]].write(shear_catalog_savename,overwrite=True)
 
 		now = time.time()

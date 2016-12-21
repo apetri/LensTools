@@ -28,7 +28,7 @@ parser.add_argument("-p","--plane",dest="plane",action="store_true",default=Fals
 parser.add_argument("-pd","--planedensity",dest="planedensity",action="store_true",default=False,help="Enable if the image you are loading is a lensing potential plane, of which you wish to compute the density")
 parser.add_argument("-f","--format",dest="img_format",type=str,default=None,help="Format of the image to save on disk; if None, no image is saved")
 parser.add_argument("-i","--interactive",dest="interactive",action="store_true",default=False,help="Switch to interactive mode after plotting")
-parser.add_argument("-cm","--colormap",dest="colormap",action="store",type=str,default="jet",help="matplotlib color map name")
+parser.add_argument("-cm","--colormap",dest="colormap",action="store",type=str,default="viridis",help="matplotlib color map name")
 parser.add_argument("-S","--smooth",dest="smooth",action="store",type=int,default=None,help="smoothing scale in units of pixel")
 parser.add_argument("-l","--label",dest="label",action="store",type=str,default=None,help="optional label to give to the image colorbar")
 
@@ -76,7 +76,6 @@ for filename in filenames:
 
 	#Visualize
 	img.visualize(colorbar=True,cmap=cmd_args.colormap,cbar_label=cmd_args.label)
-	img.ax.grid(b=False)
 
 	if cmd_args.interactive:
 		
