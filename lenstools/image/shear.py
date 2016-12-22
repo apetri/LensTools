@@ -625,6 +625,7 @@ class ShearMap(Spin2):
 
 	"""
 
+	#Construct shear from convergence via KS
 	@classmethod
 	def fromConvergence(cls,conv):
 
@@ -657,7 +658,7 @@ class ShearMap(Spin2):
 		kwargs = dict((k,getattr(conv,k)) for k in conv._extra_attributes)
 		return cls(np.array([s1,s2]),conv.side_angle,**kwargs)
 
-
+	#Construct convergence map with KS
 	def convergence(self):
 		
 		"""
@@ -676,5 +677,47 @@ class ShearMap(Spin2):
 		#Return the ConvergenceMap instance
 		kwargs = dict((k,getattr(self,k)) for k in self._extra_attributes)
 		return ConvergenceMap(conv,self.side_angle,**kwargs)
+
+	#Add intrinsic ellipticity correction
+	def addSourceEllipticity(self,es,rs_correction=True,inplace=False):
+
+		"""
+		Produce a mock shear map that includes the intrinsic source ellipticity
+
+		:param es: array of intrinsic ellipticities, must have the same shape as the shear map
+		:type es: array
+
+		:param rs_correction: include denominator (1+g*es) in the shear correction
+		:type rs_correction: bool.
+
+		:param inplace: perform the operation in place
+		:type inplace: bool.
+
+		:returns: shear estimate with the added intrinsic ellipticity
+		:rtype: :py:class:~lenstools.image.shear.ShearMap: 
+
+		"""
+
+		#Safety check
+		assert es.shape==self.data.shape
+
+		#Compute complex shear and ellipticity
+		es_c = es[0] + es[1]*1j
+		g = self.data[0] + self.data[1]*1j
+
+		e = es_c + g
+		if rs_correction:
+			e /= (1+es_c*(g.conjugate()))
+
+		#Separate the components of the shear
+		gs = np.array([e.real,e.imag])
+
+		#Return
+		if inplace:
+			self.data = gs
+		else:
+			kwargs = dict((k,getattr(self,k)) for k in self._extra_attributes)
+			return self.__class__(gs,self.side_angle,**kwargs)
+
 
 

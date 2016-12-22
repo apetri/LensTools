@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.io import fits
-from astropy.units import deg,arcsec
+from astropy.units import deg,arcmin,arcsec
 
 def two_file_loader(filename1,filename2):
 
@@ -111,6 +111,26 @@ def test_visualize3():
 	fig.tight_layout()
 
 	test_map.savefig("cross.png")
+
+def test_intrinsic_ellipticity():
+
+	fig,ax = plt.subplots(1,2)
+
+	#Estimate noise free convergence
+	test_map.convergence().visualize(fig=fig,ax=ax[0],colorbar=True)
+
+	#Add intrinsic ellipticity
+	rms = 0.075 / np.sqrt(15*(test_map.resolution.to(arcmin).value**2))
+	test_map.addSourceEllipticity(es=rms*np.random.randn(*test_map.data.shape),inplace=True)
+	test_map.convergence().visualize(fig=fig,ax=ax[1],colorbar=True)
+
+	#Titles
+	ax[0].set_title("Noiseless",fontsize=18)
+	ax[1].set_title("Intrinsic ellipticity",fontsize=18)
+
+	#Save
+	fig.tight_layout()
+	fig.savefig("intrinsic_ellipticity.png")
 
 def test_reconstruct():
 
