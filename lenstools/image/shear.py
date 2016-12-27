@@ -694,7 +694,7 @@ class ShearMap(Spin2):
 		:type inplace: bool.
 
 		:returns: shear estimate with the added intrinsic ellipticity
-		:rtype: :py:class:~lenstools.image.shear.ShearMap: 
+		:rtype: :py:class:`~lenstools.image.shear.ShearMap` 
 
 		"""
 

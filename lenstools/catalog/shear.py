@@ -372,7 +372,50 @@ class ShearCatalog(Catalog):
 		g2 = np.random.normal(size=len(self))*(0.15 + 0.035*self.columns[self._field_z])
 
 		#Return to user
-		return self.__class__((g1,g2),names=["shear1","shear2"])
+		return self.__class__((g1,g2),names=("shear1","shear2"))
+
+	########################################################################################
+
+	def addSourceEllipticity(self,es,es_colnames=("e1","e2"),rs_correction=True,inplace=False):
+
+		"""
+		Produce a mock shear catalog that includes the intrinsic source ellipticity
+
+		:param es: array of intrinsic ellipticities, must be a two column catalog with intrinsic ellipticities
+		:type es: table
+
+		:param es_colnames: column names with intrinsic ellipticities
+		:type es_colnames: tuple. 
+
+		:param rs_correction: include denominator (1+g*es) in the shear correction
+		:type rs_correction: bool.
+
+		:param inplace: perform the operation in place
+		:type inplace: bool.
+
+		:returns: shear estimate with the added intrinsic ellipticity
+		:rtype: :py:class:`~lenstools.catalog.shear.ShearCatalog` 
+
+		"""
+
+		#Safety check
+		assert len(self)==len(es)
+
+		#Compute complex source ellipticity, shear
+		es_c = np.array(es[es_colnames[0]]+es[es_colnames[1]]*1j)
+		g = np.array(self["shear1"] + self["shear2"]*1j)
+
+		#Shear the intrinsic ellipticity
+		e = es_c + g
+		if rs_correction:
+			e /= (1 + g.conjugate()*es_c)
+
+		#Return
+		if inplace:
+			self["shear1"] = e.real
+			self["shear2"] = e.imag
+		else:
+			return self.__class__((e.real,e.imag),names=("shear1","shear2"))
 
 	########################################################################################
 

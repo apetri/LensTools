@@ -21,7 +21,7 @@ Shear maps and catalogs
 	:members: setSpatialInfo,pixelize,visualize
 
 .. autoclass:: lenstools.catalog.shear.ShearCatalog
-	:members: toMap,shapeNoise
+	:members: toMap,shapeNoise,addSourceEllipticity
 
 Statistics
 ==========
