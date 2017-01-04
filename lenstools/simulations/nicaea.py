@@ -79,11 +79,12 @@ def _check_redshift(z,distribution,distribution_parameters,**kwargs):
 	else:
 			
 		assert z is None,"If you want to specify the distribution parameters manually z must be None"
-		assert type(distribution)==list and type(distribution_parameters)==list,"If you want to specify the distribution parameters manually both distribution and distribution parameters must be lists"
+		assert hasattr(distribution,"__iter__") and hasattr(distribution_parameters,"__iter__"),"If you want to specify the distribution parameters manually both distribution and distribution parameters must be iterable!"
+		assert hasattr(distribution,"__len__") and hasattr(distribution_parameters,"__len__"),"distribution and distribution_parameters must be countable!"
 		assert len(distribution)==len(distribution_parameters),"The lists must have the same length"
 
 		nzbins = len(distribution)
-		nofz = distribution
+		nofz = list(distribution)
 		Nnz = list()
 			
 		for n,distr_in_bin in enumerate(nofz):
