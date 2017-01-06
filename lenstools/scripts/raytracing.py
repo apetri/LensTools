@@ -113,12 +113,6 @@ def singleRedshift(pool,batch,settings,batch_id):
 	##################Settings read###################################
 	##################################################################
 
-	#Set random seed to generate the realizations
-	if pool is not None:
-		np.random.seed(settings.seed + pool.rank)
-	else:
-		np.random.seed(settings.seed)
-
 	#Read map angle,redshift and resolution from the settings
 	map_angle = settings.map_angle
 	source_redshift = settings.source_redshift
@@ -216,6 +210,9 @@ def singleRedshift(pool,batch,settings,batch_id):
 
 	#We need one of these for cycles for each map random realization
 	for rloc,r in enumerate(range(first_map_realization,last_map_realization)):
+
+		#Set random seed to generate the realizations
+		np.random.seed(settings.seed + r)
 
 		#Instantiate the RayTracer
 		tracer = RayTracer()
