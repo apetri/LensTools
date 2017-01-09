@@ -5,6 +5,7 @@
 
 - Plot Gaussian prediction for peak histograms (Bond et. al. 1987)
 - Make reduced shear maps and catalogs in lenstools.raytracing
+- Better handling of random seeds in raytracing
 
 0.9
 +++
