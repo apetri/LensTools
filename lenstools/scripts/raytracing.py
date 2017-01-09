@@ -749,12 +749,6 @@ def simulatedCatalog(pool,batch,settings,batch_id):
 	##################Settings read###################################
 	##################################################################
 
-	#Set random seed to generate the realizations
-	if pool is not None:
-		np.random.seed(settings.seed + pool.rank)
-	else:
-		np.random.seed(settings.seed)
-
 	#Read the catalog save path from the settings
 	catalog_save_path = catalog.storage_subdir
 	if (pool is None) or (pool.is_master()):
@@ -864,17 +858,6 @@ def simulatedCatalog(pool,batch,settings,batch_id):
 	with open(batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[0]),"info.txt")),"r") as infofile:
 		num_snapshots = len(infofile.readlines())
 
-
-	#Construct the randomization matrix that will differentiate between realizations; this needs to have shape map_realizations x num_snapshots x 3 (ic+cut_points+normals)
-	randomizer = np.zeros((catalog_realizations,num_snapshots,3),dtype=np.int)
-	randomizer[:,:,0] = np.random.randint(low=0,high=len(nbody_realizations),size=(catalog_realizations,num_snapshots))
-	randomizer[:,:,1] = np.random.randint(low=0,high=len(cut_points),size=(catalog_realizations,num_snapshots))
-	randomizer[:,:,2] = np.random.randint(low=0,high=len(normals),size=(catalog_realizations,num_snapshots))
-
-	if (pool is None) or (pool.is_master()):
-		logdriver.debug("Randomization matrix has shape {0}".format(randomizer.shape))
-
-
 	begin = time.time()
 
 	#Log initial memory load
@@ -884,6 +867,9 @@ def simulatedCatalog(pool,batch,settings,batch_id):
 
 	#We need one of these for cycles for each map random realization
 	for rloc,r in enumerate(range(first_realization,last_realization)):
+
+		#Set random seed to generate the realizations
+		np.random.seed(settings.seed + r)
 
 		#Instantiate the RayTracer
 		tracer = RayTracer()
@@ -925,9 +911,17 @@ def simulatedCatalog(pool,batch,settings,batch_id):
 
 			lens_redshift = float(line[2].split("=")[1])
 
+			#Randomization of planes
+			nbody = np.random.randint(low=0,high=len(nbody_realizations))
+			cut = np.random.randint(low=0,high=len(cut_points))
+			normal = np.random.randint(low=0,high=len(normals))
+
+			#Log to user
+			logdriver.debug("Realization,snapshot=({0},{1}) --> NbodyIC,cut_point,normal=({2},{3},{4})".format(r,s,nbody_realizations[nbody],cut_points[cut],normals[normal]))
+
 			#Add the lens to the system
 			logdriver.info("Adding lens at redshift {0}".format(lens_redshift))
-			plane_name = batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[randomizer[r,s,0]]),settings.plane_name_format.format(snapshot_number,cut_points[randomizer[r,s,1]],normals[randomizer[r,s,2]],settings.plane_format)))
+			plane_name = batch.syshandler.map(os.path.join(plane_path.format(nbody_realizations[nbody]),settings.plane_name_format.format(snapshot_number,cut_points[cut],normals[normal],settings.plane_format)))
 			tracer.addLens((plane_name,distance,lens_redshift))
 
 		#Close the infofile
