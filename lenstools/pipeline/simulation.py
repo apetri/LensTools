@@ -761,7 +761,7 @@ class SimulationBatch(object):
 
 		"""
 		
-		if not(self.syshandler.exists(os.path.join(self.environment.home,cosmo_id))) or not(self.syshandler.exists(os.path.join(self.environment.home,cosmo_id))):
+		if not(self.syshandler.exists(os.path.join(self.environment.home,cosmo_id))) or not(self.syshandler.exists(os.path.join(self.environment.storage,cosmo_id))):
 			return None
 
 		#Parse the cosmological model from the directory name
