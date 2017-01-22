@@ -408,6 +408,7 @@ class MapSettings(LTSettings):
 		self.convergence_ks = False
 		self.shear = False
 		self.reduced_shear = False
+		self.reduced_shear_convergence = False
 		self.omega = False
 
 		#Line of sight integration type
@@ -505,6 +506,11 @@ class MapSettings(LTSettings):
 
 		try:
 			self.reduced_shear = options.getboolean(section,"reduced_shear")
+		except NoOptionError:
+			pass
+
+		try:
+			self.reduced_shear_convergence = options.getboolean(section,"reduced_shear_convergence")
 		except NoOptionError:
 			pass
 

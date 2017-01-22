@@ -306,7 +306,7 @@ def singleRedshift(pool,batch,settings,batch_id):
 			last_timestamp = now
 
 			#Compute shear,convergence and omega from the jacobians
-			if settings.convergence or settings.reduced_shear:
+			if settings.convergence or settings.reduced_shear or settings.reduced_shear_convergence:
 		
 				convMap = ConvergenceMap(data=1.0-0.5*(jacobian[0]+jacobian[3]),angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift)
 				
@@ -318,7 +318,7 @@ def singleRedshift(pool,batch,settings,batch_id):
 
 			##############################################################################################################################
 	
-			if settings.shear or settings.convergence_ks or settings.reduced_shear:
+			if settings.shear or settings.convergence_ks or settings.reduced_shear or settings.reduced_shear_convergence:
 		
 				shearMap = ShearMap(data=np.array([0.5*(jacobian[3]-jacobian[0]),-0.5*(jacobian[1]+jacobian[2])]),angle=map_angle,cosmology=map_batch.cosmology,redshift=source_redshift)
 
@@ -333,12 +333,20 @@ def singleRedshift(pool,batch,settings,batch_id):
 					logdriver.info("Saving convergence (KS) map to {0}".format(savename))
 					convMap.save(savename)
 
-				if settings.reduced_shear:
+				if settings.reduced_shear or settings.reduced_shear_convergence:
 					for ng in (0,1):
 						shearMap.data[ng] /= (1. - convMap.data)
-					savename = batch.syshandler.map(os.path.join(save_path,"WLredshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
-					logdriver.info("Saving reduced shear map to {0}".format(savename))
-					shearMap.save(savename)
+					
+					if settings.reduced_shear:
+						savename = batch.syshandler.map(os.path.join(save_path,"WLredshear_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+						logdriver.info("Saving reduced shear map to {0}".format(savename))
+						shearMap.save(savename)
+
+					if settings.reduced_shear_convergence:
+						convMap = shearMap.convergence()
+						savename = batch.syshandler.map(os.path.join(save_path,"WLredconv_z{0:.2f}_{1:04d}r.{2}".format(source_redshift,r+1,settings.format)))
+						logdriver.info("Saving reduced shear corrected convergence map to {0}".format(savename))
+						convMap.save(savename)
 
 			##############################################################################################################################
 	
