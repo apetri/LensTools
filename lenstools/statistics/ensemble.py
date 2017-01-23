@@ -213,7 +213,7 @@ class Ensemble(pd.DataFrame):
 
 		if callback_loader is None:
 
-			if filename.endswith(".pkl"):
+			if filename.endswith(".pkl") or filename.endswith(".p"):
 				callback_loader = pd.read_pickle
 			elif filename.endswith(".sqlite"):
 				callback_loader = cls._read_sql
