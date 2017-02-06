@@ -1207,7 +1207,6 @@ class Spin0(object):
 
 	################################################################################################################################################
 
-
 	def twoPointFunction(self,algorithm="FFT",**kwargs):
 
 		"""
@@ -1353,6 +1352,43 @@ class Spin0(object):
 
 			return statistic(self,other,**kwargs) 
 
+
+	################################################################################################################################################
+
+	def bispectrum(self,l_edges,ratio=0.5,configuration="equilateral"):
+
+		"""
+		Calculates the bispectrum of the map in the equilateral or folded configuration
+
+		:param l_edges: Multipole bin edges: these are the side of the triangle in the equilateral configuration or the base of the triangle in the folded configuration
+		:type l_edges: array
+
+		:param ratio: ratio between one of the triangle sides and the base in the folded configuration
+		:type ratio: float.
+
+		:param configuration: must be either "equilateral" or "folded"
+		:type configuration: str.
+
+		:returns: (multipoles, bispectrum at multipoles)
+		:rtype: tuple.
+
+		"""
+
+		raise NotImplementedError
+
+		assert not self._masked,"Bispectrum calculation for masked maps is not allowed yet!"
+		assert l_edges is not None
+
+		if self.side_angle.unit.physical_type=="length":
+			raise NotImplementedError("Bispectrum measurement not implemented yet if side physical unit is length!")
+
+		l = 0.5*(l_edges[:-1] + l_edges[1:])
+
+		#Calculate the Fourier transform of the map with numpy FFT
+		ft_map = fftengine.rfft2(self.data)
+
+
+	################################################################################################################################################
 
 	def smooth(self,scale_angle,kind="gaussian",inplace=False,**kwargs):
 
