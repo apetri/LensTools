@@ -521,7 +521,7 @@ class ContourPlot(object):
 		self.ax.set_ylim(self.extent[2],self.extent[3])
 
 
-	def show(self,cmap=None,interpolation="nearest"):
+	def show(self,cmap=None,interpolation="nearest",**kwargs):
 
 		"""
 		Show the 2D marginalized likelihood
@@ -538,7 +538,7 @@ class ContourPlot(object):
 
 		assert reduced_likelihood.ndim == 2,"Can show only 2 dimensional likelihoods in the figure!!"
 		
-		self.likelihood_image = self.ax.imshow(reduced_likelihood.transpose(),origin="lower",cmap=cmap,extent=self.extent,interpolation=interpolation,aspect="auto")
+		self.likelihood_image = self.ax.imshow(reduced_likelihood.transpose(),origin="lower",cmap=cmap,extent=self.extent,interpolation=interpolation,aspect="auto",**kwargs)
 		self.colorbar = plt.colorbar(self.likelihood_image,ax=self.ax)
 		
 
