@@ -36,6 +36,10 @@ import astropy.units as u
 #I/O
 from .io import loadFITS,saveFITS
 
+#CMB lensing
+from .cmblens import QuickLens as Lens
+
+#Plotting
 try:
 	import matplotlib
 	import matplotlib.pyplot as plt
@@ -55,10 +59,12 @@ class Spin0(object):
 
 		#Sanity check
 		assert angle.unit.physical_type in ["angle","length"]
-		assert data.shape[0]==data.shape[1],"The map must be a square!!"
+
+		if not(data.dtype==np.complex):
+			assert data.shape[0]==data.shape[1],"The map must be a square!!"
 
 		#Convert to double precision for calculation accuracy
-		if data.dtype==np.float:
+		if data.dtype in (np.float,np.complex):
 			self.data = data
 		else:
 			self.data = data.astype(np.float)
@@ -1600,4 +1606,113 @@ class Mask(ConvergenceMap):
 	@property
 	def boundary(self):
 		raise AttributeError("This property is only defined on ConvergenceMap instances!")
+
+######################################################################################################
+######################################################################################################
+
+###############
+#CMBTMap class#
+###############
+
+class CMBTemperatureMap(Spin0):
+
+	#Construct sample CMB unlensed map
+	@classmethod
+	def from_Tpower(cls,angle=3.5*u.deg,npixel=256,space="real",power=None):
+		
+		"""
+		Build an unlensed CMB temperature map from a known power spectrum
+
+		"""
+
+		#CMB lensing routines 
+		qlens = Lens()
+
+		if power is None:
+			tfft = qlens.defaultTmap(angle,npixel)
+			unit = u.K
+		else:
+			raise NotImplementedError
+
+		#Return
+		if space=="real":
+			return cls(fftengine.irfft2(tfft),angle=angle,unit=unit,space="real")
+		elif space=="fourier":
+			return cls(tfft,angle=angle,unit=unit,space="fourier")
+		else:
+			raise ValueError("space must be either 'real' or 'fourier'")
+
+	################################################################################
+	################################################################################
+
+	#Switch real/fourier space
+	def toReal(self):
+
+		"""
+		Switches to real space
+
+		"""
+
+		if self.space=="real":
+			return 
+
+		self.data = fftengine.irfft2(self.data)
+		self.space = "real"
+
+	
+	def toFourier(self):
+
+		"""
+		Switches to Fourier space
+
+		"""
+
+		if self.space=="fourier":
+			return 
+
+		self.data = fftengine.rfft2(self.data)
+		self.space="fourier"
+
+	################################################################################
+
+	#Lens the map
+	def lens(self,kappa):
+
+		"""
+		Lens the CMB temperature map using a kappa map
+
+		"""
+
+		#Safety type check
+		assert isinstance(kappa,ConvergenceMap)
+
+		#CMB lensing routines 
+		qlens = Lens()
+
+		#Construct the Fourier transform of the lensing potential
+		lx,ly = np.meshgrid(fftengine.fftfreq(self.data.shape[0]),fftengine.rfftfreq(self.data.shape[0]),indexing="ij")
+		l_squared = lx**2 + ly**2
+				
+		#Avoid dividing by 0
+		l_squared[0,0] = 1.0
+
+		#Fourier transform the map if needed
+		if self.space=="fourier":
+			kappafft = self.data
+		else:
+			kappafft = fftengine.rfft2(self.data)
+
+		#Compute FFT of lensing potential
+		phifft = -kappafft*(self.resolution.to(u.rad).value**2)/(l_squared*((2.0*np.pi)**2))
+
+		#Lens the map and return
+		self.toReal()
+		tlens = qlens.lensTmap(self.data,phifft,self.data.shape[0],self.side_angle)
+		return self.__class__(tlens,self.side_angle,space="real",unit=self.unit)
+
+	###########################################
+	##########Lensing potential estimation#####
+	###########################################
+
+	##
 
