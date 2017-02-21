@@ -1654,10 +1654,10 @@ class CMBTemperatureMap(Spin0):
 		"""
 
 		if self.space=="real":
-			return 
-
-		self.data = fftengine.irfft2(self.data)
-		self.space = "real"
+			pass 
+		else:
+			self.data = fftengine.irfft2(self.data)
+			self.space = "real"
 
 	
 	def toFourier(self):
@@ -1668,10 +1668,10 @@ class CMBTemperatureMap(Spin0):
 		"""
 
 		if self.space=="fourier":
-			return 
-
-		self.data = fftengine.rfft2(self.data)
-		self.space="fourier"
+			pass 
+		else:
+			self.data = fftengine.rfft2(self.data)
+			self.space="fourier"
 
 	################################################################################
 
@@ -1696,13 +1696,8 @@ class CMBTemperatureMap(Spin0):
 		#Avoid dividing by 0
 		l_squared[0,0] = 1.0
 
-		#Fourier transform the map if needed
-		if self.space=="fourier":
-			kappafft = self.data
-		else:
-			kappafft = fftengine.rfft2(self.data)
-
-		#Compute FFT of lensing potential
+		#Fourier transform the kappa map, solve Poisson equation for phi
+		kappafft = fftengine.rfft2(kappa.data)
 		phifft = -kappafft*(self.resolution.to(u.rad).value**2)/(l_squared*((2.0*np.pi)**2))
 
 		#Lens the map and return

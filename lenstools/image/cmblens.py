@@ -95,8 +95,8 @@ class QuickLens(Lens):
 		resolution = angle.to(u.rad)/npixel
 
 		#Build TEB object, lens the map
-		tqu_unl = ql.maps.tqumap(npixel,resolution,maps=[t,np.zeros_like(t),np.zeros_like(t)])
-		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,phifft)
+		tqu_unl = ql.maps.tqumap(npixel,resolution.value,maps=[t,np.zeros_like(t),np.zeros_like(t)])
+		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,ql.maps.rfft(npixel,resolution.value,fft=phifft))
 
 		#Return
 		return tqu_len.tmap
