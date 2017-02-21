@@ -28,6 +28,17 @@ class Lens(object):
 
 	__metaclass__ = ABCMeta
 
+	#Make it a singleton
+	_in_memory = None
+	def __new__(cls,*args,**kwargs):
+		if not(isinstance(cls._in_memory,cls)):
+			cls._in_memory = object.__new__(cls,*args,**kwargs)
+		return cls._in_memory
+
+	##################
+	#Abstract methods#
+	##################
+
 	@abstractmethod
 	def __init__(self):
 		pass

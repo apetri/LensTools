@@ -1709,5 +1709,7 @@ class CMBTemperatureMap(Spin0):
 	##########Lensing potential estimation#####
 	###########################################
 
-	##
+	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
+	def quadEstimatePhi(self):
+		raise NotImplementedError
 
