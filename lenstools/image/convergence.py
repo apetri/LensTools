@@ -1618,10 +1618,25 @@ class CMBTemperatureMap(Spin0):
 
 	#Construct sample CMB unlensed map
 	@classmethod
-	def from_Tpower(cls,angle=3.5*u.deg,npixel=256,space="real",power=None):
+	def from_power(cls,angle=3.5*u.deg,npixel=256,space="real",power=None):
 		
 		"""
-		Build an unlensed CMB temperature map from a known power spectrum
+		Build an unlensed CMB temperature map from a known TT power spectrum
+
+		:param angle: angular size of the map
+		:type angle: quantity
+
+		:param npixel: number of pixels on a side
+		:type npixel: int.
+
+		:param space: must be 'real' or 'fourier'
+		:type space: str.
+
+		:param power: None
+		:type power: None
+
+		:returns: temperature map
+		:rtype: :py:class:`~lenstools.image.convergence.CMBTemperatureMap`
 
 		"""
 
@@ -1663,7 +1678,7 @@ class CMBTemperatureMap(Spin0):
 	def toFourier(self):
 
 		"""
-		Switches to Fourier space
+		Switches to Fourier space via FFT
 
 		"""
 
@@ -1680,6 +1695,12 @@ class CMBTemperatureMap(Spin0):
 
 		"""
 		Lens the CMB temperature map using a kappa map
+
+		:param kappa: convergence map from which the lensing potential is inferred
+		:type kappa: :py:class:`~lenstools.image.convergence.ConvergenceMap`
+
+		:returns: lensed temperature map
+		:rtype: :py:class:`~lenstools.image.convergence.CMBTemperatureMap`
 
 		"""
 
@@ -1698,7 +1719,8 @@ class CMBTemperatureMap(Spin0):
 
 		#Fourier transform the kappa map, solve Poisson equation for phi
 		kappafft = fftengine.rfft2(kappa.data)
-		phifft = -kappafft*(self.resolution.to(u.rad).value**2)/(l_squared*((2.0*np.pi)**2))
+		kappafft[0,0] = 0.
+		phifft = 2.0*kappafft*(self.resolution.to(u.rad).value**2)/(l_squared*((2.0*np.pi)**2))
 
 		#Lens the map and return
 		self.toReal()
@@ -1710,6 +1732,6 @@ class CMBTemperatureMap(Spin0):
 	###########################################
 
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
-	def quadEstimatePhi(self):
+	def estimatePhiQuad(self):
 		raise NotImplementedError
 

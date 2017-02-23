@@ -66,9 +66,9 @@ class QuickLens(Lens):
 		if ql is None:
 			raise ImportError("This feature requires a quicklens installation!")
 
-	##########################
-	#Default CMB unlensed map#
-	##########################
+	######################################
+	#Default CMB unlensed temperature map#
+	######################################
 
 	@staticmethod
 	def defaultTmap(angle,npixel):
@@ -80,7 +80,7 @@ class QuickLens(Lens):
 
 		#Calculate resolution
 		resolution = angle.to(u.rad)/npixel
-		lmax = 3000
+		lmax = 3500
 
 		#Build map
 		Cl = ql.spec.get_camb_scalcl(lmax=lmax)
@@ -107,7 +107,7 @@ class QuickLens(Lens):
 
 		#Build TEB object, lens the map
 		tqu_unl = ql.maps.tqumap(npixel,resolution.value,maps=[t,np.zeros_like(t),np.zeros_like(t)])
-		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,ql.maps.rfft(npixel,resolution.value,fft=phifft))
+		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,ql.maps.rfft(npixel,resolution.value,fft=phifft*resolution.value/npixel))
 
 		#Return
 		return tqu_len.tmap

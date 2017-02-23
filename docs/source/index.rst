@@ -133,6 +133,7 @@ Weak Lensing simulations
    pipeline
    raytracing
    simulations
+   cmblensing
    sample_settings
 
 Command line scripts
