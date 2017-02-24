@@ -45,8 +45,11 @@ def saveFITS(self,filename,double_precision):
 	else:
 		hdu.header["SIDE"] = (self.side_angle.to(u.Mpc).value,"Side in Mpc")
 
+	if hasattr(self,"unit"):
+		hdu.header["UNIT"] = (self.unit.to_string(),"Pixel value unit")
+
 	hdu.header["ITYPE"] = (self.__class__.__name__,"Image type") 
 
 	#Save the image
 	hdulist = fits.HDUList([hdu])
-	hdulist.writeto(filename,clobber=True)
+	hdulist.writeto(filename,overwrite=True)

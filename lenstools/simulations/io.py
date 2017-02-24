@@ -155,7 +155,7 @@ def saveFITS(self,filename,double_precision):
 		hdu.header["SIDE"] = (self.side_angle.to(u.Mpc).value*self.cosmology.h,"Side length in Mpc/h")
 
 	hdu.header["NPART"] = (float(self.num_particles),"Number of particles on the plane")
-	hdu.header["UNIT"] = (self.unit.to_string(),"Measure units of the pixel values") 
+	hdu.header["UNIT"] = (self.unit.to_string(),"Pixel value unit") 
 
 	#Save the plane
 	if self.space=="real":
@@ -163,6 +163,6 @@ def saveFITS(self,filename,double_precision):
 	else:
 		hdulist = fits.HDUList([hdu,hdu1])
 
-	hdulist.writeto(filename,clobber=True)
+	hdulist.writeto(filename,overwrite=True)
 
 ########################################################################################################################################
