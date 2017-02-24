@@ -44,6 +44,10 @@ class Lens(object):
 		pass
 
 	@abstractmethod
+	def getPower(power,callback):
+		pass
+
+	@abstractmethod
 	def generateTmap(angle,npixel):
 		pass
 
@@ -70,12 +74,31 @@ class QuickLens(Lens):
 		if ql is None:
 			raise ImportError("This feature requires a quicklens installation!")
 
+	@staticmethod
+	def getPower(power,callback):
+		
+		#Select correct format
+		if callback=="camb":
+			
+			if power is None:
+				Cl = ql.spec.get_camb_scalcl(lmax=3500)
+			else:
+				Cl = ql.spec.camb_clfile(power)
+
+		elif callback is None:
+			raise NotImplementedError
+		else:
+			raise NotImplementedError
+
+		#Return
+		return Cl
+
 	######################################
 	#Default CMB unlensed temperature map#
 	######################################
 
-	@staticmethod
-	def generateTmap(angle,npixel,powerTT,callback):
+	@classmethod
+	def generateTmap(cls,angle,npixel,powerTT,callback):
 
 		"""
 		Default CMB temperature map in Fourier space
@@ -86,17 +109,7 @@ class QuickLens(Lens):
 		resolution = angle.to(u.rad)/npixel
 
 		#Parse the TT power spectrum
-		if callback=="camb":
-			
-			if powerTT is None:
-				Cl = ql.spec.get_camb_scalcl(lmax=3500)
-			else:
-				Cl = ql.spec.camb_clfile(powerTT)
-
-		elif callback is None:
-			raise NotImplementedError
-		else:
-			raise NotImplementedError
+		Cl = cls.getPower(powerTT,callback)
 
 		#Build map
 		pix = ql.maps.pix(npixel,resolution.value)
@@ -132,8 +145,8 @@ class QuickLens(Lens):
 	#Quadratic TT potential estimator#
 	##################################
 
-	@staticmethod
-	def phiTT(t,angle,powerTT,callback):
+	@classmethod
+	def phiTT(cls,t,angle,powerTT,callback):
 
 		"""
 		Estimate the lensing potential with a quadratic TT estimator
