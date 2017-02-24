@@ -1618,7 +1618,7 @@ class CMBTemperatureMap(Spin0):
 
 	#Construct sample CMB unlensed map
 	@classmethod
-	def from_power(cls,angle=3.5*u.deg,npixel=256,space="real",powerTT=None,callback="camb"):
+	def from_power(cls,angle=3.5*u.deg,npixel=256,seed=None,space="real",powerTT=None,callback="camb"):
 		
 		"""
 		Build an unlensed CMB temperature map from a known TT power spectrum
@@ -1628,6 +1628,9 @@ class CMBTemperatureMap(Spin0):
 
 		:param npixel: number of pixels on a side
 		:type npixel: int.
+
+		:param seed: random seed for the Fourier coefficients draw
+		:type seed: int.
 
 		:param space: must be 'real' or 'fourier'
 		:type space: str.
@@ -1642,6 +1645,10 @@ class CMBTemperatureMap(Spin0):
 		:rtype: :py:class:`~lenstools.image.convergence.CMBTemperatureMap`
 
 		"""
+
+		#Random seed
+		if seed is not None:
+			np.random.seed(seed)
 
 		#CMB lensing routines 
 		qlens = Lens()
