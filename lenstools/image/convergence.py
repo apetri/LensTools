@@ -1610,15 +1610,15 @@ class Mask(ConvergenceMap):
 ######################################################################################################
 ######################################################################################################
 
-###############
-#CMBTMap class#
-###############
+#########################
+#CMBTemperatureMap class#
+#########################
 
 class CMBTemperatureMap(Spin0):
 
 	#Construct sample CMB unlensed map
 	@classmethod
-	def from_power(cls,angle=3.5*u.deg,npixel=256,space="real",power=None):
+	def from_power(cls,angle=3.5*u.deg,npixel=256,space="real",powerTT=None,callback="camb"):
 		
 		"""
 		Build an unlensed CMB temperature map from a known TT power spectrum
@@ -1632,8 +1632,11 @@ class CMBTemperatureMap(Spin0):
 		:param space: must be 'real' or 'fourier'
 		:type space: str.
 
-		:param power: None
-		:type power: None
+		:param powerTT: name of the file that contains the TT power spectrum. If callback is a callable, powerTT is passed to the callback
+		:type powerTT: str.
+
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:type callback: str.
 
 		:returns: temperature map
 		:rtype: :py:class:`~lenstools.image.convergence.CMBTemperatureMap`
@@ -1643,11 +1646,9 @@ class CMBTemperatureMap(Spin0):
 		#CMB lensing routines 
 		qlens = Lens()
 
-		if power is None:
-			tfft = qlens.defaultTmap(angle,npixel)
-			unit = u.K
-		else:
-			raise NotImplementedError
+		#Generate random temperature map
+		tfft = qlens.generateTmap(angle,npixel,powerTT,callback)
+		unit = u.K
 
 		#Return
 		if space=="real":
@@ -1724,7 +1725,7 @@ class CMBTemperatureMap(Spin0):
 
 		#Lens the map and return
 		self.toReal()
-		tlens = qlens.lensTmap(self.data,phifft,self.data.shape[0],self.side_angle)
+		tlens = qlens.lensTmap(self.data,phifft,self.side_angle)
 		return self.__class__(tlens,self.side_angle,space="real",unit=self.unit)
 
 	###########################################
@@ -1732,6 +1733,6 @@ class CMBTemperatureMap(Spin0):
 	###########################################
 
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
-	def estimatePhiQuad(self):
+	def estimatePhiQuad(self,powerTT=None,callback=None):
 		raise NotImplementedError
 

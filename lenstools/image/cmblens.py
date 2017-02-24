@@ -44,11 +44,15 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def defaultTmap(angle,npixel):
+	def generateTmap(angle,npixel):
 		pass
 
 	@abstractmethod
-	def lensTmap(t,phifft,npixel,angle):
+	def lensTmap(t,phifft,angle):
+		pass
+
+	@abstractmethod
+	def phiTT(t,angle,powerTT,callback):
 		pass
 
 #########################
@@ -71,7 +75,7 @@ class QuickLens(Lens):
 	######################################
 
 	@staticmethod
-	def defaultTmap(angle,npixel):
+	def generateTmap(angle,npixel,powerTT,callback):
 
 		"""
 		Default CMB temperature map in Fourier space
@@ -80,29 +84,41 @@ class QuickLens(Lens):
 
 		#Calculate resolution
 		resolution = angle.to(u.rad)/npixel
-		lmax = 3500
+
+		#Parse the TT power spectrum
+		if callback=="camb":
+			
+			if powerTT is None:
+				Cl = ql.spec.get_camb_scalcl(lmax=3500)
+			else:
+				Cl = ql.spec.camb_clfile(powerTT)
+
+		elif callback is None:
+			raise NotImplementedError
+		else:
+			raise NotImplementedError
 
 		#Build map
-		Cl = ql.spec.get_camb_scalcl(lmax=lmax)
 		pix = ql.maps.pix(npixel,resolution.value)
 		teb_unl = ql.sims.tebfft(pix,Cl)
 
 		#Return to user
 		return teb_unl.tfft
 
-	################
-	#Lens a CMB map#
-	################
+	##################
+	#Lens a CMB T map#
+	##################
 
 	@staticmethod
-	def lensTmap(t,phifft,npixel,angle):
+	def lensTmap(t,phifft,angle):
 		
 		"""
 		Lens a CMB temperature map
 
 		"""
 
-		#Calculate resolution
+		#Calculate number of pixels, resolution
+		npixel = len(t)
 		resolution = angle.to(u.rad)/npixel
 
 		#Build TEB object, lens the map
@@ -111,4 +127,18 @@ class QuickLens(Lens):
 
 		#Return
 		return tqu_len.tmap
+
+	##################################
+	#Quadratic TT potential estimator#
+	##################################
+
+	@staticmethod
+	def phiTT(t,angle,powerTT,callback):
+
+		"""
+		Estimate the lensing potential with a quadratic TT estimator
+
+		"""
+
+		raise NotImplementedError
 
