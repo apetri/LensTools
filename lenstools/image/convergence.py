@@ -1740,6 +1740,35 @@ class CMBTemperatureMap(Spin0):
 	###########################################
 
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
-	def estimatePhiQuad(self,powerTT=None,callback=None):
-		raise NotImplementedError
+	def estimatePhiQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb"):
+
+		#CMB lensing routines 
+		qlens = Lens()
+		
+		#Perform potential estimation with the quadratic estimator (pass the temperature values in uK)
+		phifft = qlens.phiTT(fftengine.rfft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback)
+
+		#Invert the FFT
+		phi = np.fft.ifft2(phifft)
+
+		#Return
+		return ConvergenceMap(phi.real,angle=self.side_angle)
+
+	#Estimate kappa using the quadratic estimator on the temperature map
+	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb"):
+
+		#CMB lensing routines 
+		qlens = Lens()
+		
+		#Perform potential estimation with the quadratic estimator (pass the temperature values in uK)
+		phifft = qlens.phiTT(fftengine.rfft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback)
+
+		#Take the laplacian
+		kappafft = phifft*0.5*qlens._cache["ell2"]
+
+		#Invert the FFT
+		kappa = np.fft.ifft2(kappafft)*(len(self.data)/self.side_angle.to(u.rad).value)**2
+
+		#Return
+		return ConvergenceMap(kappa.real,angle=self.side_angle)
 
