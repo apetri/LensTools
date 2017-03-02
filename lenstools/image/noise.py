@@ -12,7 +12,7 @@
 
 from __future__ import division
 
-from .convergence import ConvergenceMap
+from .convergence import ConvergenceMap,CMBTemperatureMap
 
 import numpy as np
 
@@ -23,7 +23,7 @@ fftengine = NUMPYFFTPack()
 from scipy import interpolate
 
 #Units 
-from astropy.units import deg,arcmin
+import astropy.units as u
 
 ########################################################
 ########GaussianNoiseGenerator class####################
@@ -36,33 +36,37 @@ class GaussianNoiseGenerator(object):
 
 	"""
 
-	def __init__(self,shape,side_angle,label):
+	def __init__(self,shape,side_angle):
 
 		#Sanity check
 		assert side_angle.unit.physical_type=="angle"
 		
 		self.shape = shape
 		self.side_angle = side_angle
-		self.label = label
 
 	@classmethod
-	def forMap(cls,conv_map):
+	def forMap(cls,image):
 
 		"""
 		This class method generates a Gaussian noise generator intended to be used on a convergence map: i.e. the outputs of its methods can be added to the convergence map in question to simulate the presence of noise
 
-		:param conv_map: The blueprint of the convergence map you want to generate the noise for
-		:type conv_map: ConvergenceMap instance
+		:param image: The blueprint of the image you want to generate the noise for
+		:type image: :py:class:`~lenstools.image.convergence.ConvergenceMap` or :py:class:`~lenstools.image.convergence.ConvergenceMap`
 
-		:raises: AssertionError if conv_map is not a ConvergenceMap instance
+		:returns: Noise generator instance
+		:rtype: :py:class:`~lenstools.image.noise.GaussianNoiseGenerator`
 
 		"""
 
-		assert isinstance(conv_map,ConvergenceMap)
+		assert isinstance(image,ConvergenceMap) or isinstance(image,CMBTemperatureMap)
 
-		return cls(conv_map.data.shape,conv_map.side_angle,label="convergence")
+		return cls(image.data.shape,image.side_angle)
 
-	def getShapeNoise(self,z=1.0,ngal=15.0*arcmin**-2,seed=0):
+	##############################################################
+	#Noise in convergence reconstruction from galaxy observations#
+	##############################################################
+
+	def getShapeNoise(self,z=1.0,ngal=15.0*u.arcmin**-2,seed=0):
 
 		"""
 		This method generates a white, gaussian shape noise map for the given redshift of the map
@@ -76,34 +80,30 @@ class GaussianNoiseGenerator(object):
 		:param seed: seed of the random generator
 		:type seed: int.
 
-		:returns: ConvergenceMap instance of the same exact shape as the one used as blueprint
+		:returns: instance of the same exact shape as the one used as blueprint
+		:rtype: :py:class:`~lenstools.image.convergence.ConvergenceMap`
 
 		"""
 
 		#Sanity check
 		assert (ngal.unit**-0.5).physical_type=="angle"
-
-		if self.label == "convergence":
 		
-			#Compute shape noise amplitude
-			pixel_angular_side = self.side_angle / self.shape[0]
-			sigma = ((0.15 + 0.035*z) / (pixel_angular_side * np.sqrt(ngal))).decompose().value
+		#Compute shape noise amplitude
+		pixel_angular_side = self.side_angle / self.shape[0]
+		sigma = ((0.15 + 0.035*z) / (pixel_angular_side * np.sqrt(ngal))).decompose().value
 
-			#Generate shape noise
-			np.random.seed(seed)
-			noise_map = np.random.normal(loc=0.0,scale=sigma,size=self.shape) 
+		#Generate shape noise
+		np.random.seed(seed)
+		noise_map = np.random.normal(loc=0.0,scale=sigma,size=self.shape) 
 
-			#Build the ConvergenceMap object
-			return ConvergenceMap(noise_map,self.side_angle)
+		#Build the ConvergenceMap object
+		return ConvergenceMap(noise_map,self.side_angle)
 
-		else:
-
-			raise ValueError("Only convergence implemented so far!!!")
 
 	def _fourierMap(self,power_func,**kwargs):
 
 		#Assert the shape of the blueprint, to tune the right size for the fourier transform
-		lpix = 360.0/self.side_angle.to(deg).value
+		lpix = 360.0/self.side_angle.to(u.deg).value
 		lx = fftengine.rfftfreq(self.shape[0]) * self.shape[0] * lpix
 		ly = fftengine.fftfreq(self.shape[0]) * self.shape[0] * lpix
 
@@ -139,7 +139,6 @@ class GaussianNoiseGenerator(object):
 		return ft_map
 
 
-
 	def fromConvPower(self,power_func,seed=0,**kwargs):
 
 		"""
@@ -156,16 +155,59 @@ class GaussianNoiseGenerator(object):
 		:returns: ConvergenceMap instance of the same exact shape as the one used as blueprint
 
 		"""
-		assert self.label == "convergence"
 
 		#Initialize random number generator
-		np.random.seed(seed)
+		if seed is not None:
+			np.random.seed(seed)
 
 		#Generate a random Fourier realization and invert it
 		ft_map = self._fourierMap(power_func,**kwargs)
 		noise_map = fftengine.irfft2(ft_map)
 
 		return ConvergenceMap(noise_map,self.side_angle)
+
+	###################
+	#Noise in CMB maps#
+	###################
+
+	@staticmethod
+	def _flat(ell,sigmaN):
+		return (sigmaN**2)*np.ones_like(ell)
+
+	@staticmethod
+	def _detector(ell,sigmaN,fwhm):
+		return (sigmaN**2)*np.exp(ell*(ell+1)*(fwhm**2)/(8*np.log(2)))
+
+	###########################################################################################
+
+	def getCMBWhiteNoise(self,sigmaN=27.*u.uK*u.arcmin,seed=0):
+
+		#Initialize random number generator
+		if seed is not None:
+			np.random.seed(seed)
+
+		#Generate random Fourier map
+		ft_map = self._fourierMap(self._flat,sigmaN=sigmaN.to(u.uK*u.rad).value)
+		noise_map = fftengine.irfft2(ft_map)
+
+		#Return
+		return CMBTemperatureMap(noise_map,self.side_angle,unit=u.uK)
+
+	###########################################################################################
+
+	def getCMBDetectorNoise(self,sigmaN=27.*u.uK*u.arcmin,fwhm=7.*u.arcmin,seed=0):
+		
+		#Initialize random number generator
+		if seed is not None:
+			np.random.seed(seed)
+
+		#Generate random Fourier map
+		ft_map = self._fourierMap(self._detector,sigmaN=sigmaN.to(u.uK*u.rad).value,fwhm=fwhm.to(u.rad).value)
+		noise_map = fftengine.irfft2(ft_map)
+
+		#Return
+		return CMBTemperatureMap(noise_map,self.side_angle,unit=u.uK)
+
 
 
 

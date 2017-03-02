@@ -1665,6 +1665,19 @@ class CMBTemperatureMap(Spin0):
 		else:
 			raise ValueError("space must be either 'real' or 'fourier'")
 
+	#Add maps taking units into account
+	def __add__(self,rhs):
+
+		#Safety check
+		assert isinstance(rhs,self.__class__)
+		assert self.side_angle==rhs.side_angle
+
+		#Convert units, add
+		addedT = self.data + rhs.data*rhs.unit.to(self.unit)
+
+		#Return
+		return self.__class__(addedT,self.side_angle,unit=self.unit)
+
 	################################################################################
 	################################################################################
 
