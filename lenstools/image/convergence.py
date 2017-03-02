@@ -1616,6 +1616,20 @@ class Mask(ConvergenceMap):
 
 class CMBTemperatureMap(Spin0):
 
+	###################
+	#Noise in CMB maps#
+	###################
+
+	@staticmethod
+	def _flat(ell,sigmaN):
+		return (sigmaN**2)*np.ones_like(ell)
+
+	@staticmethod
+	def _detector(ell,sigmaN,fwhm):
+		return (sigmaN**2)*np.exp(ell*(ell+1)*(fwhm**2)/(8*np.log(2)))
+
+	###########################################################################################
+
 	#Construct sample CMB unlensed map
 	@classmethod
 	def from_power(cls,angle=3.5*u.deg,npixel=256,seed=None,space="real",powerTT=None,callback="camb"):

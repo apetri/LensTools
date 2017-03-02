@@ -170,16 +170,6 @@ class GaussianNoiseGenerator(object):
 	#Noise in CMB maps#
 	###################
 
-	@staticmethod
-	def _flat(ell,sigmaN):
-		return (sigmaN**2)*np.ones_like(ell)
-
-	@staticmethod
-	def _detector(ell,sigmaN,fwhm):
-		return (sigmaN**2)*np.exp(ell*(ell+1)*(fwhm**2)/(8*np.log(2)))
-
-	###########################################################################################
-
 	def getCMBWhiteNoise(self,sigmaN=27.*u.uK*u.arcmin,seed=0):
 
 		#Initialize random number generator
@@ -187,7 +177,7 @@ class GaussianNoiseGenerator(object):
 			np.random.seed(seed)
 
 		#Generate random Fourier map
-		ft_map = self._fourierMap(self._flat,sigmaN=sigmaN.to(u.uK*u.rad).value)
+		ft_map = self._fourierMap(CMBTemperatureMap._flat,sigmaN=sigmaN.to(u.uK*u.rad).value)
 		noise_map = fftengine.irfft2(ft_map)
 
 		#Return
@@ -202,7 +192,7 @@ class GaussianNoiseGenerator(object):
 			np.random.seed(seed)
 
 		#Generate random Fourier map
-		ft_map = self._fourierMap(self._detector,sigmaN=sigmaN.to(u.uK*u.rad).value,fwhm=fwhm.to(u.rad).value)
+		ft_map = self._fourierMap(CMBTemperatureMap._detector,sigmaN=sigmaN.to(u.uK*u.rad).value,fwhm=fwhm.to(u.rad).value)
 		noise_map = fftengine.irfft2(ft_map)
 
 		#Return
