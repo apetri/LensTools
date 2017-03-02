@@ -33,13 +33,13 @@ class Lens(object):
 	def __new__(cls,*args,**kwargs):
 		if not(isinstance(cls._in_memory,cls)):
 			cls._in_memory = object.__new__(cls,*args,**kwargs)
-			cls._in_memory.reset()
+			cls._in_memory.resetCache()
 		return cls._in_memory
 
 	##############################################################
 
 	#Reset the cache
-	def reset(self):
+	def resetCache(self):
 		self._cache = dict()
 		self._cache["angle"] = -1
 		self._cache["npixel"] = -1
@@ -81,7 +81,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def lensTmap(t,phifft,angle):
+	def lensTmap(t,angleT,phifft,anglePhi):
 		pass
 
 	@abstractmethod
@@ -128,13 +128,17 @@ class QuickLens(Lens):
 	#Build TT power spectrum cache
 	def buildPowerTTCache(self,powerTT_th,powerTT_obs,callback):
 
+		#Cache names
+		self._cache["powerTT_th_name"] = str(powerTT_th)
+		self._cache["powerTT_obs_name"] = str(powerTT_obs)
+
 		#Npixel, resolution
 		npixel = self._cache["npixel"]
 		resolution = self._cache["angle"].to(u.rad).value/npixel
 
 		#Load power spectra
-		self._cache["ClTT_th"] = self.getPower(powerTT_th,callback).cltt
-		ClTT_th = self._cache["ClTT_th"] 
+		self._cache["Cl_th"] = self.getPower(powerTT_th,callback)
+		ClTT_th = self._cache["Cl_th"].cltt 
 		
 		if powerTT_obs is None:
 			ClTT_obs = None
@@ -153,8 +157,11 @@ class QuickLens(Lens):
 		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
 		self._cache["1/powerTT_obs"][0,0] = self._tiny
 
-		#Build the cache for the normalization factor
-		self._cache["norm"] = ql.maps.cfft(npixel,resolution,fft=np.zeros((npixel,npixel),dtype=np.complex))
+	#Build normalization cache
+	def buildNormCache(self,resolution,estimator,Tfilter):
+		self._cache["norm"] = ql.maps.cfft(len(Tfilter),resolution,fft=np.zeros((len(Tfilter),)*2,dtype=np.complex))
+		estimator.fill_resp(estimator,self._cache["norm"],Tfilter,Tfilter)
+		self._cache["norm"].fft[0,0] = 1.
 
 	######################################
 	#Default CMB unlensed temperature map#
@@ -170,16 +177,14 @@ class QuickLens(Lens):
 		#Calculate resolution
 		resolution = angle.to(u.rad)/npixel
 
-		#############################################################
-		#TODO: Build the caches for ell,C_ell if not present already#
-		#############################################################
-
 		#Parse the TT power spectrum
-		Cl = self.getPower(powerTT,callback)
+		if ("powerTT_th" not in self._cache) or (powerTT!=self._cache["powerTT_th_name"]):
+			self.buildEllCache(angle,npixel)
+			self.buildPowerTTCache(powerTT,None,callback)
 
 		#Build map
 		pix = ql.maps.pix(npixel,resolution.value)
-		teb_unl = ql.sims.tebfft(pix,Cl)
+		teb_unl = ql.sims.tebfft(pix,self._cache["Cl_th"])
 
 		#Return to user
 		return teb_unl.tfft
@@ -189,7 +194,7 @@ class QuickLens(Lens):
 	##################
 
 	@staticmethod
-	def lensTmap(t,phifft,angle):
+	def lensTmap(t,angleT,phifft,anglePhi):
 		
 		"""
 		Lens a CMB temperature map
@@ -197,16 +202,14 @@ class QuickLens(Lens):
 		"""
 
 		#Calculate number of pixels, resolution
-		npixel = len(t)
-		resolution = angle.to(u.rad)/npixel
-
-		#############################################################
-		#TODO: Build the caches for ell,C_ell if not present already#
-		#############################################################
+		npixelT = len(t)
+		resolutionT = angleT.to(u.rad)/npixelT
+		npixelPhi = len(phifft)
+		resolutionPhi = anglePhi.to(u.rad)/npixelPhi
 
 		#Build TEB object, lens the map
-		tqu_unl = ql.maps.tqumap(npixel,resolution.value,maps=[t,np.zeros_like(t),np.zeros_like(t)])
-		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,ql.maps.rfft(npixel,resolution.value,fft=phifft*resolution.value/npixel))
+		tqu_unl = ql.maps.tqumap(npixelT,resolutionT.value,maps=[t,np.zeros_like(t),np.zeros_like(t)])
+		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,ql.maps.rfft(npixelPhi,resolutionPhi.value,fft=phifft*resolutionPhi.value/npixelPhi))
 
 		#Return
 		return tqu_len.tmap
@@ -230,22 +233,26 @@ class QuickLens(Lens):
 		#Build the caches for ell,C_ell if not present already#
 		#######################################################
 
-		if "powerTT_th" not in self._cache:
+		if ("powerTT_th" not in self._cache) or (str(powerTT_th)!=self._cache["powerTT_th_name"]) or (str(powerTT_obs)!=self._cache["powerTT_obs_name"]):
 			self.buildEllCache(angle,npixel)
 			self.buildPowerTTCache(powerTT_th,powerTT_obs,callback)
+			recompute_norm = True
+		else:
+			recompute_norm = False
 		
 		#Build the TT estimator
-		estimator = ql.qest.lens.phi_TT(self._cache["ClTT_th"])
+		estimator = ql.qest.lens.phi_TT(self._cache["Cl_th"].cltt)
 
 		#Apply inverse variance filter to the observation
 		tfft = tfft * self._cache["1/powerTT_obs"][:,:npixel//2+1] * (resolution.value**2)
 
 		#Evaluate the estimator on kappa and its normalization
 		phi_eval = estimator.eval(ql.maps.rfft(npixel,resolution.value,fft=tfft))
-		phi_norm = estimator.fill_resp(estimator,self._cache["norm"],self._cache["1/powerTT_obs"],self._cache["1/powerTT_obs"])
-		phi_norm.fft[0,0] = 1.
+
+		if recompute_norm:
+			self.buildNormCache(resolution.value,estimator,self._cache["1/powerTT_obs"])
 
 		#Return the normalized estimator
-		phifft = phi_eval/phi_norm
+		phifft = phi_eval/self._cache["norm"]
 		return phifft.fft 
 
