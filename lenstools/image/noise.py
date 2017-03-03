@@ -201,7 +201,7 @@ class GaussianNoiseGenerator(object):
 
 	###########################################################################################
 
-	def getCMBDetectorNoise(self,sigmaN=27.*u.uK*u.arcmin,fwhm=7.*u.arcmin,seed=0):
+	def getCMBDetectorNoise(self,sigmaN=27.*u.uK*u.arcmin,fwhm=7.*u.arcmin,ellmax=None,seed=0):
 
 		"""
 		This method produces CMB detector noise temperature maps (white noise + beam deconvolution)
@@ -211,6 +211,9 @@ class GaussianNoiseGenerator(object):
 
 		:param fwhm: full width half maximum of the beam
 		:type fwhm: quantity
+
+		:param ellmax: if not None, zero out the power spectrum for ell>ellmax
+		:type ellmax: float.
 
 		:param seed: seed for the random numbere generator
 		:type seed: int.
@@ -225,7 +228,7 @@ class GaussianNoiseGenerator(object):
 			np.random.seed(seed)
 
 		#Generate random Fourier map
-		ft_map = self._fourierMap(Lens._detector,sigmaN=sigmaN.to(u.uK*u.rad).value,fwhm=fwhm.to(u.rad).value)
+		ft_map = self._fourierMap(Lens._detector,sigmaN=sigmaN.to(u.uK*u.rad).value,fwhm=fwhm.to(u.rad).value,ellmax=ellmax)
 		noise_map = fftengine.irfft2(ft_map)
 
 		#Return

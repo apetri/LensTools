@@ -47,8 +47,12 @@ class Lens(object):
 		return (sigmaN**2)*np.ones_like(ell)
 
 	@staticmethod
-	def _detector(ell,sigmaN,fwhm):
-		return (sigmaN**2)*np.exp(ell*(ell+1)*(fwhm**2)/(8*np.log(2)))
+	def _detector(ell,sigmaN,fwhm,ellmax=None):
+		power = (sigmaN**2)*np.exp(ell*(ell+1)*(fwhm**2)/(8*np.log(2)))
+		if ellmax is not None:
+			power[ell>ellmax] = 0.
+
+		return power
 
 	##############################################################
 
