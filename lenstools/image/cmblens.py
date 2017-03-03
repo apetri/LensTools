@@ -78,7 +78,7 @@ class Lens(object):
 			self._cache["ell"] = np.sqrt(self._cache["ell2"])
 
 	#Build TT power spectrum cache
-	def buildPowerTTCache(self,powerTT_th,powerTT_obs,callback):
+	def buildPowerTTCache(self,powerTT_th,powerTT_obs,callback,noise_keys):
 
 		#Cache names
 		self._cache["powerTT_th_name"] = str(powerTT_th)
@@ -101,13 +101,36 @@ class Lens(object):
 		self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th,right=0.).reshape(self._cache["ell"].shape)
 
 		if ClTT_obs is None:
-			self._cache["powerTT_obs"] = self._cache["powerTT_th"]
+			self._cache["powerTT_obs"] = self._cache["powerTT_th"].copy()
 		else:
 			self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs,right=0.).reshape(self._cache["ell"].shape)
 
-		#Regularization for observed TT with 1uK*arcmin noise
-		self._cache["powerTT_obs"] += 8.461594994075237e-08
+		#Add noise component to the observed power spectrum
+		if noise_keys is not None:
+			self._cache["powerTT_obs"] += self.getNoise(self._cache["ell"],noise_keys)
+		
+		#Construct inverse variance filter
 		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
+
+	#Noise
+	def getNoise(self,ell,noise_keys):
+		assert "kind" in noise_keys,"Format of the noise keys must be {'kind':'white,detector','sigmaN':value,'fwhm':value}"
+
+		if noise_keys["kind"]=="white":
+
+			#White noise
+			sigmaN = noise_keys["sigmaN"]
+			return self._flat(ell,sigmaN.to(u.uK*u.rad).value)
+
+		elif noise_keys["kind"]=="detector":
+
+			#Detector noise
+			sigmaN = noise_keys["sigmaN"]
+			fwhm = noise_keys["fwhm"]
+			return self._detector(ell,sigmaN.to(u.uK*u.rad).value,fwhm.to(u.rad).value)
+
+		else:
+			raise NotImplementedError("Noise kind '{0}' not implemented: choose (white/detector)".format(noise_keys["kind"]))
 
 	##############################################################
 
@@ -140,7 +163,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def phiTT(tfft,angle,powerTT_th,powerTT_obs,callback):
+	def phiTT(tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys):
 		pass
 
 #########################
@@ -205,7 +228,7 @@ class QuickLens(Lens):
 		#Parse the TT power spectrum
 		if ("powerTT_th" not in self._cache) or (powerTT!=self._cache["powerTT_th_name"]):
 			self.buildEllCache(angle,npixel)
-			self.buildPowerTTCache(powerTT,None,callback)
+			self.buildPowerTTCache(powerTT,None,callback,noise_keys={"kind":"white","sigmaN":0.1*u.uK*u.arcmin})
 
 		#Build map
 		pix = ql.maps.pix(npixel,resolution.value)
@@ -243,7 +266,7 @@ class QuickLens(Lens):
 	#Quadratic TT potential estimator#
 	##################################
 
-	def phiTT(self,tfft,angle,powerTT_th,powerTT_obs,callback):
+	def phiTT(self,tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys):
 
 		"""
 		Estimate the lensing potential with a quadratic TT estimator
@@ -260,7 +283,7 @@ class QuickLens(Lens):
 
 		if ("powerTT_th" not in self._cache) or (str(powerTT_th)!=self._cache["powerTT_th_name"]) or (str(powerTT_obs)!=self._cache["powerTT_obs_name"]):
 			self.buildEllCache(angle,npixel)
-			self.buildPowerTTCache(powerTT_th,powerTT_obs,callback)
+			self.buildPowerTTCache(powerTT_th,powerTT_obs,callback,noise_keys)
 			recompute_norm = True
 		else:
 			recompute_norm = False
