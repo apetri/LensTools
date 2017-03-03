@@ -3,8 +3,11 @@ API
 
 .. automodule:: lenstools
 
+Weak Lensing image mapipulation
+===============================
+
 Convergence maps
-================
+----------------
 
 .. autoclass:: lenstools.image.convergence.ConvergenceMap
 	:inherited-members:
@@ -12,7 +15,7 @@ Convergence maps
 .. autoclass:: lenstools.image.convergence.Mask
 
 Shear maps and catalogs
-=======================
+-----------------------
 
 .. autoclass:: lenstools.image.shear.ShearMap
 	:inherited-members:
@@ -22,6 +25,18 @@ Shear maps and catalogs
 
 .. autoclass:: lenstools.catalog.shear.ShearCatalog
 	:members: toMap,shapeNoise,addSourceEllipticity
+
+CMB temperature maps
+--------------------
+
+.. autoclass:: lenstools.image.convergence.CMBTemperatureMap
+	:members: from_power,toReal,toFourier,lens,estimateKappaQuad,estimatePhiQuad,estimatePhiFFTQuad
+
+Noise
+-----
+
+.. autoclass:: lenstools.image.noise.GaussianNoiseGenerator
+	:inherited-members:
 
 Statistics
 ==========
@@ -72,12 +87,6 @@ Confidence contour plotting
 .. autoclass:: lenstools.statistics.contours.ContourPlot
 	:inherited-members:
 
-
-Noise
-=====
-
-.. autoclass:: lenstools.image.noise.GaussianNoiseGenerator
-	:inherited-members:
 
 Existing Simulation suites
 ==========================
