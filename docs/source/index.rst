@@ -135,6 +135,7 @@ Weak Lensing simulations
    simulations
    cmblensing
    sample_settings
+   featureds
 
 Command line scripts
 --------------------
