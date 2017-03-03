@@ -22,6 +22,10 @@ class FFTEngine(object):
 	#####################################################################
 
 	@abstractmethod
+	def fft2(self,x):
+		pass
+
+	@abstractmethod
 	def ifft2(self,x):
 		pass
 
@@ -69,6 +73,9 @@ class NUMPYFFTPack(FFTEngine):
 	###############################################################################################
 	#########################Abstract methods implementation#######################################
 	###############################################################################################
+
+	def fft2(self,x):
+		return np.fft.fft2(x)
 
 	def ifft2(self,x):
 		return np.fft.ifft2(x)

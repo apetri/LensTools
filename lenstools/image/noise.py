@@ -13,6 +13,7 @@
 from __future__ import division
 
 from .convergence import ConvergenceMap,CMBTemperatureMap
+from .cmblens import Lens
 
 import numpy as np
 
@@ -51,7 +52,7 @@ class GaussianNoiseGenerator(object):
 		This class method generates a Gaussian noise generator intended to be used on a convergence map: i.e. the outputs of its methods can be added to the convergence map in question to simulate the presence of noise
 
 		:param image: The blueprint of the image you want to generate the noise for
-		:type image: :py:class:`~lenstools.image.convergence.ConvergenceMap` or :py:class:`~lenstools.image.convergence.ConvergenceMap`
+		:type image: :py:class:`~lenstools.image.convergence.ConvergenceMap` or :py:class:`~lenstools.image.convergence.CMBTemperatureMap`
 
 		:returns: Noise generator instance
 		:rtype: :py:class:`~lenstools.image.noise.GaussianNoiseGenerator`
@@ -152,7 +153,8 @@ class GaussianNoiseGenerator(object):
 
 		:param kwargs: keyword arguments to be passed to power_func, or to the interpolate.interp1d routine
 
-		:returns: ConvergenceMap instance of the same exact shape as the one used as blueprint
+		:returns: noise image with the same shape as the one used as blueprint
+		:rtype: :py:class:`~lenstools.image.convergence.ConvergenceMap`
 
 		"""
 
@@ -172,12 +174,26 @@ class GaussianNoiseGenerator(object):
 
 	def getCMBWhiteNoise(self,sigmaN=27.*u.uK*u.arcmin,seed=0):
 
+		"""
+		This method produces CMB white noise temperature maps
+
+		:param sigmaN: rms of the noise. Must be supplied with temperature x angle units 
+		:type sigmaN: quantity
+
+		:param seed: seed for the random numbere generator
+		:type seed: int.
+
+		:returns: noise temperature map
+		:rtype: :py:class:`~lenstools.image.convergence.CMBTemperatureMap`
+
+		"""
+
 		#Initialize random number generator
 		if seed is not None:
 			np.random.seed(seed)
 
 		#Generate random Fourier map
-		ft_map = self._fourierMap(CMBTemperatureMap._flat,sigmaN=sigmaN.to(u.uK*u.rad).value)
+		ft_map = self._fourierMap(Lens._flat,sigmaN=sigmaN.to(u.uK*u.rad).value)
 		noise_map = fftengine.irfft2(ft_map)
 
 		#Return
@@ -186,13 +202,30 @@ class GaussianNoiseGenerator(object):
 	###########################################################################################
 
 	def getCMBDetectorNoise(self,sigmaN=27.*u.uK*u.arcmin,fwhm=7.*u.arcmin,seed=0):
+
+		"""
+		This method produces CMB detector noise temperature maps (white noise + beam deconvolution)
+
+		:param sigmaN: rms of the noise. Must be supplied with temperature x angle units 
+		:type sigmaN: quantity
+
+		:param fwhm: full width half maximum of the beam
+		:type fwhm: quantity
+
+		:param seed: seed for the random numbere generator
+		:type seed: int.
+
+		:returns: noise temperature map
+		:rtype: :py:class:`~lenstools.image.convergence.CMBTemperatureMap`
+
+		"""
 		
 		#Initialize random number generator
 		if seed is not None:
 			np.random.seed(seed)
 
 		#Generate random Fourier map
-		ft_map = self._fourierMap(CMBTemperatureMap._detector,sigmaN=sigmaN.to(u.uK*u.rad).value,fwhm=fwhm.to(u.rad).value)
+		ft_map = self._fourierMap(Lens._detector,sigmaN=sigmaN.to(u.uK*u.rad).value,fwhm=fwhm.to(u.rad).value)
 		noise_map = fftengine.irfft2(ft_map)
 
 		#Return

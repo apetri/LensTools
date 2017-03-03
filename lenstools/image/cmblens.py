@@ -38,6 +38,20 @@ class Lens(object):
 
 	##############################################################
 
+	###################
+	#Noise in CMB maps#
+	###################
+
+	@staticmethod
+	def _flat(ell,sigmaN):
+		return (sigmaN**2)*np.ones_like(ell)
+
+	@staticmethod
+	def _detector(ell,sigmaN,fwhm):
+		return (sigmaN**2)*np.exp(ell*(ell+1)*(fwhm**2)/(8*np.log(2)))
+
+	##############################################################
+
 	#Reset the cache
 	def resetCache(self):
 		self._cache = dict()
@@ -53,8 +67,9 @@ class Lens(object):
 			self._cache["angle"] = angle
 			self._cache["npixel"] = npixel
 
-			#Multipoles			
-			ell_x,ell_y = np.meshgrid(np.fft.fftfreq(npixel),np.fft.fftfreq(npixel),indexing="ij")
+			#Multipoles
+			f = np.fft.fftfreq(npixel)			
+			ell_x,ell_y = np.meshgrid(f,f,indexing="ij")
 			self._cache["ell2"] = (ell_x**2 + ell_y**2)*((2.0*np.pi*npixel/(angle.to(u.rad).value))**2)
 			self._cache["ell"] = np.sqrt(self._cache["ell2"])
 
@@ -77,6 +92,10 @@ class Lens(object):
 		pass
 
 	@abstractmethod
+	def buildNormCache(self,resolution,estimator,Tfilter):
+		pass
+
+	@abstractmethod
 	def generateTmap(angle,npixel):
 		pass
 
@@ -93,8 +112,6 @@ class Lens(object):
 #########################
 
 class QuickLens(Lens):
-
-	_tiny = 1.0e-24
 
 	#############
 	#Constructor#
@@ -146,16 +163,16 @@ class QuickLens(Lens):
 			ClTT_obs = self.getPower(powerTT_obs,callback).cltt 
 
 		#Build the power TT caches
-		self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th).reshape(self._cache["ell"].shape)
+		self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th,right=0.).reshape(self._cache["ell"].shape)
 
 		if ClTT_obs is None:
 			self._cache["powerTT_obs"] = self._cache["powerTT_th"]
 		else:
-			self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs).reshape(self._cache["ell"].shape)
+			self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs,right=0.).reshape(self._cache["ell"].shape)
 
-		self._cache["powerTT_obs"][0,0] = self._tiny
+		#Regularization for observed TT with 1uK*arcmin noise
+		self._cache["powerTT_obs"] += 8.461594994075237e-08
 		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
-		self._cache["1/powerTT_obs"][0,0] = self._tiny
 
 	#Build normalization cache
 	def buildNormCache(self,resolution,estimator,Tfilter):
@@ -244,10 +261,10 @@ class QuickLens(Lens):
 		estimator = ql.qest.lens.phi_TT(self._cache["Cl_th"].cltt)
 
 		#Apply inverse variance filter to the observation
-		tfft = tfft * self._cache["1/powerTT_obs"][:,:npixel//2+1] * (resolution.value**2)
+		tfft = tfft * self._cache["1/powerTT_obs"] * (resolution.value**2)
 
 		#Evaluate the estimator on kappa and its normalization
-		phi_eval = estimator.eval(ql.maps.rfft(npixel,resolution.value,fft=tfft))
+		phi_eval = estimator.eval(ql.maps.cfft(npixel,resolution.value,fft=tfft))
 
 		if recompute_norm:
 			self.buildNormCache(resolution.value,estimator,self._cache["1/powerTT_obs"])

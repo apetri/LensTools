@@ -1616,20 +1616,6 @@ class Mask(ConvergenceMap):
 
 class CMBTemperatureMap(Spin0):
 
-	###################
-	#Noise in CMB maps#
-	###################
-
-	@staticmethod
-	def _flat(ell,sigmaN):
-		return (sigmaN**2)*np.ones_like(ell)
-
-	@staticmethod
-	def _detector(ell,sigmaN,fwhm):
-		return (sigmaN**2)*np.exp(ell*(ell+1)*(fwhm**2)/(8*np.log(2)))
-
-	###########################################################################################
-
 	#Construct sample CMB unlensed map
 	@classmethod
 	def from_power(cls,angle=3.5*u.deg,npixel=256,seed=None,space="real",powerTT=None,callback="camb"):
@@ -1769,16 +1755,50 @@ class CMBTemperatureMap(Spin0):
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
 	def estimatePhiFFTQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb"):
 
+		"""
+		Estimate the Fourier transform of the lensing potential using a temperature quadratic estimator
+
+		:param powerTT_th: name of the file that contains the theory TT power spectrum. If callback is a callable, powerTT_th is passed to the callback
+		:type powerTT_th: str.
+
+		:param powerTT_obs: name of the file that contains the observed TT power spectrum. If callback is a callable, powerTT_obs is passed to the callback
+		:type powerTT_obs: str.
+
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:type callback: str.
+
+		:returns: FFT of the lensing potential
+		:rtype: array
+
+		"""
+
 		#CMB lensing routines 
 		qlens = Lens()
 		
 		#Perform potential estimation with the quadratic estimator (pass the temperature values in uK)
-		phifft = qlens.phiTT(fftengine.rfft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback)
+		phifft = qlens.phiTT(fftengine.fft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback)
 
 		#Return
 		return phifft
 
 	def estimatePhiQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb"):
+
+		"""
+		Estimate the lensing potential using a temperature quadratic estimator
+
+		:param powerTT_th: name of the file that contains the theory TT power spectrum. If callback is a callable, powerTT_th is passed to the callback
+		:type powerTT_th: str.
+
+		:param powerTT_obs: name of the file that contains the observed TT power spectrum. If callback is a callable, powerTT_obs is passed to the callback
+		:type powerTT_obs: str.
+
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:type callback: str.
+
+		:returns: reconstructed lensing potential map
+		:rtype: :py:class:`~lenstools.image.convergence.Spin0`
+
+		"""
 
 		#Compute Phi FFT, invert the FFT
 		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback)
@@ -1789,6 +1809,23 @@ class CMBTemperatureMap(Spin0):
 
 	#Estimate kappa using the quadratic estimator on the temperature map
 	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb"):
+
+		"""
+		Estimate the lensing kappa using a temperature quadratic estimator
+
+		:param powerTT_th: name of the file that contains the theory TT power spectrum. If callback is a callable, powerTT_th is passed to the callback
+		:type powerTT_th: str.
+
+		:param powerTT_obs: name of the file that contains the observed TT power spectrum. If callback is a callable, powerTT_obs is passed to the callback
+		:type powerTT_obs: str.
+
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:type callback: str.
+
+		:returns: reconstructed convergence map
+		:rtype: :py:class:`~lenstools.image.convergence.ConvergenceMap`
+
+		"""
 
 		#Lensing routines
 		qlens = Lens()
