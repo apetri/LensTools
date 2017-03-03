@@ -77,6 +77,38 @@ class Lens(object):
 			self._cache["ell2"] = (ell_x**2 + ell_y**2)*((2.0*np.pi*npixel/(angle.to(u.rad).value))**2)
 			self._cache["ell"] = np.sqrt(self._cache["ell2"])
 
+	#Build TT power spectrum cache
+	def buildPowerTTCache(self,powerTT_th,powerTT_obs,callback):
+
+		#Cache names
+		self._cache["powerTT_th_name"] = str(powerTT_th)
+		self._cache["powerTT_obs_name"] = str(powerTT_obs)
+
+		#Npixel, resolution
+		npixel = self._cache["npixel"]
+		resolution = self._cache["angle"].to(u.rad).value/npixel
+
+		#Load power spectra
+		self._cache["Cl_th"] = self.getPower(powerTT_th,callback)
+		ClTT_th = self.extractTT(self._cache["Cl_th"]) 
+		
+		if powerTT_obs is None:
+			ClTT_obs = None
+		else:
+			ClTT_obs = self.extractTT(self.getPower(powerTT_obs,callback)) 
+
+		#Build the power TT caches
+		self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th,right=0.).reshape(self._cache["ell"].shape)
+
+		if ClTT_obs is None:
+			self._cache["powerTT_obs"] = self._cache["powerTT_th"]
+		else:
+			self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs,right=0.).reshape(self._cache["ell"].shape)
+
+		#Regularization for observed TT with 1uK*arcmin noise
+		self._cache["powerTT_obs"] += 8.461594994075237e-08
+		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
+
 	##############################################################
 
 	##################
@@ -92,7 +124,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def buildPowerTTCache(self,powerTT_th,powerTT_obs,callback):
+	def extractTT(Cl):
 		pass
 
 	@abstractmethod
@@ -146,37 +178,9 @@ class QuickLens(Lens):
 		#Return
 		return Cl
 
-	#Build TT power spectrum cache
-	def buildPowerTTCache(self,powerTT_th,powerTT_obs,callback):
-
-		#Cache names
-		self._cache["powerTT_th_name"] = str(powerTT_th)
-		self._cache["powerTT_obs_name"] = str(powerTT_obs)
-
-		#Npixel, resolution
-		npixel = self._cache["npixel"]
-		resolution = self._cache["angle"].to(u.rad).value/npixel
-
-		#Load power spectra
-		self._cache["Cl_th"] = self.getPower(powerTT_th,callback)
-		ClTT_th = self._cache["Cl_th"].cltt 
-		
-		if powerTT_obs is None:
-			ClTT_obs = None
-		else:
-			ClTT_obs = self.getPower(powerTT_obs,callback).cltt 
-
-		#Build the power TT caches
-		self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th,right=0.).reshape(self._cache["ell"].shape)
-
-		if ClTT_obs is None:
-			self._cache["powerTT_obs"] = self._cache["powerTT_th"]
-		else:
-			self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs,right=0.).reshape(self._cache["ell"].shape)
-
-		#Regularization for observed TT with 1uK*arcmin noise
-		self._cache["powerTT_obs"] += 8.461594994075237e-08
-		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
+	@staticmethod
+	def extractTT(Cl):
+		return Cl.cltt
 
 	#Build normalization cache
 	def buildNormCache(self,resolution,estimator,Tfilter):
