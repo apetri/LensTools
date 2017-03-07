@@ -1299,7 +1299,6 @@ class Spin0(object):
 		return num_modes**2/(num_modes+num_modes_ly_0)
 
 
-
 	def cross(self,other,statistic="power_spectrum",**kwargs):
 
 		"""
@@ -1380,8 +1379,6 @@ class Spin0(object):
 
 		"""
 
-		raise NotImplementedError
-
 		assert not self._masked,"Bispectrum calculation for masked maps is not allowed yet!"
 		assert l_edges is not None
 
@@ -1390,8 +1387,17 @@ class Spin0(object):
 
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
-		#Calculate the Fourier transform of the map with numpy FFT
+		#Calculate FFT of the map via FFT
 		ft_map = fftengine.rfft2(self.data)
+
+		#Calculate bispectrum
+		if configuration in ("equilateral","folded"):
+			bispectrum = _topology.bispectrum(ft_map,ft_map,ft_map,self.side_angle.to(u.deg).value,l_edges,configuration,ratio)
+		else:
+			raise NotImplementedError("Bispectrum configuration '{0}' not implemented!".format(configuration))
+
+		#Return
+		return l,bispectrum
 
 
 	################################################################################################################################################

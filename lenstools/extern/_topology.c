@@ -32,6 +32,7 @@ static char hessian_docstring[] = "Compute the hessian of a 2D image";
 static char gradLaplacian_docstring[] = "Compute the gradient of the laplacian of a 2D image"; 
 static char minkowski_docstring[] = "Measure the three Minkowski functionals of a 2D image";
 static char rfft2_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 2D image";
+static char bispectrum_docstring[] = "Measure the bispectrum from the Fourier transform of a 2D image";
 static char rfft3_azimuthal_docstring[] = "Measure azimuthal average of Fourier transforms of 3D scalar field";
 
 //method declarations
@@ -42,6 +43,7 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args);
 static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args);
 static PyObject *_topology_minkowski(PyObject *self,PyObject *args);
 static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args);
+static PyObject *_topology_bispectrum(PyObject *self,PyObject *args);
 static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args);
 
 
@@ -55,6 +57,7 @@ static PyMethodDef module_methods[] = {
 	{"gradLaplacian",_topology_gradLaplacian,METH_VARARGS,gradLaplacian_docstring},
 	{"minkowski",_topology_minkowski,METH_VARARGS,minkowski_docstring},
 	{"rfft2_azimuthal",_topology_rfft2_azimuthal,METH_VARARGS,rfft2_azimuthal_docstring},
+	{"bispectrum",_topology_bispectrum,METH_VARARGS,bispectrum_docstring},
 	{"rfft3_azimuthal",_topology_rfft3_azimuthal,METH_VARARGS,rfft3_azimuthal_docstring},
 	{NULL,NULL,0,NULL}
 
@@ -1058,6 +1061,105 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 	return power_array;
 
 }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+//bispectrum() implementation
+static PyObject *_topology_bispectrum(PyObject *self,PyObject *args){
+
+	/*These are the imnputs: the Fourier transforms of the maps, the side angle of the image in degrees, the multipole bin extremes, the bispectrum configuration, folding ratio*/
+	PyObject *ft_map1_obj,*ft_map2_obj,*ft_map3_obj,*lvalues_obj;
+	double map_angle_degrees,folding_ratio;
+	char *bispectrum_configuration;
+
+	/*Execution error check*/
+	int error;
+
+	/*Parse input tuple*/
+	if(!PyArg_ParseTuple(args,"OOOdOsd",&ft_map1_obj,&ft_map2_obj,&ft_map3_obj,&map_angle_degrees,&lvalues_obj,&bispectrum_configuration,&folding_ratio)){
+		return NULL;
+	}
+
+	/*Interpret the parsed objects as numpy arrays*/
+	PyObject *ft_map1_array = PyArray_FROM_OTF(ft_map1_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map2_array = PyArray_FROM_OTF(ft_map2_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *ft_map3_array = PyArray_FROM_OTF(ft_map2_obj,NPY_COMPLEX128,NPY_IN_ARRAY);
+	PyObject *lvalues_array = PyArray_FROM_OTF(lvalues_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+
+	/*Check if anything failed*/
+	if(ft_map1_array==NULL || ft_map2_array==NULL  || ft_map3_array==NULL || lvalues_array==NULL){
+
+		Py_XDECREF(ft_map1_array);
+		Py_XDECREF(ft_map2_array);
+		Py_XDECREF(ft_map3_array);
+		Py_XDECREF(lvalues_array);
+
+		return NULL;
+	}
+
+	/*Get the size of the map fourier transform*/
+	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
+	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+
+	/*Get the number of multipole moment bin edges*/
+	int Nvalues = (int)PyArray_DIM(lvalues_array,0);
+
+	/*Build the array that will contain the output*/
+	npy_intp dims[] = {(npy_intp) Nvalues - 1};
+	PyObject *bispectrum_array = PyArray_ZEROS(1,dims,NPY_DOUBLE,0);
+
+	/*Check for failure*/
+	if(bispectrum_array==NULL){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(lvalues_array);
+
+		return NULL;
+	}
+
+	/*Call the C backend azimuthal average function*/
+	if(!strcmp(bispectrum_configuration,"equilateral")){
+		
+		error = bispectrum_equilateral((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),(double _Complex *)PyArray_DATA(ft_map3_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(bispectrum_array));
+	
+	} else if(!strcmp(bispectrum_configuration,"folded")){
+
+		error = 1;
+
+	} else{
+
+		error = 1;
+
+	}
+
+	if(error){
+
+		Py_DECREF(ft_map1_array);
+		Py_DECREF(ft_map2_array);
+		Py_DECREF(ft_map3_array);
+		Py_DECREF(lvalues_array);
+		Py_DECREF(bispectrum_array);
+
+		return NULL;
+
+	}
+
+	/*If the call succeeded cleanup and return*/
+	Py_DECREF(ft_map1_array);
+	Py_DECREF(ft_map2_array);
+	Py_DECREF(ft_map3_array);
+	Py_DECREF(lvalues_array);
+
+	return bispectrum_array;
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 //rfft3_azimuthal() implementation
 static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args){
