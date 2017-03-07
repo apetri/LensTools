@@ -1127,7 +1127,7 @@ static PyObject *_topology_bispectrum(PyObject *self,PyObject *args){
 	
 	} else if(!strcmp(bispectrum_configuration,"folded")){
 
-		error = 1;
+		error = bispectrum_folded((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),(double _Complex *)PyArray_DATA(ft_map3_array),Nside_x,Nside_y,map_angle_degrees,folding_ratio,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(bispectrum_array));
 
 	} else{
 

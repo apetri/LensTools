@@ -67,6 +67,26 @@ def test_cross():
 	plt.savefig("cross_spectrum.png")
 	plt.clf()
 
+def test_bispectrum():
+
+	#Measure bispectrum
+	l,be = test_map.bispectrum(l_edges,configuration="equilateral")
+	l,bf = test_map.bispectrum(l_edges,configuration="folded",ratio=0.5)
+
+	#Plot
+	fig,ax = plt.subplots()
+	ax.plot(l,np.abs(be),label=r"$\ell_1=\ell_2=\ell_3=\ell$")
+	ax.plot(l,np.abs(bf),label=r"$\ell_1=\ell,\ell_2=\ell_3=\ell/2$")
+	ax.set_xscale("log")
+	ax.set_yscale("log")
+	ax.set_xlabel(r"$\ell$")
+	ax.set_ylabel(r"$B(\ell_1,\ell_2,\ell_3)$")
+	ax.legend()
+
+	plt.savefig("bispectrum.png")
+	plt.clf()
+
+
 def test_pdf():
 
 	#Compute

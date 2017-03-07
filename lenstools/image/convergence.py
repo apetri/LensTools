@@ -1368,7 +1368,7 @@ class Spin0(object):
 		:param l_edges: Multipole bin edges: these are the side of the triangle in the equilateral configuration or the base of the triangle in the folded configuration
 		:type l_edges: array
 
-		:param ratio: ratio between one of the triangle sides and the base in the folded configuration
+		:param ratio: ratio between one of the triangle sides and the base in the folded configuration. Must be between 0 and 1
 		:type ratio: float.
 
 		:param configuration: must be either "equilateral" or "folded"
@@ -1385,6 +1385,11 @@ class Spin0(object):
 		if self.side_angle.unit.physical_type=="length":
 			raise NotImplementedError("Bispectrum measurement not implemented yet if side physical unit is length!")
 
+		#Check folding ratio
+		if (configuration=="folded") and not(ratio>0 and ratio<1):
+			raise ValueError("Folding ratio should be between 0 and 1!")
+
+		#Multipole edges
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
 
 		#Calculate FFT of the map via FFT
