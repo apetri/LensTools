@@ -95,6 +95,7 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 
 	//Placeholders
 	double _Complex b1,b2,b3;
+	int conjugate;
 
 	//Allocate space for hits map, initialize to 0
 	int *hits,k;
@@ -109,7 +110,7 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 
 	//Multipoles
 	int i,j,kx1,kx2,kx3,ky1,ky2,ky3;
-	int n1,n2,n3;
+	long n1,n2,n3;
 
 	//Cycle over pixels in Fourier map
 	for(i=0;i<size_x;i++){
@@ -125,6 +126,7 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 
 			//Compute array location of first leg
 			n1 = size_y*i + j;
+			b1 = ft_map1[n1];
 
 			//Calculate integer wavenumber ky according to real FFT frequencies
 			ky1 = j;
@@ -149,6 +151,9 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 			if(ky2<0){
 				kx2 = -kx2;
 				ky2 = -ky2;
+				conjugate = 1;
+			} else{
+				conjugate = 0;
 			}
 
 			if(kx2<0){
@@ -156,10 +161,17 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 			}
 
 			n2 = size_y*kx2 + ky2;
+			b2 = ft_map2[n2];
+			if(conjugate){
+				b2 = conj(b2);
+			}
 
 			if(ky3<0){
 				kx3 = -kx3;
 				ky3 = -ky3;
+				conjugate = 1;
+			} else{
+				conjugate = 0;
 			}
 
 			if(kx3<0){
@@ -167,11 +179,10 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 			} 
 
 			n3 = size_y*kx3 + ky3;
-
-			//Compute contribution to the bispectrum
-			b1 = ft_map1[n1];
-			b2 = ft_map2[n2];
 			b3 = ft_map3[n3];
+			if(conjugate){
+				b3 = conj(b3);
+			}
 
 			//Find the correct bin
 			for(k=0;k<Nbins;k++){
@@ -221,6 +232,7 @@ int bispectrum_folded(double _Complex *ft_map1,double _Complex *ft_map2,double _
 
 	//Placeholders
 	double _Complex b1,b2,b3;
+	int conjugate;
 
 	//Allocate space for hits map, initialize to 0
 	int *hits,k;
@@ -235,7 +247,7 @@ int bispectrum_folded(double _Complex *ft_map1,double _Complex *ft_map2,double _
 
 	//Multipoles
 	int i,j,kx1,kx2,kx3,ky1,ky2,ky3;
-	int n1,n2,n3;
+	long n1,n2,n3;
 
 	//Cycle over pixels in Fourier map
 	for(i=0;i<size_x;i++){
@@ -251,6 +263,7 @@ int bispectrum_folded(double _Complex *ft_map1,double _Complex *ft_map2,double _
 
 			//Compute array location of first leg
 			n1 = size_y*i + j;
+			b1 = ft_map1[n1];
 
 			//Calculate integer wavenumber ky according to real FFT frequencies
 			ky1 = j;
@@ -270,6 +283,9 @@ int bispectrum_folded(double _Complex *ft_map1,double _Complex *ft_map2,double _
 			if(ky2<0){
 				kx2 = -kx2;
 				ky2 = -ky2;
+				conjugate = 1;
+			} else{
+				conjugate = 0;
 			}
 
 			if(kx2<0){
@@ -277,10 +293,17 @@ int bispectrum_folded(double _Complex *ft_map1,double _Complex *ft_map2,double _
 			}
 
 			n2 = size_y*kx2 + ky2;
+			b2 = ft_map2[n2];
+			if(conjugate){
+				b2 = conj(b2);
+			}
 
 			if(ky3<0){
 				kx3 = -kx3;
 				ky3 = -ky3;
+				conjugate = 1;
+			} else{
+				conjugate = 0;
 			}
 
 			if(kx3<0){
@@ -288,11 +311,10 @@ int bispectrum_folded(double _Complex *ft_map1,double _Complex *ft_map2,double _
 			} 
 
 			n3 = size_y*kx3 + ky3;
-
-			//Compute contribution to the bispectrum
-			b1 = ft_map1[n1];
-			b2 = ft_map2[n2];
 			b3 = ft_map3[n3];
+			if(conjugate){
+				b3 = conj(b3);
+			}
 
 			//Find the correct bin
 			for(k=0;k<Nbins;k++){
