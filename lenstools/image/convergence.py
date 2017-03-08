@@ -1629,7 +1629,7 @@ class CMBTemperatureMap(Spin0):
 
 	#Construct sample CMB unlensed map
 	@classmethod
-	def from_power(cls,angle=3.5*u.deg,npixel=256,seed=None,space="real",powerTT=None,callback="camb"):
+	def from_power(cls,angle=3.5*u.deg,npixel=256,seed=None,space="real",powerTT=None,callback="camb",lmax=3500):
 		
 		"""
 		Build an unlensed CMB temperature map from a known TT power spectrum
@@ -1665,7 +1665,7 @@ class CMBTemperatureMap(Spin0):
 		qlens = Lens()
 
 		#Generate random temperature map
-		tfft = qlens.generateTmap(angle,npixel,powerTT,callback)
+		tfft = qlens.generateTmap(angle,npixel,powerTT,callback,lmax)
 		unit = u.K
 
 		#Return
@@ -1738,7 +1738,7 @@ class CMBTemperatureMap(Spin0):
 
 		#Safety type check
 		assert isinstance(kappa,ConvergenceMap)
-		if (self.side_angle!=kappa.side_angle) or (self.data.shape!=kappa.side_angle):
+		if (self.side_angle!=kappa.side_angle) or (self.data.shape!=kappa.data.shape):
 			raise NotImplementedError("Lensing with kappa field of different angle/shape/resolution not implemented yet!")
 
 		#CMB lensing routines 
@@ -1749,12 +1749,60 @@ class CMBTemperatureMap(Spin0):
 		tlens = qlens.lensTmap(self.data,self.side_angle,kappa.data,kappa.side_angle)
 		return self.__class__(tlens,self.side_angle,space="real",unit=self.unit)
 
+	################################################################################
+
+	#Add detector effects to the map
+	def addDetectorEffects(self,sigmaN=6.0*u.uK*u.arcmin,fwhm=1.4*u.arcmin,seed=None):
+
+		"""
+		Add detector effects to the temperature map: convolve with beam, add white noise, deconvolve beam. This operation works in place
+
+		:param sigmaN: rms of the white noise. Must be supplied with temperature x angle units 
+		:type sigmaN: quantity
+
+		:param fwhm: full width half maximum of the beam
+		:type fwhm: quantity
+
+		:param lmax: maximum multipole to consider
+		:type lmax: int.
+
+		:param seed: if not None, seed used to initialize the random number generator
+		:type seed: int.
+
+		"""
+
+		#CMB lensing routines
+		qlens = Lens()
+
+		#Set random seed
+		if seed is not None:
+			np.random.seed(seed)
+
+		#rms of the noise in real space
+		sigma = (sigmaN / self.resolution).to(self.unit)
+
+		#Generate white noise
+		nw = np.random.randn(*self.data.shape)*sigma.value
+
+		#Deconvolve the beam
+		nw_fft = fftengine.rfft2(nw)
+		nw_fft[0,0] = 0.0
+		nw_fft *= np.exp(qlens._cache["ell2"][:,:self.data.shape[0]//2+1]*((fwhm.to(u.rad).value**2)/(16*np.log(2)))) 
+		
+		ell_mask = qlens._cache["ell"][:,:self.data.shape[0]//2+1]>qlens._cache["lmax"]
+		nw_fft[ell_mask] = 0.0
+
+		nw = fftengine.irfft2(nw_fft)
+
+		#Add the noise
+		self.data += nw
+
 	###########################################
 	##########Lensing potential estimation#####
 	###########################################
 
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
-	def estimatePhiFFTQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None):
+	def estimatePhiFFTQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500):
 
 		"""
 		Estimate the Fourier transform of the lensing potential using a temperature quadratic estimator
@@ -1780,12 +1828,12 @@ class CMBTemperatureMap(Spin0):
 		qlens = Lens()
 		
 		#Perform potential estimation with the quadratic estimator (pass the temperature values in uK)
-		phifft = qlens.phiTT(fftengine.fft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback,noise_keys)
+		phifft = qlens.phiTT(fftengine.fft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax)
 
 		#Return
 		return phifft
 
-	def estimatePhiQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None):
+	def estimatePhiQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500):
 
 		"""
 		Estimate the lensing potential using a temperature quadratic estimator
@@ -1808,14 +1856,14 @@ class CMBTemperatureMap(Spin0):
 		"""
 
 		#Compute Phi FFT, invert the FFT
-		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys)
-		phi = fftengine.ifft2(phifft)*(len(self.data)/self.side_angle.to(u.rad).value)**2
+		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax)
+		phi = fftengine.ifft2(phifft)
 
 		#Return
 		return Spin0(phi.real,angle=self.side_angle,unit=u.rad**2)
 
 	#Estimate kappa using the quadratic estimator on the temperature map
-	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None):
+	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500):
 
 		"""
 		Estimate the lensing kappa using a temperature quadratic estimator
@@ -1841,11 +1889,11 @@ class CMBTemperatureMap(Spin0):
 		qlens = Lens()
 
 		#Compute Phi FFT, take the laplacian
-		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys)
+		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax)
 		kappafft = phifft*0.5*qlens._cache["ell2"]
 
 		#Invert the FFT
-		kappa = fftengine.ifft2(kappafft)*(len(self.data)/self.side_angle.to(u.rad).value)**2
+		kappa = fftengine.ifft2(kappafft)
 
 		#Return
 		return ConvergenceMap(kappa.real,angle=self.side_angle)

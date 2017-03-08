@@ -61,15 +61,17 @@ class Lens(object):
 		self._cache = dict()
 		self._cache["angle"] = -1
 		self._cache["npixel"] = -1
+		self._cache["lmax"] = -1
 
 	#Build multipoles cache
-	def buildEllCache(self,angle,npixel):
+	def buildEllCache(self,angle,npixel,lmax):
 
-		if (angle!=self._cache["angle"]) or (npixel!=self._cache["npixel"]):
+		if (angle!=self._cache["angle"]) or (npixel!=self._cache["npixel"]) or (lmax!=self._cache["lmax"]):
 			
 			#Angle
 			self._cache["angle"] = angle
 			self._cache["npixel"] = npixel
+			self._cache["lmax"] = lmax
 
 			#Multipoles
 			f = np.fft.fftfreq(npixel)			
@@ -90,28 +92,34 @@ class Lens(object):
 		resolution = self._cache["angle"].to(u.rad).value/npixel
 
 		#Load power spectra
-		self._cache["Cl_th"] = self.getPower(powerTT_th,callback)
+		self._cache["Cl_th"] = self.getPower(powerTT_th,callback,self._cache["lmax"])
 		ClTT_th = self.extractTT(self._cache["Cl_th"]) 
 		
 		if powerTT_obs is None:
 			ClTT_obs = None
 		else:
-			ClTT_obs = self.extractTT(self.getPower(powerTT_obs,callback)) 
+			ClTT_obs = self.extractTT(self.getPower(powerTT_obs,callback,self._cache["lmax"])) 
 
 		#Build the power TT caches
-		self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th,right=0.).reshape(self._cache["ell"].shape)
+		#self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th,right=0.).reshape(self._cache["ell"].shape)
+		self._cache["powerTT_th"] = ClTT_th
 
 		if ClTT_obs is None:
 			self._cache["powerTT_obs"] = self._cache["powerTT_th"].copy()
 		else:
-			self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs,right=0.).reshape(self._cache["ell"].shape)
+			#self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs,right=0.).reshape(self._cache["ell"].shape)
+			self._cache["powerTT_obs"] = ClTT_obs
 
 		#Add noise component to the observed power spectrum
 		if noise_keys is not None:
-			self._cache["powerTT_obs"] += self.getNoise(self._cache["ell"],noise_keys)
+			self._cache["powerTT_obs"] += self.getNoise(np.arange(len(ClTT_th)),noise_keys)
 		
 		#Construct inverse variance filter
 		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
+		self._cache["1/powerTT_obs"][[0,1]] = 0.
+
+		#Zero out high multipoles
+		#self._cache["1/powerTT_obs"][self._cache["ell"]>self._cache["lmax"]] = 0.0
 
 	#Noise
 	def getNoise(self,ell,noise_keys):
@@ -144,7 +152,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def getPower(power,callback):
+	def getPower(power,callback,lmax):
 		pass
 
 	@abstractmethod
@@ -152,7 +160,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def buildNormCache(self,resolution,estimator,Tfilter):
+	def buildNormCache(self,npixel,resolution,estimator,Tfilter):
 		pass
 
 	@abstractmethod
@@ -164,7 +172,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def phiTT(tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys):
+	def phiTT(tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax):
 		pass
 
 #########################
@@ -184,7 +192,7 @@ class QuickLens(Lens):
 			raise ImportError("This feature requires a quicklens installation!")
 
 	@staticmethod
-	def getPower(power,callback):
+	def getPower(power,callback,lmax):
 		
 		#Select correct format
 		if callback=="camb":
@@ -192,7 +200,7 @@ class QuickLens(Lens):
 			if power is None:
 				Cl = ql.spec.get_camb_scalcl(lmax=3500)
 			else:
-				Cl = ql.spec.camb_clfile(power)
+				Cl = ql.spec.camb_clfile(power,lmax=lmax)
 
 		elif callback is None:
 			raise NotImplementedError
@@ -207,16 +215,15 @@ class QuickLens(Lens):
 		return Cl.cltt
 
 	#Build normalization cache
-	def buildNormCache(self,resolution,estimator,Tfilter):
-		self._cache["norm"] = ql.maps.cfft(len(Tfilter),resolution,fft=np.zeros((len(Tfilter),)*2,dtype=np.complex))
-		estimator.fill_resp(estimator,self._cache["norm"],Tfilter,Tfilter,npad=1)
-		self._cache["norm"].fft[0,0] = 1.
+	def buildNormCache(self,npixel,resolution,estimator,Tfilter):
+		self._cache["norm"] = estimator.fill_resp(estimator,ql.maps.cfft(npixel,resolution),Tfilter,Tfilter)
+		self._cache["norm"].fft[0,0] = 1.0
 
 	######################################
 	#Default CMB unlensed temperature map#
 	######################################
 
-	def generateTmap(self,angle,npixel,powerTT,callback):
+	def generateTmap(self,angle,npixel,powerTT,callback,lmax):
 
 		"""
 		Default CMB temperature map in Fourier space
@@ -228,7 +235,7 @@ class QuickLens(Lens):
 
 		#Parse the TT power spectrum
 		if ("powerTT_th" not in self._cache) or (powerTT!=self._cache["powerTT_th_name"]):
-			self.buildEllCache(angle,npixel)
+			self.buildEllCache(angle,npixel,lmax)
 			self.buildPowerTTCache(powerTT,None,callback,noise_keys={"kind":"white","sigmaN":0.1*u.uK*u.arcmin})
 
 		#Build map
@@ -272,7 +279,7 @@ class QuickLens(Lens):
 	#Quadratic TT potential estimator#
 	##################################
 
-	def phiTT(self,tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys):
+	def phiTT(self,tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax):
 
 		"""
 		Estimate the lensing potential with a quadratic TT estimator
@@ -287,8 +294,8 @@ class QuickLens(Lens):
 		#Build the caches for ell,C_ell if not present already#
 		#######################################################
 
-		if ("powerTT_th" not in self._cache) or (str(powerTT_th)!=self._cache["powerTT_th_name"]) or (str(powerTT_obs)!=self._cache["powerTT_obs_name"]):
-			self.buildEllCache(angle,npixel)
+		if ("powerTT_th" not in self._cache) or (str(powerTT_th)!=self._cache["powerTT_th_name"]) or (str(powerTT_obs)!=self._cache["powerTT_obs_name"]) or (lmax!=self._cache["lmax"]):
+			self.buildEllCache(angle,npixel,lmax)
 			self.buildPowerTTCache(powerTT_th,powerTT_obs,callback,noise_keys)
 			recompute_norm = True
 		else:
@@ -298,15 +305,16 @@ class QuickLens(Lens):
 		estimator = ql.qest.lens.phi_TT(self._cache["Cl_th"].cltt)
 
 		#Apply inverse variance filter to the observation
-		tfft = tfft * self._cache["1/powerTT_obs"] * (resolution.value**2)
+		tfft = ql.maps.cfft(npixel,resolution.value,fft=tfft*resolution.value/npixel)
+		tfft = tfft * self._cache["1/powerTT_obs"]
 
 		#Evaluate the estimator on kappa and its normalization
-		phi_eval = estimator.eval(ql.maps.cfft(npixel,resolution.value,fft=tfft),npad=1)
+		phi_eval = estimator.eval_flatsky(tfft,tfft,npad=1)
 
 		if recompute_norm:
-			self.buildNormCache(resolution.value,estimator,self._cache["1/powerTT_obs"])
+			self.buildNormCache(npixel,resolution.value,estimator,self._cache["1/powerTT_obs"])
 
 		#Return the normalized estimator
 		phifft = phi_eval/self._cache["norm"]
-		return phifft.fft 
+		return phifft.fft*npixel/resolution.value 
 
