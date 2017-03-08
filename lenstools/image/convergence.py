@@ -1738,25 +1738,15 @@ class CMBTemperatureMap(Spin0):
 
 		#Safety type check
 		assert isinstance(kappa,ConvergenceMap)
+		if (self.side_angle!=kappa.side_angle) or (self.data.shape!=kappa.side_angle):
+			raise NotImplementedError("Lensing with kappa field of different angle/shape/resolution not implemented yet!")
 
 		#CMB lensing routines 
 		qlens = Lens()
 
-		#Construct the Fourier transform of the lensing potential
-		lx,ly = np.meshgrid(fftengine.fftfreq(kappa.data.shape[0]),fftengine.rfftfreq(kappa.data.shape[0]),indexing="ij")
-		l_squared = lx**2 + ly**2
-				
-		#Avoid dividing by 0
-		l_squared[0,0] = 1.0
-
-		#Fourier transform the kappa map, solve Poisson equation for phi
-		kappafft = fftengine.rfft2(kappa.data)
-		kappafft[0,0] = 0.
-		phifft = 2.0*kappafft*(kappa.resolution.to(u.rad).value**2)/(l_squared*((2.0*np.pi)**2))
-
 		#Lens the map and return
 		self.toReal()
-		tlens = qlens.lensTmap(self.data,self.side_angle,phifft,kappa.side_angle)
+		tlens = qlens.lensTmap(self.data,self.side_angle,kappa.data,kappa.side_angle)
 		return self.__class__(tlens,self.side_angle,space="real",unit=self.unit)
 
 	###########################################

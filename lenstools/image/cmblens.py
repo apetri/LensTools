@@ -75,6 +75,7 @@ class Lens(object):
 			f = np.fft.fftfreq(npixel)			
 			ell_x,ell_y = np.meshgrid(f,f,indexing="ij")
 			self._cache["ell2"] = (ell_x**2 + ell_y**2)*((2.0*np.pi*npixel/(angle.to(u.rad).value))**2)
+			self._cache["ell2"][0,0] = 1.0
 			self._cache["ell"] = np.sqrt(self._cache["ell2"])
 
 	#Build TT power spectrum cache
@@ -159,7 +160,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def lensTmap(t,angleT,phifft,anglePhi):
+	def lensTmap(self,t,angleT,kappa,angleKappa):
 		pass
 
 	@abstractmethod
@@ -208,7 +209,7 @@ class QuickLens(Lens):
 	#Build normalization cache
 	def buildNormCache(self,resolution,estimator,Tfilter):
 		self._cache["norm"] = ql.maps.cfft(len(Tfilter),resolution,fft=np.zeros((len(Tfilter),)*2,dtype=np.complex))
-		estimator.fill_resp(estimator,self._cache["norm"],Tfilter,Tfilter)
+		estimator.fill_resp(estimator,self._cache["norm"],Tfilter,Tfilter,npad=1)
 		self._cache["norm"].fft[0,0] = 1.
 
 	######################################
@@ -241,8 +242,7 @@ class QuickLens(Lens):
 	#Lens a CMB T map#
 	##################
 
-	@staticmethod
-	def lensTmap(t,angleT,phifft,anglePhi):
+	def lensTmap(self,t,angleT,kappa,angleKappa):
 		
 		"""
 		Lens a CMB temperature map
@@ -252,12 +252,18 @@ class QuickLens(Lens):
 		#Calculate number of pixels, resolution
 		npixelT = len(t)
 		resolutionT = angleT.to(u.rad)/npixelT
-		npixelPhi = len(phifft)
-		resolutionPhi = anglePhi.to(u.rad)/npixelPhi
+		npixelPhi = len(kappa)
+		resolutionPhi = angleKappa.to(u.rad)/npixelPhi
 
-		#Build TEB object, lens the map
+		#Build TEB object
 		tqu_unl = ql.maps.tqumap(npixelT,resolutionT.value,maps=[t,np.zeros_like(t),np.zeros_like(t)])
-		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,ql.maps.rfft(npixelPhi,resolutionPhi.value,fft=phifft*resolutionPhi.value/npixelPhi))
+		
+		#Compute potential
+		kappa_fft = ql.maps.rmap(npixelPhi,resolutionPhi.value,map=kappa).get_rfft()
+		phi_fft = ql.maps.rfft(npixelPhi,resolutionPhi.value,fft=kappa_fft.fft * 2.0 / self._cache["ell2"][:,:npixelPhi//2+1])
+
+		#Lens the map
+		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,phi_fft)
 
 		#Return
 		return tqu_len.tmap
@@ -295,7 +301,7 @@ class QuickLens(Lens):
 		tfft = tfft * self._cache["1/powerTT_obs"] * (resolution.value**2)
 
 		#Evaluate the estimator on kappa and its normalization
-		phi_eval = estimator.eval(ql.maps.cfft(npixel,resolution.value,fft=tfft))
+		phi_eval = estimator.eval(ql.maps.cfft(npixel,resolution.value,fft=tfft),npad=1)
 
 		if recompute_norm:
 			self.buildNormCache(resolution.value,estimator,self._cache["1/powerTT_obs"])
