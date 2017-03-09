@@ -167,7 +167,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def phiTT(tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax):
+	def phiTT(tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering):
 		pass
 
 #########################
@@ -274,7 +274,7 @@ class QuickLens(Lens):
 	#Quadratic TT potential estimator#
 	##################################
 
-	def phiTT(self,tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax):
+	def phiTT(self,tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering):
 
 		"""
 		Estimate the lensing potential with a quadratic TT estimator
@@ -309,7 +309,17 @@ class QuickLens(Lens):
 		if recompute_norm:
 			self.buildNormCache(npixel,resolution.value,estimator,self._cache["1/powerTT_obs"])
 
-		#Return the normalized estimator
+		#Normalize the estimator
 		phifft = phi_eval/self._cache["norm"]
+
+		#Apply filter
+		if filtering is not None:
+
+			if filtering=="wiener":
+				phifft = phifft * (self._cache["powerTT_th"] * self._cache["1/powerTT_obs"])
+			else:
+				phifft.fft *= filtering(self._cache["ell"])
+
+		#Return
 		return phifft.fft*npixel/resolution.value 
 

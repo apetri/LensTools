@@ -1798,7 +1798,7 @@ class CMBTemperatureMap(Spin0):
 	###########################################
 
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
-	def estimatePhiFFTQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500):
+	def estimatePhiFFTQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the Fourier transform of the lensing potential using a temperature quadratic estimator
@@ -1815,6 +1815,9 @@ class CMBTemperatureMap(Spin0):
 		:param noise_keys: dictionary with noise TT power spectrum specifications
 		:type noise_keys: dict.
 
+		:param filtering: filter the map after reconstruction. Can be 'wiener' to apply the wiener filter, or callable. If callable, the function is called on the multipoles and applied to the reconstructed image FFT
+		:type filtering: str. or callable
+
 		:returns: FFT of the lensing potential
 		:rtype: array
 
@@ -1824,12 +1827,12 @@ class CMBTemperatureMap(Spin0):
 		qlens = Lens()
 		
 		#Perform potential estimation with the quadratic estimator (pass the temperature values in uK)
-		phifft = qlens.phiTT(fftengine.fft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax)
+		phifft = qlens.phiTT(fftengine.fft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering)
 
 		#Return
 		return phifft
 
-	def estimatePhiQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500):
+	def estimatePhiQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the lensing potential using a temperature quadratic estimator
@@ -1846,20 +1849,23 @@ class CMBTemperatureMap(Spin0):
 		:param noise_keys: dictionary with noise TT power spectrum specifications
 		:type noise_keys: dict.
 
+		:param filtering: filter the map after reconstruction. Can be 'wiener' to apply the wiener filter, or callable. If callable, the function is called on the multipoles and applied to the reconstructed image FFT
+		:type filtering: str. or callable
+
 		:returns: reconstructed lensing potential map
 		:rtype: :py:class:`~lenstools.image.convergence.Spin0`
 
 		"""
 
 		#Compute Phi FFT, invert the FFT
-		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax)
+		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering)
 		phi = fftengine.ifft2(phifft)
 
 		#Return
 		return Spin0(phi.real,angle=self.side_angle,unit=u.rad**2)
 
 	#Estimate kappa using the quadratic estimator on the temperature map
-	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500):
+	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the lensing kappa using a temperature quadratic estimator
@@ -1876,16 +1882,19 @@ class CMBTemperatureMap(Spin0):
 		:param noise_keys: dictionary with noise TT power spectrum specifications
 		:type noise_keys: dict.
 
+		:param filtering: filter the map after reconstruction. Can be 'wiener' to apply the wiener filter, or callable. If callable, the function is called on the multipoles and applied to the reconstructed image FFT
+		:type filtering: str. or callable
+
 		:returns: reconstructed convergence map
 		:rtype: :py:class:`~lenstools.image.convergence.ConvergenceMap`
 
 		"""
 
-		#Lensing routines
+		#CMB lensing routines
 		qlens = Lens()
 
 		#Compute Phi FFT, take the laplacian
-		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax)
+		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering)
 		kappafft = phifft*0.5*qlens._cache["ell2"]
 
 		#Invert the FFT
