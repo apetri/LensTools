@@ -6,6 +6,9 @@
 - Plot Gaussian prediction for peak histograms (Bond et. al. 1987)
 - Make reduced shear maps and catalogs in lenstools.raytracing
 - Better handling of random seeds in raytracing
+- Measure equilateral and folded bispectrum of scalar images (kappa,cmb)
+- Introduced CMBTemperatureMap class
+- CMB lensing potential reconstructions with quadratic TT estimator (wrapped around quicklens)
 
 0.9
 +++

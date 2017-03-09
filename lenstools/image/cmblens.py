@@ -101,13 +101,11 @@ class Lens(object):
 			ClTT_obs = self.extractTT(self.getPower(powerTT_obs,callback,self._cache["lmax"])) 
 
 		#Build the power TT caches
-		#self._cache["powerTT_th"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_th)),ClTT_th,right=0.).reshape(self._cache["ell"].shape)
 		self._cache["powerTT_th"] = ClTT_th
 
 		if ClTT_obs is None:
 			self._cache["powerTT_obs"] = self._cache["powerTT_th"].copy()
 		else:
-			#self._cache["powerTT_obs"] = np.interp(self._cache["ell"].flatten(),np.arange(len(ClTT_obs)),ClTT_obs,right=0.).reshape(self._cache["ell"].shape)
 			self._cache["powerTT_obs"] = ClTT_obs
 
 		#Add noise component to the observed power spectrum
@@ -117,9 +115,6 @@ class Lens(object):
 		#Construct inverse variance filter
 		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
 		self._cache["1/powerTT_obs"][[0,1]] = 0.
-
-		#Zero out high multipoles
-		#self._cache["1/powerTT_obs"][self._cache["ell"]>self._cache["lmax"]] = 0.0
 
 	#Noise
 	def getNoise(self,ell,noise_keys):

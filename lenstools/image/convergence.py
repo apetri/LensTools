@@ -1787,11 +1787,7 @@ class CMBTemperatureMap(Spin0):
 		#Deconvolve the beam
 		nw_fft = fftengine.rfft2(nw)
 		nw_fft[0,0] = 0.0
-		nw_fft *= np.exp(qlens._cache["ell2"][:,:self.data.shape[0]//2+1]*((fwhm.to(u.rad).value**2)/(16*np.log(2)))) 
-		
-		ell_mask = qlens._cache["ell"][:,:self.data.shape[0]//2+1]>qlens._cache["lmax"]
-		nw_fft[ell_mask] = 0.0
-
+		nw_fft *= np.sqrt(qlens._detector(qlens._cache["ell"][:,:self.data.shape[0]//2+1],sigmaN=1.0,fwhm=fwhm.to(u.rad).value,ellmax=qlens._cache["lmax"])) 
 		nw = fftengine.irfft2(nw_fft)
 
 		#Add the noise
