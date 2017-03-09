@@ -1662,6 +1662,17 @@ class Mask(ConvergenceMap):
 ######################################################################################################
 ######################################################################################################
 
+##############
+#PhiMap class#
+##############
+
+class PhiMap(Spin0):
+
+	"""
+	A class that handles 2D lensing potential maps
+
+	"""
+
 #########################
 #CMBTemperatureMap class#
 #########################
@@ -1903,7 +1914,7 @@ class CMBTemperatureMap(Spin0):
 		phi = fftengine.ifft2(phifft)
 
 		#Return
-		return Spin0(phi.real,angle=self.side_angle,unit=u.rad**2)
+		return PhiMap(phi.real,angle=self.side_angle,unit=u.rad**2)
 
 	#Estimate kappa using the quadratic estimator on the temperature map
 	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
