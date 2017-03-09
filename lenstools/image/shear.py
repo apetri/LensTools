@@ -74,7 +74,25 @@ class Spin1(object):
 		print("Pixel size: {0}".format(self.resolution))
 		print("Total angular size: {0}".format(self.side_angle))
 		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
-	
+
+
+	#Multipole values in real FFT space
+	def getEll(self):
+
+		"""
+		Get the values of the multipoles in real FFT space
+
+		:returns: ell array with real FFT shape
+		:rtype: array.
+
+		"""
+
+		ellx = fftengine.fftfreq(self.data.shape[1])*2.0*np.pi / self.resolution.to(u.rad).value
+		elly = fftengine.rfftfreq(self.data.shape[1])*2.0*np.pi / self.resolution.to(u.rad).value
+		return np.sqrt(ellx[:,None]**2 + elly[None,:]**2)
+
+	###############################################################################################
+	###############################################################################################
 
 	@classmethod
 	def load(cls,filename,format=None,**kwargs):
@@ -487,13 +505,16 @@ class Spin2(Spin1):
 		return ft_E,ft_B
 
 
-	def eb_power_spectrum(self,l_edges):
+	def eb_power_spectrum(self,l_edges,scale=None):
 
 		"""
 		Decomposes the shear map into its E and B modes components and returns the respective power spectral densities at the specified multipole moments
 
 		:param l_edges: Multipole bin edges
 		:type l_edges: array
+
+		:param scale: scaling to apply to the Fourier coefficients before harmonic azimuthal averaging. Must be a function that takes the array of multipole magnitudes as an input and returns a real numbers 
+		:type scale: callable
 
 		:returns: (l -- array,P_EE,P_BB,P_EB -- arrays) = (multipole moments, EE,BB power spectra and EB cross power)
 		:rtype: tuple.
@@ -507,17 +528,23 @@ class Spin2(Spin1):
 		#Compute the E,B modes in Fourier space
 		ft_E,ft_B = self.fourierEB()
 
+		#Scaling of Fourier coefficients
+		if scale is not None:
+			sc = scale(self.getEll())
+		else:
+			sc = None
+
 		#Compute and return power spectra
 		l = 0.5*(l_edges[:-1] + l_edges[1:])
-		P_ee = _topology.rfft2_azimuthal(ft_E,ft_E,self.side_angle.to(deg).value,l_edges)
-		P_bb = _topology.rfft2_azimuthal(ft_B,ft_B,self.side_angle.to(deg).value,l_edges)
-		P_eb = _topology.rfft2_azimuthal(ft_E,ft_B,self.side_angle.to(deg).value,l_edges)
+		P_ee = _topology.rfft2_azimuthal(ft_E,ft_E,self.side_angle.to(deg).value,l_edges,sc)
+		P_bb = _topology.rfft2_azimuthal(ft_B,ft_B,self.side_angle.to(deg).value,l_edges,sc)
+		P_eb = _topology.rfft2_azimuthal(ft_E,ft_B,self.side_angle.to(deg).value,l_edges,sc)
 
 		#Return to user
 		return l,P_ee,P_bb,P_eb
 
-	def decompose(self,l_edges):
-		return self.eb_power_spectrum(l_edges)
+	def decompose(self,l_edges,scale=None):
+		return self.eb_power_spectrum(l_edges,scale=scale)
 
 	def visualizeComponents(self,fig,ax,components="EE,BB,EB",region=(200,9000,-9000,9000)):
 
