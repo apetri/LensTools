@@ -98,6 +98,25 @@ class Spin0(object):
 		print("Total angular size: {0}".format(self.side_angle))
 		print("lmin={0:.1e} ; lmax={1:.1e}".format(self.lmin,self.lmax))
 
+	#Multipole values in real FFT space
+	def getEll(self):
+
+		"""
+		Get the values of the multipoles in real FFT space
+
+		:returns: ell array with real FFT shape
+		:rtype: array.
+
+		"""
+
+		ellx = fftengine.fftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
+		elly = fftengine.rfftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
+		return np.sqrt(ellx[:,None]**2 + elly[None,:]**2)
+
+
+	####################################################################################################
+	####################################################################################################
+
 	@classmethod
 	def load(cls,filename,format=None,**kwargs):
 		
@@ -164,6 +183,8 @@ class Spin0(object):
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
 
+	####################################################################################################
+	####################################################################################################
 
 	def setAngularUnits(self,unit):
 
@@ -179,6 +200,8 @@ class Spin0(object):
 		assert unit.physical_type=="angle"
 		self.side_angle = self.side_angle.to(unit)
 
+	####################################################################################################
+	####################################################################################################
 
 	def mean(self):
 
@@ -1134,7 +1157,7 @@ class Spin0(object):
 
 	################################################################################################################################################
 
-	def powerSpectrum(self,l_edges):
+	def powerSpectrum(self,l_edges,scale=None):
 
 		"""
 		Measures the power spectrum of the convergence map at the multipole moments specified in the input
@@ -1142,9 +1165,11 @@ class Spin0(object):
 		:param l_edges: Multipole bin edges
 		:type l_edges: array
 
-		:returns: tuple -- (l -- array,Pl -- array) = (multipole moments, power spectrum at multipole moments)
+		:param scale: scaling to apply to the Fourier coefficients before harmonic azimuthal averaging. Must be a function that takes the array of multipole magnitudes as an input and returns a real numbers 
+		:type scale: callable
 
-		:raises: AssertionError if l_edges are not provided
+		:returns: (l -- array,Pl -- array) = (binned multipole moments, power spectrum at multipole moments)
+		:rtype: tuple.
 
 		>>> test_map = ConvergenceMap.load("map.fit")
 		>>> l_edges = np.arange(200.0,5000.0,200.0)
@@ -1163,11 +1188,86 @@ class Spin0(object):
 		#Calculate the Fourier transform of the map with numpy FFT
 		ft_map = fftengine.rfft2(self.data)
 
+		#Compute scaling coefficients
+		if scale is not None:
+			sc = scale(self.getEll())
+		else:
+			sc = None
+
 		#Compute the power spectrum with the C backend implementation
-		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle.to(u.deg).value,l_edges)
+		power_spectrum = _topology.rfft2_azimuthal(ft_map,ft_map,self.side_angle.to(u.deg).value,l_edges,sc)
 
 		#Output the power spectrum
 		return l,power_spectrum
+
+	################################################################################################################################################
+
+	def cross(self,other,statistic="power_spectrum",**kwargs):
+
+		"""
+		Measures a cross statistic between maps
+
+		:param other: The other convergence map
+		:type other: ConvergenceMap instance
+
+		:param statistic: the cross statistic to measure (default is 'power_spectrum')
+		:type statistic: string or callable
+
+		:param kwargs: the keyword arguments are passed to the statistic (when callable)
+		:type kwargs: dict.
+
+		:returns: tuple -- (l -- array,Pl -- array) = (multipole moments, cross power spectrum at multipole moments) if the statistic is the power spectrum, otherwise whatever statistic() returns on call
+
+		:raises: AssertionError if the other map has not the same shape as the input one
+
+		>>> test_map = ConvergenceMap.load("map.fit",format=load_fits_default_convergence)
+		>>> other_map = ConvergenceMap.load("map2.fit",format=load_fits_default_convergence)
+		
+		>>> l_edges = np.arange(200.0,5000.0,200.0)
+		>>> l,Pl = test_map.cross(other_map,l_edges=l_edges)
+
+		"""
+		#The other map must be of the same type as this one
+		assert isinstance(other,self.__class__)
+
+		if statistic=="power_spectrum":
+			
+			assert not (self._masked or other._masked),"Power spectrum calculation for masked maps is not allowed yet!"
+
+			if self.side_angle.unit.physical_type=="length":
+				raise NotImplementedError("Power spectrum measurement not implemented yet if side physical unit is length!")
+
+			assert "l_edges" in kwargs
+			l_edges = kwargs["l_edges"]
+
+			assert l_edges is not None
+			l = 0.5*(l_edges[:-1] + l_edges[1:])
+
+			assert self.side_angle == other.side_angle
+			assert self.data.shape == other.data.shape
+
+			#Check if we should scale
+			if ("scale" in kwargs) and (kwargs["scale"] is not None):
+				sc = kwargs["scale"](self.getEll())
+			else:
+				sc = None
+
+			#Calculate the Fourier transform of the maps with numpy FFTs
+			ft_map1 = fftengine.rfft2(self.data)
+			ft_map2 = fftengine.rfft2(other.data)
+
+			#Compute the cross power spectrum with the C backend implementation
+			cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(u.deg).value,l_edges,sc)
+
+			#Output the cross power spectrum
+			return l,cross_power_spectrum
+
+		else:
+
+			return statistic(self,other,**kwargs) 
+
+
+	################################################################################################################################################
 
 
 	def plotPowerSpectrum(self,l_edges,show_angle=True,angle_unit=u.arcmin,fig=None,ax=None,**kwargs):
@@ -1211,6 +1311,7 @@ class Spin0(object):
 		self.ax.set_ylabel(r"$\ell(\ell+1)P_\ell^{\kappa\kappa}/2\pi$",fontsize=22)
 
 
+	################################################################################################################################################
 	################################################################################################################################################
 
 	def twoPointFunction(self,algorithm="FFT",**kwargs):
@@ -1263,6 +1364,8 @@ class Spin0(object):
 		else:
 			raise NotImplementedError("2PCF algorithm {0} not implemented!".format(algorithm))
 
+	################################################################################################################################################
+	################################################################################################################################################
 
 	def countModes(self,l_edges):
 
@@ -1282,12 +1385,10 @@ class Spin0(object):
 		assert l_edges is not None
 
 		#Determine the multipole values of each bin in the FFT grid
-		lx = fftengine.fftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
-		ly = fftengine.rfftfreq(self.data.shape[0])*2.0*np.pi / self.resolution.to(u.rad).value
-		l_squared = lx[:,None]**2 + ly[None,:]**2
+		ell = self.getEll()
 
 		#Count how many of these pixels fall inside each bin
-		modes_on = l_squared[None] < l_edges[:,None,None]**2
+		modes_on = ell[None] < l_edges[:,None,None]
 		modes_ly_0 = modes_on.copy()
 		modes_ly_0[:,:,1:] = 0
 
@@ -1297,66 +1398,6 @@ class Spin0(object):
 
 		#Return the corrected number of modes that yields the right variance in the Gaussian case
 		return num_modes**2/(num_modes+num_modes_ly_0)
-
-
-	def cross(self,other,statistic="power_spectrum",**kwargs):
-
-		"""
-		Measures a cross statistic between maps
-
-		:param other: The other convergence map
-		:type other: ConvergenceMap instance
-
-		:param statistic: the cross statistic to measure (default is 'power_spectrum')
-		:type statistic: string or callable
-
-		:param kwargs: the keyword arguments are passed to the statistic (when callable)
-		:type kwargs: dict.
-
-		:returns: tuple -- (l -- array,Pl -- array) = (multipole moments, cross power spectrum at multipole moments) if the statistic is the power spectrum, otherwise whatever statistic() returns on call
-
-		:raises: AssertionError if the other map has not the same shape as the input one
-
-		>>> test_map = ConvergenceMap.load("map.fit",format=load_fits_default_convergence)
-		>>> other_map = ConvergenceMap.load("map2.fit",format=load_fits_default_convergence)
-		
-		>>> l_edges = np.arange(200.0,5000.0,200.0)
-		>>> l,Pl = test_map.cross(other_map,l_edges=l_edges)
-
-		"""
-		#The other map must be of the same type as this one
-		assert isinstance(other,self.__class__)
-
-		if statistic=="power_spectrum":
-			
-			assert not (self._masked or other._masked),"Power spectrum calculation for masked maps is not allowed yet!"
-
-			if self.side_angle.unit.physical_type=="length":
-				raise NotImplementedError("Power spectrum measurement not implemented yet if side physical unit is length!")
-
-			assert "l_edges" in kwargs.keys()
-			l_edges = kwargs["l_edges"]
-
-			assert l_edges is not None
-			l = 0.5*(l_edges[:-1] + l_edges[1:])
-
-			assert self.side_angle == other.side_angle
-			assert self.data.shape == other.data.shape
-
-			#Calculate the Fourier transform of the maps with numpy FFTs
-			ft_map1 = fftengine.rfft2(self.data)
-			ft_map2 = fftengine.rfft2(other.data)
-
-			#Compute the cross power spectrum with the C backend implementation
-			cross_power_spectrum = _topology.rfft2_azimuthal(ft_map1,ft_map2,self.side_angle.to(u.deg).value,l_edges)
-
-			#Output the cross power spectrum
-			return l,cross_power_spectrum
-
-		else:
-
-			return statistic(self,other,**kwargs) 
-
 
 	################################################################################################################################################
 

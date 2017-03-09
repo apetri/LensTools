@@ -997,11 +997,11 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 
 	/*These are the inputs: the Fourier transforms of the two maps, the side angle of the real space map, the bin extremes at which calculate the azimuthal averages*/
-	PyObject *ft_map1_obj,*ft_map2_obj,*lvalues_obj;
-	double map_angle_degrees;
+	PyObject *ft_map1_obj,*ft_map2_obj,*lvalues_obj,*scale_obj;
+	double map_angle_degrees,*scale;
 
 	/*Parse input tuple*/
-	if(!PyArg_ParseTuple(args,"OOdO",&ft_map1_obj,&ft_map2_obj,&map_angle_degrees,&lvalues_obj)){
+	if(!PyArg_ParseTuple(args,"OOdOO",&ft_map1_obj,&ft_map2_obj,&map_angle_degrees,&lvalues_obj,&scale_obj)){
 		return NULL;
 	}
 
@@ -1041,13 +1041,41 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 		return NULL;
 	}
 
+	/*Parse the Fourier coefficients scaling*/
+	PyObject *scale_array;
+
+	if(scale_obj!=Py_None){
+
+		scale_array = PyArray_FROM_OTF(scale_obj,NPY_DOUBLE,NPY_IN_ARRAY);
+		if(scale_array==NULL){
+
+			Py_DECREF(ft_map1_array);
+			Py_DECREF(ft_map2_array);
+			Py_DECREF(lvalues_array);
+			Py_DECREF(power_array);
+
+			return NULL;
+
+		}
+
+		scale = (double *)PyArray_DATA(scale_array);
+
+	} else{
+
+		scale = NULL;
+	
+	}
+
+
 	/*Call the C backend azimuthal average function*/
-	if(azimuthal_rfft2((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(power_array))){
+	if(azimuthal_rfft2((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(power_array),scale)){
 
 		Py_DECREF(ft_map1_array);
 		Py_DECREF(ft_map2_array);
 		Py_DECREF(lvalues_array);
 		Py_DECREF(power_array);
+
+		if(scale) Py_DECREF(scale_array);
 
 		return NULL;
 
@@ -1057,6 +1085,7 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 	Py_DECREF(ft_map1_array);
 	Py_DECREF(ft_map2_array);
 	Py_DECREF(lvalues_array);
+	if(scale) Py_DECREF(scale_array);
 
 	return power_array;
 

@@ -5,7 +5,7 @@
 #include "coordinates.h"
 
 /*Compute power spectral azimuthal averages of 2D real Fourier transforms of images*/
-int azimuthal_rfft2(double _Complex *ft_map1,double _Complex *ft_map2,long size_x,long size_y,double map_angle_degrees,int Nvalues,double *lvalues,double *power_l){
+int azimuthal_rfft2(double _Complex *ft_map1,double _Complex *ft_map2,long size_x,long size_y,double map_angle_degrees,int Nvalues,double *lvalues,double *power_l,double *scale){
 
 	//Define the pixel physical size in fourier space
 	const double lpix = 360.0/map_angle_degrees;
@@ -32,32 +32,79 @@ int azimuthal_rfft2(double _Complex *ft_map1,double _Complex *ft_map2,long size_
 		hits[k] = 0;
 	}
 
-	//Select bins
-	for(i=0;i<size_x;i++){
 
-		lx = min_long(i,size_x-i) * lpix;
+	if(scale){
 
-		for(j=0;j<size_y;j++){
+		///////////////////////////
+		/*Apply scaling to pixels*/
+		///////////////////////////
 
-			ly = j*lpix;
-			l = sqrt(lx*lx + ly*ly);
+		//Cycle over pixels
+		for(i=0;i<size_x;i++){
 
-			pixid = fourier_coordinate(i,j,size_x);
+			lx = min_long(i,size_x-i) * lpix;
 
-			//decide in which l bin this pixel falls into
-			for(k=0;k<Nbins;k++){
+			for(j=0;j<size_y;j++){
+
+				ly = j*lpix;
+				l = sqrt(lx*lx + ly*ly);
+
+				pixid = fourier_coordinate(i,j,size_x);
+
+				//decide in which l bin this pixel falls into
+				for(k=0;k<Nbins;k++){
 				
-				if(l>lvalues[k] && l<=lvalues[k+1]){
+					if(l>lvalues[k] && l<=lvalues[k+1]){
 
-					power_l[k] += creal(ft_map1[pixid])*creal(ft_map2[pixid]) + cimag(ft_map1[pixid])*cimag(ft_map2[pixid]);
-					hits[k]++; 
+						power_l[k] += (creal(ft_map1[pixid])*creal(ft_map2[pixid]) + cimag(ft_map1[pixid])*cimag(ft_map2[pixid]))*scale[pixid];
+						hits[k]++; 
+
+					}
 
 				}
 
+
 			}
 
+		}
+
+
+	} else{
+
+		//////////////////////////////////
+		/*Do not apply scaling to pixels*/
+		//////////////////////////////////
+
+		//Cycle over pixels
+		for(i=0;i<size_x;i++){
+
+			lx = min_long(i,size_x-i) * lpix;
+
+			for(j=0;j<size_y;j++){
+
+				ly = j*lpix;
+				l = sqrt(lx*lx + ly*ly);
+
+				pixid = fourier_coordinate(i,j,size_x);
+
+				//decide in which l bin this pixel falls into
+				for(k=0;k<Nbins;k++){
+				
+					if(l>lvalues[k] && l<=lvalues[k+1]){
+
+						power_l[k] += creal(ft_map1[pixid])*creal(ft_map2[pixid]) + cimag(ft_map1[pixid])*cimag(ft_map2[pixid]);
+						hits[k]++; 
+
+					}
+
+				}
+
+
+			}
 
 		}
+
+	
 
 	}
 
