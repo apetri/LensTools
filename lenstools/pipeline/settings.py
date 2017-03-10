@@ -114,7 +114,7 @@ class NGenICSettings(LTSettings):
 		self._iwmode = 3
 
 		#Allow for kwargs override
-		for key in kwargs.keys():
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
 
 
@@ -163,7 +163,7 @@ class PlaneSettings(LTSettings):
 		self.kind = "potential"
 
 		#Allow for kwargs override
-		for key in kwargs.keys():
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
 
 	@classmethod
@@ -286,7 +286,7 @@ class PlaneLightConeSettings(LTSettings):
 		self.fov_resolution = 32
 
 		#Allow for kwargs override
-		for key in kwargs.keys():
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
 
 	@classmethod
@@ -375,7 +375,7 @@ class MapSettings(LTSettings):
 		self._init_randomizer()
 
 		#Allow for kwargs override
-		for key in kwargs.keys():
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
 
 	def _init_commmon(self):
@@ -643,7 +643,7 @@ class CatalogSettings(LTSettings):
 		self.reduced_shear = False
 
 		#Allow for kwargs override
-		for key in kwargs.keys():
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
 
 
@@ -710,6 +710,75 @@ class CatalogSettings(LTSettings):
 		#Return to user
 		return settings
 
+#####################################################
+###########CMBReconstructionSettings class###########
+#####################################################
+
+class CMBReconstructionSettings(LTSettings):
+
+	"""
+	Class handler of CMB lensing reconstruction settings
+
+	"""
+
+	_section = "CMBReconstruction"
+
+	def __init__(self,**kwargs):
+
+		#Input
+		self.input_set = "kappaCMB"
+		self.input_filename = "WLconv*.fits"
+		
+		#Quadratic estimator settings
+		self.estimator = "TT"
+		self.unlensed_ps_filename = "scals.dat"
+		self.lensed_ps_filename = "lensed_scals.dat"
+		self.lmax = 3500
+
+		#Noise/filtering
+		self.wiener = False
+		self.noise_level = 6.0*u.uK*u.arcmin
+		self.beam_fwhm = 1.4*u.arcmin
+		
+		#Output
+		self.output_set = "kappaCMBRec"
+		self.output_fname = "{0}_{1}r.fits"
+
+		#Allow for kwargs override
+		for key in kwargs:
+			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def get(cls,options):
+
+		#Check that the config file has the appropriate section
+		section = cls._section
+		assert options.has_section(section),"No {0} section in configuration file {1}".format(section,options.filename)
+
+		#Fill in the appropriate fields
+		settings = cls()
+
+		#Input
+		settings.input_set = options.get(section,"input_set")
+		settings.input_filename = options.get(section,"input_filename")
+		
+		#Quadratic estimator settings
+		settings.estimator = options.get(section,"estimator")
+		settings.unlensed_ps_filename = options.get(section,"unlensed_ps_filename")
+		settings.lensed_ps_filename = options.get(section,"lensed_ps_filename")
+		settings.lmax = options.getint(section,"lmax")
+
+		#Noise/filtering
+		settings.wiener = options.getboolean(section,"wiener")
+		settings.noise_level = options.getfloat(section,"noise_level_uK_arcmin")*u.uK*u.arcmin
+		settings.beam_fwhm = options.getfloat(section,"beam_fwhm_arcmin")*u.arcmin
+		
+		#Output
+		settings.output_set = options.get(section,"output_set")
+		settings.output_fname = options.get(section,"output_fname")
+
+		#Return to user
+		return settings
 
 ##################################################
 ###############JobSettings class##################
@@ -745,7 +814,7 @@ class JobSettings(LTSettings):
 		self.job_script_file = "job.sh"
 
 		#Allow for kwargs override
-		for key in kwargs.keys():
+		for key in kwargs:
 			setattr(self,key,kwargs[key])
 
 

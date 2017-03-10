@@ -36,6 +36,13 @@ Shear catalogs
 	:language: ini
 	:linenos:
 
+CMB lensing reconstructions
+---------------------------
+
+.. literalinclude:: ../../lenstools/data/reconstruction_default.ini
+	:language: ini
+	:linenos:
+
 Light cone projection
 ---------------------
 

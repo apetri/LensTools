@@ -1,0 +1,72 @@
+#!/usr/bin/env python-mpi
+
+import sys
+import argparse
+from distutils import config
+
+import lenstools.scripts.cmblens
+from lenstools import SimulationBatch
+from lenstools.pipeline.settings import EnvironmentSettings,CMBReconstructionSettings
+
+import logging
+from lenstools.simulations.logs import logpreamble
+
+#MPI
+from mpi4py import MPI
+from lenstools.utils import MPIWhirlPool
+
+#Parse command line options
+parser = argparse.ArgumentParser()
+parser.add_argument("-v","--verbose",dest="verbose",action="store_true",default=False,help="turn output verbosity")
+parser.add_argument("-e","--environment",dest="environment",action="store",type=str,help="environment configuration file")
+parser.add_argument("-c","--config",dest="config_file",action="store",type=str,help="lensing configuration file")
+parser.add_argument("id",nargs="*")
+
+#Parse command arguments
+cmd_args = parser.parse_args()
+
+#Verbosity level
+if cmd_args.verbose:
+	logging.basicConfig(level=logging.DEBUG)
+else:
+	logging.basicConfig(level=logging.INFO)
+
+#Initialize MPIWhirlPool
+comm = MPI.COMM_WORLD
+
+try:
+	pool = MPIWhirlPool(comm=comm)
+except:
+	pool = None
+	logpreamble.debug("Couldn't initialize MPI Pool, running in series")
+
+#check that all provided options are available
+if (len(cmd_args.id)==0) or (cmd_args.config_file is None) or (cmd_args.environment is None):
+	
+	if (pool is None) or (pool.is_master()):
+		parser.print_help()
+	
+	sys.exit(0)
+
+#Parse relevant options
+if (pool is None) or (pool.is_master()):
+	
+	logpreamble.info("Reading environment from {0}".format(cmd_args.environment))
+	logpreamble.info("Reading lensing configuration from {0}".format(cmd_args.config_file))
+
+#Environment 
+environment_settings = EnvironmentSettings.read(cmd_args.environment)
+
+#Get a handle on the simulation batch
+batch = SimulationBatch(environment_settings)
+
+#########################################################################################################################################################################
+
+#Proceed to main execution
+if (pool is None) or (pool.is_master()):
+	logpreamble.info("Starting CMB lensing potential simulated reconstructions")
+cmbrec_settings = CMBReconstructionSettings.read(cmd_args.config_file)
+
+#Cycle over ids to produce the potential maps
+for batch_id in cmd_args.id:
+	lenstools.scripts.cmblens.reconstructQuad(pool=pool,batch=batch,settings=cmbrec_settings,batch_id=batch_id)
