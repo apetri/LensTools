@@ -735,6 +735,9 @@ class CMBReconstructionSettings(LTSettings):
 		self.lensed_ps_filename = "lensed_scals.dat"
 		self.lmax = 3500
 
+		#What to estimate
+		self.output_type = "kappa"
+
 		#Noise/filtering
 		self.wiener = False
 		self.noise_level = 6.0*u.uK*u.arcmin
@@ -767,6 +770,9 @@ class CMBReconstructionSettings(LTSettings):
 		settings.unlensed_ps_filename = options.get(section,"unlensed_ps_filename")
 		settings.lensed_ps_filename = options.get(section,"lensed_ps_filename")
 		settings.lmax = options.getint(section,"lmax")
+
+		#What to estimate
+		settings.output_type = options.get(section,"output_type")
 
 		#Noise/filtering
 		settings.wiener = options.getboolean(section,"wiener")
