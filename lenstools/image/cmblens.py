@@ -80,37 +80,31 @@ class Lens(object):
 			self._cache["ell2"][0,0] = 1.0
 			self._cache["ell"] = np.sqrt(self._cache["ell2"])
 
-	#Build TT power spectrum cache
-	def buildPowerTTCache(self,powerTT_th,powerTT_obs,callback,noise_keys):
+	#Build TT unlensed power spectrum cache
+	def buildUnlTTCache(self,powerTT,callback):
 
-		#Cache names
-		self._cache["powerTT_th_name"] = str(powerTT_th)
-		self._cache["powerTT_obs_name"] = str(powerTT_obs)
-
-		#Npixel, resolution
-		npixel = self._cache["npixel"]
-		resolution = self._cache["angle"].to(u.rad).value/npixel
+		#Cache name
+		self._cache["powerTT_unl_name"] = str(powerTT)
 
 		#Load power spectra
-		self._cache["Cl_th"] = self.getPower(powerTT_th,callback,self._cache["lmax"])
-		ClTT_th = self.extractTT(self._cache["Cl_th"]) 
-		
-		if powerTT_obs is None:
-			ClTT_obs = None
-		else:
-			ClTT_obs = self.extractTT(self.getPower(powerTT_obs,callback,self._cache["lmax"])) 
+		self._cache["Cl_unl"] = self.getPower(powerTT,callback,self._cache["lmax"])
+		self._cache["powerTT_unl"] = self.extractTT(self._cache["Cl_unl"])
 
-		#Build the power TT caches
-		self._cache["powerTT_th"] = ClTT_th
+	#Build TT lensed power spectrum cache
+	def buildLensedTTCache(self,powerTT,callback,noise_keys):
 
-		if ClTT_obs is None:
-			self._cache["powerTT_obs"] = self._cache["powerTT_th"].copy()
-		else:
-			self._cache["powerTT_obs"] = ClTT_obs
+		#Cache name
+		self._cache["powerTT_lensed_name"] = str(powerTT)
 
-		#Add noise component to the observed power spectrum
+		#Load power spectra
+		self._cache["Cl_lensed"] = self.getPower(powerTT,callback,self._cache["lmax"])
+		ClTT_lensed = self.extractTT(self._cache["Cl_lensed"]) 
+		self._cache["powerTT_lensed"] = ClTT_lensed
+
+		#Build inverse variance filter: add noise component to the observed power spectrum
+		self._cache["powerTT_obs"] = ClTT_lensed.copy()
 		if noise_keys is not None:
-			self._cache["powerTT_obs"] += self.getNoise(np.arange(len(ClTT_th)),noise_keys)
+			self._cache["powerTT_obs"] += self.getNoise(np.arange(len(ClTT_lensed)),noise_keys)
 		
 		#Construct inverse variance filter
 		self._cache["1/powerTT_obs"] = 1./self._cache["powerTT_obs"]
@@ -167,7 +161,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def phiTT(tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering):
+	def phiTT(tfft,angle,powerTT,callback,noise_keys,lmax,filtering):
 		pass
 
 #########################
@@ -229,13 +223,13 @@ class QuickLens(Lens):
 		resolution = angle.to(u.rad)/npixel
 
 		#Parse the TT power spectrum
-		if ("powerTT_th" not in self._cache) or (powerTT!=self._cache["powerTT_th_name"]):
+		if ("powerTT_unl" not in self._cache) or (powerTT!=self._cache["powerTT_unl_name"]):
 			self.buildEllCache(angle,npixel,lmax)
-			self.buildPowerTTCache(powerTT,None,callback,noise_keys={"kind":"white","sigmaN":0.1*u.uK*u.arcmin})
+			self.buildUnlTTCache(powerTT,callback)
 
 		#Build map
 		pix = ql.maps.pix(npixel,resolution.value)
-		teb_unl = ql.sims.tebfft(pix,self._cache["Cl_th"])
+		teb_unl = ql.sims.tebfft(pix,self._cache["Cl_unl"])
 
 		#Return to user
 		return teb_unl.tfft
@@ -274,7 +268,7 @@ class QuickLens(Lens):
 	#Quadratic TT potential estimator#
 	##################################
 
-	def phiTT(self,tfft,angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering):
+	def phiTT(self,tfft,angle,powerTT,callback,noise_keys,lmax,filtering):
 
 		"""
 		Estimate the lensing potential with a quadratic TT estimator
@@ -289,15 +283,15 @@ class QuickLens(Lens):
 		#Build the caches for ell,C_ell if not present already#
 		#######################################################
 
-		if ("powerTT_th" not in self._cache) or (str(powerTT_th)!=self._cache["powerTT_th_name"]) or (str(powerTT_obs)!=self._cache["powerTT_obs_name"]) or (lmax!=self._cache["lmax"]):
+		if ("powerTT_obs" not in self._cache) or (str(powerTT)!=self._cache["powerTT_lensed_name"]) or (lmax!=self._cache["lmax"]):
 			self.buildEllCache(angle,npixel,lmax)
-			self.buildPowerTTCache(powerTT_th,powerTT_obs,callback,noise_keys)
+			self.buildLensedTTCache(powerTT,callback,noise_keys)
 			recompute_norm = True
 		else:
 			recompute_norm = False
 		
 		#Build the TT estimator
-		estimator = ql.qest.lens.phi_TT(self._cache["Cl_th"].cltt)
+		estimator = ql.qest.lens.phi_TT(self._cache["powerTT_lensed"])
 
 		#Apply inverse variance filter to the observation
 		tfft = ql.maps.cfft(npixel,resolution.value,fft=tfft*resolution.value/npixel)
@@ -316,7 +310,7 @@ class QuickLens(Lens):
 		if filtering is not None:
 
 			if filtering=="wiener":
-				phifft = phifft * (self._cache["powerTT_th"] * self._cache["1/powerTT_obs"])
+				phifft = phifft * (self._cache["powerTT_lensed"] * self._cache["1/powerTT_obs"])
 			else:
 				phifft.fft *= filtering(self._cache["ell"])
 

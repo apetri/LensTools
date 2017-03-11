@@ -1850,16 +1850,13 @@ class CMBTemperatureMap(Spin0):
 	###########################################
 
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
-	def estimatePhiFFTQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
+	def estimatePhiFFTQuad(self,powerTT=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the Fourier transform of the lensing potential using a temperature quadratic estimator
 
-		:param powerTT_th: name of the file that contains the theory TT power spectrum. If callback is a callable, powerTT_th is passed to the callback
-		:type powerTT_th: str.
-
-		:param powerTT_obs: name of the file that contains the observed TT power spectrum. If callback is a callable, powerTT_obs is passed to the callback
-		:type powerTT_obs: str.
+		:param powerTT: name of the file that contains the lensed theory TT power spectrum. If callback is a callable, powerTT is passed to the callback
+		:type powerTT: str.
 
 		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
 		:type callback: str.
@@ -1879,21 +1876,18 @@ class CMBTemperatureMap(Spin0):
 		qlens = Lens()
 		
 		#Perform potential estimation with the quadratic estimator (pass the temperature values in uK)
-		phifft = qlens.phiTT(fftengine.fft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering)
+		phifft = qlens.phiTT(fftengine.fft2(self.data)*self.unit.to(u.uK),self.side_angle,powerTT,callback,noise_keys,lmax,filtering)
 
 		#Return
 		return phifft
 
-	def estimatePhiQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
+	def estimatePhiQuad(self,powerTT=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the lensing potential using a temperature quadratic estimator
 
-		:param powerTT_th: name of the file that contains the theory TT power spectrum. If callback is a callable, powerTT_th is passed to the callback
-		:type powerTT_th: str.
-
-		:param powerTT_obs: name of the file that contains the observed TT power spectrum. If callback is a callable, powerTT_obs is passed to the callback
-		:type powerTT_obs: str.
+		:param powerTT: name of the file that contains the lensed theory TT power spectrum. If callback is a callable, powerTT is passed to the callback
+		:type powerTT: str.
 
 		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
 		:type callback: str.
@@ -1910,23 +1904,20 @@ class CMBTemperatureMap(Spin0):
 		"""
 
 		#Compute Phi FFT, invert the FFT
-		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering)
+		phifft = self.estimatePhiFFTQuad(powerTT,callback,noise_keys,lmax,filtering)
 		phi = fftengine.ifft2(phifft)
 
 		#Return
 		return PhiMap(phi.real,angle=self.side_angle,unit=u.rad**2)
 
 	#Estimate kappa using the quadratic estimator on the temperature map
-	def estimateKappaQuad(self,powerTT_th=None,powerTT_obs=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
+	def estimateKappaQuad(self,powerTT=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the lensing kappa using a temperature quadratic estimator
 
-		:param powerTT_th: name of the file that contains the theory TT power spectrum. If callback is a callable, powerTT_th is passed to the callback
-		:type powerTT_th: str.
-
-		:param powerTT_obs: name of the file that contains the observed TT power spectrum. If callback is a callable, powerTT_obs is passed to the callback
-		:type powerTT_obs: str.
+		:param powerTT: name of the file that contains the lensed theory TT power spectrum. If callback is a callable, powerTT is passed to the callback
+		:type powerTT: str.
 
 		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
 		:type callback: str.
@@ -1946,7 +1937,7 @@ class CMBTemperatureMap(Spin0):
 		qlens = Lens()
 
 		#Compute Phi FFT, take the laplacian
-		phifft = self.estimatePhiFFTQuad(powerTT_th,powerTT_obs,callback,noise_keys,lmax,filtering)
+		phifft = self.estimatePhiFFTQuad(powerTT,callback,noise_keys,lmax,filtering)
 		kappafft = phifft*0.5*qlens._cache["ell2"]
 
 		#Invert the FFT
