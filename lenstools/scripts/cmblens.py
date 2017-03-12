@@ -88,8 +88,9 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		sys.exit(1)
 
 	#Divide
+	realizations_per_task = len(input_filenames)//Ntask
+	
 	if pool is not None:
-		realizations_per_task = len(input_filenames)//Ntask
 		first_realization = realizations_per_task*pool.rank
 		last_realization = realizations_per_task*(pool.rank+1)
 	else:
@@ -128,7 +129,7 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		cmb_len.addDetectorEffects(sigmaN=settings.noise_level,fwhm=settings.beam_fwhm)
 
 		#Apply quadratic estimator to reconstruct the lensing potential
-		logdriver.debug("Estimating lensing {0} with {1} quadratic estimator".format(settings.output_type,settings.estimator))
+		logdriver.debug("Estimating lensing {0} with {1} quadratic estimator...".format(settings.output_type,settings.estimator))
 
 		if settings.output_type=="kappa":
 			output_img = cmb_len.estimateKappaQuad(powerTT=lensed_ps_filename,callback="camb",noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
