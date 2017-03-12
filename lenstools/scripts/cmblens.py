@@ -7,6 +7,7 @@ import sys,os,glob
 
 import numpy as np
 
+from lenstools.image.convergence import ConvergenceMap,CMBTemperatureMap
 from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemoryAll
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import CMBReconstructionSettings
@@ -53,6 +54,15 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		logdriver.info("Reconstruction details: lmax={0} , sigmaN={1} , beam FWHM={2}".format(settings.lmax,settings.noise_level,settings.beam_fwhm))
 		logdriver.info("Wiener filtering of reconstructed maps: {0}".format(settings.wiener))
 
+	#Build noise data structure
+	noise_keys = { "kind":"detector","sigmaN":settings.noise_level,"fwhm":settings.beam_fwhm }
+
+	#Filtering
+	if settings.wiener:
+		filtering = "wiener"
+	else:
+		filtering = None
+
 	############################
 	#Match names of input files#
 	############################
@@ -91,11 +101,59 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		logdriver.info("Task {0} processes inputs from {1} to {2}".format(pool.rank+1,first_realization+1,last_realization))
 
 	#Conquer
-	for r in range(first_realization,last_realization):
+	for n,r in enumerate(range(first_realization,last_realization)):
 
 		#Set random seed
 		np.random.seed(r)
 
 		#Log
 		input_filename = input_filenames[r]
-		logdriver.info("Processing {0}".format(input_filename))
+		logdriver.debug("Loading input kappa image: {0}".format(input_filename))
+
+		#Load input
+		input_kappa = ConvergenceMap.load(input_filename)
+
+		#Generate unlensed CMB sky
+		if settings.estimator=="TT":
+			logdriver.debug("Generating unlensed CMB sky...")
+			cmb_unl = CMBTemperatureMap.from_power(angle=input_kappa.side_angle,npixel=input_kappa.data.shape[0],powerTT=unlensed_ps_filename,callback="camb",lmax=settings.lmax)
+		else:
+			raise NotImplementedError("Quadratic estimator {0} not implemented!".format(settings.estimator))
+
+		#Lens the CMB map, apply detector noise
+		logdriver.debug("Lensing the CMB sky with input potential...")
+		cmb_len = cmb_unl.lens(input_kappa)
+
+		logdriver.debug("Adding detector effects (white noise + beam deconvolution)...")
+		cmb_len.addDetectorEffects(sigmaN=settings.noise_level,fwhm=settings.beam_fwhm)
+
+		#Apply quadratic estimator to reconstruct the lensing potential
+		logdriver.debug("Estimating lensing {0} with {1} quadratic estimator".format(settings.output_type,settings.estimator))
+
+		if settings.output_type=="kappa":
+			output_img = cmb_len.estimateKappaQuad(powerTT=lensed_ps_filename,callback="camb",noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
+
+		elif settings.output_type=="phi":
+			output_img = cmb_len.estimatePhiQuad(powerTT=lensed_ps_filename,callback="camb",noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
+			
+		else:
+			raise NotImplementedError("output_type must be one between (kappa,phi)")
+
+		#Save the result
+		savename = os.path.join(maps_output.storage,settings.output_fname.format(os.path.basename(input_filename)))
+		
+		logdriver.info("Saving the reconstruction to: {0}".format(savename))
+		output_img.save(savename)
+		logdriver.debug("Saved the reconstruction to: {0}".format(savename))
+
+		#Safety barrier
+		if pool is not None:
+			pool.comm.Barrier()
+
+		#Log progress
+		if (pool is None) or (pool.is_master()):
+			logstderr.info("Progress: {0:.2f}%".format(100*(n+1)/realizations_per_task))
+
+	#Complete
+	if (pool is None) or (pool.is_master()):
+		logdriver.info("Reconstructions complete, exiting.")
