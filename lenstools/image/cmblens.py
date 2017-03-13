@@ -240,6 +240,9 @@ class QuickLens(Lens):
 		self._cache["norm"] = estimator.fill_resp(estimator,ql.maps.cfft(npixel,resolution),Tfilter,Tfilter)
 		self._cache["norm"].fft[0,0] = 1.0
 
+		#Log
+		logcmb.debug("Normalization cache complete")
+
 	######################################
 	#Default CMB unlensed temperature map#
 	######################################
