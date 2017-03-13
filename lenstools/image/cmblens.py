@@ -14,6 +14,8 @@ from abc import ABCMeta,abstractproperty,abstractmethod
 import numpy as np
 import astropy.units as u
 
+from ..simulations.logs import logcmb
+
 try:
 	import quicklens as ql
 	ql = ql
@@ -75,6 +77,9 @@ class Lens(object):
 	def buildEllCache(self,angle,npixel,lmax):
 
 		if (angle!=self._cache["angle"]) or (npixel!=self._cache["npixel"]) or (lmax!=self._cache["lmax"]):
+
+			#Log
+			logcmb.debug("Building multipole cache...")
 			
 			#Angle
 			self._cache["angle"] = angle
@@ -91,6 +96,9 @@ class Lens(object):
 	#Build TT unlensed power spectrum cache
 	def buildUnlTTCache(self,powerTT,callback):
 
+		#Log
+		logcmb.debug("Building unlensed CMB power spectrum cache...")
+
 		#Cache name
 		self._cache["powerTT_unl_name"] = str(powerTT)
 
@@ -100,6 +108,9 @@ class Lens(object):
 
 	#Build TT lensed power spectrum cache
 	def buildLensedTTCache(self,powerTT,callback,noise_keys):
+
+		#Log
+		logcmb.debug("Building lensed CMB power spectrum cache...")
 
 		#Cache name
 		self._cache["powerTT_lensed_name"] = str(powerTT)
@@ -204,6 +215,7 @@ class QuickLens(Lens):
 
 				for s in ("cltt","clee","clbb","clte","clpp","cltp"):
 					if hasattr(Cl,s):
+						logcmb.debug("Scaling loaded {0} coefficients to uK^2 units...".format(s))
 						cl = getattr(Cl,s)
 						cl *= tcmb**2
 
@@ -221,6 +233,10 @@ class QuickLens(Lens):
 
 	#Build normalization cache
 	def buildNormCache(self,npixel,resolution,estimator,Tfilter):
+
+		#Log
+		logcmb.debug("Building quadratic estimator normalization cache...")
+
 		self._cache["norm"] = estimator.fill_resp(estimator,ql.maps.cfft(npixel,resolution),Tfilter,Tfilter)
 		self._cache["norm"].fft[0,0] = 1.0
 

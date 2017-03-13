@@ -21,9 +21,10 @@ logpreamble = logging.getLogger("lenstools.preamble")
 logdriver = logging.getLogger("lenstools.driver")
 logplanes = logging.getLogger("lenstools.planes")
 logray = logging.getLogger("lenstools.raytracing")
+logcmb = logging.getLogger("lenstools.cmb")
 logstderr = logging.getLogger("lenstools.stderr")
 
-for logger in [logpreamble,logdriver,logplanes,logray]:
+for logger in [logpreamble,logdriver,logplanes,logray,logcmb]:
 	logger.addHandler(console)
 	logger.propagate = False
 
