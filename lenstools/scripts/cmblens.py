@@ -69,8 +69,19 @@ def reconstructQuad(pool,batch,settings,batch_id):
 	############################
 
 	#Find files, sort
-	input_filenames = glob.glob(os.path.join(maps_input.storage,settings.input_filename))
+	glob_pattern = os.path.join(maps_input.storage,settings.input_filename) 
+	input_filenames = glob.glob(glob_pattern)
 	input_filenames.sort()
+
+	#Save information to info file for book-keeping
+	if (pool is None) or (pool.is_master()):
+		with open(os.path.join(maps_output.storage,"info.txt"),"w") as fp:
+			fp.write("Inputs: {0}\n".format(glob_pattern))
+			fp.write("Number of maps: {0}\n".format(len(input_filenames)))
+			fp.write("Noise level: {0}\n".format(settings.noise_level))
+			fp.write("Beam FWHM: {0}\n".format(settings.beam_fwhm))
+			fp.write("lmax: {0}\n".format(settings.lmax))
+			fp.write("Wiener filter: {0}\n".format(settings.wiener))
 
 	#Divide uniformly between tasks
 	if pool is None:
