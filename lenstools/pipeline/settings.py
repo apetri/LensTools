@@ -733,6 +733,7 @@ class CMBReconstructionSettings(LTSettings):
 		self.estimator = "TT"
 		self.unlensed_ps_filename = "scals.dat"
 		self.lensed_ps_filename = "lensed_scals.dat"
+		self.ps_type = "camb_dimensionless"
 		self.lmax = 3500
 
 		#What to estimate
@@ -769,6 +770,7 @@ class CMBReconstructionSettings(LTSettings):
 		settings.estimator = options.get(section,"estimator")
 		settings.unlensed_ps_filename = options.get(section,"unlensed_ps_filename")
 		settings.lensed_ps_filename = options.get(section,"lensed_ps_filename")
+		settings.ps_type = options.get(section,"ps_type")
 		settings.lmax = options.getint(section,"lmax")
 
 		#What to estimate

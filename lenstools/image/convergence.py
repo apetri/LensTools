@@ -1681,7 +1681,7 @@ class CMBTemperatureMap(Spin0):
 
 	#Construct sample CMB unlensed map
 	@classmethod
-	def from_power(cls,angle=3.5*u.deg,npixel=256,seed=None,space="real",powerTT=None,callback="camb",lmax=3500):
+	def from_power(cls,angle=3.5*u.deg,npixel=256,seed=None,space="real",powerTT=None,callback="camb_dimensionless",lmax=3500):
 		
 		"""
 		Build an unlensed CMB temperature map from a known TT power spectrum
@@ -1701,7 +1701,7 @@ class CMBTemperatureMap(Spin0):
 		:param powerTT: name of the file that contains the TT power spectrum. If callback is a callable, powerTT is passed to the callback
 		:type powerTT: str.
 
-		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb_dimensionless' or 'camb_uk' for using camb tabulated power spectra (dimensionless or uK^2 units), None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
 		:type callback: str.
 
 		:returns: temperature map
@@ -1850,7 +1850,7 @@ class CMBTemperatureMap(Spin0):
 	###########################################
 
 	#Estimate the lensing potential phi using the quadratic estimator on the temperature map
-	def estimatePhiFFTQuad(self,powerTT=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
+	def estimatePhiFFTQuad(self,powerTT=None,callback="camb_dimensionless",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the Fourier transform of the lensing potential using a temperature quadratic estimator
@@ -1858,7 +1858,7 @@ class CMBTemperatureMap(Spin0):
 		:param powerTT: name of the file that contains the lensed theory TT power spectrum. If callback is a callable, powerTT is passed to the callback
 		:type powerTT: str.
 
-		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb_dimensionless' or 'camb_uk' for using camb tabulated power spectra (dimensionless or uK^2 units), None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
 		:type callback: str.
 
 		:param noise_keys: dictionary with noise TT power spectrum specifications
@@ -1881,7 +1881,7 @@ class CMBTemperatureMap(Spin0):
 		#Return
 		return phifft
 
-	def estimatePhiQuad(self,powerTT=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
+	def estimatePhiQuad(self,powerTT=None,callback="camb_dimensionless",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the lensing potential using a temperature quadratic estimator
@@ -1889,7 +1889,7 @@ class CMBTemperatureMap(Spin0):
 		:param powerTT: name of the file that contains the lensed theory TT power spectrum. If callback is a callable, powerTT is passed to the callback
 		:type powerTT: str.
 
-		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb_dimensionless' or 'camb_uk' for using camb tabulated power spectra (dimensionless or uK^2 units), None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
 		:type callback: str.
 
 		:param noise_keys: dictionary with noise TT power spectrum specifications
@@ -1911,7 +1911,7 @@ class CMBTemperatureMap(Spin0):
 		return PhiMap(phi.real,angle=self.side_angle,unit=u.rad**2)
 
 	#Estimate kappa using the quadratic estimator on the temperature map
-	def estimateKappaQuad(self,powerTT=None,callback="camb",noise_keys=None,lmax=3500,filtering=None):
+	def estimateKappaQuad(self,powerTT=None,callback="camb_dimensionless",noise_keys=None,lmax=3500,filtering=None):
 
 		"""
 		Estimate the lensing kappa using a temperature quadratic estimator
@@ -1919,7 +1919,7 @@ class CMBTemperatureMap(Spin0):
 		:param powerTT: name of the file that contains the lensed theory TT power spectrum. If callback is a callable, powerTT is passed to the callback
 		:type powerTT: str.
 
-		:param callback: callback function that computes the TT power spectrum. Can be 'camb' for using camb tabulated power spectra, None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb_dimensionless' or 'camb_uk' for using camb tabulated power spectra (dimensionless or uK^2 units), None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
 		:type callback: str.
 
 		:param noise_keys: dictionary with noise TT power spectrum specifications

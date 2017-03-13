@@ -51,6 +51,7 @@ def reconstructQuad(pool,batch,settings,batch_id):
 	if (pool is None) or (pool.is_master()):
 		logdriver.info("Unlensed CMB power spectra will be read from: {0}".format(unlensed_ps_filename))
 		logdriver.info("Lensed CMB power spectra will be read from: {0}".format(lensed_ps_filename))
+		logdriver.info("CMB spectra type: {0}".format(settings.ps_type))
 		logdriver.info("Reconstruction details: lmax={0} , sigmaN={1} , beam FWHM={2}".format(settings.lmax,settings.noise_level,settings.beam_fwhm))
 		logdriver.info("Wiener filtering of reconstructed maps: {0}".format(settings.wiener))
 
@@ -117,7 +118,7 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		#Generate unlensed CMB sky
 		if settings.estimator=="TT":
 			logdriver.debug("Generating unlensed CMB sky...")
-			cmb_unl = CMBTemperatureMap.from_power(angle=input_kappa.side_angle,npixel=input_kappa.data.shape[0],powerTT=unlensed_ps_filename,callback="camb",lmax=settings.lmax)
+			cmb_unl = CMBTemperatureMap.from_power(angle=input_kappa.side_angle,npixel=input_kappa.data.shape[0],powerTT=unlensed_ps_filename,callback=settings.ps_type,lmax=settings.lmax)
 		else:
 			raise NotImplementedError("Quadratic estimator {0} not implemented!".format(settings.estimator))
 
@@ -132,10 +133,10 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		logdriver.debug("Estimating lensing {0} with {1} quadratic estimator...".format(settings.output_type,settings.estimator))
 
 		if settings.output_type=="kappa":
-			output_img = cmb_len.estimateKappaQuad(powerTT=lensed_ps_filename,callback="camb",noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
+			output_img = cmb_len.estimateKappaQuad(powerTT=lensed_ps_filename,callback=settings.ps_type,noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
 
 		elif settings.output_type=="phi":
-			output_img = cmb_len.estimatePhiQuad(powerTT=lensed_ps_filename,callback="camb",noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
+			output_img = cmb_len.estimatePhiQuad(powerTT=lensed_ps_filename,callback=settings.ps_type,noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
 			
 		else:
 			raise NotImplementedError("output_type must be one between (kappa,phi)")

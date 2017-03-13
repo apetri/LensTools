@@ -27,6 +27,7 @@ except ImportError:
 class Lens(object):
 
 	__metaclass__ = ABCMeta
+	_tcmb = 2.725*u.K
 
 	#Make it a singleton
 	_in_memory = None
@@ -35,6 +36,13 @@ class Lens(object):
 			cls._in_memory = object.__new__(cls,*args,**kwargs)
 			cls._in_memory.resetCache()
 		return cls._in_memory
+
+	##############################################################
+
+	#Set CMB temperature
+	def setTCMB(self,t):
+		assert(t.unit.physical_type==u"temperature")
+		self._tcmb = t
 
 	##############################################################
 
@@ -141,7 +149,7 @@ class Lens(object):
 		pass
 
 	@abstractmethod
-	def getPower(power,callback,lmax):
+	def getPower(self,power,callback,lmax):
 		pass
 
 	@abstractmethod
@@ -180,16 +188,24 @@ class QuickLens(Lens):
 		if ql is None:
 			raise ImportError("This feature requires a quicklens installation!")
 
-	@staticmethod
-	def getPower(power,callback,lmax):
+	def getPower(self,power,callback,lmax):
 		
 		#Select correct format
-		if callback=="camb":
+		if callback in ("camb_dimensionless","camb_uk"):
 			
 			if power is None:
 				Cl = ql.spec.get_camb_scalcl(lmax=3500)
 			else:
 				Cl = ql.spec.camb_clfile(power,lmax=lmax)
+
+			#Scale to units to uK^2 if loaded power spectrum is dimensionless
+			if callback=="camb_dimensionless":
+				tcmb = self._tcmb.to(u.uK).value
+
+				for s in ("cltt","clee","clbb","clte","clpp","cltp"):
+					if hasattr(Cl,s):
+						cl = getattr(Cl,s)
+						cl *= tcmb**2
 
 		elif callback is None:
 			raise NotImplementedError
