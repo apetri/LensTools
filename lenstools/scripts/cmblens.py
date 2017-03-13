@@ -163,9 +163,10 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		if pool is not None:
 			pool.comm.Barrier()
 
-		#Log progress
+		#Log progress, memory usage
+		peak_memory_task,peak_memory_all = peakMemory(),peakMemoryAll(pool)
 		if (pool is None) or (pool.is_master()):
-			logstderr.info("Progress: {0:.2f}%".format(100*(n+1)/realizations_per_task))
+			logstderr.info("Progress: {0:.2f}%, peak memory usage: {1:.3f} (task), {2[0]:.3f} (all {2[1]} tasks)".format(100*(n+1)/realizations_per_task,peak_memory_task,peak_memory_all))
 
 	#Complete
 	if (pool is None) or (pool.is_master()):
