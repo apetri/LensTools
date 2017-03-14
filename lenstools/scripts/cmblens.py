@@ -137,8 +137,19 @@ def reconstructQuad(pool,batch,settings,batch_id):
 		logdriver.debug("Lensing the CMB sky with input potential...")
 		cmb_len = cmb_unl.lens(input_kappa)
 
+		#Save intermediate step
+		if settings.save_intermediate:
+			logdriver.info("Saving intermediate steps: unlensed CMB sky, lensed CMB sky")
+			cmb_unl.save(os.path.join(maps_output.storage,"cmb_unl_{0}".format(os.path.basename(input_filename))))
+			cmb_len.save(os.path.join(maps_output.storage,"cmb_lensed_{0}".format(os.path.basename(input_filename))))
+
 		logdriver.debug("Adding detector effects (white noise + beam deconvolution)...")
 		cmb_len.addDetectorEffects(sigmaN=settings.noise_level,fwhm=settings.beam_fwhm)
+
+		#Save intermediate step
+		if settings.save_intermediate:
+			logdriver.info("Saving intermediate steps: lensed CMB sky + detector effects")
+			cmb_len.save(os.path.join(maps_output.storage,"cmb_lensed_detector_{0}".format(os.path.basename(input_filename))))
 
 		#Apply quadratic estimator to reconstruct the lensing potential
 		logdriver.debug("Estimating lensing {0} with {1} quadratic estimator...".format(settings.output_type,settings.estimator))

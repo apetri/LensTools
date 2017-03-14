@@ -745,6 +745,7 @@ class CMBReconstructionSettings(LTSettings):
 		self.beam_fwhm = 1.4*u.arcmin
 		
 		#Output
+		self.save_intermediate = False
 		self.output_set = "kappaCMBRec"
 		self.output_fname = "{0}_{1}r.fits"
 
@@ -782,6 +783,7 @@ class CMBReconstructionSettings(LTSettings):
 		settings.beam_fwhm = options.getfloat(section,"beam_fwhm_arcmin")*u.arcmin
 		
 		#Output
+		settings.save_intermediate = options.getboolean(section,"save_intermediate")
 		settings.output_set = options.get(section,"output_set")
 		settings.output_fname = options.get(section,"output_fname")
 
