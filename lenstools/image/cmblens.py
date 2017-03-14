@@ -293,6 +293,9 @@ class QuickLens(Lens):
 		kappa_fft = ql.maps.rmap(npixelPhi,resolutionPhi.value,map=kappa).get_rfft()
 		phi_fft = ql.maps.rfft(npixelPhi,resolutionPhi.value,fft=kappa_fft.fft * 2.0 / self._cache["ell2"][:,:npixelPhi//2+1])
 
+		#Zero out high multipoles
+		phi_fft.fft[self._cache["ell"][:,:npixelPhi//2+1]>self._cache["lmax"]] = 0.
+
 		#Lens the map
 		tqu_len = ql.lens.make_lensed_map_flat_sky(tqu_unl,phi_fft)
 

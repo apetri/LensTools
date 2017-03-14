@@ -1836,13 +1836,18 @@ class CMBTemperatureMap(Spin0):
 		if seed is not None:
 			np.random.seed(seed)
 
+		#Zero out high multipoles (effect of beam + deconvolution on signal)
+		tfft = fftengine.rfft2(self.data)
+		tfft[qlens._cache["ell"][:,:self.data.shape[0]//2+1]>qlens._cache["lmax"]] = 0.
+		self.data = fftengine.irfft2(tfft)
+
 		#rms of the noise in real space
 		sigma = (sigmaN / self.resolution).to(self.unit)
 
 		#Generate white noise
 		nw = np.random.randn(*self.data.shape)*sigma.value
 
-		#Deconvolve the beam
+		#Deconvolve the beam for the noise term
 		nw_fft = fftengine.rfft2(nw)
 		nw_fft[0,0] = 0.0
 		nw_fft *= np.sqrt(qlens._detector(qlens._cache["ell"][:,:self.data.shape[0]//2+1],sigmaN=1.0,fwhm=fwhm.to(u.rad).value,ellmax=qlens._cache["lmax"])) 
