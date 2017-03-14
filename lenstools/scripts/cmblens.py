@@ -7,7 +7,7 @@ import sys,os,glob
 
 import numpy as np
 
-from lenstools.image.convergence import ConvergenceMap,CMBTemperatureMap
+from lenstools.image.convergence import ConvergenceMap,CMBTemperatureMap,PhiMap
 from lenstools.simulations.logs import logdriver,logstderr,peakMemory,peakMemoryAll
 from lenstools.pipeline.simulation import SimulationBatch
 from lenstools.pipeline.settings import CMBReconstructionSettings
@@ -159,9 +159,13 @@ def reconstructQuad(pool,batch,settings,batch_id):
 
 		elif settings.output_type=="phi":
 			output_img = cmb_len.estimatePhiQuad(powerTT=lensed_ps_filename,callback=settings.ps_type,noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
+
+		elif settings.output_type=="phifft":
+			phifft = cmb_len.estimatePhiFFTQuad(powerTT=lensed_ps_filename,callback=settings.ps_type,noise_keys=noise_keys,lmax=settings.lmax,filtering=filtering)
+			output_img = PhiMap(phifft,angle=input_kappa.side_angle)
 			
 		else:
-			raise NotImplementedError("output_type must be one between (kappa,phi)")
+			raise NotImplementedError("output_type must be one between (kappa,phi,phifft)")
 
 		#Save the result
 		savename = os.path.join(maps_output.storage,settings.output_fname.format(os.path.basename(input_filename)))
