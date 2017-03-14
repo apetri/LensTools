@@ -2,6 +2,10 @@ import numpy as np
 from astropy.io import fits
 import astropy.units as u
 
+#####################################
+#############FITS####################
+#####################################
+
 #Load scalar FITS image
 def loadFITS(cls,filename):
 
@@ -53,3 +57,17 @@ def saveFITS(self,filename,double_precision):
 	#Save the image
 	hdulist = fits.HDUList([hdu])
 	hdulist.writeto(filename,overwrite=True)
+
+#####################################
+#############NUMPY###################
+#####################################
+
+#Write npz file
+def saveNPZ(self,filename):
+	np.savez(filename,self.data,angle_deg=self.side_angle.to(u.deg).value)
+
+#Load npz file
+def loadNPZ(cls,filename):
+	data = np.load(filename)
+	return cls(data["arr_0"],angle=data["angle_deg"]*u.deg)
+

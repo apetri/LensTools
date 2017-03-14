@@ -34,7 +34,7 @@ from scipy.ndimage import filters
 import astropy.units as u
 
 #I/O
-from .io import loadFITS,saveFITS
+from .io import loadFITS,saveFITS,loadNPZ,saveNPZ
 
 #CMB lensing
 from .cmblens import QuickLens as Lens
@@ -141,12 +141,15 @@ class Spin0(object):
 			extension = filename.split(".")[-1]
 			if extension in ["fit","fits"]:
 				format="fits"
+			elif extension in ["npy","npz"]:
+				format="npz"
 			else:
 				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
 		if format=="fits":
 			return loadFITS(cls,filename)
-
+		elif format=="npz":
+			return loadNPZ(cls,filename)
 		else:
 			angle,data = format(filename,**kwargs)
 			return cls(data,angle)
@@ -173,13 +176,16 @@ class Spin0(object):
 			extension = filename.split(".")[-1]
 			if extension in ["fit","fits"]:
 				format="fits"
+			elif extension in ["npy","npz"]:
+				format="npz"
 			else:
 				raise IOError("File format not recognized from extension '{0}', please specify it manually".format(extension))
 
 		
 		if format=="fits":
 			saveFITS(self,filename,double_precision)
-
+		elif format=="npz":
+			saveNPZ(self,filename)
 		else:
 			raise ValueError("Format {0} not implemented yet!!".format(format))
 
