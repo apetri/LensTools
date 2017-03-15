@@ -1724,7 +1724,7 @@ class CMBTemperatureMap(Spin0):
 
 		#Generate random temperature map
 		tfft = qlens.generateTmap(angle,npixel,powerTT,callback,lmax)
-		unit = u.K
+		unit = u.uK
 
 		#Return
 		if space=="real":

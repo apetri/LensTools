@@ -267,7 +267,7 @@ class QuickLens(Lens):
 		teb_unl = ql.sims.tebfft(pix,self._cache["Cl_unl"])
 
 		#Return to user
-		return teb_unl.tfft
+		return teb_unl.tfft*npixel/resolution.value
 
 	##################
 	#Lens a CMB T map#
