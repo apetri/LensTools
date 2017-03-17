@@ -1957,3 +1957,49 @@ class CMBTemperatureMap(Spin0):
 		#Return
 		return ConvergenceMap(kappa.real,angle=self.side_angle)
 
+	#Quadratic N0 bias
+	def N0Bias(self,l_edges,powerTT=None,callback="camb_dimensionless",noise_keys=None,lmax=3500,output="kappa"):
+
+		"""
+		Calculate the quadratic N0 bias on the power spectrum of the kappa/phi estimated with the quadratic TT estimator. The result is referred to the angle and resolution of the image
+
+		:param l_edges: multipole bin edges
+		:type l_edges: array.
+
+		:param powerTT: name of the file that contains the lensed theory TT power spectrum. If callback is a callable, powerTT is passed to the callback
+		:type powerTT: str.
+
+		:param callback: callback function that computes the TT power spectrum. Can be 'camb_dimensionless' or 'camb_uk' for using camb tabulated power spectra (dimensionless or uK^2 units), None (the identity is used), or callable. If callable, it is called on powerTT and must return (ell,P_TT(ell))
+		:type callback: str.
+
+		:param noise_keys: dictionary with noise TT power spectrum specifications
+		:type noise_keys: dict.
+
+		:param lmax: maximum multipole to consider
+		:type lmax: int.
+
+		:param output: must be 'kappa' or 'phi'
+		:type output: str.
+
+		:returns: (bin centers, N0 bias)
+		:rtype: tuple.
+
+		"""
+		
+		#Safety check
+		assert output in ("kappa","phi")
+
+		#CMB lensing routines
+		qlens = Lens()
+
+		#Perform the estimate
+		ell,n0tt = qlens.N0TT(l_edges,self.side_angle,len(self.data),powerTT,callback,noise_keys,lmax)
+
+		#Convert to kappa if requested
+		if output=="kappa":
+			n0tt *= 0.25*ell**4
+
+		#Return
+		return ell,n0tt
+
+
