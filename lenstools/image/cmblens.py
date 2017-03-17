@@ -172,6 +172,10 @@ class Lens(object):
 		pass
 
 	@abstractmethod
+	def buildQQCache(self,npixel,resolution,estimator,Tfilter):
+		pass
+
+	@abstractmethod
 	def generateTmap(angle,npixel):
 		pass
 
@@ -181,6 +185,10 @@ class Lens(object):
 
 	@abstractmethod
 	def phiTT(tfft,angle,powerTT,callback,noise_keys,lmax,filtering):
+		pass
+
+	@abstractmethod
+	def N0TT(self,l_edges,angle,npixel,powerTT,callback,noise_keys,lmax):
 		pass
 
 #########################
@@ -242,6 +250,10 @@ class QuickLens(Lens):
 
 		#Log
 		logcmb.debug("Normalization cache complete")
+
+	#Build QQ cache
+	def buildQQCache(self,npixel,resolution,estimator,Tfilter):
+		self._cache["qq"] = estimator.fill_clqq(ql.maps.cfft(npixel,resolution),Tfilter,Tfilter,Tfilter)
 
 	######################################
 	#Default CMB unlensed temperature map#
@@ -353,5 +365,46 @@ class QuickLens(Lens):
 				phifft.fft *= filtering(self._cache["ell"])
 
 		#Return
-		return phifft.fft*npixel/resolution.value 
+		return phifft.fft*npixel/resolution.value
+
+	##################
+	#Analytic N0 bias#
+	##################
+
+	def N0TT(self,l_edges,angle,npixel,powerTT,callback,noise_keys,lmax): 
+
+		#######################################################
+		#Build the caches for ell,C_ell if not present already#
+		#######################################################
+
+		if ("powerTT_obs" not in self._cache) or (str(powerTT)!=self._cache["powerTT_lensed_name"]) or (lmax!=self._cache["lmax"]):
+			self.buildEllCache(angle,npixel,lmax)
+			self.buildLensedTTCache(powerTT,callback,noise_keys)
+			recompute_norm = True
+			recompute_qq = True
+		else:
+			recompute_norm = False
+			recompute_qq = True
+
+		#Get a handle on the estimator
+		resolution = angle.to(u.rad).value/npixel
+		estimator = ql.qest.lens.phi_TT(self._cache["powerTT_lensed"])
+
+		#Recompute normalization
+		if ("norm" not in self._cache) or recompute_norm:
+			self.buildNormCache(npixel,resolution,estimator,self._cache["1/powerTT_obs"])
+
+		#Recompute qq
+		if ("qq" not in self._cache) or recompute_qq:
+			self.buildQQCache(npixel,resolution,estimator,self._cache["1/powerTT_obs"])
+
+		#Get normalized QQ estimate
+		nlqq = self._cache["qq"] / self._cache["norm"]**2
+
+		#Azimuthal average
+		nlqq_azimuthal = nlqq.get_ml(l_edges)
+
+		#Return
+		return nlqq_azimuthal.ls,nlqq_azimuthal.specs["cl"].real
+
 
