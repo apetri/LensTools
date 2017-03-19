@@ -179,7 +179,7 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 			ky1 = j;
 
 			//Calculate multipole
-			l = sqrt(kx1*kx1 + kx2*kx2)*lpix;
+			l = sqrt(kx1*kx1 + ky1*ky1)*lpix;
 
 			//Skip to next if tan(angle)<tan(120)
 			if(kx1<0 && ky1<kx1*T120){
@@ -316,7 +316,7 @@ int bispectrum_folded(double _Complex *ft_map1,double _Complex *ft_map2,double _
 			ky1 = j;
 
 			//Calculate multipole
-			l = sqrt(kx1*kx1 + kx2*kx2)*lpix;
+			l = sqrt(kx1*kx1 + ky1*ky1)*lpix;
 
 			//Calculate second leg with ratio
 			kx2 = -(int)(folding_ratio*kx1);
