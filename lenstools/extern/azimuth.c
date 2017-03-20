@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <complex.h>
+#include <assert.h>
 
 #include "coordinates.h"
 
@@ -157,6 +158,7 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 
 	//Multipoles
 	int i,j,kx1,kx2,kx3,ky1,ky2,ky3;
+	double kx2d,ky2d;
 	long n1,n2,n3;
 
 	//Cycle over pixels in Fourier map
@@ -187,12 +189,16 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 			}
 
 			//Rotate for second leg
-			kx2 = (int)(C120*kx1 - S120*ky1);
-			ky2 = (int)(S120*kx1 + C120*ky1);
+			kx2d = C120*kx1 - S120*ky1;
+			ky2d = S120*kx1 + C120*ky1;
 
 			//Rotate for third leg
-			kx3 = (int)(C120*kx2 - S120*ky2);
-			ky3 = (int)(S120*kx2 + C120*ky2);
+			kx3 = (int)(C120*kx2d - S120*ky2d);
+			ky3 = (int)(S120*kx2d + C120*ky2d);
+
+			//Cast
+			kx2 = (int)kx2d;
+			ky2 = (int)ky2d;
 
 			//Compute locations in FFT arrays for 2nd and 3rd leg
 			if(ky2<0){
@@ -230,6 +236,7 @@ int bispectrum_equilateral(double _Complex *ft_map1,double _Complex *ft_map2,dou
 			if(conjugate){
 				b3 = conj(b3);
 			}
+
 
 			//Find the correct bin
 			for(k=0;k<Nbins;k++){
