@@ -339,9 +339,9 @@ class NbodySnapshot(object):
 
 		#Put the particles in the figure
 		if scale:
-			self.ax.scatter(*(self.positions[first:last].transpose()*self._header["scale_factor"]),**kwargs)
+			self.ax.scatter(*(self.positions[first:last].T.value*self._header["scale_factor"]),**kwargs)
 		else:
-			self.ax.scatter(*self.positions[first:last].transpose(),**kwargs)
+			self.ax.scatter(*self.positions[first:last].T.value,**kwargs)
 
 		#Put the labels on the axes
 		self.ax.set_xlabel(r"$x({0})$".format(self.positions.unit.to_string()))
