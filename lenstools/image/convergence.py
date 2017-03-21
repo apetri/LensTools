@@ -1171,8 +1171,8 @@ class Spin0(object):
 		:param l_edges: Multipole bin edges
 		:type l_edges: array
 
-		:param scale: scaling to apply to the Fourier coefficients before harmonic azimuthal averaging. Must be a function that takes the array of multipole magnitudes as an input and returns a real numbers 
-		:type scale: callable
+		:param scale: scaling to apply to the square of the Fourier pixels before harmonic azimuthal averaging. Must be a function that takes the array of multipole magnitudes as an input and returns an array of real numbers 
+		:type scale: callable.
 
 		:returns: (l -- array,Pl -- array) = (binned multipole moments, power spectrum at multipole moments)
 		:rtype: tuple.
@@ -1407,7 +1407,7 @@ class Spin0(object):
 
 	################################################################################################################################################
 
-	def bispectrum(self,l_edges,ratio=0.5,configuration="equilateral"):
+	def bispectrum(self,l_edges,ratio=0.5,configuration="equilateral",scale=None):
 
 		"""
 		Calculates the bispectrum of the map in the equilateral or folded configuration
@@ -1420,6 +1420,9 @@ class Spin0(object):
 
 		:param configuration: must be either "equilateral" or "folded"
 		:type configuration: str.
+
+		:param scale: scaling to apply to the cube of the Fourier pixels before harmonic azimuthal averaging. Must be a function that takes the array of multipole magnitudes as an input and returns an array of real positive numbers
+		:type scale: callable.
 
 		:returns: (multipoles, bispectrum at multipoles)
 		:rtype: tuple.
@@ -1441,6 +1444,11 @@ class Spin0(object):
 
 		#Calculate FFT of the map via FFT
 		ft_map = fftengine.rfft2(self.data)
+
+		#Scale pixels if scaling is provided
+		if scale is not None:
+			sc = scale(self.getEll())
+			ft_map *= np.cbrt(sc)
 
 		#Calculate bispectrum
 		if configuration in ("equilateral","folded"):
