@@ -175,6 +175,9 @@ int bispectrum(double _Complex *ft_map1,double _Complex *ft_map2,double _Complex
 
 			//Calculate multipole
 			l = sqrt(kx1*kx1 + ky1*ky1)*lpix;
+			if(l>=lvalues[Nbins]){
+				continue;
+			}
 
 			//Calcuate second leg
 			if(k1tok2(kx1,ky1,&kx2,&ky2,args)){
@@ -194,6 +197,11 @@ int bispectrum(double _Complex *ft_map1,double _Complex *ft_map2,double _Complex
 				conjugate = 0;
 			}
 
+			//Bounds check
+			if(ky2>=size_y || kx2<=-size_y || kx2>=size_y){
+				continue;
+			}
+
 			if(kx2<0){
 				kx2 = size_x + kx2;
 			}
@@ -210,6 +218,11 @@ int bispectrum(double _Complex *ft_map1,double _Complex *ft_map2,double _Complex
 				conjugate = 1;
 			} else{
 				conjugate = 0;
+			}
+
+			//Bounds check
+			if(ky3>=size_y || kx3<=-size_y || kx3>=size_y){
+				continue;
 			}
 
 			if(kx3<0){
