@@ -158,7 +158,7 @@ int bispectrum(double _Complex *ft_map1,double _Complex *ft_map2,double _Complex
 	for(i=0;i<size_x;i++){
 
 		//Calculate integer wavenumber kx according to complex FFT frequencies
-		if(i<size_x>>2){
+		if(i<size_x>>1){
 			kx1 = i;
 		} else{
 			kx1 = i - size_x;
