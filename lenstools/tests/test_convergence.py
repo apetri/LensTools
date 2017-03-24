@@ -70,8 +70,8 @@ def test_cross():
 def test_bispectrum():
 
 	#Measure bispectrum
-	l,be = test_map.bispectrum(l_edges,configuration="equilateral")
-	l,bf = test_map.bispectrum(l_edges,configuration="folded",ratio=0.5)
+	l,be = test_map.bispectrum(l_edges,configuration="equilateral",scale=lambda x:(x**4)/(2.*np.pi)**2)
+	l,bf = test_map.bispectrum(l_edges,configuration="folded",ratio=0.5,scale=lambda x:(x**4)/(2.*np.pi)**2)
 
 	#Plot
 	fig,ax = plt.subplots()
@@ -80,10 +80,10 @@ def test_bispectrum():
 	ax.set_xscale("log")
 	ax.set_yscale("log")
 	ax.set_xlabel(r"$\ell$")
-	ax.set_ylabel(r"$B(\ell_1,\ell_2,\ell_3)$")
+	ax.set_ylabel(r"$(\ell_1\ell_2\ell_3)^{4/3}B(\ell_1,\ell_2,\ell_3)/(2\pi)^2$")
 	ax.legend()
 
-	plt.savefig("bispectrum.png")
+	plt.savefig("kappa_bispectrum.png")
 	plt.clf()
 
 
