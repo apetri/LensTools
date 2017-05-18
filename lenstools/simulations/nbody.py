@@ -97,7 +97,7 @@ class NbodySnapshot(object):
 	###################################################################################
 
 	#Check that header has all required keys#
-	_header_keys = ['redshift','scale_factor','comoving_distance','masses','num_particles_file','num_particles_total','box_size','num_files','Om0','Ode0','w0','wa','h']
+	_header_keys = ['redshift','scale_factor','masses','num_particles_file','num_particles_total','box_size','num_files','Om0','Ode0','w0','wa','h']
 
 	def _check_header(self):
 

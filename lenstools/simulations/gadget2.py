@@ -748,8 +748,8 @@ class Gadget2SnapshotNu(Gadget2Snapshot):
 		header["files"] = [self.fp.name]
 
 		del header["comoving_distance"]
-		del header["w0"]
-		del header["wa"]
+		header["w0"] = -1.
+		header["wa"] = 0.
 
 		return header
 
