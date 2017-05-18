@@ -5,7 +5,7 @@ import types
 import numpy as np
 from scipy.integrate import odeint
 from astropy.cosmology import w0waCDM
-from astropy.units import rad
+import astropy.units as u
 
 try:
 	from ..extern import _nicaea
@@ -221,11 +221,12 @@ class Nicaea(w0waCDM):
 
 	"""
 
-	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.800,ns=0.960,name=None):
+	def __init__(self,H0=72.0,Om0=0.26,Ode0=0.74,Ob0=0.046,w0=-1.0,wa=0.0,sigma8=0.800,As=None,ns=0.960,m_nu=np.array([0.,0.,0.])*u.eV,name=None):
 
-		super(Nicaea,self).__init__(H0,Om0,Ode0,w0=w0,wa=wa,Ob0=Ob0,name=name)
-		self.sigma8=sigma8
-		self.ns=ns
+		super(Nicaea,self).__init__(H0,Om0,Ode0,w0=w0,wa=wa,Ob0=Ob0,m_nu=m_nu,name=name)
+		self.sigma8 = sigma8
+		self.As = As
+		self.ns = ns
 
 	def __repr__(self):
 
@@ -235,6 +236,19 @@ class Nicaea(w0waCDM):
 		ns_piece = u" ns={0}".format(self.ns)
 
 		return ",".join(pieces[:3] + [si8_piece,ns_piece] + pieces[3:])
+
+	#Neutrino masses in eV
+	@property
+	def mva(self):
+		return self.m_nu[0].to(u.eV).value
+
+	@property
+	def mvb(self):
+		return self.m_nu[1].to(u.eV).value
+
+	@property
+	def mvc(self):
+		return self.m_nu[2].to(u.eV).value
 
 	#Cosmology ID useful for book--keeping
 	def cosmo_id(self,parameters=["Om"],legend={"Om":"Om0"},fmt="{0:.3f}"):
@@ -400,7 +414,7 @@ class Nicaea(w0waCDM):
 			settings=NicaeaSettings.default()
 
 		#Convert angles in radians
-		theta_rad = theta.to(rad).value
+		theta_rad = theta.to(u.rad).value
 
 		#Check sanity of input
 		nzbins,nofz,Nnz,par_nz = _check_redshift(z,distribution,distribution_parameters,**kwargs)

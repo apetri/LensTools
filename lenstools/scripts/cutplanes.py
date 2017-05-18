@@ -177,6 +177,11 @@ def cnstTime(pool,batch,settings,batch_id,override):
 
 		snap = snapshot_handler.open(snapshot_filename,pool=pool)
 
+		#Insert correct comoving distance and cosmology into header
+		if "comoving_distance" not in snap.header:
+			snap.cosmology = model.cosmology
+			snap._header["comoving_distance"] = snap.cosmology.comoving_distance(snap.header["redshift"])
+
 		if pool is not None:
 			logdriver.debug("Task {0} read nbody snapshot from {1}".format(pool.comm.rank,snapshot_filename))
 

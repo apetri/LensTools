@@ -39,6 +39,7 @@ def string2cosmo(s,name2attr):
 	parameters_dict = dict()
 	parameters_list = list()
 	parameters = s.split("_")
+	neutrino_masses = list()
 
 	for parameter in parameters:
 				
@@ -54,11 +55,17 @@ def string2cosmo(s,name2attr):
 			#The Hubble parameter needs particular attention
 			if par=="h":
 				parameters_dict["H0"] = 100.0*float(val)
+			elif par.startswith("mv"):
+				neutrino_masses.append(float(val))
 			else: 
 				parameters_dict[name2attr[par]] = float(val)
 		
 		except (ValueError,KeyError):
 			return None
+
+	#Fill in neutrino parameters
+	if neutrino_masses:
+		parameters_dict["m_nu"] = np.array(neutrino_masses)*u.eV
 
 	try:
 		cosmoModel = LensToolsCosmology(**parameters_dict)

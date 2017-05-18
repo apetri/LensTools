@@ -715,7 +715,7 @@ class Gadget2Snapshot(NbodySnapshot):
 
 
 ##############################################################
-#################Gadget2SnapshotDE class########################
+#################Gadget2SnapshotDE class######################
 ##############################################################
 
 class Gadget2SnapshotDE(Gadget2Snapshot):
@@ -730,7 +730,28 @@ class Gadget2SnapshotDE(Gadget2Snapshot):
 		header["files"] = [self.fp.name]
 
 		return header
-		 
+
+##############################################################
+#################Gadget2SnapshotNu class######################
+##############################################################
+
+class Gadget2SnapshotNu(Gadget2Snapshot):
+
+	"""
+	A class that handles Gadget2 snapshots with neutrino effects
+
+	"""
+
+	def getHeader(self):
+		
+		header = Gadget2Header(ext._gadget2.getHeader(self.fp))
+		header["files"] = [self.fp.name]
+
+		del header["comoving_distance"]
+		del header["w0"]
+		del header["wa"]
+
+		return header
 
 ##################################################################
 #################Gadget2SnapshotPipe class########################
