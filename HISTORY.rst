@@ -9,6 +9,8 @@
 - Measure equilateral and folded bispectrum of scalar images (kappa,cmb)
 - Introduced CMBTemperatureMap class
 - CMB lensing potential reconstructions with quadratic TT estimator (wrapped around quicklens)
+- Handle neutrino parameters in pipeline book keeping
+- Introduced Gadget2SnapshotNu class for N-body outputs with neutrino effects
 
 0.9
 +++
