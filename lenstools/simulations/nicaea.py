@@ -284,16 +284,18 @@ class Nicaea(w0waCDM):
 			wa=0.0
 
 		#Neutrinos
+		m_nu = cosmo.m_nu
 		Neff = cosmo.Neff
 		Onu0 = cosmo.Onu0
 
 		#Set these manually to default
 		ns = 0.960
 		sigma8 = 0.800
+		As = 2.1000
 		Ob0 = 0.046
 
 		#Instantiate
-		return cls(H0=H0,Om0=Om0,Ode0=Ode0,Ob0=Ob0,w0=w0,wa=wa,sigma8=sigma8,ns=ns)
+		return cls(H0=H0,Om0=Om0,Ode0=Ode0,Ob0=Ob0,w0=w0,wa=wa,sigma8=sigma8,As=As,ns=ns,m_nu=m_nu)
 
 	################################################################################################################
 
