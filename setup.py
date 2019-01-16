@@ -303,7 +303,7 @@ setup(
 	author_email=email,
 	packages=packages,
 	package_data=package_data,
-	install_requires=["numpy","scipy","pandas","matplotlib","astropy","emcee"],
+	install_requires=["numpy","scipy","pandas","matplotlib","astropy","emcee<=2.2.1"],
 	url=url,
 	download_url=download_url,
 	license="MIT",
