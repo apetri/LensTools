@@ -4,6 +4,6 @@ scipy
 matplotlib
 ipython
 pandas
-emcee
+emcee==2.2.1
 astropy
 numexpr
