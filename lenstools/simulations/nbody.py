@@ -1359,13 +1359,13 @@ class NbodySnapshot(object):
 			
 			assert self.positions.unit==rhs.positions.unit
 			merged_snapshot.positions = np.vstack((self.positions.value,rhs.positions.value))
-			merged_snapshot.positions *= self.positions.unit
+			merged_snapshot.positions = merged_snapshot.positions * self.positions.unit
 
 		if hasattr(self,"velocities") and hasattr(rhs,"velocities"):
 			
 			assert self.velocities.unit==rhs.velocities.unit
 			merged_snapshot.velocities = np.vstack((self.velocities.value,rhs.velocities.value))
-			merged_snapshot.velocities *= self.velocities.unit
+			merged_snapshot.velocities = merged_snapshot.velocities * self.velocities.unit
 
 		if hasattr(self,"id") and hasattr(rhs,"id"):
 
