@@ -96,7 +96,7 @@ Dependencies
 .. _mpi4py: http://mpi4py.scipy.org
 .. _GSL: http://www.gnu.org/software/gsl/    
 .. _pytest: http://pytest.org/latest/
-.. _here: http://www.plus-six.com/andrea/lenstools/data.tar.gz
+.. _here: https://www.dropbox.com/s/oh526rkrhiy3m8u/data.tar.gz
 .. _github: https://github.com/apetri/LensTools
 .. _NICAEA: http://www.cosmostat.org/software/nicaea/
 .. _fftw3: http://www.fftw.org
