@@ -1,7 +1,7 @@
 language: python
 python:
  - 2.7
- - 3.4
+ - 3.6
 
 notifications:
 email: false  
@@ -28,6 +28,11 @@ before_install:
 - make
 - make install
 - cd ..
+
+#LensTools data
+- wget https://www.dropbox.com/s/oh526rkrhiy3m8u/data.tar.gz
+- tar -xvf data.tar.gz
+- mv Data LT_Data
 
 #The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
 - sudo rm -rf /dev/shm
