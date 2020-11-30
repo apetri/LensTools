@@ -35,8 +35,8 @@ before_install:
 - mv Data LT_Data
 
 #The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
-- sudo rm -rf /dev/shm
-- sudo ln -s /run/shm /dev/shm
+#- sudo rm -rf /dev/shm
+#- sudo ln -s /run/shm /dev/shm
 
 #Install packages
 install:
