@@ -43,7 +43,7 @@ before_install:
 
 #Install packages
 install:
-- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy sqlalchemy matplotlib nose pandas numexpr astropy
+- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy sqlalchemy matplotlib=1.4.3 nose pandas numexpr astropy
 
 #Coverage packages
 - pip install coveralls
