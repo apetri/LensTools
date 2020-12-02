@@ -4,7 +4,10 @@ python:
  - 3.6
 
 notifications:
-email: false  
+email: false
+
+services:
+- xvfb
 
 #####################################################
 #From: https://gist.github.com/dan-blanchard/7045057#
@@ -48,10 +51,10 @@ install:
 - python setup.py install --gsl=/home/travis/build/apetri/LensTools/cextern
 
 #Set up display
-before_script: 
-- "export DISPLAY=:99.0"
+#before_script: 
+#- "export DISPLAY=:99.0"
 #- "sh -e /etc/init.d/xvfb start"
-- sleep 3
+#- sleep 3
 
 #Run test
 script:
