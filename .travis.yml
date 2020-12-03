@@ -43,18 +43,13 @@ before_install:
 
 #Install packages
 install:
-- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy sqlalchemy matplotlib=1.4.3 nose pandas numexpr astropy
+- conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy sqlalchemy nose pandas numexpr astropy
 
 #Coverage packages
+- pip install matplotlib==1.4.3
 - pip install coveralls
 - python setup.py build_ext -i --gsl=/home/travis/build/apetri/LensTools/cextern
 - python setup.py install --gsl=/home/travis/build/apetri/LensTools/cextern
-
-#Set up display
-#before_script: 
-#- "export DISPLAY=:99.0"
-#- "sh -e /etc/init.d/xvfb start"
-#- sleep 3
 
 #Run test
 script:
