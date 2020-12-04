@@ -24,7 +24,7 @@ def test_convergence_power():
 	plt.xscale("log")
 	plt.yscale("log")
 
-	plt.xlabel(r"$l$")
-	plt.ylabel(r"$l(l+1)C_l/2\pi$")
+	plt.xlabel("l")
+	plt.ylabel("l(l+1)C_l/2*pi")
 
 	plt.savefig("limber_power.png") 
