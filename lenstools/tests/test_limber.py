@@ -27,4 +27,7 @@ def test_convergence_power():
 	plt.xlabel("l")
 	plt.ylabel("l(l+1)C_l/2*pi")
 
-	plt.savefig("limber_power.png") 
+	try:
+		plt.savefig("limber_power.png")
+	except:
+		pass
