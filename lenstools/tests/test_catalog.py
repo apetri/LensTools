@@ -1,7 +1,7 @@
 import sys,os
 
 from .. import dataExtern
-from ..catalog.shear import ShearCatalog
+from ..catalog import ShearCatalog
 
 import matplotlib.pyplot as plt
 import astropy.units as u
