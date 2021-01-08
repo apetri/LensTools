@@ -395,7 +395,7 @@ class ShearCatalog(Catalog):
 		:type inplace: bool.
 
 		:returns: shear estimate with the added intrinsic ellipticity
-		:rtype: :py:class:`~lenstools.catalog.shear.ShearCatalog` 
+		:rtype: :py:class:`~lenstools.catalog.ShearCatalog` 
 
 		"""
 
