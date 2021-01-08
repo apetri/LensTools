@@ -1,1 +1,1 @@
-from .shear import Catalog,ShearCatalog
+from .catalog import Catalog,ShearCatalog,FlexionCatalog

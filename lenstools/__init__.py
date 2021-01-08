@@ -5,14 +5,16 @@
 
 """
 
-__version__ = "1.1"
+__version__ = "1.2"
 
 import sys
 
 from .utils.configuration import configuration
 
+from .catalog import Catalog,ShearCatalog,FlexionCatalog
 from .image.convergence import ConvergenceMap,OmegaMap,Mask,CMBTemperatureMap
 from .image.shear import ShearMap
+from .image.flexion import FlexionMap
 from .image.noise import GaussianNoiseGenerator
 from .statistics.ensemble import Ensemble
 
