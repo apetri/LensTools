@@ -348,14 +348,6 @@ class FlexionMap(Spin1):
 	"""
 	A class that handles 2D flexion maps and allows to perform a set of operations on them
 
-	>>> from lenstools import FlexionMap
-	
-	>>> test = ShearMap.load("shear.fit",format=lenstools.defaults.load_fits_default_shear)
-	>>> test.side_angle
-	1.95
-	>>> test.data
-	#The actual map values
-
 	"""
 
 	#Construct flexion from convergence via KS ideology
