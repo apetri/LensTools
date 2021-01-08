@@ -6,7 +6,7 @@
 
 
 .. moduleauthor:: Andrea Petri <apetri@phys.columbia.edu>
-
+                ... and edited by Brij Patel <brp53@drexel.edu>
 
 """
 
@@ -29,6 +29,7 @@ except ImportError:
 
 from .. import extern as ext
 from ..image.shear import ShearMap
+from ..image.flexion import FlexionMap
 from ..utils.algorithms import step
 
 ##########################################################
@@ -489,4 +490,54 @@ class ShearCatalog(Catalog):
 		super(Catalog,self).write(filename,**kwargs)
 
 
+##########################################################
+##############FlexionCatalog class########################
+##########################################################
 
+class FlexionCatalog(Catalog):
+
+	"""
+	Class handler of a galaxy flexion catalog, inherits all the functionality from the Catalog class
+
+	"""
+
+	def setRedshiftInfo(self,field_z="z"):
+		self._field_z = field_z
+
+	########################################################################################
+
+	def toMap(self,map_size,npixel,smooth,**kwargs):
+
+		"""
+		Convert a flexion catalog into a flexion map
+
+		:param map_size: spatial size of the map
+		:type map_size: quantity
+
+		:param npixel: number of pixels on a side
+		:type npixel: int.
+
+		:param smooth: if not None, the map is smoothed with a gaussian filter of scale smooth
+		:type smooth: quantity
+
+		:param kwargs: additonal keyword arguments are passed to pixelize
+		:type kwargs: dict.
+
+		:returns: shear map
+		:rtype: ShearMap
+
+		"""
+
+		#Shear components
+		F1 = self.pixelize(map_size,npixel,field_quantity="F1",smooth=smooth,accumulate="average",**kwargs)
+		F2 = self.pixelize(map_size,npixel,field_quantity="F2",smooth=smooth,accumulate="average",**kwargs)
+
+		#Convert into map
+		return FlexionMap(np.array([F1,F2]),map_size)
+
+	########################################################################################
+
+	def write(self,filename,**kwargs):
+
+		self.meta["NGAL"] = len(self)
+		super(Catalog,self).write(filename,**kwargs)
