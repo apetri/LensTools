@@ -195,7 +195,7 @@ class Spin1(object):
 		"""
 
 		if self.data.shape[0] > 2:
-			raise ValueError("Gradients are nor defined yet for spin>1 fields!!")
+			raise ValueError("Gradients are not defined yet for spin>1 fields!!")
 
 		if (x is not None) and (y is not None):
 
