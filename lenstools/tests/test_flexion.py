@@ -72,7 +72,7 @@ def test_reconstruct():
 	convMapFromShear.visualize(fig=fig,ax=ax[0],colorbar=True)
 	ax[0].set_title("Convergence Map from Shear")
     
-	# Create convergence map from shear map and visualize
+	# Create convergence map from flexion map and visualize
 	convMapFromFlexion = flexionMap.convergence()
 	convMapFromFlexion.visualize(fig=fig,ax=ax[1],colorbar=True,cbar_label=r"$\kappa$")
 	ax[1].set_title("Convergence Map from Flexion")
