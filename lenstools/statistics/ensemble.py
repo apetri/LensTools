@@ -936,21 +936,6 @@ class SquareMatrix(Ensemble):
 	def covariance(self,*args,**kwargs):
 		raise NotImplementedError("This method is not implemented for SquareMatrix!")
 
-#######################################
-########Panel class####################
-#######################################
-
-class Panel(pd.Panel):
-
-	@property 
-	def _constructor(self):
-		return self.__class__
-
-	@property
-	def _constructor_sliced(self):
-		return Ensemble
-
-
 ###################################################################################################################################################################################################
 
 
