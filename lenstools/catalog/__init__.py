@@ -1,1 +1,2 @@
-from .shear import Catalog,ShearCatalog
+from .catalog import Catalog,ShearCatalog,FlexionCatalog
+from .generateCatalog import MockCatalog

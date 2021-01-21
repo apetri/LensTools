@@ -140,7 +140,7 @@ class Ensemble(pd.DataFrame):
 
 	@property
 	def _constructor_expanddim(self):
-		return Panel
+		raise NotImplementedError("Expand dimension not supported")
 
 	##################################
 	########Constructor###############
@@ -935,21 +935,6 @@ class SquareMatrix(Ensemble):
 
 	def covariance(self,*args,**kwargs):
 		raise NotImplementedError("This method is not implemented for SquareMatrix!")
-
-#######################################
-########Panel class####################
-#######################################
-
-class Panel(pd.Panel):
-
-	@property 
-	def _constructor(self):
-		return self.__class__
-
-	@property
-	def _constructor_sliced(self):
-		return Ensemble
-
 
 ###################################################################################################################################################################################################
 
