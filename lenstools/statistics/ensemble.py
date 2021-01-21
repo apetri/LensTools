@@ -140,7 +140,7 @@ class Ensemble(pd.DataFrame):
 
 	@property
 	def _constructor_expanddim(self):
-		return Panel
+		raise NotImplementedError("Expand dimension not supported")
 
 	##################################
 	########Constructor###############

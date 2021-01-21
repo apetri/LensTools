@@ -1,5 +1,10 @@
 .. :changelog:
 
+1.2
++++
+
+- Support for weak lensing flexion analysis (courtesy of Brij Patel, brp53@drexel.edu) 
+
 1.0
 +++
 

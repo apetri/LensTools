@@ -38,7 +38,7 @@ except ImportError:
 #########################################################
 
 from ..utils.algorithms import precision_bias_correction
-from .ensemble import Series,Ensemble,Panel 
+from .ensemble import Series,Ensemble 
 from . import samplers
 
 #########################################################
@@ -435,7 +435,7 @@ class FisherAnalysis(Analysis):
 
 	@property
 	def _constructor_expanddim(self):
-		return FisherPanel
+		raise NotImplementedError("Expand dimension not supported")
 
 	#################################################################
 
@@ -902,14 +902,6 @@ class FisherAnalysis(Analysis):
 		#Check that the format of the parameter set is valid
 		self.check()
 
-
-class FisherPanel(Panel):
-
-	@property 
-	def _constructor_sliced(self):
-		return FisherAnalysis
-
-
 #######################################################
 #############Full analysis#############################
 #######################################################
@@ -939,7 +931,7 @@ class Emulator(Analysis):
 
 	@property
 	def _constructor_expanddim(self):
-		return EmulatorPanel
+		raise NotImplementedError("Expand dimension not supported")
 
 	##################################
 	########Constructor###############
@@ -1248,16 +1240,16 @@ class Emulator(Analysis):
 		Compute the score for an observed feature for each combination of the proposed parameters
 
 		:param parameters: parameter combinations to score
- 		:type parameters: DataFrame or array
+		:type parameters: DataFrame or array
 
- 		:param observed_feature: observed feature to score
- 		:type observed_feature: Series
+		:param observed_feature: observed feature to score
+		:type observed_feature: Series
 
- 		:param method: scoring method to use (defaults to chi2): if callable, must take in the current instance, the parameter array and the observed feature and return a score for each parameter combination
- 		:type method: str. or callable
+		:param method: scoring method to use (defaults to chi2): if callable, must take in the current instance, the parameter array and the observed feature and return a score for each parameter combination
+		:type method: str. or callable
 
- 		:param kwargs: keyword arguments passed to the callable method
- 		:type kwargs: dict.
+		:param kwargs: keyword arguments passed to the callable method
+		:type kwargs: dict.
 
 		:returns: ensemble with the scores, for each feature
 		:rtype: :py:class:`Ensemble`
@@ -1317,14 +1309,14 @@ class Emulator(Analysis):
 		"""
 		Sample the parameter posterior distribution
 
- 		:param observed_feature: observed feature to score
- 		:type observed_feature: Series
+		:param observed_feature: observed feature to score
+		:type observed_feature: Series
 
- 		:param sample: posterior sampling method
- 		:type sample: str. or callable
+		:param sample: posterior sampling method
+		:type sample: str. or callable
 
- 		:returns: samples from the posterior distribution
- 		:rtype: dict. 
+		:returns: samples from the posterior distribution
+		:rtype: dict. 
 
 		"""
 
@@ -1416,13 +1408,6 @@ class Emulator(Analysis):
 
 		#return self._current_interpolated_feature(new_feature_label)
 		raise NotImplementedError
-
-
-class EmulatorPanel(Panel):
-
-	@property 
-	def _constructor_sliced(self):
-		return Emulator
 
 #########################################################################################################################################################################################
 
