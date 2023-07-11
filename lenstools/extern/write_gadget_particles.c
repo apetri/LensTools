@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <unistd.h>
 
 #include "gadget2.h"
 
@@ -8,16 +9,16 @@ binary file format*/
 int writeSnapshot(FILE *fp,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart,int writeVel){
 
     int k,id;
-    unsigned int blocksize;
+    uint32_t blocksize;
 
     //the first 4 bytes are also used for endianness check
     blocksize = 256;
-    if(fwrite(&blocksize,sizeof(unsigned int),1,fp)!=1) return -1;
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
 
     //the header comes next
     if(fwrite(header,sizeof(struct io_header_1),1,fp)!=1) return -1;
     // end of block: blocksize again
-    if(fwrite(&blocksize,sizeof(unsigned int),1,fp)!=1) return -1;
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
 
     // new block with positions
     blocksize = sizeof(float) * 3 * NumPart;
