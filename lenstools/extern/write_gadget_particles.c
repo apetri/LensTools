@@ -7,90 +7,95 @@
 binary file format*/
 int writeSnapshot(FILE *fp,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart,int writeVel){
 
-	int k,id,garbage=256;
+    int k,id;
+    unsigned int blocksize;
 
-	//the first 4 bytes are for endianness check
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+    //the first 4 bytes are also used for endianness check
+    blocksize = 256;
+    if(fwrite(&blocksize,sizeof(unsigned int),1,fp)!=1) return -1;
 
-	//the header comes next
-	if(fwrite(header,sizeof(struct io_header_1),1,fp)!=1) return -1;
+    //the header comes next
+    if(fwrite(header,sizeof(struct io_header_1),1,fp)!=1) return -1;
+    // end of block: blocksize again
+    if(fwrite(&blocksize,sizeof(unsigned int),1,fp)!=1) return -1;
 
-	//the next 8 bytes are garbage
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+    // new block with positions
+    blocksize = sizeof(float) * 3 * NumPart;
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
+    if(fwrite(positions,sizeof(float)*3,NumPart,fp)!=NumPart) return -1;
 
-	//positions come next
-	if(fwrite(positions,sizeof(float)*3,NumPart,fp)!=NumPart) return -1;
+    //if writeVel is set, only the positions are written, and we stop here
+    if(!writeVel) return 0;
 
-	//if writeVel is set, only the positions are written, and we stop here
-	if(!writeVel) return 0;
+    // end of block:
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
 
-	//the next 8 bytes are garbage
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+    // new block with velocities
+    blocksize = sizeof(float) * 3 * NumPart;
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
 
-	//velocities come next
-	if(fwrite(velocities,sizeof(float)*3,NumPart,fp)!=NumPart) return -1;
+    if(fwrite(velocities,sizeof(float)*3,NumPart,fp)!=NumPart) return -1;
 
-	//the next 8 bytes are garbage
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+    // end of block
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
 
-	//particle IDs come next
-	for(k=0;k<NumPart;k++){
-		id = firstID + k;
-		if(fwrite(&id,sizeof(int),1,fp)!=1) return -1;
-	}
+    // ID block
+    blocksize = sizeof(int) * NumPart;
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
 
-	//the next 4 bytes are garbage
-	if(fwrite(&garbage,sizeof(int),1,fp)!=1) return -1;
+    //particle IDs come next
+    for(k=0;k<NumPart;k++){
+        id = firstID + k;
+        if(fwrite(&id,sizeof(int),1,fp)!=1) return -1;
+    }
 
+    // end of block
+    if(fwrite(&blocksize,sizeof(uint32_t),1,fp)!=1) return -1;
 
-	return 0;
-	
+    return 0;
 }
 
 
 int writeSnapshotFD(int fd,struct io_header_1 *header,float *positions,float *velocities,int firstID,int NumPart,int writeVel){
 
-	int k,id,garbage=256;
+    int k,id,garbage=256;
 
-	//the first 4 bytes are for endianness check
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    //the first 4 bytes are for endianness check
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
 
-	//the header comes next
-	if(write(fd,header,sizeof(struct io_header_1))!=sizeof(struct io_header_1)) return -1;
+    //the header comes next
+    if(write(fd,header,sizeof(struct io_header_1))!=sizeof(struct io_header_1)) return -1;
 
-	//the next 8 bytes are garbage
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    //the next 8 bytes are garbage
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
 
-	//positions come next
-	if(write(fd,positions,sizeof(float)*3*NumPart)!=sizeof(float)*3*NumPart) return -1;
+    //positions come next
+    if(write(fd,positions,sizeof(float)*3*NumPart)!=sizeof(float)*3*NumPart) return -1;
 
-	//if writeVel is set, only the positions are written, and we stop here
-	if(!writeVel) return 0;
+    //if writeVel is set, only the positions are written, and we stop here
+    if(!writeVel) return 0;
 
-	//the next 8 bytes are garbage
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    //the next 8 bytes are garbage
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
 
-	//velocities come next
-	if(write(fd,velocities,sizeof(float)*3*NumPart)!=sizeof(float)*3*NumPart) return -1;
+    //velocities come next
+    if(write(fd,velocities,sizeof(float)*3*NumPart)!=sizeof(float)*3*NumPart) return -1;
 
-	//the next 8 bytes are garbage
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    //the next 8 bytes are garbage
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
 
-	//particle IDs come next
-	for(k=0;k<NumPart;k++){
-		id = firstID + k;
-		if(write(fd,&id,sizeof(int))!=sizeof(int)) return -1;
-	}
+    //particle IDs come next
+    for(k=0;k<NumPart;k++){
+        id = firstID + k;
+        if(write(fd,&id,sizeof(int))!=sizeof(int)) return -1;
+    }
 
-	//the next 4 bytes are garbage
-	if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
+    //the next 4 bytes are garbage
+    if(write(fd,&garbage,sizeof(int))!=sizeof(int)) return -1;
 
-	return 0;
-	
+    return 0;
+    
 }
