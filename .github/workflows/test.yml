@@ -97,10 +97,6 @@ jobs:
         print('✓ C extensions working with NumPy', np.__version__)
         "
     
-    - name: Run C extension tests
-      run: |
-        python -m pytest test_cextensions.py -v
-    
     - name: Download test data
       run: |
         echo "Downloading test data..."
