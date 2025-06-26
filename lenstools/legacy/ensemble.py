@@ -22,7 +22,15 @@ import numpy as np
 import scipy.io as sio
 from scipy import sparse
 
-from emcee.ensemble import _function_wrapper
+try:
+	from emcee.ensemble import _function_wrapper
+except ImportError:
+	# In newer versions of emcee, _function_wrapper moved
+	try:
+		from emcee.utils import _function_wrapper
+	except ImportError:
+		# If both fail, create a simple replacement
+		_function_wrapper = None
 
 try:
 	import pandas as pd
@@ -314,7 +322,7 @@ class Ensemble(object):
 		#Build the appropriate grouping scheme
 		if isinstance(kind,sparse.csr.csr_matrix):
 
-			assert kind.dtype == np.bool,"The scheme type must be bool, only 0 and 1!"
+			assert kind.dtype == bool,"The scheme type must be bool, only 0 and 1!"
 			scheme = kind
 		
 		elif kind=="sparse":

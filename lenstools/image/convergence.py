@@ -353,7 +353,7 @@ class Spin0(object):
 
 		#Visualize
 		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=extent,cmap=cmap,**kwargs)
-		self.ax.grid(b=False)
+		self.ax.grid(visible=False)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 

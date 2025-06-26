@@ -19,7 +19,7 @@ thresholds_pk = np.arange(-1.0,5.0,0.2)
 
 def test_visualize():
 
-	assert test_map.data.dtype == np.float
+	assert test_map.data.dtype == np.float64
 
 	test_map.setAngularUnits(deg)
 	test_map.visualize()
