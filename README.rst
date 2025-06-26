@@ -1,8 +1,8 @@
 Welcome to LensTools!
 +++++++++++++++++++++
 
-.. image:: https://github.com/apetri/LensTools/actions/workflows/test.yml/badge.svg
-    	:target: https://github.com/apetri/LensTools/actions/workflows/test.yml
+.. image:: https://github.com/EiffL/LensTools/actions/workflows/test.yml/badge.svg
+    	:target: https://github.com/EiffL/LensTools/actions/workflows/test.yml
 .. image:: https://coveralls.io/repos/github/apetri/LensTools/badge.svg?branch=master 
 	:target: https://coveralls.io/github/apetri/LensTools?branch=master
 .. image:: http://img.shields.io/pypi/dm/lenstools.svg?style=flat
