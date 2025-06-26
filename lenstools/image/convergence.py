@@ -28,7 +28,7 @@ fftengine = NUMPYFFTPack()
 #Hankel transform
 from ..utils import fht
 
-from scipy.ndimage import filters
+from scipy.ndimage import gaussian_filter
 
 #Units
 import astropy.units as u
@@ -1496,7 +1496,7 @@ class Spin0(object):
 
 			#Perform the smoothing
 			if kind=="gaussian":
-				smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
+				smoothed_data = gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
 		
 			elif kind=="gaussianFFT":
 

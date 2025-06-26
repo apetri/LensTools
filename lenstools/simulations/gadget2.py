@@ -774,7 +774,7 @@ class Gadget2SnapshotPipe(Gadget2SnapshotDE):
 		self.fp.read(8)
 		
 		try:
-			self.positions = (np.fromstring(self.fp.read(4*3*npart),dtype=np.float32).reshape(npart,3) * self.kpc_over_h).to(self.Mpc_over_h)
+			self.positions = (np.frombuffer(self.fp.read(4*3*npart),dtype=np.float32).reshape(npart,3) * self.kpc_over_h).to(self.Mpc_over_h)
 		except AttributeError:
 			pass
 

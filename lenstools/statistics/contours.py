@@ -779,7 +779,7 @@ class ContourPlot(object):
 			self.contour = self.ax.contour(likelihood,values,colors=colors,origin="lower",extent=extent,aspect="auto",**kwargs)
 
 		#Contour labels
-		self.ax.proxy += [ plt.Rectangle((0,0),1,1,fc=color) for color in colors if color!=rc.__globals__["rcParams"]["axes.facecolor"] ]
+		self.ax.proxy += [ plt.Rectangle((0,0),1,1,fc=color) for color in colors if color!=matplotlib.rcParams["axes.facecolor"] ]
 		
 		if display_percentages:
 			plt.clabel(self.contour,fmt=fmt,inline=1,fontsize=9)
