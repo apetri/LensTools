@@ -261,8 +261,8 @@ def test_reparametrize():
 	emulator = emulator.reparametrize(lambda p:pd.Series([p["w"],p["si8"]*p["Om"]**0.5],index=["w","Si8"]))
 
 	#Check that everything worked
-	assert (emulator[("parameters","w")]==w).all()
-	assert (emulator[("parameters","Si8")]==(si8*(Om**0.5))).all()
+	assert np.all(emulator[("parameters","w")]==w)
+	assert np.all(emulator[("parameters","Si8")]==(si8*(Om**0.5)))
 
 
 #Test various methods of parameter sampling: Fisher Matrix, grid emulator, MCMC chain

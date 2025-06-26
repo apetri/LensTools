@@ -180,7 +180,7 @@ def test_getValues():
 	xx,yy = np.meshgrid(b,b) * deg
 
 	new_values = test_map.getValues(xx,yy)
-	assert (new_values==test_map.data)[:-1,:-1].all()
+	assert np.all((new_values==test_map.data)[:-1,:-1])
 
 def test_gradient_partial():
 
@@ -190,8 +190,8 @@ def test_gradient_partial():
 	gx,gy = test_map.gradient()
 	gxp,gyp = test_map.gradient(xx,yy)
 
-	assert (gx==gxp)[:-1,:-1].all()
-	assert (gy==gyp)[:-1,:-1].all()
+	assert np.all((gx==gxp)[:-1,:-1])
+	assert np.all((gy==gyp)[:-1,:-1])
 
 
 def test_hessian_partial():
@@ -202,9 +202,9 @@ def test_hessian_partial():
 	hxx,hyy,hxy = test_map.hessian()
 	hxxp,hyyp,hxyp = test_map.hessian(xx,yy)
 
-	assert (hxx==hxxp)[:-1,:-1].all()
-	assert (hyy==hyyp)[:-1,:-1].all()
-	assert (hxy==hxyp)[:-1,:-1].all()
+	assert np.all((hxx==hxxp)[:-1,:-1])
+	assert np.all((hyy==hyyp)[:-1,:-1])
+	assert np.all((hxy==hxyp)[:-1,:-1])
 
 
 def test_cut():
