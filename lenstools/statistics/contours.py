@@ -54,7 +54,7 @@ def _1d_level_values(p,l,level=0.684,quantity=2):
 	closest = np.argmin(np.abs(all_levels - level))
 
 	#Find the n corresponding parameter values
-	ranks = stats.rankdata(np.abs(l-l[closest])).astype(np.int) - 1
+	ranks = stats.rankdata(np.abs(l-l[closest])).astype(int) - 1
 
 	par = list()
 	for n in range(quantity):

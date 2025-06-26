@@ -1,0 +1,6 @@
+Nmesh			64
+Nsample		32
+Box 			15000.0
+FileBase			ics
+OutputDir			/home/francois/repo/LensTools/SimTest/Storage/Om0.260_Ol0.740_w-1.000_si0.800_ns0.960/32b15/ic1/ics
+GlassFile			/home/francois/repo/LensTools/lenstools/data/dummy_glass_little_endian.dat

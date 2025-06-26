@@ -1,0 +1,112 @@
+% file_names
+
+InitCondFile		/home/francois/repo/LensTools/gadget_sphere
+OutputDir		snapshots
+EnergyFile		energy.txt
+InfoFile		info.txt
+TimingsFile		timings.txt
+CpuFile		cpu.txt
+RestartFile		restart
+SnapshotFileBase		snapshot
+OutputListFilename		outputs.txt
+
+
+% cpu_timings
+
+TimeLimitCPU		86400.0
+ResubmitOn		0
+ResubmitCommand		my-scriptfile
+
+
+% code_options
+
+ICFormat		1
+SnapFormat		1
+ComovingIntegrationOn		1
+TypeOfTimestepCriterion		0
+OutputListOn		1
+PeriodicBoundariesOn		1
+
+
+TimeBegin			0.009900990099009901
+% characteristics_of_run
+
+TimeMax		1.0
+
+
+Omega0			0.26
+OmegaLambda			0.74
+OmegaBaryon			0.046
+HubbleParam			0.72
+BoxSize			15000.000000000004
+w0			-1.0
+wa			0.0
+
+% output_frequency
+
+TimeBetSnapshot		0.5
+TimeOfFirstSnapshot		0
+CpuTimeBetRestartFile		45000.0
+TimeBetStatistics		0.05
+NumFilesPerSnapshot		16
+NumFilesWrittenInParallel		8
+
+
+% accuracy_time_integration
+
+ErrTolIntAccuracy		0.025
+MaxRMSDisplacementFac		0.2
+CourantFac		0.15
+MaxSizeTimestep		0.02
+MinSizeTimestep		0.0
+
+
+% tree_algorithm
+
+ErrTolTheta		0.45
+TypeOfOpeningCriterion		1
+ErrTolForceAcc		0.005
+TreeDomainUpdateFrequency		0.025
+
+
+% sph
+
+DesNumNgb		33
+MaxNumNgbDeviation		2
+ArtBulkViscConst		0.8
+InitGasTemp		1000.0
+MinGasTemp		50.0
+
+
+% memory_allocation
+
+PartAllocFactor		1.3
+TreeAllocFactor		0.7
+BufferSize		20.0
+
+
+% system_of_units
+
+UnitLength_in_cm		3.0856775814913673e+21
+UnitMass_in_g		1.988409870698051e+43
+UnitVelocity_in_cm_per_s		100000.0
+GravityConstantInternal		0
+
+
+% softening
+
+MinGasHsmlFractional		0.25
+SofteningGas		0
+SofteningHalo		9.0
+SofteningDisk		0
+SofteningBulge		0
+SofteningStars		0
+SofteningBndry		0
+SofteningGasMaxPhys		0
+SofteningHaloMaxPhys		9.0
+SofteningDiskMaxPhys		0
+SofteningBulgeMaxPhys		0
+SofteningStarsMaxPhys		0
+SofteningBndryMaxPhys		0
+
+

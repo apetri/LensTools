@@ -1,0 +1,27 @@
+InitCondFile			/home/francois/repo/LensTools/SimTest/Storage/Om0.260_Ol0.740_w-1.000_si0.800_ns0.960/32b15/ic1/ics/ics
+OutputDir			SimTest/Storage/Om0.260_Ol0.740_w-1.000_si0.800_ns0.960/32b15/ic1/snapshots/
+EnergyFile			energy.txt
+InfoFile			info.txt
+TimingsFile			timings.txt
+CpuFile			cpu.txt
+RestartFile			restart
+SnapshotFileBase			snapshot
+OutputListFilename			/home/francois/repo/LensTools/SimTest/Home/Om0.260_Ol0.740_w-1.000_si0.800_ns0.960/32b15/ic1/outputs.txt
+
+% cpu_timings
+
+TimeLimitCPU		86400.0
+ResubmitOn		0
+ResubmitCommand		my-scriptfile
+
+
+% code_options
+
+ICFormat		1
+SnapFormat		1
+ComovingIntegrationOn		1
+TypeOfTimestepCriterion		0
+OutputListOn		1
+PeriodicBoundariesOn		1
+
+

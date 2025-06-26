@@ -43,7 +43,7 @@ def load_fits_default_convergence(filename):
 	angle = kappa_file[0].header["ANGLE"]
 
 	#Create the array with the shear map
-	kappa = kappa_file[0].data.astype(np.float)
+	kappa = kappa_file[0].data.astype(np.float64)
 
 	#Close files and return
 	kappa_file.close()
@@ -73,7 +73,7 @@ def load_fits_default_shear(filename):
 	angle = gamma_file[0].header["ANGLE"]
 
 	#Create the array with the shear map
-	gamma = gamma_file[0].data.astype(np.float)
+	gamma = gamma_file[0].data.astype(np.float64)
 
 	#Close files and return
 	gamma_file.close()

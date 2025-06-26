@@ -30,8 +30,14 @@ from scipy import sparse
 try:
 	from emcee.ensemble import _function_wrapper
 except ImportError:
-	# In newer emcee versions, _function_wrapper might not be available
-	_function_wrapper = None
+	try:
+		from emcee import _function_wrapper
+	except ImportError:
+		# In newer emcee versions, _function_wrapper might not be available
+		def _function_wrapper(func, args, kwargs):
+			def wrapper(x):
+				return func(x, *args, **kwargs)
+			return wrapper
 
 try:
 	import matplotlib

@@ -324,7 +324,7 @@ class Ensemble(object):
 		elif kind=="contiguous":
 			
 			row = np.array(reduce(add,[ (i,) * group_size  for i in range(num_groups) ]))
-			col = np.arange(self.num_realizations,dtype=np.int)
+			col = np.arange(self.num_realizations,dtype=int)
 			dat = np.ones(self.num_realizations,dtype=np.int8)
 
 			scheme = sparse.csr_matrix((dat,(row,col)),shape=(num_groups,self.num_realizations),dtype=np.int8)
@@ -503,7 +503,7 @@ class Ensemble(object):
 		""" 
 
 		assert self.num_realizations>1, "I can't compute a covariance matrix with one realization only!!"
-		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
+		assert np.issubdtype(self.data.dtype, np.floating), "This operation is unsafe with non float numbers!!"
 
 		if bootstrap:
 			return self.bootstrap(_bsp_covariance,**kwargs)
@@ -525,7 +525,7 @@ class Ensemble(object):
 
 		"""
 
-		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
+		assert np.issubdtype(self.data.dtype, np.floating), "This operation is unsafe with non float numbers!!"
 		if self.num_realizations==1:
 			return np.ones((1,1))
 		else:	

@@ -19,7 +19,7 @@ def igs1_load(self,filename):
 
 	kappa_file = fits.open(filename)
 	angle = kappa_file[0].header["ANGLE"] * deg
-	kappa = kappa_file[0].data.astype(np.float)
+	kappa = kappa_file[0].data.astype(np.float64)
 	kappa_file.close()
 
 	return angle,kappa

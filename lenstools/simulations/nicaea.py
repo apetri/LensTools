@@ -32,7 +32,7 @@ _nicaea_builtin["hist"] = 0
 def _check_redshift(z,distribution,distribution_parameters,**kwargs):
 
 	#Parse redshift distribution from input
-	if type(z)==np.float:
+	if type(z)==np.float64:
 			
 		nzbins = 1
 		nofz = ["single"]
