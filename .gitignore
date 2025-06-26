@@ -51,8 +51,3 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
-
-# Removing test artifacts
-LT_Data/
-*.fit
-*.png
