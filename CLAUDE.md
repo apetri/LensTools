@@ -48,7 +48,7 @@ print('✓ All C extensions working with NumPy', np.__version__)
 
 ### GitHub Actions CI/CD
 The repository includes a comprehensive GitHub Actions workflow that tests:
-- **All Python versions**: 3.8 through 3.13
+- **All Python versions**: 3.10 through 3.13
 - **All dependencies**: GSL, FFTW3, and all system dependencies installed
 - **All C extensions enabled**: Tests that all C extensions compile and work correctly
 - **NumPy 2.x compatibility**: Verifies C extensions work with modern NumPy
@@ -62,8 +62,8 @@ The package has been successfully modernized with the following improvements:
 - **NumPy 2.x compatibility**: ✅ COMPLETE - All C extensions now work with NumPy 2.0+
 - **Updated dependencies**: Modern versions of scipy, matplotlib, astropy, emcee
 - **C extensions**: ✅ WORKING - All C extensions compile and run correctly
-- **Cross-platform Python support**: Python 3.8+ compatibility
-- **Legacy compatibility**: Maintains compatibility with older Python versions
+- **Cross-platform Python support**: Python 3.10+ compatibility
+- **Modern Python support**: Requires Python 3.10 or later
 
 **C Extensions Status**: 
 - ✅ All C extensions (_topology, _gadget2, _nbody, _pixelize, _design, _nicaea) are enabled and working

@@ -9,9 +9,6 @@ else:
 
 #Names
 name = "lenstools"
-me = "Andrea Petri"
-email = "apetri@phys.columbia.edu"
-url = "http://lenstools.readthedocs.org"
 default_cfg = "setup.cfg"
 
 #Sub-packages
@@ -212,20 +209,7 @@ for l in ["fftw3","gsl","nicaea"]:
 
 #########################################################################################
 
-vre = re.compile("__version__ = \"(.*?)\"")
-m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                    "lenstools", "__init__.py"))
-version = vre.findall(m)[0]
-download_url = "https://github.com/apetri/LensTools/archive/{0}.tar.gz".format(version)
-
-classifiers = [
-		"Development Status :: 4 - Beta",
-		"Intended Audience :: Science/Research",
-		"Operating System :: OS Independent",
-		"Programming Language :: Python",
-		"Programming Language :: C",
-		"License :: OSI Approved :: MIT License"
-	]
+# Metadata now handled by pyproject.toml
 
 external_sources = dict()
 external_support = dict()
@@ -387,22 +371,9 @@ if build_c_extensions:
 #################################################################################################
 
 setup(
-	name=name,
-	version=version,
-	author=me,
-	author_email=email,
-	packages=packages,
 	package_data=package_data,
-	install_requires=["numpy","scipy","pandas","matplotlib","astropy","emcee<=2.2.1"],
-	url=url,
-	download_url=download_url,
-	license="MIT",
-	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd("README.rst") + "\n\n" + "Changelog\n" + "---------\n\n" + rd("HISTORY.rst"),
 	scripts=scripts,
-	classifiers=classifiers,
 	ext_package=os.path.join(name,external_dir),
 	ext_modules=ext,
 	include_dirs=lenstools_includes,
-	zip_safe=False,
 )
