@@ -111,7 +111,6 @@ jobs:
       run: |
         echo "Running full test suite with external data..."
         python -m pytest --pyargs lenstools.tests -v --tb=short
-      continue-on-error: true  # Allow tests to fail while we fix compatibility issues
 
   test-python38-numpy1x:
     runs-on: ubuntu-latest
@@ -180,7 +179,6 @@ jobs:
       run: |
         python -m pytest --pyargs lenstools.tests.test_contours -v
         python -m pytest --pyargs lenstools.tests.test_nicaea -v
-      continue-on-error: true
 
   test-python39-numpy1x:
     runs-on: ubuntu-latest
@@ -249,4 +247,3 @@ jobs:
       run: |
         python -m pytest --pyargs lenstools.tests.test_contours -v
         python -m pytest --pyargs lenstools.tests.test_nicaea -v
-      continue-on-error: true
