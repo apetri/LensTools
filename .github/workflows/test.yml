@@ -104,12 +104,14 @@ jobs:
     - name: Download test data
       run: |
         echo "Downloading test data..."
+        export LENSTOOLS_DATA="./test_data"
         python -c "import lenstools; lenstools.dataExtern()"
         echo "✓ Test data downloaded successfully"
     
     - name: Run comprehensive test suite
       run: |
         echo "Running full test suite with external data..."
+        export LENSTOOLS_DATA="./test_data"
         python -m pytest --pyargs lenstools.tests -v --tb=short
 
   test-python38-numpy1x:
@@ -173,10 +175,12 @@ jobs:
     
     - name: Download test data
       run: |
+        export LENSTOOLS_DATA="./test_data"
         python -c "import lenstools; lenstools.dataExtern()"
     
     - name: Run core tests with NumPy 1.x
       run: |
+        export LENSTOOLS_DATA="./test_data"
         python -m pytest --pyargs lenstools.tests.test_contours -v
         python -m pytest --pyargs lenstools.tests.test_nicaea -v
 
@@ -241,9 +245,11 @@ jobs:
     
     - name: Download test data
       run: |
+        export LENSTOOLS_DATA="./test_data"
         python -c "import lenstools; lenstools.dataExtern()"
     
     - name: Run core tests with NumPy 1.x (Python 3.9)
       run: |
+        export LENSTOOLS_DATA="./test_data"
         python -m pytest --pyargs lenstools.tests.test_contours -v
         python -m pytest --pyargs lenstools.tests.test_nicaea -v

@@ -51,3 +51,33 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# Test data and outputs (should not be committed)
+LT_Data/
+test_data/
+test_data_download/
+test_env/
+test_output/
+*.tar.gz
+*.png
+*.pdf
+*.eps
+*.txt
+!requirements.txt
+!setup.cfg
+!README.txt
+!LICENSE.txt
+!HISTORY.txt
+
+# Pytest cache
+.pytest_cache/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Mac OS
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
