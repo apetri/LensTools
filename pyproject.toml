@@ -1,0 +1,49 @@
+[build-system]  
+requires = ["setuptools>=61.0", "wheel", "numpy>=2.0.0", "Cython>=0.29.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lenstools"
+dynamic = ["version"]
+description = "Toolkit for Weak Gravitational Lensing analysis"
+readme = "README.rst"
+license = {text = "MIT"}
+authors = [
+    {name = "Andrea Petri", email = "apetri@phys.columbia.edu"}
+]
+keywords = ["lensing", "astrophysics", "cosmology"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=2.0.0",
+    "scipy>=1.9.0", 
+    "pandas>=1.5.0",
+    "matplotlib>=3.5.0",
+    "astropy>=5.0.0",
+    "emcee>=3.0.0",
+    "numexpr>=2.8.0",
+]
+
+[project.urls]
+Homepage = "http://lenstools.readthedocs.org"
+Documentation = "http://lenstools.readthedocs.org"
+Repository = "https://github.com/apetri/LensTools"
+
+[tool.setuptools]
+packages = ["lenstools", "lenstools.image", "lenstools.catalog", "lenstools.statistics", "lenstools.utils", "lenstools.simulations", "lenstools.observations", "lenstools.pipeline", "lenstools.legacy", "lenstools.scripts", "lenstools.extern", "lenstools.tests"]
+package-data = {"lenstools" = ["data/*"]}
+zip-safe = false
+
+[tool.setuptools.dynamic]
+version = {attr = "lenstools.__version__"}

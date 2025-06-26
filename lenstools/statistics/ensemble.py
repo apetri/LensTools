@@ -27,7 +27,11 @@ import numpy as np
 import scipy.io as sio
 from scipy import sparse
 
-from emcee.ensemble import _function_wrapper
+try:
+	from emcee.ensemble import _function_wrapper
+except ImportError:
+	# In newer emcee versions, _function_wrapper might not be available
+	_function_wrapper = None
 
 try:
 	import matplotlib

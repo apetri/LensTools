@@ -4,6 +4,19 @@
 #include "stdlib.h"
 #include "Python.h"
 #include "bytesobject.h"
+#include <numpy/arrayobject.h>
+
+/* NumPy 2.x compatibility macros */
+#ifndef NPY_ARRAY_WRITEABLE  
+#define NPY_ARRAY_WRITEABLE NPY_WRITEABLE
+#endif
+
+/* For NumPy 2.x compatibility - handle PyArray_DATA casting */
+#if NPY_API_VERSION >= 0x00000018  /* NumPy 2.0+ */
+#define PYARRAY_DATA_CAST(arr, type) ((type *)PyArray_DATA((PyArrayObject*)(arr)))
+#else
+#define PYARRAY_DATA_CAST(arr, type) ((type *)PyArray_DATA(arr))
+#endif
 
 struct module_state {
 	PyObject *error;

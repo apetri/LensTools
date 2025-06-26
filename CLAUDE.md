@@ -10,12 +10,16 @@ LensTools is a scientific Python package for **Weak Gravitational Lensing analys
 
 ### Installation and Build
 ```bash
-# Install in development mode with C extensions
-python setup.py build_ext -i --gsl=/usr/local --fftw3=/usr/local
-python setup.py install --gsl=/usr/local --fftw3=/usr/local
+# Modern installation (preferred method)
+pip install -e .
 
-# Install Python dependencies
+# Or with dependencies from requirements file
 pip install -r requirements.txt
+pip install -e .
+
+# Legacy installation with C extensions (if GSL/FFTW3 available)
+python setup.py build_ext -i --gsl=/usr/local --fftw3=/usr/local  
+python setup.py install --gsl=/usr/local --fftw3=/usr/local
 ```
 
 ### Testing
@@ -26,6 +30,21 @@ nosetests --with-coverage --cover-package=lenstools --logging-level=INFO
 # Run specific test file
 nosetests lenstools/tests/test_convergence.py -v
 ```
+
+### Modernization Status
+
+The package has been modernized with the following improvements:
+
+- **Modern packaging**: Added `pyproject.toml` with modern build system
+- **NumPy 2.x compatibility**: Updated dependencies to use NumPy 2.0+  
+- **Updated dependencies**: Modern versions of scipy, matplotlib, astropy, emcee
+- **Graceful fallbacks**: C extensions and MPI functionality degrade gracefully if unavailable
+- **Cross-platform Python support**: Python 3.8+ compatibility
+
+**Note**: C extensions are temporarily disabled during modernization. To re-enable:
+1. Set `build_c_extensions = True` in setup.py
+2. Ensure external dependencies (GSL, FFTW3) are installed
+3. Fix any remaining NumPy 2.x C API compatibility issues
 
 ### External Dependencies
 The package requires these external C libraries:
