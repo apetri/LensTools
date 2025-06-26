@@ -76,7 +76,7 @@ def test_EB_decompose():
 	ax.set_xlabel(r"$l$")
 	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
 	
-	ax.legend(loc="Upper left")
+	ax.legend(loc="upper left")
 
 	plt.savefig("EB.png")
 	plt.clf()

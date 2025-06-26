@@ -231,7 +231,15 @@ class Ensemble(pd.DataFrame):
 				callback_loader = lambda f:np.load(f)
 
 		#Read the Ensemble
-		loaded_ensemble = callback_loader(filename,**kwargs)
+		try:
+			loaded_ensemble = callback_loader(filename,**kwargs)
+		except (ModuleNotFoundError, ImportError) as e:
+			if "pandas.core" in str(e):
+				raise ImportError(f"Cannot load pickle file {filename}: pandas version incompatibility. "
+								  f"The file was created with a different pandas version. "
+								  f"Try recreating the file with the current pandas version.") from e
+			else:
+				raise
 
 		#Preserve the metadata
 		if hasattr(loaded_ensemble,"_metadata"):

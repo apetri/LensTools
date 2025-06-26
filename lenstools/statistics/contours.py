@@ -464,7 +464,7 @@ class ContourPlot(object):
 		marginal_likelihood = self.likelihood.sum(axis=tuple(remaining_parameter_axes))
 
 		#Compute the normalization
-		normalization = integrate.simps(marginal_likelihood,x=parameter_range)
+		normalization = integrate.simpson(marginal_likelihood,x=parameter_range)
 		marginal_likelihood /= normalization
 
 		#Compute the maximum
