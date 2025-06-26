@@ -114,7 +114,10 @@ class Database(object):
 	#List tables in the database
 	@property
 	def tables(self):
-		return self.connection.table_names()
+		# SQLAlchemy 2.0 compatibility
+		from sqlalchemy import inspect
+		inspector = inspect(self.connection)
+		return inspector.get_table_names()
 
 	#Read table in a database
 	def read_table(self,table_name):

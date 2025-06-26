@@ -149,11 +149,11 @@ static PyObject *_design_cost(PyObject *self,PyObject *args){
 	}
 
 	/*Get a pointer to the array data*/
-	double *data = (double *)PyArray_DATA(data_array);
+	double *data = PYARRAY_DATA_CAST(data_array, double);
 
 	/*squeeze the dimensions of the parameter space and the number of points*/
-	int Npoints = (int)PyArray_DIM(data_array,0);
-	int Ndim = (int)PyArray_DIM(data_array,1);
+	int Npoints = (int)PYARRAY_DIM_CAST(data_array,0);
+	int Ndim = (int)PYARRAY_DIM_CAST(data_array,1);
 
 	/*Wrap a gsl matrix object around the data_array*/
 	gsl_matrix *m = gsl_matrix_alloc(Npoints,Ndim);
@@ -211,14 +211,14 @@ static PyObject *_design_sample(PyObject *self,PyObject *args){
 	}
 
 	/*Get a pointer to the array data*/
-	double *data = (double *)PyArray_DATA(data_array);
+	double *data = PYARRAY_DATA_CAST(data_array, double);
 
 	/*Get a pointer to the cost values*/
-	double *cost_values = (double *)PyArray_DATA(cost_array);
+	double *cost_values = PYARRAY_DATA_CAST(cost_array, double);
 
 	/*squeeze the dimensions of the parameter space and the number of points*/
-	int Npoints = (int)PyArray_DIM(data_array,0);
-	int Ndim = (int)PyArray_DIM(data_array,1);
+	int Npoints = (int)PYARRAY_DIM_CAST(data_array,0);
+	int Ndim = (int)PYARRAY_DIM_CAST(data_array,1);
 
 	/*Wrap a gsl matrix object around the data_array*/
 	gsl_matrix *m = gsl_matrix_alloc(Npoints,Ndim);

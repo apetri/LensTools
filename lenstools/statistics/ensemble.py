@@ -27,7 +27,17 @@ import numpy as np
 import scipy.io as sio
 from scipy import sparse
 
-from emcee.ensemble import _function_wrapper
+try:
+	from emcee.ensemble import _function_wrapper
+except ImportError:
+	try:
+		from emcee import _function_wrapper
+	except ImportError:
+		# In newer emcee versions, _function_wrapper might not be available
+		def _function_wrapper(func, args, kwargs):
+			def wrapper(x):
+				return func(x, *args, **kwargs)
+			return wrapper
 
 try:
 	import matplotlib
@@ -221,7 +231,15 @@ class Ensemble(pd.DataFrame):
 				callback_loader = lambda f:np.load(f)
 
 		#Read the Ensemble
-		loaded_ensemble = callback_loader(filename,**kwargs)
+		try:
+			loaded_ensemble = callback_loader(filename,**kwargs)
+		except (ModuleNotFoundError, ImportError) as e:
+			if "pandas.core" in str(e):
+				raise ImportError(f"Cannot load pickle file {filename}: pandas version incompatibility. "
+								  f"The file was created with a different pandas version. "
+								  f"Try recreating the file with the current pandas version.") from e
+			else:
+				raise
 
 		#Preserve the metadata
 		if hasattr(loaded_ensemble,"_metadata"):
@@ -592,12 +610,12 @@ class Ensemble(pd.DataFrame):
 
 		#by group
 		by_group = self.groupby(by)
-		self["by_group_id"] = by_group.grouper.group_info[0]
+		self["by_group_id"] = by_group.ngroup()
 		by_labels = self[by+["by_group_id"]].drop_duplicates()
 
 		#suppress group
 		suppress_group = self.groupby(suppress)
-		self["suppress_group_id"] = suppress_group.grouper.group_info[0]
+		self["suppress_group_id"] = suppress_group.ngroup()
 		suppress_labels = self[suppress+["suppress_group_id"]].drop_duplicates()
 
 		#Combine the rows
@@ -605,10 +623,55 @@ class Ensemble(pd.DataFrame):
 		ens_combined.columns = ens_combined.columns.rename(None,level=1)
 		ens_combined.index.name = None
 
-		#Join the by_labels
-		ens_combined = self.__class__.merge(ens_combined.reset_index(),by_labels,left_on="index",right_on="by_group_id")
-		ens_combined.pop(("index",""))
+		#Join the by_labels - fix pandas merge compatibility issue
+		ens_combined_reset = ens_combined.reset_index()
+		
+		# The reset_index creates a column called 'index' which contains by_group_id values
+		# Rename it back to by_group_id for the merge
+		if 'index' in ens_combined_reset.columns:
+			ens_combined_reset = ens_combined_reset.rename(columns={'index': 'by_group_id'})
+		
+		# Handle multi-level columns for pandas merge compatibility
+		# Pandas merge requires the same number of column levels, so we need to flatten
+		if ens_combined_reset.columns.nlevels > 1:
+			# Flatten the multi-level columns but preserve the tuple structure in a way
+			# that the rename operation can still work after the merge
+			new_cols = []
+			tuple_mapping = {}  # Store mapping of flattened names to original tuples
+			
+			for col in ens_combined_reset.columns:
+				if col == 'by_group_id' or (hasattr(col, '__len__') and col[0] == 'by_group_id'):
+					new_cols.append('by_group_id')
+				else:
+					# Create a flattened name that can be mapped back to tuple
+					if hasattr(col, '__len__') and len(col) >= 2:
+						# Use the original tuple as a string for now, we'll fix this after merge
+						flattened_name = str(col)
+						new_cols.append(flattened_name)
+						tuple_mapping[flattened_name] = col
+					else:
+						new_cols.append(str(col))
+			
+			ens_combined_reset.columns = new_cols
+			# Store the mapping for potential use after merge
+			ens_combined_reset._tuple_mapping = tuple_mapping
+		
+		ens_combined = self.__class__.merge(ens_combined_reset,by_labels,left_on="by_group_id",right_on="by_group_id")
 		ens_combined.pop("by_group_id")
+		
+		# Restore tuple columns if they were flattened for merge
+		if hasattr(ens_combined_reset, '_tuple_mapping'):
+			tuple_mapping = ens_combined_reset._tuple_mapping
+			# Restore the tuple columns for the database rename operation
+			old_to_new = {}
+			for old_name, tuple_col in tuple_mapping.items():
+				if old_name in ens_combined.columns:
+					old_to_new[old_name] = tuple_col
+			
+			# Create new columns with tuple names
+			for old_name, tuple_col in old_to_new.items():
+				ens_combined[tuple_col] = ens_combined[old_name]
+				ens_combined.drop(columns=[old_name], inplace=True)
 
 		#Return
 		self.pop("by_group_id")

@@ -110,7 +110,7 @@ class LimberIntegrator(object):
 		full_integrand = kernel[np.newaxis,:] * (1.0 + z[np.newaxis,:])**2 * power_integrand
 	
 		#Finally compute the integral
-		C = integrate.simps(full_integrand,chi,axis=1) * normalization * full_integrand.unit * chi.unit
+		C = integrate.simpson(full_integrand,chi,axis=1) * normalization * full_integrand.unit * chi.unit
 		assert C.unit.physical_type == u"dimensionless"
 
 		#Return the final result

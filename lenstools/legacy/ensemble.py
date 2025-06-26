@@ -22,7 +22,15 @@ import numpy as np
 import scipy.io as sio
 from scipy import sparse
 
-from emcee.ensemble import _function_wrapper
+try:
+	from emcee.ensemble import _function_wrapper
+except ImportError:
+	# In newer versions of emcee, _function_wrapper moved
+	try:
+		from emcee.utils import _function_wrapper
+	except ImportError:
+		# If both fail, create a simple replacement
+		_function_wrapper = None
 
 try:
 	import pandas as pd
@@ -314,7 +322,7 @@ class Ensemble(object):
 		#Build the appropriate grouping scheme
 		if isinstance(kind,sparse.csr.csr_matrix):
 
-			assert kind.dtype == np.bool,"The scheme type must be bool, only 0 and 1!"
+			assert kind.dtype == bool,"The scheme type must be bool, only 0 and 1!"
 			scheme = kind
 		
 		elif kind=="sparse":
@@ -324,7 +332,7 @@ class Ensemble(object):
 		elif kind=="contiguous":
 			
 			row = np.array(reduce(add,[ (i,) * group_size  for i in range(num_groups) ]))
-			col = np.arange(self.num_realizations,dtype=np.int)
+			col = np.arange(self.num_realizations,dtype=int)
 			dat = np.ones(self.num_realizations,dtype=np.int8)
 
 			scheme = sparse.csr_matrix((dat,(row,col)),shape=(num_groups,self.num_realizations),dtype=np.int8)
@@ -503,7 +511,7 @@ class Ensemble(object):
 		""" 
 
 		assert self.num_realizations>1, "I can't compute a covariance matrix with one realization only!!"
-		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
+		assert np.issubdtype(self.data.dtype, np.floating), "This operation is unsafe with non float numbers!!"
 
 		if bootstrap:
 			return self.bootstrap(_bsp_covariance,**kwargs)
@@ -525,7 +533,7 @@ class Ensemble(object):
 
 		"""
 
-		assert self.data.dtype == np.float, "This operation is unsafe with non float numbers!!"
+		assert np.issubdtype(self.data.dtype, np.floating), "This operation is unsafe with non float numbers!!"
 		if self.num_realizations==1:
 			return np.ones((1,1))
 		else:	

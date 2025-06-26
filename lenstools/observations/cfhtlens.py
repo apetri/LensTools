@@ -16,7 +16,7 @@ def cfht_load(self,filename):
 
 	kappa_file = fits.open(filename)
 	angle = 3.4641016151377544 * deg
-	kappa = kappa_file[0].data.astype(np.float)
+	kappa = kappa_file[0].data.astype(np.float64)
 	kappa_file.close()
 
 	return angle,kappa

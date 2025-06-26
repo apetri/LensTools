@@ -14,7 +14,17 @@ except ImportError:
 	wmsg = "Could not import mpi4py! (if you set sys.modules['mpi4py']=None please disregard this message)"
 	warnings.warn(wmsg)
 
-from emcee.utils import MPIPool
+try:
+	from emcee.utils import MPIPool
+except ImportError:
+	# In newer emcee versions, MPIPool was moved
+	try:
+		from emcee import MPIPool
+	except ImportError:
+		# If still not found, create a dummy class
+		class MPIPool:
+			def __init__(self, *args, **kwargs):
+				raise ImportError("MPIPool not available in this emcee version")
 import numpy as np
 
 #################################################################################################

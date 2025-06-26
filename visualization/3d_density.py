@@ -4,7 +4,7 @@ sys.path.append("..")
 from lenstools.simulations import Gadget2SnapshotDE
 from lenstools.utils import MPIWhirlPool
 import numpy as np
-from scipy.ndimage import filters
+from scipy.ndimage import gaussian_filter
 from mayavi import mlab
 
 #Initialize MPIWhirlPool
@@ -28,7 +28,7 @@ if pool is None:
 	snap.close()
 
 	n = n1+n2
-	ns = filters.gaussian_filter(n,2)
+	ns = gaussian_filter(n,2)
 	scene = mlab.pipeline.volume(mlab.pipeline.scalar_field(ns))
 
 else:
@@ -42,5 +42,5 @@ else:
 	snap.close()
 
 	if pool.is_master():
-		ns = filters.gaussian_filter(n,2)
+		ns = gaussian_filter(n,2)
 		scene = mlab.pipeline.volume(mlab.pipeline.scalar_field(ns))

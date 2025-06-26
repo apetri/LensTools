@@ -28,7 +28,7 @@ fftengine = NUMPYFFTPack()
 #Hankel transform
 from ..utils import fht
 
-from scipy.ndimage import filters
+from scipy.ndimage import gaussian_filter
 
 #Units
 import astropy.units as u
@@ -60,14 +60,14 @@ class Spin0(object):
 		#Sanity check
 		assert angle.unit.physical_type in ["angle","length"]
 
-		if not(data.dtype==np.complex):
+		if not(data.dtype==np.complex128):
 			assert data.shape[0]==data.shape[1],"The map must be a square!!"
 
 		#Convert to double precision for calculation accuracy
-		if data.dtype in (np.float,np.complex):
+		if data.dtype in (np.float64,np.complex128):
 			self.data = data
 		else:
-			self.data = data.astype(np.float)
+			self.data = data.astype(np.float64)
 			
 		self.side_angle = angle
 		self.resolution = self.side_angle / self.data.shape[0]
@@ -353,7 +353,7 @@ class Spin0(object):
 
 		#Visualize
 		ax0 = self.ax.imshow(self.data,origin="lower",interpolation="nearest",extent=extent,cmap=cmap,**kwargs)
-		self.ax.grid(b=False)
+		self.ax.grid(visible=False)
 		self.ax.set_xlabel(r"$x$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 		self.ax.set_ylabel(r"$y$({0})".format(self.side_angle.unit.to_string()),fontsize=18)
 
@@ -1399,8 +1399,8 @@ class Spin0(object):
 		modes_ly_0[:,:,1:] = 0
 
 		#Count the total number of modes, and the number of modes with ly=0 
-		num_modes = np.diff(modes_on.sum((1,2)).astype(np.float))
-		num_modes_ly_0 = np.diff(modes_ly_0.sum((1,2)).astype(np.float))
+		num_modes = np.diff(modes_on.sum((1,2)).astype(np.float64))
+		num_modes_ly_0 = np.diff(modes_ly_0.sum((1,2)).astype(np.float64))
 
 		#Return the corrected number of modes that yields the right variance in the Gaussian case
 		return num_modes**2/(num_modes+num_modes_ly_0)
@@ -1496,7 +1496,7 @@ class Spin0(object):
 
 			#Perform the smoothing
 			if kind=="gaussian":
-				smoothed_data = filters.gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
+				smoothed_data = gaussian_filter(self.data,smoothing_scale_pixel,**kwargs)
 		
 			elif kind=="gaussianFFT":
 

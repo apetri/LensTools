@@ -123,14 +123,14 @@ static PyObject *_pixelize_grid2d(PyObject *self,PyObject *args){
 	}
 
 	//get the number of objects in the catalog and the number of pixels
-	int Nobjects = (int)PyArray_DIM(x_array,0);
-	int Npixel = (int)PyArray_DIM(map_array,0);
+	int Nobjects = (int)PYARRAY_DIM_CAST(x_array,0);
+	int Npixel = (int)PYARRAY_DIM_CAST(map_array,0);
 
 	//get the data pointers
-	double *x = (double *)PyArray_DATA(x_array);
-	double *y = (double *)PyArray_DATA(y_array);
-	double *s = (double *)PyArray_DATA(s_array);
-	double *map = (double *)PyArray_DATA(map_array);
+	double *x = PYARRAY_DATA_CAST(x_array, double);
+	double *y = PYARRAY_DATA_CAST(y_array, double);
+	double *s = PYARRAY_DATA_CAST(s_array, double);
+	double *map = PYARRAY_DATA_CAST(map_array, double);
 
 	//call the C backend for the gridding procedure
 	err = grid2d(x,y,s,map,Nobjects,Npixel,map_size);

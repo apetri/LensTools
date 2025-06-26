@@ -2390,7 +2390,7 @@ class SimulationCollection(SimulationModel):
 
 		#Safety type check
 		assert isinstance(settings,CAMBSettings)
-		if type(z)==np.float:
+		if type(z)==np.float64:
 			z = np.array([z])
 
 		#Write the parameter file

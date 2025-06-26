@@ -229,7 +229,7 @@ def test_selfChi2():
 
 	#Plot histogram
 	fig,ax = plt.subplots()
-	n,bins,patch = ax.hist(chi2.values,bins=50,normed=True,histtype="stepfilled",alpha=0.5)
+	n,bins,patch = ax.hist(chi2.values,bins=50,density=True,histtype="stepfilled",alpha=0.5)
 
 	#Compare to chi2 distribution
 	ax.plot(stats.chi2.pdf(bins,ens.shape[1]))

@@ -164,10 +164,10 @@ static PyObject *_gadget2_getHeader(PyObject *self,PyObject *args){
 	}
 
 	//Get pointers to the array elements
-	int *NumPart_data = (int *)PyArray_DATA(NumPart_array);
-	int *NumPart_file_data = (int *)PyArray_DATA(NumPart_array_file);
-	unsigned int *npartHighWord_data = (unsigned int *)PyArray_DATA(npartHighWord_array);
-	double *Mass_data = (double *)PyArray_DATA(Mass_array);
+	int *NumPart_data = PYARRAY_DATA_CAST(NumPart_array, int);
+	int *NumPart_file_data = PYARRAY_DATA_CAST(NumPart_array_file, int);
+	unsigned int *npartHighWord_data = PYARRAY_DATA_CAST(npartHighWord_array, unsigned int);
+	double *Mass_data = PYARRAY_DATA_CAST(Mass_array, double);
 
 	//Fill in the values
 	Ngas = header.npartTotal[0];
@@ -251,7 +251,7 @@ static PyObject *_gadget2_getPosVel(PyObject *self,PyObject *args){
 	}
 
 	//Get a data pointer out of the array
-	float *particle_data = (float *)PyArray_DATA(particle_data_array);
+	float *particle_data = PYARRAY_DATA_CAST(particle_data_array, float);
 
 	//Get a file pointer out of the file object
 #ifdef IS_PY3K
@@ -315,7 +315,7 @@ static PyObject *_gadget2_getID(PyObject *self,PyObject *args){
 	}
 
 	//Get a data pointer out of the array
-	int *id_data = (int *)PyArray_DATA(id_data_array);
+	int *id_data = PYARRAY_DATA_CAST(id_data_array, int);
 
 	//Get a file pointer out of the file object
 #ifdef IS_PY3K
@@ -395,10 +395,10 @@ static PyObject *_gadget2_write(PyObject *self,PyObject *args){
 	}
 
 	//get pointers
-	double *mass_data = (double *)PyArray_DATA(mass_array);
-	int *NumPart_data = (int *)PyArray_DATA(NumPart_array);
-	int *NumPart_file_data = (int *)PyArray_DATA(NumPart_file_array);
-	unsigned int *npartHighWord_data = (unsigned int *)PyArray_DATA(npartHighWord_array);
+	double *mass_data = PYARRAY_DATA_CAST(mass_array, double);
+	int *NumPart_data = PYARRAY_DATA_CAST(NumPart_array, int);
+	int *NumPart_file_data = PYARRAY_DATA_CAST(NumPart_file_array, int);
+	unsigned int *npartHighWord_data = PYARRAY_DATA_CAST(npartHighWord_array, unsigned int);
 
 	//Fill in the header values
 
@@ -459,10 +459,10 @@ static PyObject *_gadget2_write(PyObject *self,PyObject *args){
 	}
 
 	//get the number of particles
-	NumPart = (int)PyArray_DIM(positions_array,0);
+	NumPart = (int)PYARRAY_DIM_CAST(positions_array,0);
 	//get data pointers
-	float *positions_data = (float *)PyArray_DATA(positions_array);
-	float *velocities_data = (float *)PyArray_DATA(velocities_array);
+	float *positions_data = PYARRAY_DATA_CAST(positions_array, float);
+	float *velocities_data = PYARRAY_DATA_CAST(velocities_array, float);
 
 	//ready to write Gadget snapshot, do it!
 	if(writeSnapshot(fp,&header,positions_data,velocities_data,firstID,NumPart,writeVel)==-1){

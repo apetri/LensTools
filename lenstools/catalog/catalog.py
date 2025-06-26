@@ -11,7 +11,7 @@
 """
 
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 import astropy.table as tbl
 import astropy.units as u
 
@@ -157,12 +157,12 @@ class Catalog(tbl.Table):
 
 			if type(field_quantity)==str:
 				assert field_quantity in self.columns,"There is no {0} field in the catalog!".format(field_quantity)
-				scalar = self.columns[field_quantity].astype(np.float)
+				scalar = self.columns[field_quantity].astype(np.float64)
 			elif type(field_quantity)==np.ndarray:
 				assert len(field_quantity)==len(self),"You should provide a scalar property for each record!!"
 				scalar = field_quantity
 			elif type(field_quantity) in [int,float]:
-				scalar = np.empty(len(self),dtype=np.float)
+				scalar = np.empty(len(self),dtype=np.float64)
 				scalar.fill(field_quantity)
 			else:
 				raise TypeError("field_quantity format not recognized!")

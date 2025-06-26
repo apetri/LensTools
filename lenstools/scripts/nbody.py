@@ -5,8 +5,13 @@
 import sys,os
 import logging
 
-from distutils import config
-from ConfigParser import NoOptionError
+try:
+    from distutils import config
+    from ConfigParser import NoOptionError
+except ImportError:
+    # Python 3.13+ removes distutils, use configparser instead
+    import configparser as config
+    from configparser import NoOptionError
 
 from lenstools.utils import MPIWhirlPool
 

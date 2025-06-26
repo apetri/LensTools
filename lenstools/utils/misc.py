@@ -18,7 +18,7 @@ def fht(n,l_binned,func,**kwargs):
 	h_kernel = sp.jn(n,np.outer(l_binned,theta))
 	
 	integrand = np.dot(np.diag(l_binned*func),h_kernel) * (2*np.pi)
-	transform = integrate.simps(integrand,l_binned,axis=0)
+	transform = integrate.simpson(integrand,l_binned,axis=0)
 	
 	return theta,transform
 
@@ -33,7 +33,7 @@ def ifht(n,l_binned,func,**kwargs):
 	h_kernel = sp.jn(n,np.outer(l_binned,theta))
 	
 	integrand = np.dot(np.diag(l_binned*func),h_kernel) / (2*np.pi)
-	transform = integrate.simps(integrand,l_binned,axis=0)
+	transform = integrate.simpson(integrand,l_binned,axis=0)
 	
 	return theta,transform
 

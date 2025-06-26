@@ -426,7 +426,7 @@ class NbodySnapshot(object):
 		"""
 
 		#Sanity checks
-		assert type(resolution) in [np.int,quantity.Quantity]
+		assert type(resolution) in [int, np.integer, quantity.Quantity]
 		
 		if type(resolution)==quantity.Quantity:	
 			assert resolution.unit.physical_type=="length"
@@ -589,7 +589,7 @@ class NbodySnapshot(object):
 		binning = [None,None,None]
 		
 		#Binning in the longitudinal direction
-		assert type(plane_resolution) in [np.int,quantity.Quantity]
+		assert type(plane_resolution) in [int, np.integer, quantity.Quantity]
 		
 		if type(plane_resolution)==quantity.Quantity:
 			
@@ -605,7 +605,7 @@ class NbodySnapshot(object):
 
 		
 		#Binning in the normal direction		
-		assert type(thickness_resolution) in [np.int,quantity.Quantity]
+		assert type(thickness_resolution) in [int, np.integer, quantity.Quantity]
 		center = center.to(positions.unit)
 		thickness  = thickness.to(positions.unit)
 		
@@ -917,7 +917,7 @@ class NbodySnapshot(object):
 		
 		#Binning of the plane
 		binning = [None,None]
-		assert type(plane_resolution) in [np.int,quantity.Quantity]
+		assert type(plane_resolution) in [int, np.integer, quantity.Quantity]
 		
 		if type(plane_resolution)==quantity.Quantity:
 			
@@ -1107,7 +1107,7 @@ class NbodySnapshot(object):
 		binning = [None,None,None]
 		
 		#Binning in the longitudinal direction
-		assert type(plane_resolution) in [np.int,quantity.Quantity]
+		assert type(plane_resolution) in [int, np.integer, quantity.Quantity]
 		
 		if type(plane_resolution)==quantity.Quantity:
 			
@@ -1126,7 +1126,7 @@ class NbodySnapshot(object):
 		plane_comoving_distance = self.cosmology.comoving_distance(self._header["redshift"]).to(positions.unit)
 
 		#Binning in the normal direction		
-		assert type(thickness_resolution) in [np.int,quantity.Quantity]
+		assert type(thickness_resolution) in [int, np.integer, quantity.Quantity]
 		center = center.to(positions.unit)
 		thickness  = thickness.to(positions.unit)
 		

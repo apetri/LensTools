@@ -15,12 +15,12 @@ def two_file_loader(filename1,filename2):
 
 	shear_file_1 = fits.open(filename1)
 	angle = shear_file_1[0].header["ANGLE"]
-	gamma = shear_file_1[0].data.astype(np.float)
+	gamma = shear_file_1[0].data.astype(np.float64)
 	shear_file_1.close()
 
 	shear_file_2 = fits.open(filename2)
 	assert shear_file_2[0].header["ANGLE"] == angle
-	gamma = np.array((gamma,shear_file_2[0].data.astype(np.float)))
+	gamma = np.array((gamma,shear_file_2[0].data.astype(np.float64)))
 	shear_file_2.close()
 
 	return angle*deg,gamma
@@ -76,7 +76,7 @@ def test_EB_decompose():
 	ax.set_xlabel(r"$l$")
 	ax.set_ylabel(r"$l(l+1)P_l/2\pi$")
 	
-	ax.legend(loc="Upper left")
+	ax.legend(loc="upper left")
 
 	plt.savefig("EB.png")
 	plt.clf()
@@ -230,7 +230,7 @@ def test_getValues():
 	xx,yy = np.meshgrid(b,b) * deg
 
 	new_values = test_map.getValues(xx,yy)
-	assert (new_values==test_map.data)[:,:-1,:-1].all()
+	assert np.all((new_values==test_map.data)[:,:-1,:-1])
 
 def test_gradient_partial():
 
@@ -240,10 +240,10 @@ def test_gradient_partial():
 	gxx,gxy,gyx,gyy = test_map.gradient()
 	gxxp,gxyp,gyxp,gyyp = test_map.gradient(xx,yy)	
 
-	assert (gxx==gxxp)[:-1,:-1].all()
-	assert (gxy==gxyp)[:-1,:-1].all()
-	assert (gyx==gyxp)[:-1,:-1].all()
-	assert (gyy==gyyp)[:-1,:-1].all()
+	assert np.all((gxx==gxxp)[:-1,:-1])
+	assert np.all((gxy==gxyp)[:-1,:-1])
+	assert np.all((gyx==gyxp)[:-1,:-1])
+	assert np.all((gyy==gyyp)[:-1,:-1])
 
 
 

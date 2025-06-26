@@ -2,7 +2,11 @@ import sys,os
 import ast
 from abc import ABCMeta,abstractproperty,abstractmethod
 
-from distutils import config
+try:
+    from distutils import config
+except ImportError:
+    # Python 3.13+ removes distutils, use configparser instead
+    import configparser as config
 
 if sys.version_info.major>=3:
 	import _pickle as pkl
