@@ -1,9 +1,9 @@
 setuptools
-numpy
-scipy
-matplotlib
+numpy>=2.0.0
+scipy>=1.9.0
+matplotlib>=3.5.0
 ipython
-pandas
-emcee==2.2.1
-astropy
-numexpr
+pandas>=1.5.0
+emcee>=3.0.0
+astropy>=5.0.0
+numexpr>=2.8.0

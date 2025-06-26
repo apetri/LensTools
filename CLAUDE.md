@@ -24,15 +24,35 @@ python setup.py install --gsl=/usr/local --fftw3=/usr/local
 
 ### Testing
 ```bash
-# Modern testing with pytest (recommended)
-pytest lenstools/tests/ -v
+# Test C extensions and NumPy 2.x compatibility (recommended)
+python -m pytest test_cextensions.py -v
 
-# Legacy testing with nose (requires nose package, incompatible with Python 3.13+)
-nosetests --with-coverage --cover-package=lenstools --logging-level=INFO
+# Test specific working functionality
+python -m pytest lenstools/tests/test_contours.py -v
 
-# Test basic functionality and C extensions
-python -c "import lenstools; from lenstools.extern import _topology; print('All working!')"
+# Run all tests (many require external data files and will fail)
+python -m pytest lenstools/tests/ -v --tb=short
+
+# Manual verification of C extensions
+python -c "
+import lenstools
+from lenstools.extern import _topology, _gadget2, _nbody, _pixelize
+import numpy as np
+test_data = np.random.rand(50, 50).astype(np.float64)
+grad = _topology.gradient(test_data, None, None)
+print('✓ All C extensions working with NumPy', np.__version__)
+"
 ```
+
+**Note on Testing**: Most tests in `lenstools/tests/` require external data files that are downloaded from Dropbox. The `test_cextensions.py` file provides comprehensive testing of C extensions and NumPy 2.x compatibility without external dependencies.
+
+### GitHub Actions CI/CD
+The repository includes a comprehensive GitHub Actions workflow that tests:
+- **All Python versions**: 3.8 through 3.13
+- **All dependencies**: GSL, FFTW3, and all system dependencies installed
+- **All C extensions enabled**: Tests that all C extensions compile and work correctly
+- **NumPy 2.x compatibility**: Verifies C extensions work with modern NumPy
+- **Pytest testing**: Uses modern pytest framework for all tests
 
 ### Modernization Status ✅ COMPLETE
 

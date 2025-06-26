@@ -36,9 +36,9 @@ except ImportError:
         from emcee import _function_wrapper
     except ImportError:
         # If not available, create a simple replacement
-        def _function_wrapper(func, args):
+        def _function_wrapper(func, args, kwargs):
             def wrapper(theta):
-                return func(theta, *args)
+                return func(theta, *args, **kwargs)
             return wrapper
 
 try:

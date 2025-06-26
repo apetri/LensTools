@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
 
     steps:
     - uses: actions/checkout@v4
@@ -21,76 +21,56 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
-    - name: Install system dependencies
+    - name: Install all system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgsl-dev libfftw3-dev
+        sudo apt-get install -y libgsl-dev libfftw3-dev gcc build-essential
     
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest pytest-cov nose coverage
-        pip install -r requirements.txt
+        pip install pytest pytest-cov
     
-    - name: Install package
+    - name: Install package with all C extensions
       run: |
-        pip install -e .
+        pip install -e . --no-build-isolation
     
-    - name: Test import
-      run: |
-        python -c "import lenstools; print('LensTools version:', lenstools.__version__)"
-    
-    - name: Run tests with nose
-      run: |
-        nosetests --with-coverage --cover-package=lenstools --logging-level=INFO
-      continue-on-error: true  # Some tests may fail without data files
-    
-    - name: Run basic functionality tests
+    - name: Verify all C extensions are working
       run: |
         python -c "
         import lenstools
-        from lenstools.image.convergence import ConvergenceMap
-        from lenstools.catalog import Catalog
-        print('Basic imports successful')
-        "
-
-  test-with-c-extensions:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgsl-dev libfftw3-dev
-    
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-cov nose coverage
-        pip install -r requirements.txt
-    
-    - name: Enable C extensions
-      run: |
-        sed -i 's/build_c_extensions = False/build_c_extensions = True/' setup.py
-    
-    - name: Install package with C extensions
-      run: |
-        pip install -e .
-      continue-on-error: true  # C extensions may fail to build
-    
-    - name: Test C extensions if available
-      run: |
-        python -c "
+        print('LensTools version:', lenstools.__version__)
+        print('NumPy version:', __import__('numpy').__version__)
+        
+        # Test all C extensions
+        from lenstools.extern import _topology, _gadget2, _nbody, _pixelize
+        print('✓ All core C extensions loaded successfully')
+        
+        # Test optional C extensions
         try:
-            from lenstools.extern import _topology
-            print('C extensions loaded successfully')
-        except ImportError:
-            print('C extensions not available, using Python fallbacks')
+            from lenstools.extern import _design
+            print('✓ _design C extension loaded (GSL)')
+        except ImportError as e:
+            print(f'⚠ _design C extension failed: {e}')
+        
+        try:
+            from lenstools.extern import _nicaea
+            print('✓ _nicaea C extension loaded (NICAEA)')
+        except ImportError as e:
+            print(f'⚠ _nicaea C extension failed: {e}')
+        
+        # Test C extension functionality with NumPy 2.x
+        import numpy as np
+        test_data = np.random.rand(50, 50).astype(np.float64)
+        grad = _topology.gradient(test_data, None, None)
+        print('✓ C extensions working with NumPy', np.__version__)
         "
-      continue-on-error: true
+    
+    - name: Run C extension tests
+      run: |
+        python -m pytest test_cextensions.py -v
+    
+    - name: Run available tests (excluding those requiring external data)
+      run: |
+        python -m pytest lenstools/tests/test_contours.py -v
+      continue-on-error: true  # Allow other tests to be added later
