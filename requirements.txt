@@ -1,5 +1,5 @@
 setuptools
-numpy>=2.0.0
+numpy>=1.19.0
 scipy>=1.9.0
 matplotlib>=3.5.0
 ipython
