@@ -50,6 +50,25 @@ def rd(filename):
 #Check GSL installation, necessary for using the Design feature
 def check_gsl(conf):
 	
+	# Try pkg-config first
+	try:
+		import subprocess
+		result = subprocess.run(['pkg-config', '--exists', 'gsl'], capture_output=True)
+		if result.returncode == 0:
+			sys.stderr.write("Checking GSL with pkg-config... ")
+			sys.stderr.write(green("[OK]\n"))
+			
+			# Get paths from pkg-config
+			cflags = subprocess.run(['pkg-config', '--cflags', 'gsl'], capture_output=True, text=True)
+			libs = subprocess.run(['pkg-config', '--libs', 'gsl'], capture_output=True, text=True)
+			prefix = subprocess.run(['pkg-config', '--variable=prefix', 'gsl'], capture_output=True, text=True)
+			
+			if cflags.returncode == 0 and libs.returncode == 0 and prefix.returncode == 0:
+				return prefix.stdout.strip()
+	except:
+		pass
+	
+	# Fallback to manual detection
 	gsl_location = conf.get("gsl","installation_path")
 	gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h","gsl_matrix.h"]
 	gsl_required_links = ["libgsl.a","libgslcblas.a"]
@@ -83,6 +102,25 @@ def check_gsl(conf):
 #Check fftw3 installation, required from NICAEA
 def check_fftw3(conf):
 
+	# Try pkg-config first
+	try:
+		import subprocess
+		result = subprocess.run(['pkg-config', '--exists', 'fftw3'], capture_output=True)
+		if result.returncode == 0:
+			sys.stderr.write("Checking FFTW3 with pkg-config... ")
+			sys.stderr.write(green("[OK]\n"))
+			
+			# Get paths from pkg-config
+			cflags = subprocess.run(['pkg-config', '--cflags', 'fftw3'], capture_output=True, text=True)
+			libs = subprocess.run(['pkg-config', '--libs', 'fftw3'], capture_output=True, text=True)
+			prefix = subprocess.run(['pkg-config', '--variable=prefix', 'fftw3'], capture_output=True, text=True)
+			
+			if cflags.returncode == 0 and libs.returncode == 0 and prefix.returncode == 0:
+				return prefix.stdout.strip()
+	except:
+		pass
+
+	# Fallback to manual detection
 	fftw3_location = conf.get("fftw3","installation_path")
 	fftw3_required_includes = ["fftw3.h"]
 	fftw3_required_links = ["libfftw3.a"]
@@ -208,8 +246,31 @@ gsl_location = check_gsl(conf)
 
 if gsl_location is not None:
 	print(green("[OK] Checked GSL installation, the Design feature will be installed"))
-	lenstools_includes.append(os.path.join(gsl_location,"include")) 
-	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	
+	# Use pkg-config for GSL flags
+	try:
+		import subprocess
+		gsl_cflags = subprocess.run(['pkg-config', '--cflags', 'gsl'], capture_output=True, text=True)
+		gsl_libs = subprocess.run(['pkg-config', '--libs', 'gsl'], capture_output=True, text=True)
+		
+		if gsl_cflags.returncode == 0 and gsl_libs.returncode == 0:
+			# Parse cflags to get include directories
+			cflags = gsl_cflags.stdout.strip().split()
+			for flag in cflags:
+				if flag.startswith('-I'):
+					lenstools_includes.append(flag[2:])
+			
+			# Use libs from pkg-config
+			lenstools_link = ["-lm"] + gsl_libs.stdout.strip().split()
+		else:
+			# Fallback to manual paths
+			lenstools_includes.append(os.path.join(gsl_location,"include")) 
+			lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	except:
+		# Fallback to manual paths
+		lenstools_includes.append(os.path.join(gsl_location,"include")) 
+		lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
 	print(red("[FAIL] GSL installation not found, the Design feature will not be installed"))
@@ -229,8 +290,32 @@ if conf.getboolean("nicaea","install_python_bindings"):
 		print(green("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed"))
 		
 		#Add necessary includes and links
-		lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
-		lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
+		# Use pkg-config for FFTW3 if available
+		try:
+			import subprocess
+			fftw3_cflags = subprocess.run(['pkg-config', '--cflags', 'fftw3'], capture_output=True, text=True)
+			fftw3_libs = subprocess.run(['pkg-config', '--libs', 'fftw3'], capture_output=True, text=True)
+			
+			if fftw3_cflags.returncode == 0 and fftw3_libs.returncode == 0:
+				# Parse cflags to get include directories
+				cflags = fftw3_cflags.stdout.strip().split()
+				for flag in cflags:
+					if flag.startswith('-I'):
+						lenstools_includes.append(flag[2:])
+				
+				# Add NICAEA include
+				lenstools_includes.append(nicaea_location[0])
+				
+				# Use libs from pkg-config plus NICAEA
+				lenstools_link += fftw3_libs.stdout.strip().split() + ["-L{0}".format(nicaea_location[1]), "-lnicaea"]
+			else:
+				# Fallback to manual paths
+				lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
+				lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
+		except:
+			# Fallback to manual paths
+			lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
+			lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
 
 		#Specify the NICAEA extension
 		external_sources["_nicaea"] = ["_nicaea.c"]

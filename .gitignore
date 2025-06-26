@@ -54,6 +54,7 @@ docs/_build/
 
 # Test data and outputs (should not be committed)
 LT_Data/
+SimTest/
 test_data/
 test_data_download/
 test_env/
@@ -63,6 +64,11 @@ test_output/
 *.pdf
 *.eps
 *.txt
+*.pkl
+*.fits
+*.fit
+gadget*
+ensemble_saved*
 !requirements.txt
 !setup.cfg
 !README.txt

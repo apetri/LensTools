@@ -12,10 +12,7 @@ import matplotlib.pyplot as plt
 def test_visualize():
 
 	#This fails if GSL is not installed
-	try:
-		design = Design.from_specs(npoints=50,parameters=[("Om",r"$\Omega_m$",0.1,0.9),("w",r"$w$",-2.0,-1.0),("si8",r"$\sigma_8$",0.01,1.6)])
-	except ImportError:
-		return
+	design = Design.from_specs(npoints=50,parameters=[("Om",r"$\Omega_m$",0.1,0.9),("w",r"$w$",-2.0,-1.0),("si8",r"$\sigma_8$",0.01,1.6)])
 
 	print(design)
 

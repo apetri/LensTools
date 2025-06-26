@@ -63,8 +63,7 @@ jobs:
     - name: Install package with all C extensions
       run: |
         python setup.py build_ext --inplace
-        pip install -r requirements.txt
-        pip install -e . --no-deps
+        pip install -e .
     
     - name: Verify all C extensions are working
       run: |
@@ -148,8 +147,7 @@ jobs:
     - name: Install package with C extensions (NumPy 1.x)
       run: |
         python setup.py build_ext --inplace
-        pip install scipy matplotlib astropy "emcee>=3.0.0" pandas numexpr
-        pip install -e . --no-deps
+        pip install -e .
     
     - name: Test basic functionality with NumPy 1.x
       run: |
@@ -218,8 +216,7 @@ jobs:
     - name: Install package with C extensions (NumPy 1.x)
       run: |
         python setup.py build_ext --inplace
-        pip install scipy matplotlib astropy "emcee>=3.0.0" pandas numexpr
-        pip install -e . --no-deps
+        pip install -e .
     
     - name: Test basic functionality with NumPy 1.x
       run: |

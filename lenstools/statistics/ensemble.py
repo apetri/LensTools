@@ -610,12 +610,12 @@ class Ensemble(pd.DataFrame):
 
 		#by group
 		by_group = self.groupby(by)
-		self["by_group_id"] = by_group.grouper.group_info[0]
+		self["by_group_id"] = by_group.ngroup()
 		by_labels = self[by+["by_group_id"]].drop_duplicates()
 
 		#suppress group
 		suppress_group = self.groupby(suppress)
-		self["suppress_group_id"] = suppress_group.grouper.group_info[0]
+		self["suppress_group_id"] = suppress_group.ngroup()
 		suppress_labels = self[suppress+["suppress_group_id"]].drop_duplicates()
 
 		#Combine the rows
@@ -623,9 +623,30 @@ class Ensemble(pd.DataFrame):
 		ens_combined.columns = ens_combined.columns.rename(None,level=1)
 		ens_combined.index.name = None
 
-		#Join the by_labels
-		ens_combined = self.__class__.merge(ens_combined.reset_index(),by_labels,left_on="index",right_on="by_group_id")
-		ens_combined.pop(("index",""))
+		#Join the by_labels - fix pandas merge compatibility issue
+		ens_combined_reset = ens_combined.reset_index()
+		
+		# The reset_index creates a column called 'index' which contains by_group_id values
+		# Rename it back to by_group_id for the merge
+		if 'index' in ens_combined_reset.columns:
+			ens_combined_reset = ens_combined_reset.rename(columns={'index': 'by_group_id'})
+		
+		# Fix column level mismatch for pandas merge by flattening multi-level columns
+		if ens_combined_reset.columns.nlevels > 1:
+			# Flatten non-index columns
+			new_cols = []
+			for col in ens_combined_reset.columns:
+				if col == 'by_group_id' or (hasattr(col, '__len__') and col[0] == 'by_group_id'):
+					new_cols.append('by_group_id')
+				else:
+					# Join non-empty parts with underscore
+					if hasattr(col, '__len__') and len(col) > 1:
+						new_cols.append('_'.join(str(x) for x in col if str(x) != ''))
+					else:
+						new_cols.append(str(col))
+			ens_combined_reset.columns = new_cols
+		
+		ens_combined = self.__class__.merge(ens_combined_reset,by_labels,left_on="by_group_id",right_on="by_group_id")
 		ens_combined.pop("by_group_id")
 
 		#Return
