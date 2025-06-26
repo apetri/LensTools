@@ -28,7 +28,18 @@ import pandas as pd
 
 from scipy import stats,interpolate
 
-from emcee.ensemble import _function_wrapper
+try:
+    from emcee.ensemble import _function_wrapper
+except ImportError:
+    # emcee 3.x moved _function_wrapper
+    try:
+        from emcee import _function_wrapper
+    except ImportError:
+        # If not available, create a simple replacement
+        def _function_wrapper(func, args):
+            def wrapper(theta):
+                return func(theta, *args)
+            return wrapper
 
 try:
 	from matplotlib.patches import Ellipse

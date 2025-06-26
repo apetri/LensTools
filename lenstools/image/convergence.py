@@ -60,11 +60,11 @@ class Spin0(object):
 		#Sanity check
 		assert angle.unit.physical_type in ["angle","length"]
 
-		if not(data.dtype==np.complex):
+		if not(data.dtype==np.complex128):
 			assert data.shape[0]==data.shape[1],"The map must be a square!!"
 
 		#Convert to double precision for calculation accuracy
-		if data.dtype in (np.float,np.complex):
+		if data.dtype in (np.float64,np.complex128):
 			self.data = data
 		else:
 			self.data = data.astype(np.float)

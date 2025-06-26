@@ -170,9 +170,9 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 	/*Get the number of thresholds to output*/
-	int Nthreshold = (int)PyArray_DIM(thresholds_array,0);
+	int Nthreshold = (int)PYARRAY_DIM_CAST(thresholds_array,0);
 
 	/*Prepare a new array object that will hold the peak counts*/
 	npy_intp dims[] = {(npy_intp) Nthreshold - 1};
@@ -266,9 +266,9 @@ static PyObject *_topology_peakLocations(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 	/*Get the number of thresholds to output*/
-	int Nthreshold = (int)PyArray_DIM(thresholds_array,0);
+	int Nthreshold = (int)PYARRAY_DIM_CAST(thresholds_array,0);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/*Up to here the implementation is the same as peakCounts, now it starts to differentiate: we are interested in the peak locations*/
@@ -430,7 +430,7 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 			return NULL;
 		}
 
-		Npoints = (int)PyArray_SIZE(x_array);
+		Npoints = (int)PYARRAY_SIZE_CAST(x_array);
 
 		/*Get data pointers*/
 		x_data = PYARRAY_DATA_CAST(x_array, int);
@@ -446,7 +446,7 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 
 	/*Interpret as numpy arrays*/
 	PyObject *gradient_x_array, *gradient_y_array;
@@ -555,7 +555,7 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 			return NULL;
 		}
 
-		Npoints = (int)PyArray_SIZE(x_array);
+		Npoints = (int)PYARRAY_SIZE_CAST(x_array);
 
 		/*Get data pointers*/
 		x_data = PYARRAY_DATA_CAST(x_array, int);
@@ -571,7 +571,7 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 
 	/*Interpret as numpy arrays*/
 	PyObject *hessian_xx_array,*hessian_yy_array,*hessian_xy_array;
@@ -699,7 +699,7 @@ static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args){
 			return NULL;
 		}
 
-		Npoints = (int)PyArray_SIZE(x_array);
+		Npoints = (int)PYARRAY_SIZE_CAST(x_array);
 
 		/*Get data pointers*/
 		x_data = PYARRAY_DATA_CAST(x_array, int);
@@ -715,7 +715,7 @@ static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 
 	/*Interpret as numpy arrays*/
 	PyObject *gradient_x_array, *gradient_y_array;
@@ -856,9 +856,9 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 	/*Get the number of excurion sets*/
-	int Nthreshold = (int)PyArray_DIM(thresholds_array,0);
+	int Nthreshold = (int)PYARRAY_DIM_CAST(thresholds_array,0);
 
 	/*Prepare the new array objects that will hold the measured minkowski functionals*/
 	npy_intp dims[] = {Nthreshold - 1};
@@ -1021,11 +1021,11 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map fourier transform*/
-	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
-	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+	int Nside_x = (int)PYARRAY_DIM_CAST(ft_map1_array,0);
+	int Nside_y = (int)PYARRAY_DIM_CAST(ft_map1_array,1);
 
 	/*Get the number of multipole moment bin edges*/
-	int Nvalues = (int)PyArray_DIM(lvalues_array,0);
+	int Nvalues = (int)PYARRAY_DIM_CAST(lvalues_array,0);
 
 	/*Build the array that will contain the output*/
 	npy_intp dims[] = {(npy_intp) Nvalues - 1};
@@ -1128,11 +1128,11 @@ static PyObject *_topology_bispectrum(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map fourier transform*/
-	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
-	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+	int Nside_x = (int)PYARRAY_DIM_CAST(ft_map1_array,0);
+	int Nside_y = (int)PYARRAY_DIM_CAST(ft_map1_array,1);
 
 	/*Get the number of multipole moment bin edges*/
-	int Nvalues = (int)PyArray_DIM(lvalues_array,0);
+	int Nvalues = (int)PYARRAY_DIM_CAST(lvalues_array,0);
 
 	/*Build the array that will contain the output*/
 	npy_intp dims[] = {(npy_intp) Nvalues - 1};
@@ -1218,12 +1218,12 @@ static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map fourier transform*/
-	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
-	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
-	int Nside_z = (int)PyArray_DIM(ft_map1_array,2);
+	int Nside_x = (int)PYARRAY_DIM_CAST(ft_map1_array,0);
+	int Nside_y = (int)PYARRAY_DIM_CAST(ft_map1_array,1);
+	int Nside_z = (int)PYARRAY_DIM_CAST(ft_map1_array,2);
 
 	/*Get the number of k bin edges*/
-	int Nvalues = (int)PyArray_DIM(kvalues_array,0);
+	int Nvalues = (int)PYARRAY_DIM_CAST(kvalues_array,0);
 
 	/*Build the arrays that will contain the output:power spectrum and hits*/
 	npy_intp dims[] = {(npy_intp) Nvalues - 1};

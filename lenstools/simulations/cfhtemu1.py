@@ -1,7 +1,18 @@
 from __future__ import division,print_function,with_statement
 
 import os,re
-from pkg_resources import resource_filename
+try:
+    from pkg_resources import resource_filename
+except ImportError:
+    # pkg_resources is deprecated, use importlib.resources instead
+    try:
+        from importlib.resources import files
+        def resource_filename(package, resource):
+            return str(files(package) / resource)
+    except ImportError:
+        from importlib_resources import files
+        def resource_filename(package, resource):
+            return str(files(package) / resource)
 
 import numpy as np
 from astropy.io import fits

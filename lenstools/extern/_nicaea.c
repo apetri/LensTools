@@ -211,11 +211,11 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 		return NULL;
 	} 
 
-	int *Nnz = (int *)PyArray_DATA(Nnz_array);
-	double *par_nz = (double *)PyArray_DATA(par_nz_array);
+	int *Nnz = PYARRAY_DATA_CAST(Nnz_array, int);
+	double *par_nz = PYARRAY_DATA_CAST(par_nz_array, double);
 
 	//Safety
-	assert(nzbins==(int)PyArray_DIM(Nnz_array,0));
+	assert(nzbins==(int)PYARRAY_DIM_CAST(Nnz_array,0));
 
 	//Parse redshift distribution information
 	nofz_t nofz[nzbins];
@@ -338,7 +338,7 @@ static cosmo_lens *parse_model(PyObject *args, error **err){
 
 static PyObject *alloc_output(PyObject *spec,cosmo_lens *model){
 
-	int Ns = (int)PyArray_DIM(spec,0);
+	int Ns = (int)PYARRAY_DIM_CAST(spec,0);
 	int Nbins = model->redshift->Nzbin;
 	tomo_t tomo = model->tomo;
 	int Nz;
@@ -420,14 +420,14 @@ static PyObject *_nicaea_Wrapper(PyObject *args,double (*nicaea_method)(cosmo_le
 		return NULL;
 	}
 
-	int Nl=(int)PyArray_DIM(output_array,0);
-	int Nztot=(int)PyArray_DIM(output_array,1);
+	int Nl=(int)PYARRAY_DIM_CAST(output_array,0);
+	int Nztot=(int)PYARRAY_DIM_CAST(output_array,1);
 	int Nzbin=model->redshift->Nzbin;
 	tomo_t tomo=model->tomo;
 	
 	//Data pointer to specification and output array
-	double *spec=(double *)PyArray_DATA(spec_array);
-	double *output=(double *)PyArray_DATA(output_array);
+	double *spec=PYARRAY_DATA_CAST(spec_array, double);
+	double *output=PYARRAY_DATA_CAST(output_array, double);
 
 	//Call the NICAEA method
 

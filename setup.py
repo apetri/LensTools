@@ -278,9 +278,8 @@ scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path
 #Extension objects
 ext = list()
 
-# Temporarily disable C extensions to get basic package working first
-# TODO: Re-enable after fixing all NumPy 2.x compatibility issues
-build_c_extensions = False
+# Enable C extensions with NumPy 2.x compatibility fixes
+build_c_extensions = True
 
 if build_c_extensions:
     for ext_module in external_sources.keys():
