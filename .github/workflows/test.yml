@@ -101,10 +101,17 @@ jobs:
       run: |
         python -m pytest test_cextensions.py -v
     
-    - name: Run available tests (excluding those requiring external data)
+    - name: Download test data
       run: |
-        python -m pytest lenstools/tests/test_contours.py -v
-      continue-on-error: true  # Allow other tests to be added later
+        echo "Downloading test data..."
+        python -c "import lenstools; lenstools.dataExtern()"
+        echo "✓ Test data downloaded successfully"
+    
+    - name: Run comprehensive test suite
+      run: |
+        echo "Running full test suite with external data..."
+        python -m pytest --pyargs lenstools.tests -v --tb=short
+      continue-on-error: true  # Allow tests to fail while we fix compatibility issues
 
   test-python38-numpy1x:
     runs-on: ubuntu-latest
@@ -164,6 +171,16 @@ jobs:
         grad = _topology.gradient(test_data, None, None)
         print('✓ C extensions working with NumPy 1.x')
         "
+    
+    - name: Download test data
+      run: |
+        python -c "import lenstools; lenstools.dataExtern()"
+    
+    - name: Run core tests with NumPy 1.x
+      run: |
+        python -m pytest --pyargs lenstools.tests.test_contours -v
+        python -m pytest --pyargs lenstools.tests.test_nicaea -v
+      continue-on-error: true
 
   test-python39-numpy1x:
     runs-on: ubuntu-latest
@@ -223,3 +240,13 @@ jobs:
         grad = _topology.gradient(test_data, None, None)
         print('✓ C extensions working with NumPy 1.x')
         "
+    
+    - name: Download test data
+      run: |
+        python -c "import lenstools; lenstools.dataExtern()"
+    
+    - name: Run core tests with NumPy 1.x (Python 3.9)
+      run: |
+        python -m pytest --pyargs lenstools.tests.test_contours -v
+        python -m pytest --pyargs lenstools.tests.test_nicaea -v
+      continue-on-error: true
