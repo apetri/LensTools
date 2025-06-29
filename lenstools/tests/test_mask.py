@@ -140,8 +140,8 @@ def test_peaks():
 	v,pk_masked = masked_map.peakCount(th_peaks)
 
 	#Plot the difference
-	plt.plot(v,pk_orig,label=r"Unmasked: $N_p=${0}".format(int(integrate.simps(pk_orig,x=v))))
-	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(mask_profile.maskedFraction * 100,int(integrate.simps(pk_masked,x=v))))
+	plt.plot(v,pk_orig,label=r"Unmasked: $N_p=${0}".format(int(integrate.simpson(pk_orig,x=v))))
+	plt.plot(v,pk_masked,label=r"With {0:.1f}% area masking: $N_p=${1}".format(mask_profile.maskedFraction * 100,int(integrate.simpson(pk_masked,x=v))))
 	plt.plot(v,pk_masked/(1.0 - mask_profile.maskedFraction),label="Re-scaled")
 
 	#Labels

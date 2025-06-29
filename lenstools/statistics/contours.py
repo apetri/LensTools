@@ -54,7 +54,7 @@ def _1d_level_values(p,l,level=0.684,quantity=2):
 	closest = np.argmin(np.abs(all_levels - level))
 
 	#Find the n corresponding parameter values
-	ranks = stats.rankdata(np.abs(l-l[closest])).astype(np.int) - 1
+	ranks = stats.rankdata(np.abs(l-l[closest])).astype(int) - 1
 
 	par = list()
 	for n in range(quantity):
@@ -464,7 +464,7 @@ class ContourPlot(object):
 		marginal_likelihood = self.likelihood.sum(axis=tuple(remaining_parameter_axes))
 
 		#Compute the normalization
-		normalization = integrate.simps(marginal_likelihood,x=parameter_range)
+		normalization = integrate.simpson(marginal_likelihood,x=parameter_range)
 		marginal_likelihood /= normalization
 
 		#Compute the maximum
@@ -779,7 +779,7 @@ class ContourPlot(object):
 			self.contour = self.ax.contour(likelihood,values,colors=colors,origin="lower",extent=extent,aspect="auto",**kwargs)
 
 		#Contour labels
-		self.ax.proxy += [ plt.Rectangle((0,0),1,1,fc=color) for color in colors if color!=rc.__globals__["rcParams"]["axes.facecolor"] ]
+		self.ax.proxy += [ plt.Rectangle((0,0),1,1,fc=color) for color in colors if color!=matplotlib.rcParams["axes.facecolor"] ]
 		
 		if display_percentages:
 			plt.clabel(self.contour,fmt=fmt,inline=1,fontsize=9)

@@ -170,9 +170,9 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 	/*Get the number of thresholds to output*/
-	int Nthreshold = (int)PyArray_DIM(thresholds_array,0);
+	int Nthreshold = (int)PYARRAY_DIM_CAST(thresholds_array,0);
 
 	/*Prepare a new array object that will hold the peak counts*/
 	npy_intp dims[] = {(npy_intp) Nthreshold - 1};
@@ -194,14 +194,14 @@ static PyObject *_topology_peakCount(PyObject *self,PyObject *args){
 	/*Decide if mask profile is not NULL*/
 	unsigned char *mask_profile;
 	if(mask_array){
-		mask_profile = (unsigned char *)PyArray_DATA(mask_array);
+		mask_profile = PYARRAY_DATA_CAST(mask_array, unsigned char);
 	}
 	else{
 		mask_profile = NULL;
 	}
 
 	/*Call the underlying C function that counts the peaks*/
-	peak_count((double *)PyArray_DATA(map_array),mask_profile,Nside,sigma,Nthreshold,(double *)PyArray_DATA(thresholds_array),(double *)PyArray_DATA(peaks_array));
+	peak_count(PYARRAY_DATA_CAST(map_array, double),mask_profile,Nside,sigma,Nthreshold,PYARRAY_DATA_CAST(thresholds_array, double),PYARRAY_DATA_CAST(peaks_array, double));
 
 	/*Clean up and return*/
 	Py_DECREF(map_array);
@@ -266,9 +266,9 @@ static PyObject *_topology_peakLocations(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 	/*Get the number of thresholds to output*/
-	int Nthreshold = (int)PyArray_DIM(thresholds_array,0);
+	int Nthreshold = (int)PYARRAY_DIM_CAST(thresholds_array,0);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/*Up to here the implementation is the same as peakCounts, now it starts to differentiate: we are interested in the peak locations*/
@@ -299,14 +299,14 @@ static PyObject *_topology_peakLocations(PyObject *self,PyObject *args){
 	/*Decide if mask profile is not NULL*/
 	unsigned char *mask_profile;
 	if(mask_array){
-		mask_profile = (unsigned char *)PyArray_DATA(mask_array);
+		mask_profile = PYARRAY_DATA_CAST(mask_array, unsigned char);
 	}
 	else{
 		mask_profile = NULL;
 	}
 
 	/*Call the underlying C function that finds the locations of the peaks*/
-	int Npeaks = peak_locations((double *)PyArray_DATA(map_array),mask_profile,Nside,sigma,Nthreshold,(double *)PyArray_DATA(thresholds_array),peak_values,locations_x,locations_y);
+	int Npeaks = peak_locations(PYARRAY_DATA_CAST(map_array, double),mask_profile,Nside,sigma,Nthreshold,PYARRAY_DATA_CAST(thresholds_array, double),peak_values,locations_x,locations_y);
 
 	/*Prepare new array objects that will hold the peak locations and values*/
 	npy_intp value_dims[] = {(npy_intp) Npeaks};
@@ -336,8 +336,8 @@ static PyObject *_topology_peakLocations(PyObject *self,PyObject *args){
 	}
 
 	//get data pointers to fill in the numpy arrays
-	double *values_data = (double *)PyArray_DATA(values_array);
-	int *locations_data = (int *)PyArray_DATA(locations_array);
+	double *values_data = PYARRAY_DATA_CAST(values_array, double);
+	int *locations_data = PYARRAY_DATA_CAST(locations_array, int);
 
 	//fill in the numpy arrays
 	for(n=0;n<Npeaks;n++){
@@ -430,11 +430,11 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 			return NULL;
 		}
 
-		Npoints = (int)PyArray_SIZE(x_array);
+		Npoints = (int)PYARRAY_SIZE_CAST(x_array);
 
 		/*Get data pointers*/
-		x_data = (int *)PyArray_DATA(x_array);
-		y_data = (int *)PyArray_DATA(y_array);
+		x_data = PYARRAY_DATA_CAST(x_array, int);
+		y_data = PYARRAY_DATA_CAST(y_array, int);
 
 	} else{
 
@@ -446,7 +446,7 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 
 	/*Interpret as numpy arrays*/
 	PyObject *gradient_x_array, *gradient_y_array;
@@ -480,7 +480,7 @@ static PyObject *_topology_gradient(PyObject *self,PyObject *args){
 	}
 
 	/*Call the underlying C function that computes the gradient*/
-	gradient_xy((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(gradient_x_array),(double *)PyArray_DATA(gradient_y_array),Nside,Npoints,x_data,y_data);
+	gradient_xy(PYARRAY_DATA_CAST(map_array, double),PYARRAY_DATA_CAST(gradient_x_array, double),PYARRAY_DATA_CAST(gradient_y_array, double),Nside,Npoints,x_data,y_data);
 
 	/*Prepare a tuple container for the output*/
 	PyObject *gradient_output = PyTuple_New(2);
@@ -555,11 +555,11 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 			return NULL;
 		}
 
-		Npoints = (int)PyArray_SIZE(x_array);
+		Npoints = (int)PYARRAY_SIZE_CAST(x_array);
 
 		/*Get data pointers*/
-		x_data = (int *)PyArray_DATA(x_array);
-		y_data = (int *)PyArray_DATA(y_array);
+		x_data = PYARRAY_DATA_CAST(x_array, int);
+		y_data = PYARRAY_DATA_CAST(y_array, int);
 
 	} else{
 
@@ -571,7 +571,7 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 
 	/*Interpret as numpy arrays*/
 	PyObject *hessian_xx_array,*hessian_yy_array,*hessian_xy_array;
@@ -607,7 +607,7 @@ static PyObject *_topology_hessian(PyObject *self,PyObject *args){
 	}
 
 	/*Call the underlying C function that computes the hessian*/
-	hessian((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(hessian_xx_array),(double *)PyArray_DATA(hessian_yy_array),(double *)PyArray_DATA(hessian_xy_array),Nside,Npoints,x_data,y_data);
+	hessian(PYARRAY_DATA_CAST(map_array, double),PYARRAY_DATA_CAST(hessian_xx_array, double),PYARRAY_DATA_CAST(hessian_yy_array, double),PYARRAY_DATA_CAST(hessian_xy_array, double),Nside,Npoints,x_data,y_data);
 
 	/*Prepare a tuple container for the output*/
 	PyObject *hessian_output = PyTuple_New(3);
@@ -699,11 +699,11 @@ static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args){
 			return NULL;
 		}
 
-		Npoints = (int)PyArray_SIZE(x_array);
+		Npoints = (int)PYARRAY_SIZE_CAST(x_array);
 
 		/*Get data pointers*/
-		x_data = (int *)PyArray_DATA(x_array);
-		y_data = (int *)PyArray_DATA(y_array);
+		x_data = PYARRAY_DATA_CAST(x_array, int);
+		y_data = PYARRAY_DATA_CAST(y_array, int);
 
 	} else{
 
@@ -715,7 +715,7 @@ static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 
 	/*Interpret as numpy arrays*/
 	PyObject *gradient_x_array, *gradient_y_array;
@@ -749,7 +749,7 @@ static PyObject *_topology_gradLaplacian(PyObject *self,PyObject *args){
 	}
 
 	/*Call the underlying C function that computes the gradient*/
-	gradLaplacian((double *)PyArray_DATA(map_array),(double *)PyArray_DATA(gradient_x_array),(double *)PyArray_DATA(gradient_y_array),Nside,Npoints,x_data,y_data);
+	gradLaplacian(PYARRAY_DATA_CAST(map_array, double),PYARRAY_DATA_CAST(gradient_x_array, double),PYARRAY_DATA_CAST(gradient_y_array, double),Nside,Npoints,x_data,y_data);
 
 	/*Prepare a tuple container for the output*/
 	PyObject *gradient_output = PyTuple_New(2);
@@ -856,9 +856,9 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map (in pixels)*/
-	int Nside = (int)PyArray_DIM(map_array,0);
+	int Nside = (int)PYARRAY_DIM_CAST(map_array,0);
 	/*Get the number of excurion sets*/
-	int Nthreshold = (int)PyArray_DIM(thresholds_array,0);
+	int Nthreshold = (int)PYARRAY_DIM_CAST(thresholds_array,0);
 
 	/*Prepare the new array objects that will hold the measured minkowski functionals*/
 	npy_intp dims[] = {Nthreshold - 1};
@@ -896,14 +896,14 @@ static PyObject *_topology_minkowski(PyObject *self,PyObject *args){
 	/*Decide if mask_profile is null or not*/
 	unsigned char *mask_profile;
 	if(mask_array){
-		mask_profile = (unsigned char *)PyArray_DATA(mask_array);
+		mask_profile = PYARRAY_DATA_CAST(mask_array, unsigned char);
 	}
 	else{
 		mask_profile = NULL;
 	}
 
 	/*Call the underlying C function that measures the Minkowski functionals*/
-	minkowski_functionals((double *)PyArray_DATA(map_array),mask_profile,Nside,sigma,(double *)PyArray_DATA(grad_x_array),(double *)PyArray_DATA(grad_y_array),(double *)PyArray_DATA(hess_xx_array),(double *)PyArray_DATA(hess_yy_array),(double *)PyArray_DATA(hess_xy_array),Nthreshold,(double *)PyArray_DATA(thresholds_array),(double *)PyArray_DATA(mink0_array),(double *)PyArray_DATA(mink1_array),(double *)PyArray_DATA(mink2_array));
+	minkowski_functionals(PYARRAY_DATA_CAST(map_array, double),mask_profile,Nside,sigma,PYARRAY_DATA_CAST(grad_x_array, double),PYARRAY_DATA_CAST(grad_y_array, double),PYARRAY_DATA_CAST(hess_xx_array, double),PYARRAY_DATA_CAST(hess_yy_array, double),PYARRAY_DATA_CAST(hess_xy_array, double),Nthreshold,PYARRAY_DATA_CAST(thresholds_array, double),PYARRAY_DATA_CAST(mink0_array, double),PYARRAY_DATA_CAST(mink1_array, double),PYARRAY_DATA_CAST(mink2_array, double));
 
 	/*Add the results to the tuple output*/
 	if(PyTuple_SetItem(mink_output,0,mink0_array)){
@@ -1021,11 +1021,11 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map fourier transform*/
-	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
-	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+	int Nside_x = (int)PYARRAY_DIM_CAST(ft_map1_array,0);
+	int Nside_y = (int)PYARRAY_DIM_CAST(ft_map1_array,1);
 
 	/*Get the number of multipole moment bin edges*/
-	int Nvalues = (int)PyArray_DIM(lvalues_array,0);
+	int Nvalues = (int)PYARRAY_DIM_CAST(lvalues_array,0);
 
 	/*Build the array that will contain the output*/
 	npy_intp dims[] = {(npy_intp) Nvalues - 1};
@@ -1058,7 +1058,7 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 
 		}
 
-		scale = (double *)PyArray_DATA(scale_array);
+		scale = PYARRAY_DATA_CAST(scale_array, double);
 
 	} else{
 
@@ -1068,7 +1068,7 @@ static PyObject *_topology_rfft2_azimuthal(PyObject *self,PyObject *args){
 
 
 	/*Call the C backend azimuthal average function*/
-	if(azimuthal_rfft2((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(power_array),scale)){
+	if(azimuthal_rfft2(PYARRAY_DATA_CAST(ft_map1_array, double _Complex),PYARRAY_DATA_CAST(ft_map2_array, double _Complex),Nside_x,Nside_y,map_angle_degrees,Nvalues,PYARRAY_DATA_CAST(lvalues_array, double),PYARRAY_DATA_CAST(power_array, double),scale)){
 
 		Py_DECREF(ft_map1_array);
 		Py_DECREF(ft_map2_array);
@@ -1128,11 +1128,11 @@ static PyObject *_topology_bispectrum(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map fourier transform*/
-	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
-	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
+	int Nside_x = (int)PYARRAY_DIM_CAST(ft_map1_array,0);
+	int Nside_y = (int)PYARRAY_DIM_CAST(ft_map1_array,1);
 
 	/*Get the number of multipole moment bin edges*/
-	int Nvalues = (int)PyArray_DIM(lvalues_array,0);
+	int Nvalues = (int)PYARRAY_DIM_CAST(lvalues_array,0);
 
 	/*Build the array that will contain the output*/
 	npy_intp dims[] = {(npy_intp) Nvalues - 1};
@@ -1152,11 +1152,11 @@ static PyObject *_topology_bispectrum(PyObject *self,PyObject *args){
 	/*Call the C backend azimuthal average function*/
 	if(!strcmp(bispectrum_configuration,"equilateral")){
 		
-		error = bispectrum_equilateral((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),(double _Complex *)PyArray_DATA(ft_map3_array),Nside_x,Nside_y,map_angle_degrees,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(bispectrum_array));
+		error = bispectrum_equilateral(PYARRAY_DATA_CAST(ft_map1_array, double _Complex),PYARRAY_DATA_CAST(ft_map2_array, double _Complex),PYARRAY_DATA_CAST(ft_map3_array, double _Complex),Nside_x,Nside_y,map_angle_degrees,Nvalues,PYARRAY_DATA_CAST(lvalues_array, double),PYARRAY_DATA_CAST(bispectrum_array, double));
 	
 	} else if(!strcmp(bispectrum_configuration,"folded")){
 
-		error = bispectrum_folded((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),(double _Complex *)PyArray_DATA(ft_map3_array),Nside_x,Nside_y,map_angle_degrees,folding_ratio,Nvalues,(double *)PyArray_DATA(lvalues_array),(double *)PyArray_DATA(bispectrum_array));
+		error = bispectrum_folded(PYARRAY_DATA_CAST(ft_map1_array, double _Complex),PYARRAY_DATA_CAST(ft_map2_array, double _Complex),PYARRAY_DATA_CAST(ft_map3_array, double _Complex),Nside_x,Nside_y,map_angle_degrees,folding_ratio,Nvalues,PYARRAY_DATA_CAST(lvalues_array, double),PYARRAY_DATA_CAST(bispectrum_array, double));
 
 	} else{
 
@@ -1218,12 +1218,12 @@ static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args){
 	}
 
 	/*Get the size of the map fourier transform*/
-	int Nside_x = (int)PyArray_DIM(ft_map1_array,0);
-	int Nside_y = (int)PyArray_DIM(ft_map1_array,1);
-	int Nside_z = (int)PyArray_DIM(ft_map1_array,2);
+	int Nside_x = (int)PYARRAY_DIM_CAST(ft_map1_array,0);
+	int Nside_y = (int)PYARRAY_DIM_CAST(ft_map1_array,1);
+	int Nside_z = (int)PYARRAY_DIM_CAST(ft_map1_array,2);
 
 	/*Get the number of k bin edges*/
-	int Nvalues = (int)PyArray_DIM(kvalues_array,0);
+	int Nvalues = (int)PYARRAY_DIM_CAST(kvalues_array,0);
 
 	/*Build the arrays that will contain the output:power spectrum and hits*/
 	npy_intp dims[] = {(npy_intp) Nvalues - 1};
@@ -1243,7 +1243,7 @@ static PyObject *_topology_rfft3_azimuthal(PyObject *self,PyObject *args){
 	}
 
 	/*Call the C backend azimuthal average function*/
-	if(azimuthal_rfft3((double _Complex *)PyArray_DATA(ft_map1_array),(double _Complex *)PyArray_DATA(ft_map2_array),Nside_x,Nside_y,Nside_z,kpixX,kpixY,kpixZ,Nvalues,(double *)PyArray_DATA(kvalues_array),(double *)PyArray_DATA(power_array),(long *)PyArray_DATA(hits_array))){
+	if(azimuthal_rfft3(PYARRAY_DATA_CAST(ft_map1_array, double _Complex),PYARRAY_DATA_CAST(ft_map2_array, double _Complex),Nside_x,Nside_y,Nside_z,kpixX,kpixY,kpixZ,Nvalues,PYARRAY_DATA_CAST(kvalues_array, double),PYARRAY_DATA_CAST(power_array, double),PYARRAY_DATA_CAST(hits_array, long))){
 
 		Py_DECREF(ft_map1_array);
 		Py_DECREF(ft_map2_array);

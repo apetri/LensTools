@@ -310,13 +310,13 @@ class Spin1(object):
 
 			for i in range(self.data.shape[0]):
 				plt.colorbar(self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=cmap,**kwargs),ax=self.ax[i])
-				self.ax[i].grid(b=False)
+				self.ax[i].grid(visible=False)
 		
 		else:
 
 			for i in range(self.data.shape[0]):
 				self.ax[i].imshow(self.data[i],origin="lower",interpolation="nearest",extent=[0,self.side_angle.value,0,self.side_angle.value],cmap=cmap,**kwargs)
-				self.ax[i].grid(b=False)
+				self.ax[i].grid(visible=False)
 
 		#Axes labels
 		for i in range(self.data.shape[0]):

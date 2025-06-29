@@ -151,7 +151,7 @@ static PyObject *_apply_kernel2d(PyObject *args,double(*kernel)(double,double,do
 
 		}
 
-		weights = (float *)PyArray_DATA(weights_array);
+		weights = PYARRAY_DATA_CAST(weights_array, float);
 
 	} else{
 
@@ -173,7 +173,7 @@ static PyObject *_apply_kernel2d(PyObject *args,double(*kernel)(double,double,do
 			return NULL;
 		}
 
-		concentration = (double *)PyArray_DATA(concentration_array);
+		concentration = PYARRAY_DATA_CAST(concentration_array, double);
 
 	} else{
 
@@ -183,10 +183,10 @@ static PyObject *_apply_kernel2d(PyObject *args,double(*kernel)(double,double,do
 
 
 	//Compute the number of particles
-	int NumPart = (int)PyArray_DIM(positions_array,0);
+	int NumPart = (int)PYARRAY_DIM_CAST(positions_array,0);
 
 	//Allocate space for lensing plane
-	npy_intp dims[] =  {PyArray_DIM(binning0_array,0)-1,PyArray_DIM(binning1_array,0)-1};
+	npy_intp dims[] =  {PYARRAY_DIM_CAST(binning0_array,0)-1,PYARRAY_DIM_CAST(binning1_array,0)-1};
 	int size0 = (int)dims[0];
 	int size1 = (int)dims[1];
 	
@@ -207,11 +207,11 @@ static PyObject *_apply_kernel2d(PyObject *args,double(*kernel)(double,double,do
 	}
 
 	//Get data pointers
-	float *positions = (float *)PyArray_DATA(positions_array);
-	double *rp = (double *)PyArray_DATA(rp_array);
-	double *binning0 = (double *)PyArray_DATA(binning0_array);
-	double *binning1 = (double *)PyArray_DATA(binning1_array);
-	double *lensingPlane = (double *)PyArray_DATA(lensingPlane_array);
+	float *positions = PYARRAY_DATA_CAST(positions_array, float);
+	double *rp = PYARRAY_DATA_CAST(rp_array, double);
+	double *binning0 = PYARRAY_DATA_CAST(binning0_array, double);
+	double *binning1 = PYARRAY_DATA_CAST(binning1_array, double);
+	double *lensingPlane = PYARRAY_DATA_CAST(lensingPlane_array, double);
 
 	//Compute the adaptive smoothing using C backend
 	adaptiveSmoothing(NumPart,positions,weights,rp,concentration,binning0,binning1,center,direction0,direction1,normal,size0,size1,PyObject_IsTrue(projectAll),lensingPlane,kernel);
@@ -279,7 +279,7 @@ static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,do
 		}
 
 		//Data pointer
-		weights = (float *)PyArray_DATA(weights_array);
+		weights = PYARRAY_DATA_CAST(weights_array, float);
 
 	} else{
 
@@ -304,7 +304,7 @@ static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,do
 		}
 
 		//Data pointer
-		radius = (double *)PyArray_DATA(radius_array);
+		radius = PYARRAY_DATA_CAST(radius_array, double);
 
 	} else{
 
@@ -330,7 +330,7 @@ static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,do
 		}
 
 		//Data pointer
-		concentration = (double *)PyArray_DATA(concentration_array);
+		concentration = PYARRAY_DATA_CAST(concentration_array, double);
 
 	} else{
 
@@ -338,16 +338,16 @@ static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,do
 	}
 
 	//Get data pointers
-	float *positions_data = (float *)PyArray_DATA(positions_array);
-	double *binsX_data = (double *)PyArray_DATA(binsX_array);
-	double *binsY_data = (double *)PyArray_DATA(binsY_array);
-	double *binsZ_data = (double *)PyArray_DATA(binsZ_array);
+	float *positions_data = PYARRAY_DATA_CAST(positions_array, float);
+	double *binsX_data = PYARRAY_DATA_CAST(binsX_array, double);
+	double *binsY_data = PYARRAY_DATA_CAST(binsY_array, double);
+	double *binsZ_data = PYARRAY_DATA_CAST(binsZ_array, double);
 
 	//Get info about the number of bins
-	int NumPart = (int)PyArray_DIM(positions_array,0);
-	int nx = (int)PyArray_DIM(binsX_array,0) - 1;
-	int ny = (int)PyArray_DIM(binsY_array,0) - 1;
-	int nz = (int)PyArray_DIM(binsZ_array,0) - 1;
+	int NumPart = (int)PYARRAY_DIM_CAST(positions_array,0);
+	int nx = (int)PYARRAY_DIM_CAST(binsX_array,0) - 1;
+	int ny = (int)PYARRAY_DIM_CAST(binsY_array,0) - 1;
+	int nz = (int)PYARRAY_DIM_CAST(binsZ_array,0) - 1;
 
 	//Allocate the new array for the grid
 	PyObject *grid_array;
@@ -371,7 +371,7 @@ static PyObject *_apply_kernel3d(PyObject *args,double(*kernel)(double,double,do
 	}
 
 	//Get a data pointer
-	float *grid_data = (float *)PyArray_DATA(grid_array);
+	float *grid_data = PYARRAY_DATA_CAST(grid_array, float);
 
 	//Snap the particles on the grid
 	grid3d(positions_data,weights,radius,concentration,NumPart,binsX_data[0],binsY_data[0],binsZ_data[0],binsX_data[1] - binsX_data[0],binsY_data[1] - binsY_data[0],binsZ_data[1] - binsZ_data[0],nx,ny,nz,grid_data,kernel);

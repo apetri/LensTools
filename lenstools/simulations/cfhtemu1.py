@@ -1,7 +1,18 @@
 from __future__ import division,print_function,with_statement
 
 import os,re
-from pkg_resources import resource_filename
+try:
+    from pkg_resources import resource_filename
+except ImportError:
+    # pkg_resources is deprecated, use importlib.resources instead
+    try:
+        from importlib.resources import files
+        def resource_filename(package, resource):
+            return str(files(package) / resource)
+    except ImportError:
+        from importlib_resources import files
+        def resource_filename(package, resource):
+            return str(files(package) / resource)
 
 import numpy as np
 from astropy.io import fits
@@ -17,7 +28,7 @@ def cfht_load(self,filename):
 
 	kappa_file = fits.open(filename)
 	angle = 3.4641016151377544 * deg
-	kappa = kappa_file[0].data.astype(np.float)
+	kappa = kappa_file[0].data.astype(np.float64)
 	kappa_file.close()
 
 	return angle,kappa

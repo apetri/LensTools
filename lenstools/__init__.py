@@ -74,7 +74,7 @@ def dataExtern():
 #Download the test data into path
 def getTestData(path="."):
 	
-	data_url = "https://www.dropbox.com/s/oh526rkrhiy3m8u/data.tar.gz"
+	data_url = "https://www.dropbox.com/s/oh526rkrhiy3m8u/data.tar.gz?dl=1"
 	data_filename = os.path.join(path,"data.tar.gz")
 
 	#Download the file

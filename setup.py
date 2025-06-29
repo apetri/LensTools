@@ -9,9 +9,6 @@ else:
 
 #Names
 name = "lenstools"
-me = "Andrea Petri"
-email = "apetri@phys.columbia.edu"
-url = "http://lenstools.readthedocs.org"
 default_cfg = "setup.cfg"
 
 #Sub-packages
@@ -24,11 +21,7 @@ for sub_name in sub_package_names:
 external_dir = "extern"
 external_support_dir = "cextern"
 
-try:
-	import numpy.distutils.misc_util 
-except ImportError:
-	print("Please install numpy!")
-	sys.exit(1)
+# Numpy import will be handled later when actually needed for compilation
 
 try:
 	from setuptools import setup,Extension
@@ -54,6 +47,25 @@ def rd(filename):
 #Check GSL installation, necessary for using the Design feature
 def check_gsl(conf):
 	
+	# Try pkg-config first
+	try:
+		import subprocess
+		result = subprocess.run(['pkg-config', '--exists', 'gsl'], capture_output=True)
+		if result.returncode == 0:
+			sys.stderr.write("Checking GSL with pkg-config... ")
+			sys.stderr.write(green("[OK]\n"))
+			
+			# Get paths from pkg-config
+			cflags = subprocess.run(['pkg-config', '--cflags', 'gsl'], capture_output=True, text=True)
+			libs = subprocess.run(['pkg-config', '--libs', 'gsl'], capture_output=True, text=True)
+			prefix = subprocess.run(['pkg-config', '--variable=prefix', 'gsl'], capture_output=True, text=True)
+			
+			if cflags.returncode == 0 and libs.returncode == 0 and prefix.returncode == 0:
+				return prefix.stdout.strip()
+	except:
+		pass
+	
+	# Fallback to manual detection
 	gsl_location = conf.get("gsl","installation_path")
 	gsl_required_includes = ["gsl_permutation.h","gsl_randist.h","gsl_rng.h","gsl_matrix.h"]
 	gsl_required_links = ["libgsl.a","libgslcblas.a"]
@@ -87,6 +99,25 @@ def check_gsl(conf):
 #Check fftw3 installation, required from NICAEA
 def check_fftw3(conf):
 
+	# Try pkg-config first
+	try:
+		import subprocess
+		result = subprocess.run(['pkg-config', '--exists', 'fftw3'], capture_output=True)
+		if result.returncode == 0:
+			sys.stderr.write("Checking FFTW3 with pkg-config... ")
+			sys.stderr.write(green("[OK]\n"))
+			
+			# Get paths from pkg-config
+			cflags = subprocess.run(['pkg-config', '--cflags', 'fftw3'], capture_output=True, text=True)
+			libs = subprocess.run(['pkg-config', '--libs', 'fftw3'], capture_output=True, text=True)
+			prefix = subprocess.run(['pkg-config', '--variable=prefix', 'fftw3'], capture_output=True, text=True)
+			
+			if cflags.returncode == 0 and libs.returncode == 0 and prefix.returncode == 0:
+				return prefix.stdout.strip()
+	except:
+		pass
+
+	# Fallback to manual detection
 	fftw3_location = conf.get("fftw3","installation_path")
 	fftw3_required_includes = ["fftw3.h"]
 	fftw3_required_links = ["libfftw3.a"]
@@ -178,20 +209,7 @@ for l in ["fftw3","gsl","nicaea"]:
 
 #########################################################################################
 
-vre = re.compile("__version__ = \"(.*?)\"")
-m = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                    "lenstools", "__init__.py"))
-version = vre.findall(m)[0]
-download_url = "https://github.com/apetri/LensTools/archive/{0}.tar.gz".format(version)
-
-classifiers = [
-		"Development Status :: 4 - Beta",
-		"Intended Audience :: Science/Research",
-		"Operating System :: OS Independent",
-		"Programming Language :: Python",
-		"Programming Language :: C",
-		"License :: OSI Approved :: MIT License"
-	]
+# Metadata now handled by pyproject.toml
 
 external_sources = dict()
 external_support = dict()
@@ -212,8 +230,31 @@ gsl_location = check_gsl(conf)
 
 if gsl_location is not None:
 	print(green("[OK] Checked GSL installation, the Design feature will be installed"))
-	lenstools_includes.append(os.path.join(gsl_location,"include")) 
-	lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	
+	# Use pkg-config for GSL flags
+	try:
+		import subprocess
+		gsl_cflags = subprocess.run(['pkg-config', '--cflags', 'gsl'], capture_output=True, text=True)
+		gsl_libs = subprocess.run(['pkg-config', '--libs', 'gsl'], capture_output=True, text=True)
+		
+		if gsl_cflags.returncode == 0 and gsl_libs.returncode == 0:
+			# Parse cflags to get include directories
+			cflags = gsl_cflags.stdout.strip().split()
+			for flag in cflags:
+				if flag.startswith('-I'):
+					lenstools_includes.append(flag[2:])
+			
+			# Use libs from pkg-config
+			lenstools_link = ["-lm"] + gsl_libs.stdout.strip().split()
+		else:
+			# Fallback to manual paths
+			lenstools_includes.append(os.path.join(gsl_location,"include")) 
+			lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	except:
+		# Fallback to manual paths
+		lenstools_includes.append(os.path.join(gsl_location,"include")) 
+		lenstools_link = ["-lm","-L{0}".format(os.path.join(gsl_location,"lib")),"-lgsl","-lgslcblas"]
+	
 	external_sources["_design"] = ["_design.c","design.c"] 
 else:
 	print(red("[FAIL] GSL installation not found, the Design feature will not be installed"))
@@ -233,8 +274,32 @@ if conf.getboolean("nicaea","install_python_bindings"):
 		print(green("[OK] Checked GSL,FFTW3 and NICAEA installations, the NICAEA bindings will be installed"))
 		
 		#Add necessary includes and links
-		lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
-		lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
+		# Use pkg-config for FFTW3 if available
+		try:
+			import subprocess
+			fftw3_cflags = subprocess.run(['pkg-config', '--cflags', 'fftw3'], capture_output=True, text=True)
+			fftw3_libs = subprocess.run(['pkg-config', '--libs', 'fftw3'], capture_output=True, text=True)
+			
+			if fftw3_cflags.returncode == 0 and fftw3_libs.returncode == 0:
+				# Parse cflags to get include directories
+				cflags = fftw3_cflags.stdout.strip().split()
+				for flag in cflags:
+					if flag.startswith('-I'):
+						lenstools_includes.append(flag[2:])
+				
+				# Add NICAEA include
+				lenstools_includes.append(nicaea_location[0])
+				
+				# Use libs from pkg-config plus NICAEA
+				lenstools_link += fftw3_libs.stdout.strip().split() + ["-L{0}".format(nicaea_location[1]), "-lnicaea"]
+			else:
+				# Fallback to manual paths
+				lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
+				lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
+		except:
+			# Fallback to manual paths
+			lenstools_includes += [ os.path.join(fftw3_location,"include") , nicaea_location[0] ]
+			lenstools_link += ["-L{0}".format(os.path.join(fftw3_location,"lib")) , "-lfftw3", "-L{0}".format(nicaea_location[1]) , "-lnicaea"]
 
 		#Specify the NICAEA extension
 		external_sources["_nicaea"] = ["_nicaea.c"]
@@ -257,7 +322,12 @@ package_data[name] += [ os.path.join(external_dir,filename) for filename in os.l
 #################################################################################################
 
 #Append numpy includes
-lenstools_includes += numpy.distutils.misc_util.get_numpy_include_dirs()
+try:
+	import numpy
+	lenstools_includes += [numpy.get_include()]
+except ImportError:
+	# Numpy will be available during build due to pyproject.toml
+	lenstools_includes += []
 
 #Append system includes (fix OSX clang includes)
 if platform.system() in ["Darwin","darwin"]:
@@ -277,42 +347,33 @@ scripts = [ fname for fname in glob.glob(os.path.join("scripts","*")) if os.path
 #Extension objects
 ext = list()
 
-for ext_module in external_sources.keys():
+# Enable C extensions with NumPy 2.x compatibility fixes
+build_c_extensions = True
 
-	sources = list()
-	for source in external_sources[ext_module]:
-		sources.append(os.path.join(name,external_dir,source))
+if build_c_extensions:
+    for ext_module in external_sources.keys():
 
-	#Append external support sources too
-	if ext_module in external_support.keys():
-		sources += external_support[ext_module]
+        sources = list()
+        for source in external_sources[ext_module]:
+            sources.append(os.path.join(name,external_dir,source))
 
-	ext.append(Extension(ext_module,
-                             sources,
-                             extra_link_args=lenstools_link,
-                             include_dirs=lenstools_includes))
+        #Append external support sources too
+        if ext_module in external_support.keys():
+            sources += external_support[ext_module]
+
+        ext.append(Extension(ext_module,
+                                 sources,
+                                 extra_link_args=lenstools_link,
+                                 include_dirs=lenstools_includes))
 
 #################################################################################################
 #############################Setup###############################################################
 #################################################################################################
 
 setup(
-	name=name,
-	version=version,
-	author=me,
-	author_email=email,
-	packages=packages,
 	package_data=package_data,
-	install_requires=["numpy","scipy","pandas","matplotlib","astropy","emcee<=2.2.1"],
-	url=url,
-	download_url=download_url,
-	license="MIT",
-	description="Toolkit for Weak Gravitational Lensing analysis",
-	long_description=rd("README.rst") + "\n\n" + "Changelog\n" + "---------\n\n" + rd("HISTORY.rst"),
 	scripts=scripts,
-	classifiers=classifiers,
 	ext_package=os.path.join(name,external_dir),
 	ext_modules=ext,
 	include_dirs=lenstools_includes,
-	zip_safe=False,
 )

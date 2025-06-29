@@ -88,7 +88,7 @@ def readFITS(cls,filename,init_cosmology=True):
 		name,exponent = re.match(r"([a-zA-Z]+)([0-9])?",unit_string).groups()
 		unit = getattr(u,name)
 		if exponent is not None:
-			unit **= exponent
+			unit **= int(exponent)
 	except AttributeError:
 		unit = u.dimensionless_unscaled
 	except (ValueError,KeyError):

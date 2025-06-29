@@ -168,7 +168,7 @@ class Design(object):
 
 		#Tune the format
 		for colname in design_table.colnames:
-			if not design_table.dtype[colname]==np.int:
+			if not np.issubdtype(design_table.dtype[colname], np.signedinteger):
 				design_table[colname].format = column_format
 
 		#Write the table or return it

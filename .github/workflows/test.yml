@@ -1,0 +1,110 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install all system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgsl-dev libfftw3-dev gcc build-essential pkg-config
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install "numpy>=2.0.0" "Cython>=0.29.0"
+        pip install pytest pytest-cov
+    
+    - name: Configure for Ubuntu system libraries
+      run: |
+        # Create Ubuntu-specific setup.cfg for CI
+        cat > setup.cfg << EOF
+        [gsl]
+        installation_path = /usr
+
+        [fftw3]
+        installation_path = /usr
+
+        [nicaea]
+        install_python_bindings = False
+        installation_path = /usr/local
+        EOF
+        
+        # Check what GSL libraries are actually available
+        find /usr -name "*gsl*" -type f 2>/dev/null | head -10
+        echo "GSL pkg-config info:"
+        pkg-config --libs gsl || echo "pkg-config GSL info not available"
+    
+    - name: Verify system dependencies
+      run: |
+        pkg-config --exists gsl
+        pkg-config --cflags gsl
+        pkg-config --libs gsl
+        ls -la /usr/include/gsl/
+        ls -la /usr/lib/*/libgsl.*
+    
+    - name: Install package with all C extensions
+      run: |
+        python setup.py build_ext --inplace
+        pip install -e .
+    
+    - name: Verify all C extensions are working
+      run: |
+        python -c "
+        import lenstools
+        print('LensTools version:', lenstools.__version__)
+        print('NumPy version:', __import__('numpy').__version__)
+        
+        # Test all C extensions
+        from lenstools.extern import _topology, _gadget2, _nbody, _pixelize
+        print('✓ All core C extensions loaded successfully')
+        
+        # Test optional C extensions
+        try:
+            from lenstools.extern import _design
+            print('✓ _design C extension loaded (GSL)')
+        except ImportError as e:
+            print(f'⚠ _design C extension failed: {e}')
+        
+        try:
+            from lenstools.extern import _nicaea
+            print('✓ _nicaea C extension loaded (NICAEA)')
+        except ImportError as e:
+            print(f'⚠ _nicaea C extension failed: {e}')
+        
+        # Test C extension functionality with NumPy 2.x
+        import numpy as np
+        test_data = np.random.rand(50, 50).astype(np.float64)
+        grad = _topology.gradient(test_data, None, None)
+        print('✓ C extensions working with NumPy', np.__version__)
+        "
+    
+    - name: Download test data
+      run: |
+        echo "Downloading test data..."
+        export LENSTOOLS_DATA="./test_data"
+        python -c "import lenstools; lenstools.dataExtern()"
+        echo "✓ Test data downloaded successfully"
+    
+    - name: Run comprehensive test suite
+      run: |
+        echo "Running full test suite with external data..."
+        export LENSTOOLS_DATA="./test_data"
+        python -m pytest --pyargs lenstools.tests -v --tb=short

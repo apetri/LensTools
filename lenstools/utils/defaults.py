@@ -43,7 +43,7 @@ def load_fits_default_convergence(filename):
 	angle = kappa_file[0].header["ANGLE"]
 
 	#Create the array with the shear map
-	kappa = kappa_file[0].data.astype(np.float)
+	kappa = kappa_file[0].data.astype(np.float64)
 
 	#Close files and return
 	kappa_file.close()
@@ -73,7 +73,7 @@ def load_fits_default_shear(filename):
 	angle = gamma_file[0].header["ANGLE"]
 
 	#Create the array with the shear map
-	gamma = gamma_file[0].data.astype(np.float)
+	gamma = gamma_file[0].data.astype(np.float64)
 
 	#Close files and return
 	gamma_file.close()
@@ -137,7 +137,7 @@ def load_power_default(path,root_name="fiducial_matterpower_"):
 	power_spectrum_files = list(filter(lambda f:zfind(f)>0,glob.glob(os.path.join(path,root_name) + "*.dat")))
 
 	#Redshift array
-	z_label = np.zeros(len(power_spectrum_files),dtype=np.int)
+	z_label = np.zeros(len(power_spectrum_files),dtype=np.int64)
 
 	#Check the first file
 	k_try,P = np.loadtxt(power_spectrum_files[0],unpack=True)
